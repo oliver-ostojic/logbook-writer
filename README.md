@@ -1,2 +1,2 @@
 # logbook-writer
-Automated daily crew scheduling and logbook generation for Trader Joe's.
+Logbook Writer is a web app that turns crew shifts, preferences, and store rules into a published daily logbook. It enforces hard constraints (e.g. role hours, 30-min parking helms), optimizes soft goals (preferences, continuity, fairness), and version-controls schedules with exports to PDF. The scheduler runs under 5 seconds for up to 100 crew, and provides KPIs and audit trails. 
