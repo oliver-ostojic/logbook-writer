@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ['main']
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: logbook_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d logbook_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Prepare pnpm
+        run: corepack prepare pnpm@10.20.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (workspace)
+        run: pnpm -w run build
+
+      - name: Wait for Postgres
+        run: |
+          # wait until Postgres is ready
+          npx wait-on tcp:localhost:5432
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/logbook_test
+        run: pnpm -w exec prisma db push
+
+      - name: Test (workspace)
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/logbook_test
+        run: pnpm -w run test
+
+      - name: Lint (workspace)
+        run: pnpm -w run lint

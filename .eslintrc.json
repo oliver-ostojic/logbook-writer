@@ -1,0 +1,28 @@
+{
+  "root": true,
+  "ignorePatterns": ["node_modules/", "dist/", ".next/", "coverage/"],
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "ecmaFeatures": { "jsx": true }
+      },
+      "plugins": ["@typescript-eslint"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off"
+      }
+    },
+    {
+      "files": ["apps/web/**/*.ts", "apps/web/**/*.tsx"],
+      "extends": ["next/core-web-vitals"]
+    }
+  ]
+}

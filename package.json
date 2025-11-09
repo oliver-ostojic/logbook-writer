@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "eslint": "^8.51.0",
+    "turbo": "latest",
+    "typescript": "^5.0.0"
+  }
+}
