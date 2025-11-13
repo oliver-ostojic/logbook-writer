@@ -12,10 +12,39 @@ generator client {
 
 // ENUMS
 
-enum RunStatus { QUEUED RUNNING FEASIBLE OPTIMAL TIME_LIMIT INFEASIBLE FAILED CANCELED }
-enum LogbookStatus {DRAFT PUBLISHED SUPERSEDED }
-enum TaskType { REGISTER PRODUCT PARKING_HELM ORDER_WRITER ART MEAL_BREAK TRUCK DEMO}
-enum TaskOrigin {ENGINE MANUAL IMPORT }
+enum RunStatus {
+  QUEUED
+  RUNNING
+  FEASIBLE
+  OPTIMAL
+  TIME_LIMIT
+  INFEASIBLE
+  FAILED
+  CANCELED
+}
+
+enum LogbookStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+}
+
+enum TaskType {
+  REGISTER
+  PRODUCT
+  PARKING_HELM
+  ORDER_WRITER
+  ART
+  MEAL_BREAK
+  TRUCK
+  DEMO
+}
+
+enum TaskOrigin {
+  ENGINE
+  MANUAL
+  IMPORT
+}
 
 // MODELS
 // Core Domain
@@ -29,7 +58,6 @@ model CrewMember {
   taskPreference TaskType?
   firstHourPreference TaskType?
   tasks Task[]
-  roleAssignments SpecialRoleAssignment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   // Possible exemption for certain tasks
@@ -39,7 +67,7 @@ model CrewMember {
 
 model Role {
   id String @id @db.uuid
-  name String @unique ("ART", "ORDER_WRITER", "DEMO")
+  name String @unique
   crew CrewMember[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,7 +101,7 @@ model StoreHourRule {
 // Daily task schedule
 
 model Logbook {
-  id String @id @db.iiud
+  id String @id @db.uuid
   date DateTime
   storeId Int
   store Store
