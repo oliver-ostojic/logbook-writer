@@ -10,4 +10,129 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// TODO: Add your models here
+// ENUMS
+
+enum RunStatus { QUEUED RUNNING FEASIBLE OPTIMAL TIME_LIMIT INFEASIBLE FAILED CANCELED }
+enum LogbookStatus {DRAFT PUBLISHED SUPERSEDED }
+enum TaskType { REGISTER PRODUCT PARKING_HELM ORDER_WRITER ART MEAL_BREAK TRUCK DEMO}
+enum TaskOrigin {ENGINE MANUAL IMPORT }
+
+// MODELS
+// Core Domain
+
+model CrewMember {
+  id String @id @db.Char(7)
+  name String 
+  roleId String? @db.uuid
+  role Role? @relation(fields: [roleId], references: [id])
+  blockSize Int 
+  taskPreference TaskType?
+  firstHourPreference TaskType?
+  tasks Task[]
+  roleAssignments SpecialRoleAssignment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Possible exemption for certain tasks
+  canBreak Boolean @default(true)
+  canParkingHelms Boolean @default(true)
+}
+
+model Role {
+  id String @id @db.uuid
+  name String @unique ("ART", "ORDER_WRITER", "DEMO")
+  crew CrewMember[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Store and per-hour rules for a given date
+
+model Store {
+  id Int @id
+  minRegisterHours Int
+  maxRegisterHours Int
+  hourRules StoreHourRule[]
+  logbooks Logbook[]
+}
+
+model StoreHourRule {
+  id String @id @db.uuid
+  storeId Int
+  store Store @relation(fields: [storeId], references: [id])
+  date DateTime
+  hour Int
+  requiredRegisters Int
+  minProduct Int?
+  minParking Int
+  maxParking Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([storeId, date, hour])
+}
+
+// Daily task schedule
+
+model Logbook {
+  id String @id @db.iiud
+  date DateTime
+  storeId Int
+  store Store
+  status LogbookStatus
+  generatedAt DateTime
+  storedFilePath String?
+  tasks Task[]
+  metadata Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Only one active published logbook is allowed per store/date
+  @@unique([storeId, date, status], name: "uniq_store_date_status")
+}
+
+model Task {
+  id String @id @db.uuid
+  logbookId String
+  logbook Logbook @relation(fields: [logbookId], references: [id])
+  crewId String @db.Char(7)
+  crew CrewMember @relation(fields: [crewId], references: [id])
+  type TaskType
+  startTime DateTime
+  endTime DateTime
+  origin TaskOrigin @default(ENGINE)
+  locked Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([crewId, startTime])
+}
+
+model Run {
+  id String @id @db.uuid
+  date DateTime
+  storeId Int
+  engine String
+  seed Int
+  status RunStatus
+  runtimeMs Int
+  violations Json
+  objectiveScore Int?
+  mipGap Float?
+  logbookId String?
+  logbook Logbook? @relation(fields: [logbookId], references [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([storeId, date])
+}
+
+model DailyRoleCoverage {
+  id String @id @db.uuid
+  date DateTime
+  storeId Int
+  roleId String
+  role Role @relation(fields: [roleId], references: [id])
+  windowStart DateTime
+  windowEnd DateTime
+  requiredPerHour Int
+  // For Audit
+  createdBy String // user_id of MATE
+  @@unique([date, storeId, roleId])
+  @@index([storeId, date])
+}
