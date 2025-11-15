@@ -167,7 +167,7 @@ model Run {
 
   @@index([storeId, date])
 }
-
+// For DEMO coverage (Ability to select a time window for a role to be satisfied each hour)
 model DailyRoleCoverage {
   id              String   @id @db.Uuid
   date            DateTime

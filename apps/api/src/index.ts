@@ -139,7 +139,7 @@ export async function buildServer() {
   await app.register(cors, { origin: true });
 
   // Health / stub
-  app.get('/me', async () => ({ id: 'demo', role: 'Mate' }));
+  app.get('/me', async () => ({ id: '1269090', role: 'Crew Member' }));
 
   // Step 1: init wizard
   app.post<{ Body: InitBody }>('/wizard/init', async (req, reply) => {
