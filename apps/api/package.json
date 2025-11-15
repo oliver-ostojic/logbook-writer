@@ -4,31 +4,37 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:4010": "PORT=4010 tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:normalize-demo-role": "tsx prisma/normalize-demo-role.ts"
   },
   "dependencies": {
-    "@logbook-writer/domain": "workspace:*",
-    "@logbook-writer/shared-types": "workspace:*",
-    "@prisma/client": "^5.0.0",
-    "fastify": "^4.24.0",
     "@fastify/cors": "^8.4.0",
     "@fastify/jwt": "^7.2.1",
+    "@logbook-writer/domain": "workspace:*",
+    "@logbook-writer/shared-types": "workspace:*",
+    "@prisma/client": "^5.22.0",
+    "fastify": "^4.24.0",
     "ioredis": "^5.3.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
-    "eslint": "^8.51.0",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
-    "prisma": "^5.0.0",
+    "eslint": "^8.51.0",
+    "prisma": "^5.22.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

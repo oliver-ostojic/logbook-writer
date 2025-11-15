@@ -38,6 +38,7 @@ enum TaskType {
   MEAL_BREAK
   TRUCK
   DEMO
+  WINE_DEMO
 }
 
 enum TaskOrigin {
@@ -50,117 +51,149 @@ enum TaskOrigin {
 // Core Domain
 
 model CrewMember {
-  id String @id @db.Char(7)
-  name String 
-  roleId String? @db.uuid
-  role Role? @relation(fields: [roleId], references: [id])
-  blockSize Int 
-  taskPreference TaskType?
-  firstHourPreference TaskType?
-  tasks Task[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                 @id @db.Char(7)
+  name                 String
+  roles                CrewMemberRole[]
+  blockSize            Int
+  taskPreference       TaskType?
+  firstHourPreference  TaskType?
+  tasks                Task[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
   // Possible exemption for certain tasks
-  canBreak Boolean @default(true)
-  canParkingHelms Boolean @default(true)
+  canBreak             Boolean                @default(true)
+  canParkingHelms      Boolean                @default(true)
+  DailyRoleRequirement DailyRoleRequirement[]
 }
 
 model Role {
-  id String @id @db.uuid
-  name String @unique
-  crew CrewMember[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                 @id @db.Uuid
+  name                 String                 @unique
+  crewMembers          CrewMemberRole[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  DailyRoleCoverage    DailyRoleCoverage[]
+  DailyRoleRequirement DailyRoleRequirement[]
+}
+
+model CrewMemberRole {
+  crewMemberId String     @db.Char(7)
+  crewMember   CrewMember @relation(fields: [crewMemberId], references: [id])
+  roleId       String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id])
+  assignedAt   DateTime   @default(now())
+
+  @@id([crewMemberId, roleId])
 }
 
 // Store and per-hour rules for a given date
 
 model Store {
-  id Int @id
+  id               Int             @id
   minRegisterHours Int
   maxRegisterHours Int
-  hourRules StoreHourRule[]
-  logbooks Logbook[]
+  hourRules        StoreHourRule[]
+  logbooks         Logbook[]
 }
 
 model StoreHourRule {
-  id String @id @db.uuid
-  storeId Int
-  store Store @relation(fields: [storeId], references: [id])
-  date DateTime
-  hour Int
+  id                String   @id @db.Uuid
+  storeId           Int
+  store             Store    @relation(fields: [storeId], references: [id])
+  date              DateTime
+  hour              Int
   requiredRegisters Int
-  minProduct Int?
-  minParking Int
-  maxParking Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  minProduct        Int?
+  minParking        Int
+  maxParking        Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
   @@unique([storeId, date, hour])
 }
 
 // Daily task schedule
 
 model Logbook {
-  id String @id @db.uuid
-  date DateTime
-  storeId Int
-  store Store
-  status LogbookStatus
-  generatedAt DateTime
+  id             String        @id @db.Uuid
+  date           DateTime
+  storeId        Int
+  store          Store         @relation(fields: [storeId], references: [id])
+  status         LogbookStatus
+  generatedAt    DateTime
   storedFilePath String?
-  tasks Task[]
-  metadata Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tasks          Task[]
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Run            Run[]
+
   // Only one active published logbook is allowed per store/date
   @@unique([storeId, date, status], name: "uniq_store_date_status")
 }
 
 model Task {
-  id String @id @db.uuid
-  logbookId String
-  logbook Logbook @relation(fields: [logbookId], references: [id])
-  crewId String @db.Char(7)
-  crew CrewMember @relation(fields: [crewId], references: [id])
-  type TaskType
+  id        String     @id @db.Uuid
+  logbookId String     @db.Uuid
+  logbook   Logbook    @relation(fields: [logbookId], references: [id])
+  crewId    String     @db.Char(7)
+  crew      CrewMember @relation(fields: [crewId], references: [id])
+  type      TaskType
   startTime DateTime
-  endTime DateTime
-  origin TaskOrigin @default(ENGINE)
-  locked Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  endTime   DateTime
+  origin    TaskOrigin @default(ENGINE)
+  locked    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
   @@index([crewId, startTime])
 }
 
 model Run {
-  id String @id @db.uuid
-  date DateTime
-  storeId Int
-  engine String
-  seed Int
-  status RunStatus
-  runtimeMs Int
-  violations Json
+  id             String    @id @db.Uuid
+  date           DateTime
+  storeId        Int
+  engine         String
+  seed           Int
+  status         RunStatus
+  runtimeMs      Int
+  violations     Json
   objectiveScore Int?
-  mipGap Float?
-  logbookId String?
-  logbook Logbook? @relation(fields: [logbookId], references [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  mipGap         Float?
+  logbookId      String?   @db.Uuid
+  logbook        Logbook?  @relation(fields: [logbookId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   @@index([storeId, date])
 }
 
 model DailyRoleCoverage {
-  id String @id @db.uuid
-  date DateTime
-  storeId Int
-  roleId String
-  role Role @relation(fields: [roleId], references: [id])
-  windowStart DateTime
-  windowEnd DateTime
+  id              String   @id @db.Uuid
+  date            DateTime
+  storeId         Int
+  roleId          String   @db.Uuid
+  role            Role     @relation(fields: [roleId], references: [id])
+  windowStart     DateTime
+  windowEnd       DateTime
   requiredPerHour Int
   // For Audit
-  createdBy String // user_id of MATE
+  createdBy       String // user_id of MATE
+
   @@unique([date, storeId, roleId])
+  @@index([storeId, date])
+}
+
+model DailyRoleRequirement {
+  id            String     @id @db.Uuid
+  date          DateTime
+  storeId       Int
+  crewId        String     @db.Char(7)
+  roleId        String     @db.Uuid
+  requiredHours Int
+  crew          CrewMember @relation(fields: [crewId], references: [id])
+  role          Role       @relation(fields: [roleId], references: [id])
+
+  @@unique([date, storeId, crewId, roleId])
   @@index([storeId, date])
 }

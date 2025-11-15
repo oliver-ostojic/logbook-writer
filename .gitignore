@@ -4,3 +4,8 @@ dist/
 .next/
 *.log
 *.tsbuildinfo
+
+# Local environment files (never commit secrets)
+.env
+**/.env
+**/.env.*

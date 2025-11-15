@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "api-tests",
+			"type": "shell",
+			"command": "pnpm test",
+			"group": "test"
+		}
+	]
+}
