@@ -1,0 +1,136 @@
+import { FastifyInstance } from 'fastify';
+import { PrismaClient } from '@prisma/client';
+import { startOfDay, parseMaybeHM, hourOf, clamp } from '../utils';
+import { suggestDemoWindow, contiguousSegments, loadRulesByHour, type Shift } from '../services/demo-window';
+
+const prisma = new PrismaClient();
+
+type InitBody = {
+  date: string; // ISO yyyy-mm-dd or full ISO string
+  store_id: number;
+  shifts: Shift[];
+};
+
+type RequirementsBody = {
+  date: string;
+  store_id: number;
+  requirements: Array<{
+    crewId: string;
+    roleId: string;
+    requiredHours: number;
+  }>;
+};
+
+type CoverageBody = {
+  date: string;
+  store_id: number;
+  role_id: string; // UUID for DEMO role
+  windowStart: string; // ISO or HH:mm
+  windowEnd: string;   // ISO or HH:mm
+  requiredPerHour?: number; // default 1
+};
+
+type DemoFeasible = {
+  segments: Array<{ startHour: number; endHour: number }>; // [start,end) hours where avail>=1 continuously
+  recommended: { startHour: number; endHour: number } | null; // longest segment (or null if none)
+  availByHour: number[]; // length 24
+};
+
+export function registerWizardRoutes(app: FastifyInstance) {
+  // Step 1: init wizard
+  app.post<{ Body: InitBody }>('/wizard/init', async (req, reply) => {
+    const { date, store_id, shifts } = req.body;
+    const day = startOfDay(new Date(date));
+
+    // Normalize shifts (snap to hour boundaries for now)
+    const normalizedShifts = shifts.map(s => ({
+      crewId: s.crewId,
+      start: `${clamp(hourOf(s.start), 0, 23).toString().padStart(2,'0')}:00`,
+      end: `${clamp(hourOf(s.end), 0, 24).toString().padStart(2,'0')}:00`,
+    }));
+
+    // Eligibilities: from implicit many-to-many (CrewMember.roles)
+    const crewIds = Array.from(new Set(normalizedShifts.map(s => s.crewId)));
+    const crewWithRoles = await prisma.crewMember.findMany({
+      where: { id: { in: crewIds } },
+      include: { roles: { include: { role: true } } },
+    });
+    const eligibilities = crewWithRoles.flatMap((c: any) =>
+      c.roles.map((r: any) => ({ crewId: c.id, roleName: r.role.name }))
+    );
+
+    // Rules by hour
+    const rulesByHour = await loadRulesByHour(store_id, day);
+
+    // Build avail[24] and feasible segments
+    const { availByHour } = await suggestDemoWindow(date, normalizedShifts);
+    const segments = contiguousSegments(availByHour, 1);
+    const recommended =
+      segments.reduce<{ startHour:number; endHour:number } | null>(
+        (best, seg) =>
+          best && (best.endHour - best.startHour) >= (seg.endHour - seg.startHour)
+            ? best
+            : seg,
+        null
+      );
+
+    const demoFeasible: DemoFeasible = { segments, recommended, availByHour };
+
+    return { normalizedShifts, eligibilities, rulesByHour, demoFeasible };
+  });
+
+  // Step 2A: upsert per-crew role requirements
+  app.post<{ Body: RequirementsBody }>('/wizard/requirements', async (req, reply) => {
+    const { date, store_id, requirements } = req.body;
+    const day = startOfDay(new Date(date));
+    // Upsert by unique (date, storeId, crewId, roleId)
+    const ops = requirements.map((r) =>
+      prisma.dailyRoleRequirement.upsert({
+        where: {
+          date_storeId_crewId_roleId: {
+            date: day,
+            storeId: store_id,
+            crewId: r.crewId,
+            roleId: r.roleId,
+          },
+        },
+        update: {
+          requiredHours: r.requiredHours,
+        },
+        create: {
+          id: crypto.randomUUID(),
+          date: day,
+          storeId: store_id,
+          crewId: r.crewId,
+          roleId: r.roleId,
+          requiredHours: r.requiredHours,
+        },
+      })
+    );
+
+    await prisma.$transaction(ops);
+    return { ok: true, upserted: ops.length };
+  });
+
+  // Step 2B: upsert DEMO coverage (per-day/per-role)
+  app.post<{ Body: CoverageBody }>('/wizard/coverage', async (req, reply) => {
+    const { date, store_id, role_id, windowStart, windowEnd, requiredPerHour } = req.body;
+    const day = startOfDay(new Date(date));
+    const ws = parseMaybeHM(day, windowStart);
+    const we = parseMaybeHM(day, windowEnd);
+    if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });
+
+    await prisma.dailyRoleCoverage.upsert({
+      where: { date_storeId_roleId: { date: day, storeId: store_id, roleId: role_id } },
+      update: { windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1 },
+      create: {
+        id: crypto.randomUUID(),
+        date: day, storeId: store_id, roleId: role_id,
+        windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1,
+        createdBy: 'mate-demo',
+      }
+    });
+
+    return { ok: true };
+  });
+}
