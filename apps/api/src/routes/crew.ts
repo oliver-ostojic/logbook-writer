@@ -6,7 +6,8 @@ const prisma = new PrismaClient();
 type CreateCrewBody = {
   id: string;
   name: string;
-  blockSize: number;
+  storeId?: number;
+  blockSize?: number;
   roleIds?: string[];
   taskPreference?: string;
   canBreak?: boolean;
@@ -25,16 +26,17 @@ type UpdateCrewBody = {
 export function registerCrewRoutes(app: FastifyInstance) {
   // Create a new crew member
   app.post<{ Body: CreateCrewBody }>('/crew', async (req, reply) => {
-    const { id, name, blockSize, roleIds = [], taskPreference, canBreak, canParkingHelms } = req.body;
+    const { id, name, storeId = 768, blockSize = 60, roleIds = [], taskPreference, canBreak, canParkingHelms } = req.body;
     
-    if (!id || !name || !blockSize) {
-      return reply.code(400).send({ error: 'id, name, and blockSize are required' });
+    if (!id || !name) {
+      return reply.code(400).send({ error: 'id and name are required' });
     }
     
     const crew = await prisma.crewMember.create({
       data: {
         id,
         name,
+        storeId,
         blockSize,
         taskPreference: taskPreference as any,
         canBreak: canBreak ?? true,
@@ -95,6 +97,23 @@ export function registerCrewRoutes(app: FastifyInstance) {
       include: { roles: { include: { role: true } } },
     });
     
+    return updated;
+  });
+
+  // Add a role to a crew member by role name
+  app.post<{ Params: { id: string }; Body: { roleName: string } }>('/crew/:id/add-role', async (req, reply) => {
+    const { id } = req.params;
+    const { roleName } = req.body;
+    if (!roleName) return reply.code(400).send({ error: 'roleName is required' });
+    const crew = await prisma.crewMember.findUnique({ where: { id } });
+    if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) return reply.code(404).send({ error: 'Role not found' });
+    await prisma.crewMemberRole.create({ data: { crewMemberId: id, roleId: role.id } });
+    const updated = await prisma.crewMember.findUnique({
+      where: { id },
+      include: { roles: { include: { role: true } } },
+    });
     return updated;
   });
 

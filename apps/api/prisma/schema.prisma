@@ -53,6 +53,8 @@ enum TaskOrigin {
 model CrewMember {
   id                   String                 @id @db.Char(7)
   name                 String
+  storeId              Int
+  store                Store                  @relation(fields: [storeId], references: [id])
   roles                CrewMemberRole[]
   blockSize            Int
   taskPreference       TaskType?
@@ -67,13 +69,11 @@ model CrewMember {
 }
 
 model Role {
-  id                   String                 @id @db.Uuid
-  name                 String                 @unique
-  crewMembers          CrewMemberRole[]
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  DailyRoleCoverage    DailyRoleCoverage[]
-  DailyRoleRequirement DailyRoleRequirement[]
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @unique
+  crewMembers CrewMemberRole[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model CrewMemberRole {
@@ -90,8 +90,10 @@ model CrewMemberRole {
 
 model Store {
   id               Int             @id
+  name             String
   minRegisterHours Int
   maxRegisterHours Int
+  crewMembers      CrewMember[]
   hourRules        StoreHourRule[]
   logbooks         Logbook[]
 }
@@ -173,7 +175,6 @@ model DailyRoleCoverage {
   date            DateTime
   storeId         Int
   roleId          String   @db.Uuid
-  role            Role     @relation(fields: [roleId], references: [id])
   windowStart     DateTime
   windowEnd       DateTime
   requiredPerHour Int
@@ -192,7 +193,6 @@ model DailyRoleRequirement {
   roleId        String     @db.Uuid
   requiredHours Int
   crew          CrewMember @relation(fields: [crewId], references: [id])
-  role          Role       @relation(fields: [roleId], references: [id])
 
   @@unique([date, storeId, crewId, roleId])
   @@index([storeId, date])

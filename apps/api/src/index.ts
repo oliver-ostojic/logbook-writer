@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { registerHealthRoutes } from './routes/health';
 import { registerCrewRoutes } from './routes/crew';
+import { registerRoleRoutes } from './routes/roles';
 import { registerWizardRoutes } from './routes/wizard';
 import { registerScheduleRoutes } from './routes/schedule';
 
@@ -12,6 +13,7 @@ export async function buildServer() {
   // Register all route modules
   registerHealthRoutes(app);
   registerCrewRoutes(app);
+  registerRoleRoutes(app);
   registerWizardRoutes(app);
   registerScheduleRoutes(app);
 
