@@ -62,8 +62,9 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
     };
 
     const res = await app.inject({ method: 'POST', url: '/wizard/coverage', payload });
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true });
+  expect(res.statusCode).toBe(200);
+  // Response may include additional metadata (e.g., normalizedDate); assert minimally
+  expect(res.json()).toEqual(expect.objectContaining({ ok: true }));
 
     const day = startOfDay(DATE_ISO);
     const row = await prisma.dailyRoleCoverage.findUnique({

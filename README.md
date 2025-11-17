@@ -49,10 +49,12 @@ Logbook Writer turns crew shifts, preferences, and store rules into a published 
 ## API surface (high level)
 
 - Wizard
-	- `POST /wizard/init` – normalize shifts and initial feasibility
-	- `POST /wizard/requirements` – upsert `DailyRoleRequirement`
-	- `POST /wizard/coverage` – upsert `DailyRoleCoverage`
-	- `GET /wizard/segments` – compute PRODUCT/FLEX segments per crew
+	- `POST /wizard/init` – normalize shifts and initial feasibility (returns `normalizedDate`)
+	- `POST /wizard/requirements` – upsert `DailyRoleRequirement` (returns `normalizedDate`)
+	- `POST /wizard/coverage` – upsert `DailyRoleCoverage` (returns `normalizedDate`)
+	- `POST /wizard/segments` – compute PRODUCT/FLEX segments per crew (returns `normalizedDate`)
+
+Note: Wizard endpoints coerce the provided date (string/number/Date) to a canonical ISO date via the domain normalizer and include it as `normalizedDate` in responses.
 - Schedule
 	- `POST /schedule/run` – prepare solver input (segmented shifts + requirements + coverage)
 	- `GET /schedule/logbook` – fetch current logbook/tasks (engine output placeholder)
@@ -130,7 +132,6 @@ pnpm test crud
 
 - Crew IDs are exactly 7 characters (`@db.Char(7)`). Tests and seeds use IDs like `TCRW001`.
 - Daily dates use `@db.Date` to avoid time zone drift; supply dates as `YYYY-MM-DD`.
-- Prisma Studio exits with code 130 when you Ctrl+C—this is normal.
 
 ## License
 

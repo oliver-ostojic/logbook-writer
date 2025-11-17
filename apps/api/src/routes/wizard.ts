@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { startOfDay, parseMaybeHM, hourOf, clamp } from '../utils';
 import { segmentShiftByRegisterWindow, hhmmToMin, minToHHMM } from '../services/segmentation';
 import { suggestDemoWindow, contiguousSegments, loadRulesByHour, type Shift } from '../services/demo-window';
+import { normalize as domainNormalize } from '@logbook-writer/domain';
 
 const prisma = new PrismaClient();
 
@@ -41,7 +42,11 @@ export function registerWizardRoutes(app: FastifyInstance) {
   // Step 1: init wizard
   app.post<{ Body: InitBody }>('/wizard/init', async (req, reply) => {
     const { date, store_id, shifts } = req.body;
-    const day = startOfDay(date);
+    // Use domain normalization to coerce date and validate crew ids
+    const n = domainNormalize({ crews: (shifts || []).map(s => ({ id: s.crewId })), dates: date });
+    if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+    const normDate = n.data!.dates[0];
+    const day = startOfDay(normDate);
 
     // Normalize shifts (snap to hour boundaries for now)
     const normalizedShifts = shifts.map(s => ({
@@ -64,7 +69,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const rulesByHour = await loadRulesByHour(store_id, day);
 
     // Build avail[24] and feasible segments
-    const { availByHour } = await suggestDemoWindow(date, normalizedShifts);
+  const { availByHour } = await suggestDemoWindow(normDate, normalizedShifts);
     const segments = contiguousSegments(availByHour, 1);
     const recommended =
       segments.reduce<{ startHour:number; endHour:number } | null>(
@@ -77,7 +82,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
 
     const demoFeasible: DemoFeasible = { segments, recommended, availByHour };
 
-    return { normalizedShifts, eligibilities, rulesByHour, demoFeasible };
+    return { normalizedDate: normDate, normalizedShifts, eligibilities, rulesByHour, demoFeasible };
   });
 
   // Step 1B: compute per-crew PRODUCT/FLEX segments from store register window
@@ -86,7 +91,11 @@ export function registerWizardRoutes(app: FastifyInstance) {
     '/wizard/segments',
     async (req, reply) => {
       const { date, store_id, shifts } = req.body;
-      const day = startOfDay(date);
+      // Normalize and validate input date and crew ids (ids can repeat; we only care about validity here)
+      const n = domainNormalize({ crews: (shifts || []).map(s => ({ id: s.crewId })), dates: date });
+      if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+      const normDate = n.data!.dates[0];
+      const day = startOfDay(normDate);
 
       // Load store defaults (minutes since midnight); fallback to 08:00-21:00
       const storeAny = (await prisma.store.findUnique({ where: { id: store_id } })) as any;
@@ -108,14 +117,18 @@ export function registerWizardRoutes(app: FastifyInstance) {
         };
       });
 
-      return { date: day, store_id, segmentsByCrew };
+      return { normalizedDate: normDate, date: day, store_id, segmentsByCrew };
     }
   );
 
   // Step 2A: upsert per-crew role requirements
   app.post<{ Body: RequirementsBody }>('/wizard/requirements', async (req, reply) => {
     const { date, store_id, requirements } = req.body;
-    const day = startOfDay(date);
+    // Normalize and validate date and provided crew ids
+    const n = domainNormalize({ crews: (requirements || []).map(r => ({ id: r.crewId })), dates: date });
+    if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+    const normDate = n.data!.dates[0];
+    const day = startOfDay(normDate);
     // Upsert by unique (date, storeId, crewId, roleId)
     const ops = requirements.map((r) =>
       prisma.dailyRoleRequirement.upsert({
@@ -142,13 +155,17 @@ export function registerWizardRoutes(app: FastifyInstance) {
     );
 
     await prisma.$transaction(ops);
-    return { ok: true, upserted: ops.length };
+    return { ok: true, normalizedDate: normDate, upserted: ops.length };
   });
 
   // Step 2B: upsert DEMO coverage (per-day/per-role)
   app.post<{ Body: CoverageBody }>('/wizard/coverage', async (req, reply) => {
     const { date, store_id, role_id, windowStart, windowEnd, requiredPerHour } = req.body;
-    const day = startOfDay(date);
+    // Normalize and validate date only
+    const n = domainNormalize({ dates: date });
+    if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+    const normDate = n.data!.dates[0];
+    const day = startOfDay(normDate);
     const ws = parseMaybeHM(day, windowStart);
     const we = parseMaybeHM(day, windowEnd);
     if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });
@@ -164,6 +181,6 @@ export function registerWizardRoutes(app: FastifyInstance) {
       }
     });
 
-    return { ok: true };
+    return { ok: true, normalizedDate: normDate };
   });
 }
