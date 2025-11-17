@@ -39,6 +39,23 @@ type DemoFeasible = {
 };
 
 export function registerWizardRoutes(app: FastifyInstance) {
+  // Convenience GET to avoid 404 when opening in a browser.
+  app.get('/wizard/init', async () => {
+    return {
+      ok: true,
+      message: 'Use POST /wizard/init with JSON body to initialize the wizard.',
+      bodyExample: {
+        date: '2025-01-01',
+        store_id: 1,
+        shifts: [
+          { crewId: 'A', start: '09:00', end: '17:00' },
+          { crewId: 'B', start: '10:00', end: '18:00' },
+        ],
+      },
+      note: 'The frontend wizard UI is at http://localhost:3000/wizard/init',
+    };
+  });
+
   // Step 1: init wizard
   app.post<{ Body: InitBody }>('/wizard/init', async (req, reply) => {
     const { date, store_id, shifts } = req.body;
