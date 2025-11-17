@@ -63,8 +63,7 @@ export function segmentShiftByRegisterWindow(
 
   return { segments, productMinutes, flexMinutes };
 }
-
-// Optional: after you allocate roles, breaks, and actual REGISTER time within FLEX,
+//TO DO: after you allocate roles, breaks, and actual REGISTER time within FLEX,
 // you can compute final buckets. Roles count toward PRODUCT.
 export type Allocation = {
   startMin: number;
