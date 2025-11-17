@@ -12,6 +12,7 @@ async function main() {
       id: 768,
       minRegisterHours: 2,
       maxRegisterHours: 7,
+      name: 'Demo Store'
     },
   });
 
@@ -42,6 +43,7 @@ async function main() {
       id: '1280713',
       name: 'Abigail Perez',
       blockSize: 60,
+      storeId: store.id,
       roles: {
         create: [
           { roleId: OrderWriter.id }
@@ -58,6 +60,7 @@ async function main() {
       id: '1269090',
       name: 'Oliver Ostojic',
       blockSize: 60,
+      storeId: store.id,
       roles: {
         create: [
           { roleId: Demo.id },
