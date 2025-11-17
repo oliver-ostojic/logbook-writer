@@ -14,17 +14,26 @@ export const validate = (
   const crewIds = new Set(crews.map((c) => c.id));
 
   for (const s of schedules) {
-    if (!s.id) errors.push(`Schedule missing id for date=${s.date}`);
-    if (!s.date) errors.push(`Schedule ${s.id} missing date`);
-    if (!s.crewId) errors.push(`Schedule ${s.id} missing crewId`);
-    else if (!crewIds.has(s.crewId)) errors.push(`Schedule ${s.id} references unknown crewId=${s.crewId}`);
+    const sid = typeof s.id === 'string' ? s.id.trim() : '';
+    if (!sid) errors.push(`Schedule missing id for date=${s.date ?? '(unknown)'}`);
+
+    const crewId = typeof s.crewId === 'string' ? s.crewId.trim() : '';
+    if (!crewId) errors.push(`Schedule ${sid || '(no-id)'} missing crewId`);
+    else if (!crewIds.has(crewId)) errors.push(`Schedule ${sid || '(no-id)'} references unknown crewId=${crewId}`);
+
+    const dateStr = typeof s.date === 'string' ? s.date.trim() : '';
+    if (!dateStr) errors.push(`Schedule ${sid || '(no-id)'} missing date`);
+    else if (Number.isNaN(new Date(dateStr).getTime())) errors.push(`Schedule ${sid || '(no-id)'} has invalid date=${dateStr}`);
   }
 
-  // Simple overlap check: ensure same crew doesn't have duplicate schedule on same date
+  // Duplicate check: ensure same crew doesn't have duplicate schedule on same date
   const seen = new Set<string>();
   for (const s of schedules) {
-    const key = `${s.crewId}::${s.date}`;
-    if (seen.has(key)) errors.push(`Crew ${s.crewId} has multiple schedules on ${s.date}`);
+    const kCrew = typeof s.crewId === 'string' ? s.crewId.trim() : '';
+    const kDate = typeof s.date === 'string' ? s.date.trim() : '';
+    if (!kCrew || !kDate) continue;
+    const key = `${kCrew}::${kDate}`;
+    if (seen.has(key)) errors.push(`Crew ${kCrew} has multiple schedules on ${kDate}`);
     seen.add(key);
   }
 
