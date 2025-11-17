@@ -15,9 +15,10 @@ export default function WizardInitPage() {
     return shifts.every((s) => s.crewId && s.start && s.end);
   }, [date, shifts]);
 
-  function handleApplyCount() {
-    const n = Math.max(0, Math.min(50, Number(countInput) || 0));
-    setShiftCount(n);
+  function applyCount(n: number) {
+    const clamped = Math.max(0, Math.min(50, Number(n) || 0));
+    setCountInput(clamped);
+    setShiftCount(clamped);
   }
 
   function handleNext() {
@@ -72,13 +73,10 @@ export default function WizardInitPage() {
             min={0}
             max={50}
             value={countInput}
-            onChange={(e) => setCountInput(Number(e.target.value))}
+            onChange={(e) => applyCount(Number(e.target.value))}
             style={{ marginLeft: 8, width: 80 }}
           />
         </label>
-        <div>
-          <button type="button" onClick={handleApplyCount}>Apply</button>
-        </div>
       </section>
 
       <section style={{ display: "grid", gap: 10 }}>
