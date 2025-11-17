@@ -56,9 +56,6 @@ model CrewMember {
   storeId              Int
   store                Store                  @relation(fields: [storeId], references: [id])
   roles                CrewMemberRole[]
-  blockSize            Int
-  taskPreference       TaskType?
-  firstHourPreference  TaskType?
   // Preference weights (relative priority tiers)
   prefFirstHourWeight      Int?
   prefTaskWeight           Int?
@@ -75,7 +72,6 @@ model CrewMember {
   // Possible exemption for certain tasks
   canBreak             Boolean                @default(true)
   canParkingHelms      Boolean                @default(true)
-  DailyRoleRequirement DailyRoleRequirement[]
 }
 
 model Role {
@@ -200,13 +196,12 @@ model DailyRoleCoverage {
 }
 
 model DailyRoleRequirement {
-  id            String     @id @db.Uuid
-  date          DateTime   @db.Date
+  id            String   @id @db.Uuid
+  date          DateTime @db.Date
   storeId       Int
-  crewId        String     @db.Char(7)
-  roleId        String     @db.Uuid
+  crewId        String   @db.Char(7)
+  roleId        String   @db.Uuid
   requiredHours Int
-  crew          CrewMember @relation(fields: [crewId], references: [id])
 
   @@unique([date, storeId, crewId, roleId])
   @@index([storeId, date])

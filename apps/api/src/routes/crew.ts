@@ -10,8 +10,19 @@ type CreateCrewBody = {
   blockSize?: number;
   roleIds?: string[];
   taskPreference?: string;
+  firstHourPreference?: string;
   canBreak?: boolean;
   canParkingHelms?: boolean;
+  // preference weights
+  prefFirstHourWeight?: number;
+  prefTaskWeight?: number;
+  prefBlocksizeProdWeight?: number;
+  prefBlocksizeRegWeight?: number;
+  // preference values
+  prefFirstHour?: string; // TaskType
+  prefTask?: string; // TaskType
+  prefBlocksizeProd?: number;
+  prefBlocksizeReg?: number;
 };
 
 type UpdateCrewBody = {
@@ -19,19 +30,43 @@ type UpdateCrewBody = {
   blockSize?: number;
   roleIds?: string[];
   taskPreference?: string;
+  firstHourPreference?: string;
   canBreak?: boolean;
   canParkingHelms?: boolean;
+  prefFirstHourWeight?: number;
+  prefTaskWeight?: number;
+  prefBlocksizeProdWeight?: number;
+  prefBlocksizeRegWeight?: number;
+  prefFirstHour?: string;
+  prefTask?: string;
+  prefBlocksizeProd?: number;
+  prefBlocksizeReg?: number;
+};
+
+type PreferenceUpdateBody = {
+  prefFirstHourWeight?: number;
+  prefTaskWeight?: number;
+  prefBlocksizeProdWeight?: number;
+  prefBlocksizeRegWeight?: number;
+  prefFirstHour?: string;
+  prefTask?: string;
+  prefBlocksizeProd?: number;
+  prefBlocksizeReg?: number;
+  firstHourPreference?: string;
+  taskPreference?: string;
 };
 
 export function registerCrewRoutes(app: FastifyInstance) {
   // Create a new crew member
   app.post<{ Body: CreateCrewBody }>('/crew', async (req, reply) => {
-    const { id, name, storeId = 768, blockSize = 60, roleIds = [], taskPreference, canBreak, canParkingHelms } = req.body;
-    
+    const { id, name, storeId = 768, blockSize = 60, roleIds = [], taskPreference, firstHourPreference, canBreak, canParkingHelms,
+      prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
+      prefFirstHour, prefTask, prefBlocksizeProd, prefBlocksizeReg } = req.body;
+
     if (!id || !name) {
       return reply.code(400).send({ error: 'id and name are required' });
     }
-    
+
     const crew = await prisma.crewMember.create({
       data: {
         id,
@@ -39,15 +74,24 @@ export function registerCrewRoutes(app: FastifyInstance) {
         storeId,
         blockSize,
         taskPreference: taskPreference as any,
+        firstHourPreference: firstHourPreference as any,
+        prefFirstHourWeight,
+        prefTaskWeight,
+        prefBlocksizeProdWeight,
+        prefBlocksizeRegWeight,
+        prefFirstHour: prefFirstHour as any,
+        prefTask: prefTask as any,
+        prefBlocksizeProd,
+        prefBlocksizeReg,
         canBreak: canBreak ?? true,
         canParkingHelms: canParkingHelms ?? true,
         roles: {
           create: roleIds.map(roleId => ({ roleId })),
         },
-      },
+      } as any,
       include: { roles: { include: { role: true } } },
     });
-    
+
     return crew;
   });
 
@@ -73,30 +117,89 @@ export function registerCrewRoutes(app: FastifyInstance) {
   // Update a crew member
   app.put<{ Params: { id: string }; Body: UpdateCrewBody }>('/crew/:id', async (req, reply) => {
     const { id } = req.params;
-    const { name, blockSize, roleIds, taskPreference, canBreak, canParkingHelms } = req.body;
-    
+    const { name, blockSize, roleIds, taskPreference, firstHourPreference, canBreak, canParkingHelms,
+      prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
+      prefFirstHour, prefTask, prefBlocksizeProd, prefBlocksizeReg } = req.body;
+
     const existing = await prisma.crewMember.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'Crew member not found' });
-    
-    // If roleIds provided, replace all roles
+
     const roleUpdate = roleIds !== undefined ? {
       deleteMany: {},
       create: roleIds.map(roleId => ({ roleId })),
     } : undefined;
-    
+
     const updated = await prisma.crewMember.update({
       where: { id },
       data: {
         ...(name && { name }),
         ...(blockSize && { blockSize }),
         ...(taskPreference !== undefined && { taskPreference: taskPreference as any }),
+        ...(firstHourPreference !== undefined && { firstHourPreference: firstHourPreference as any }),
+        ...(prefFirstHourWeight !== undefined && { prefFirstHourWeight }),
+        ...(prefTaskWeight !== undefined && { prefTaskWeight }),
+        ...(prefBlocksizeProdWeight !== undefined && { prefBlocksizeProdWeight }),
+        ...(prefBlocksizeRegWeight !== undefined && { prefBlocksizeRegWeight }),
+        ...(prefFirstHour !== undefined && { prefFirstHour: prefFirstHour as any }),
+        ...(prefTask !== undefined && { prefTask: prefTask as any }),
+        ...(prefBlocksizeProd !== undefined && { prefBlocksizeProd }),
+        ...(prefBlocksizeReg !== undefined && { prefBlocksizeReg }),
         ...(canBreak !== undefined && { canBreak }),
         ...(canParkingHelms !== undefined && { canParkingHelms }),
         ...(roleUpdate && { roles: roleUpdate }),
-      },
+      } as any,
       include: { roles: { include: { role: true } } },
     });
-    
+
+    return updated;
+  });
+
+  // Preferences-only update
+  app.post<{ Params: { id: string }; Body: PreferenceUpdateBody }>('/crew/:id/preferences', async (req, reply) => {
+    const { id } = req.params;
+    const crew = await prisma.crewMember.findUnique({ where: { id } });
+    if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+
+    const {
+      prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
+      prefFirstHour, prefTask, prefBlocksizeProd, prefBlocksizeReg,
+      firstHourPreference, taskPreference
+    } = req.body;
+
+    const weightFields: [string, number | undefined][] = [
+      ['prefFirstHourWeight', prefFirstHourWeight],
+      ['prefTaskWeight', prefTaskWeight],
+      ['prefBlocksizeProdWeight', prefBlocksizeProdWeight],
+      ['prefBlocksizeRegWeight', prefBlocksizeRegWeight],
+    ];
+    for (const [label, value] of weightFields) {
+      if (value !== undefined && (value < 1 || value > 4)) {
+        return reply.code(400).send({ error: `${label} must be between 1 and 4` });
+      }
+    }
+    if (prefBlocksizeProd !== undefined && prefBlocksizeProd <= 0) {
+      return reply.code(400).send({ error: 'prefBlocksizeProd must be > 0' });
+    }
+    if (prefBlocksizeReg !== undefined && prefBlocksizeReg <= 0) {
+      return reply.code(400).send({ error: 'prefBlocksizeReg must be > 0' });
+    }
+
+    const updated = await prisma.crewMember.update({
+      where: { id },
+      data: {
+        ...(prefFirstHourWeight !== undefined && { prefFirstHourWeight }),
+        ...(prefTaskWeight !== undefined && { prefTaskWeight }),
+        ...(prefBlocksizeProdWeight !== undefined && { prefBlocksizeProdWeight }),
+        ...(prefBlocksizeRegWeight !== undefined && { prefBlocksizeRegWeight }),
+        ...(prefFirstHour !== undefined && { prefFirstHour: prefFirstHour as any }),
+        ...(prefTask !== undefined && { prefTask: prefTask as any }),
+        ...(prefBlocksizeProd !== undefined && { prefBlocksizeProd }),
+        ...(prefBlocksizeReg !== undefined && { prefBlocksizeReg }),
+        ...(firstHourPreference !== undefined && { firstHourPreference: firstHourPreference as any }),
+        ...(taskPreference !== undefined && { taskPreference: taskPreference as any }),
+      } as any,
+      include: { roles: { include: { role: true } } },
+    });
     return updated;
   });
 
