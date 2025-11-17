@@ -7,7 +7,6 @@ type CreateCrewBody = {
   id: string;
   name: string;
   storeId?: number;
-  blockSize?: number;
   roleIds?: string[];
   taskPreference?: string;
   firstHourPreference?: string;
@@ -27,7 +26,6 @@ type CreateCrewBody = {
 
 type UpdateCrewBody = {
   name?: string;
-  blockSize?: number;
   roleIds?: string[];
   taskPreference?: string;
   firstHourPreference?: string;
@@ -59,7 +57,7 @@ type PreferenceUpdateBody = {
 export function registerCrewRoutes(app: FastifyInstance) {
   // Create a new crew member
   app.post<{ Body: CreateCrewBody }>('/crew', async (req, reply) => {
-    const { id, name, storeId = 768, blockSize = 60, roleIds = [], taskPreference, firstHourPreference, canBreak, canParkingHelms,
+    const { id, name, storeId = 768, roleIds = [], taskPreference, firstHourPreference, canBreak, canParkingHelms,
       prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
       prefFirstHour, prefTask, prefBlocksizeProd, prefBlocksizeReg } = req.body;
 
@@ -72,7 +70,6 @@ export function registerCrewRoutes(app: FastifyInstance) {
         id,
         name,
         storeId,
-        blockSize,
         taskPreference: taskPreference as any,
         firstHourPreference: firstHourPreference as any,
         prefFirstHourWeight,
@@ -117,7 +114,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   // Update a crew member
   app.put<{ Params: { id: string }; Body: UpdateCrewBody }>('/crew/:id', async (req, reply) => {
     const { id } = req.params;
-    const { name, blockSize, roleIds, taskPreference, firstHourPreference, canBreak, canParkingHelms,
+    const { name, roleIds, taskPreference, firstHourPreference, canBreak, canParkingHelms,
       prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
       prefFirstHour, prefTask, prefBlocksizeProd, prefBlocksizeReg } = req.body;
 
@@ -133,7 +130,6 @@ export function registerCrewRoutes(app: FastifyInstance) {
       where: { id },
       data: {
         ...(name && { name }),
-        ...(blockSize && { blockSize }),
         ...(taskPreference !== undefined && { taskPreference: taskPreference as any }),
         ...(firstHourPreference !== undefined && { firstHourPreference: firstHourPreference as any }),
         ...(prefFirstHourWeight !== undefined && { prefFirstHourWeight }),

@@ -344,13 +344,11 @@ describe('CRUD - Roles and Crew Members', () => {
         url: '/crew/TCRW004',
         payload: {
           name: 'Alice Updated',
-          blockSize: 2,
         },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.name).toBe('Alice Updated');
-      expect(body.blockSize).toBe(2);
     });
 
     it('PUT /crew/:id - replaces roles when roleIds provided', async () => {

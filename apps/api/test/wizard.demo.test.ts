@@ -74,7 +74,7 @@ async function seedDemo() {
     await prisma.crewMember.upsert({
       where: { id: c.id },
       update: { name: c.name, storeId: STORE_ID },
-      create: { id: c.id, name: c.name, blockSize: 60, storeId: STORE_ID },
+      create: { id: c.id, name: c.name, storeId: STORE_ID },
     });
     // link role if not already
     await prisma.crewMemberRole.upsert({
@@ -191,7 +191,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     await prisma.crewMember.upsert({
       where: { id: nonDemoId },
       update: { name: 'Non Demo', storeId: STORE_ID },
-      create: { id: nonDemoId, name: 'Non Demo', blockSize: 60, storeId: STORE_ID },
+      create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
     });
 
     const payload = {
@@ -319,7 +319,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     await prisma.crewMember.upsert({
       where: { id: nonDemoId },
       update: { name: 'Non Demo', storeId: STORE_ID },
-      create: { id: nonDemoId, name: 'Non Demo', blockSize: 60, storeId: STORE_ID },
+      create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
     });
     await prisma.crewMemberRole.upsert({
       where: { crewMemberId_roleId: { crewMemberId: nonDemoId, roleId: nonDemoRole.id } },

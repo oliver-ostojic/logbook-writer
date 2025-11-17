@@ -47,7 +47,7 @@ async function seedRequirementsTest() {
     await prisma.crewMember.upsert({
       where: { id: c.id },
       update: { name: c.name, storeId: STORE_ID },
-      create: { id: c.id, name: c.name, blockSize: 60, storeId: STORE_ID },
+      create: { id: c.id, name: c.name, storeId: STORE_ID },
     });
   }
 

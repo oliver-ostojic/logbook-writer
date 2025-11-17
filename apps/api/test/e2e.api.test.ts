@@ -44,7 +44,6 @@ async function seedMinimal() {
       id: CREW_DEMO.id,
       name: CREW_DEMO.name,
       storeId: STORE_ID,
-      blockSize: 60,
       roles: { create: [{ roleId: demo.id }] },
     },
   });
@@ -55,7 +54,6 @@ async function seedMinimal() {
       id: CREW_OTHER.id,
       name: CREW_OTHER.name,
       storeId: STORE_ID,
-      blockSize: 60,
       roles: { create: [{ roleId: orderWriter.id }] },
     },
   });
