@@ -18,14 +18,19 @@ export function contiguousSegments(avail: number[], threshold = 1) {
 }
 
 export async function suggestDemoWindow(dateISO: string, shifts: Shift[]) {
-  const day = startOfDay(new Date(dateISO));
-  // Fetch the DEMO role & its eligible crew
-  const demoRole = await prisma.role.findFirst({
+  startOfDay(new Date(dateISO)); // retain for future day-based filtering
+  // Fetch ALL roles matching 'demo' case-insensitively to avoid picking a later duplicate
+  // Some tests (CRUD) may create an additional 'DEMO' role without crew assignments which was
+  // previously selected by findFirst(), resulting in empty availability.
+  const demoRoles = await prisma.role.findMany({
     where: { name: { equals: 'demo', mode: 'insensitive' } },
     include: { crewMembers: true },
   });
-  // Create a set of crew IDs eligible for DEMO
-  const demoCrewSet = new Set((demoRole?.crewMembers ?? []).map((c: any) => c.crewMemberId));
+  // Union all crew member IDs across any matching demo roles
+  const demoCrewSet = new Set(
+    demoRoles.flatMap((r: any) => (r.crewMembers ?? []).map((cm: any) => cm.crewMemberId))
+  );
+  // If multiple demo roles exist, prefer the one with most crew for recommended metadata (not strictly needed now)
   // Create hourly availability map
   const avail = Array(24).fill(0);
   // Fill availability map
