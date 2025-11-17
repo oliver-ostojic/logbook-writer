@@ -89,13 +89,17 @@ model CrewMemberRole {
 // Store and per-hour rules for a given date
 
 model Store {
-  id               Int             @id
+  id               Int            @id
   name             String
   minRegisterHours Int
   maxRegisterHours Int
   crewMembers      CrewMember[]
   hourRules        StoreHourRule[]
   logbooks         Logbook[]
+  // Default register window for the store as minutes since midnight
+  // 08:00 -> 480, 21:00 -> 1260
+  regHoursStartMin Int            @default(480)
+  regHoursEndMin   Int            @default(1260)
 }
 
 model StoreHourRule {
