@@ -59,6 +59,16 @@ model CrewMember {
   blockSize            Int
   taskPreference       TaskType?
   firstHourPreference  TaskType?
+  // Preference weights (relative priority tiers)
+  prefFirstHourWeight      Int?
+  prefTaskWeight           Int?
+  prefBlocksizeProdWeight  Int?
+  prefBlocksizeRegWeight   Int?
+  // Preference values (desired targets)
+  prefFirstHour            TaskType?
+  prefTask                 TaskType?
+  prefBlocksizeProd        Int?
+  prefBlocksizeReg         Int?
   tasks                Task[]
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
