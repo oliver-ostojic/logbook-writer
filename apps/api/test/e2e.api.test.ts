@@ -179,6 +179,12 @@ describe('API e2e', () => {
     const runBody = runRes.json();
     expect(runBody).toHaveProperty('run_id');
     expect(runBody).toHaveProperty('logbook_id');
+    expect(runBody).toHaveProperty('segmentedShifts');
+    expect(runBody.segmentedShifts).toHaveLength(2);
+    // Validate that segmentation computed FLEX for shifts within register window
+    const demoShift = runBody.segmentedShifts.find((s: any) => s.crewId === CREW_DEMO.id);
+    expect(demoShift.segments).toBeDefined();
+    expect(demoShift.flexMinutes).toBeGreaterThan(0);
 
     const lbRes = await app.inject({
       method: 'GET',
