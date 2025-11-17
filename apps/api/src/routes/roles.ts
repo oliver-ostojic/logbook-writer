@@ -49,6 +49,18 @@ export function registerRoleRoutes(app: FastifyInstance) {
     return allRoles;
   });
 
+  // List crew (id, name) for a role by its name
+  app.get<{ Params: { name: string } }>('/roles/:name/crew', async (req, reply) => {
+    const { name } = req.params;
+    const role = await prisma.role.findUnique({
+      where: { name },
+      include: { crewMembers: { include: { crewMember: { select: { id: true, name: true } } } } },
+    });
+    if (!role) return reply.code(404).send({ error: 'Role not found' });
+    const crew = role.crewMembers.map(cm => cm.crewMember);
+    return crew;
+  });
+
   // Update a role (only remove crew members)
   app.put<{ Params: { id: string }; Body: UpdateRoleBody }>('/roles/:id', async (req, reply) => {
     const { id } = req.params;

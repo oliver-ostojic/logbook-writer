@@ -105,16 +105,33 @@ export function registerCrewRoutes(app: FastifyInstance) {
     const { id } = req.params;
     const { roleName } = req.body;
     if (!roleName) return reply.code(400).send({ error: 'roleName is required' });
+
     const crew = await prisma.crewMember.findUnique({ where: { id } });
     if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+
     const role = await prisma.role.findUnique({ where: { name: roleName } });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
-    await prisma.crewMemberRole.create({ data: { crewMemberId: id, roleId: role.id } });
-    const updated = await prisma.crewMember.findUnique({
-      where: { id },
-      include: { roles: { include: { role: true } } },
+
+    // Guard against duplicates (composite PK on [crewMemberId, roleId])
+    const existingLink = await prisma.crewMemberRole.findUnique({
+      where: { crewMemberId_roleId: { crewMemberId: id, roleId: role.id } },
     });
-    return updated;
+    if (existingLink) {
+      return reply.code(409).send({ error: 'Crew member already has this role' });
+    }
+
+    try {
+      await prisma.crewMemberRole.create({ data: { crewMemberId: id, roleId: role.id } });
+    } catch (e: any) {
+      // Handle potential race-condition duplicate
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Crew member already has this role' });
+      }
+      throw e;
+    }
+
+    // Use HTTP status codes to convey success; no JSON envelope needed
+    return reply.code(204).send();
   });
 
   // Delete a crew member

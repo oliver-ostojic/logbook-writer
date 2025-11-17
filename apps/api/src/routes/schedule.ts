@@ -22,8 +22,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
 
     // Load requirements & coverage
     const coverages = await prisma.dailyRoleCoverage.findMany({ 
-      where: { date: day, storeId: store_id }, 
-      include: { role: true } 
+      where: { date: day, storeId: store_id }
     });
 
     // --- Engine placeholder ---

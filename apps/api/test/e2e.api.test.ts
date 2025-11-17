@@ -18,8 +18,8 @@ async function seedMinimal() {
   // Store
   await prisma.store.upsert({
     where: { id: STORE_ID },
-    update: {},
-    create: { id: STORE_ID, minRegisterHours: 2, maxRegisterHours: 7 },
+    update: { name: 'Dr. Phillips' },
+    create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 7 },
   });
 
   // Roles
@@ -43,6 +43,7 @@ async function seedMinimal() {
     create: {
       id: CREW_DEMO.id,
       name: CREW_DEMO.name,
+      storeId: STORE_ID,
       blockSize: 60,
       roles: { create: [{ roleId: demo.id }] },
     },
@@ -53,6 +54,7 @@ async function seedMinimal() {
     create: {
       id: CREW_OTHER.id,
       name: CREW_OTHER.name,
+      storeId: STORE_ID,
       blockSize: 60,
       roles: { create: [{ roleId: orderWriter.id }] },
     },
