@@ -40,7 +40,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
   // Step 1: init wizard
   app.post<{ Body: InitBody }>('/wizard/init', async (req, reply) => {
     const { date, store_id, shifts } = req.body;
-    const day = startOfDay(new Date(date));
+    const day = startOfDay(date);
 
     // Normalize shifts (snap to hour boundaries for now)
     const normalizedShifts = shifts.map(s => ({
@@ -82,7 +82,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
   // Step 2A: upsert per-crew role requirements
   app.post<{ Body: RequirementsBody }>('/wizard/requirements', async (req, reply) => {
     const { date, store_id, requirements } = req.body;
-    const day = startOfDay(new Date(date));
+    const day = startOfDay(date);
     // Upsert by unique (date, storeId, crewId, roleId)
     const ops = requirements.map((r) =>
       prisma.dailyRoleRequirement.upsert({
@@ -115,7 +115,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
   // Step 2B: upsert DEMO coverage (per-day/per-role)
   app.post<{ Body: CoverageBody }>('/wizard/coverage', async (req, reply) => {
     const { date, store_id, role_id, windowStart, windowEnd, requiredPerHour } = req.body;
-    const day = startOfDay(new Date(date));
+    const day = startOfDay(date);
     const ws = parseMaybeHM(day, windowStart);
     const we = parseMaybeHM(day, windowEnd);
     if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });

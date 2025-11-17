@@ -172,7 +172,7 @@ model Run {
 // For DEMO coverage (Ability to select a time window for a role to be satisfied each hour)
 model DailyRoleCoverage {
   id              String   @id @db.Uuid
-  date            DateTime
+  date            DateTime @db.Date
   storeId         Int
   roleId          String   @db.Uuid
   windowStart     DateTime
@@ -187,7 +187,7 @@ model DailyRoleCoverage {
 
 model DailyRoleRequirement {
   id            String     @id @db.Uuid
-  date          DateTime
+  date          DateTime   @db.Date
   storeId       Int
   crewId        String     @db.Char(7)
   roleId        String     @db.Uuid
