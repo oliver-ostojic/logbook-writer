@@ -17,10 +17,14 @@ export function parseMaybeHM(date: Date, value?: string | null): Date | null {
   // If it's already an ISO datetime
   if (/T/.test(value)) return new Date(value);
   // Expect HH:mm
-  const [h, m] = value.split(':').map(Number);
-  const dt = startOfDay(date);
-  dt.setHours(h || 0, m || 0, 0, 0);
-  return dt;
+  const [hRaw, mRaw] = value.split(':');
+  const h = Number(hRaw);
+  const m = Number(mRaw);
+  // Build a UTC datetime on the same calendar date as `date`
+  const y = date.getUTCFullYear();
+  const mo = date.getUTCMonth();
+  const d = date.getUTCDate();
+  return new Date(Date.UTC(y, mo, d, (isNaN(h) ? 0 : h), (isNaN(m) ? 0 : m), 0, 0));
 }
 
 export function hourOf(hhmm: string): number {

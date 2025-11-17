@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { startOfDay, parseMaybeHM, hourOf, clamp } from '../utils';
+import { segmentShiftByRegisterWindow, hhmmToMin, minToHHMM } from '../services/segmentation';
 import { suggestDemoWindow, contiguousSegments, loadRulesByHour, type Shift } from '../services/demo-window';
 
 const prisma = new PrismaClient();
@@ -79,6 +80,38 @@ export function registerWizardRoutes(app: FastifyInstance) {
     return { normalizedShifts, eligibilities, rulesByHour, demoFeasible };
   });
 
+  // Step 1B: compute per-crew PRODUCT/FLEX segments from store register window
+  // Input body is same shape as /wizard/init (date, store_id, shifts)
+  app.post<{ Body: InitBody }>(
+    '/wizard/segments',
+    async (req, reply) => {
+      const { date, store_id, shifts } = req.body;
+      const day = startOfDay(date);
+
+      // Load store defaults (minutes since midnight); fallback to 08:00-21:00
+      const storeAny = (await prisma.store.findUnique({ where: { id: store_id } })) as any;
+      const regStartMin = (storeAny?.regHoursStartMin ?? 480) as number; // 08:00
+      const regEndMin = (storeAny?.regHoursEndMin ?? 1260) as number;    // 21:00
+
+      // Normalize shifts to HH:mm bounds and compute per-crew segmentation
+      const segmentsByCrew = shifts.map(s => {
+        const startMin = hhmmToMin(`${clamp(hourOf(s.start), 0, 23).toString().padStart(2,'0')}:00`);
+        const endMin = hhmmToMin(`${clamp(hourOf(s.end), 0, 24).toString().padStart(2,'0')}:00`);
+        const seg = segmentShiftByRegisterWindow(startMin, endMin, regStartMin, regEndMin);
+        return {
+          crewId: s.crewId,
+          shift: { start: minToHHMM(startMin), end: minToHHMM(endMin) },
+          regWindow: { start: minToHHMM(regStartMin), end: minToHHMM(regEndMin) },
+          segments: seg.segments.map(x => ({ start: minToHHMM(x.startMin), end: minToHHMM(x.endMin), kind: x.kind })),
+          productMinutes: seg.productMinutes,
+          flexMinutes: seg.flexMinutes,
+        };
+      });
+
+      return { date: day, store_id, segmentsByCrew };
+    }
+  );
+
   // Step 2A: upsert per-crew role requirements
   app.post<{ Body: RequirementsBody }>('/wizard/requirements', async (req, reply) => {
     const { date, store_id, requirements } = req.body;
@@ -127,7 +160,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
         id: crypto.randomUUID(),
         date: day, storeId: store_id, roleId: role_id,
         windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1,
-        createdBy: 'mate-demo',
+        createdBy: 'mate-demo', // TODO: from auth
       }
     });
 
