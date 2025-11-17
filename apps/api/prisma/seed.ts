@@ -42,7 +42,6 @@ async function main() {
     create: {
       id: '1280713',
       name: 'Abigail Perez',
-      blockSize: 60,
       storeId: store.id,
       roles: {
         create: [
@@ -59,7 +58,6 @@ async function main() {
     create: {
       id: '1269090',
       name: 'Oliver Ostojic',
-      blockSize: 60,
       storeId: store.id,
       roles: {
         create: [
