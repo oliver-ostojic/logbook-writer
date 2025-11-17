@@ -1,0 +1,72 @@
+name: API Tests
+
+on:
+  push:
+    branches:
+      - main
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: logbook
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres" \
+          --health-interval=10s \
+          --health-timeout=5s \
+          --health-retries=5
+
+    env:
+      # Database for apps/api
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/logbook?schema=public
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies (workspace)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: pnpm db:generate
+
+      - name: Push schema to database
+        working-directory: apps/api
+        run: pnpm db:push
+
+      - name: Seed database
+        working-directory: apps/api
+        run: pnpm db:seed
+
+      - name: Run API tests
+        working-directory: apps/api
+        run: pnpm test
+
+    concurrency:
+      group: api-tests-${{ github.ref }}
+      cancel-in-progress: true
