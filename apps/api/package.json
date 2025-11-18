@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
+    "pretest": "pnpm -w --filter @logbook-writer/shared-types build && pnpm -w --filter @logbook-writer/domain build && prisma generate",
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
