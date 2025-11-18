@@ -1,6 +1,6 @@
 import create from 'zustand';
 
-export type WizardShift = { crewId: string; start: string; end: string };
+export type WizardShift = { crewId: string; crewName?: string; start: string; end: string };
 
 type WizardState = {
   date: string;
@@ -9,6 +9,8 @@ type WizardState = {
   setDate: (date: string) => void;
   setStoreId: (id?: number) => void;
   setShiftCount: (count: number) => void;
+  addShift: (crewId: string, crewName?: string) => void;
+  removeShift: (idx: number) => void;
   updateShift: (idx: number, patch: Partial<WizardShift>) => void;
   reset: () => void;
 };
@@ -34,6 +36,10 @@ export const useWizardStore = create<WizardState>((set) => ({
       }
       return { shifts: next };
     }),
+  addShift: (crewId, crewName) =>
+    set((s) => ({ shifts: [...s.shifts, { crewId, crewName, start: '09:00', end: '17:00' }] })),
+  removeShift: (idx) =>
+    set((s) => ({ shifts: s.shifts.filter((_, i) => i !== idx) })),
   updateShift: (idx, patch) =>
     set((s) => ({ shifts: s.shifts.map((sh, i) => (i === idx ? { ...sh, ...patch } : sh)) })),
   reset: () => set({ date: today(), storeId: undefined, shifts: [] }),

@@ -187,7 +187,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const we = parseMaybeHM(day, windowEnd);
     if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });
 
-    await prisma.dailyRoleCoverage.upsert({
+    await prisma.roleCoverageWindow.upsert({
       where: { date_storeId_roleId: { date: day, storeId: store_id, roleId: role_id } },
       update: { windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1 },
       create: {

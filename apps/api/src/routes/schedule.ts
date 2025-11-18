@@ -30,7 +30,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const requirements = await prisma.dailyRoleRequirement.findMany({ 
       where: { date: day, storeId: store_id }
     });
-    const coverages = await prisma.dailyRoleCoverage.findMany({ 
+    const coverages = await prisma.roleCoverageWindow.findMany({ 
       where: { date: day, storeId: store_id }
     });
 

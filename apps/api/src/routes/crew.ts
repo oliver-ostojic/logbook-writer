@@ -55,7 +55,16 @@ type PreferenceUpdateBody = {
 };
 
 export function registerCrewRoutes(app: FastifyInstance) {
-  // Create a new crew member
+  // GET /stores - list all stores
+  app.get('/stores', async () => {
+    const stores = await prisma.store.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true, name: true },
+    });
+    return stores;
+  });
+
+  // GET /crew - list or search crew
   app.post<{ Body: CreateCrewBody }>('/crew', async (req, reply) => {
     const { id, name, storeId = 768, roleIds = [], taskPreference, firstHourPreference, canBreak, canParkingHelms,
       prefFirstHourWeight, prefTaskWeight, prefBlocksizeProdWeight, prefBlocksizeRegWeight,
@@ -92,9 +101,9 @@ export function registerCrewRoutes(app: FastifyInstance) {
     return crew;
   });
 
-  // Read all crew members or a specific one by id
-  app.get<{ Querystring: { id?: string } }>('/crew', async (req, reply) => {
-    const { id } = req.query as any;
+  // Read all crew members, by id, or by name search
+  app.get<{ Querystring: { id?: string; search?: string; storeId?: string } }>('/crew', async (req, reply) => {
+    const { id, search, storeId } = req.query as any;
     
     if (id) {
       const crew = await prisma.crewMember.findUnique({
@@ -104,8 +113,18 @@ export function registerCrewRoutes(app: FastifyInstance) {
       if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
       return crew;
     }
-    
+
+    // Build filter conditions: optional name search + optional storeId
+    const where: any = {};
+    if (search) {
+      where.name = { contains: String(search), mode: 'insensitive' };
+    }
+    if (storeId) {
+      where.storeId = parseInt(String(storeId), 10);
+    }
+
     const allCrew = await prisma.crewMember.findMany({
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: { roles: { include: { role: true } } },
     });
     return allCrew;

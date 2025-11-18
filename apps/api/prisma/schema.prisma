@@ -180,7 +180,7 @@ model Run {
   @@index([storeId, date])
 }
 // For DEMO coverage (Ability to select a time window for a role to be satisfied each hour)
-model DailyRoleCoverage {
+model RoleCoverageWindow {
   id              String   @id @db.Uuid
   date            DateTime @db.Date
   storeId         Int
@@ -193,6 +193,7 @@ model DailyRoleCoverage {
 
   @@unique([date, storeId, roleId])
   @@index([storeId, date])
+  @@map("DailyRoleCoverage")
 }
 
 model DailyRoleRequirement {

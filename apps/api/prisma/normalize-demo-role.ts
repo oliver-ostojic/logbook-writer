@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 const prisma = new PrismaClient();
@@ -28,7 +28,7 @@ async function normalizeDemoRole() {
 
   for (const dup of dupes) {
     console.log(`Merging role ${dup.id} (${dup.name}) into target ${target.id} (DEMO)`);
-    await prisma.$transaction(async (tx: PrismaClient) => {
+  await prisma.$transaction(async (tx: any) => {
       // Reassign CrewMemberRole references carefully to avoid composite PK collisions
       const cRoles = await tx.crewMemberRole.findMany({ where: { roleId: dup.id } });
       for (const cr of cRoles) {
@@ -62,10 +62,10 @@ async function normalizeDemoRole() {
         }
       }
 
-      // Merge DailyRoleCoverage rows to target, handle unique conflicts via upsert
-      const covs = await tx.dailyRoleCoverage.findMany({ where: { roleId: dup.id } });
+      // Merge coverage window rows to target, handle unique conflicts via upsert
+  const covs = await tx.roleCoverageWindow.findMany({ where: { roleId: dup.id } });
       for (const c of covs) {
-        await tx.dailyRoleCoverage.upsert({
+        await tx.roleCoverageWindow.upsert({
           where: { date_storeId_roleId: { date: c.date, storeId: c.storeId, roleId: target.id } },
           update: {}, // keep existing target coverage if any
           create: {
@@ -80,7 +80,7 @@ async function normalizeDemoRole() {
           },
         });
         // Try to delete the duplicate coverage row (ignore if already removed by cascading)
-        await tx.dailyRoleCoverage.delete({ where: { id: c.id } }).catch(() => {});
+        await tx.roleCoverageWindow.delete({ where: { id: c.id } }).catch(() => {});
       }
 
       // Finally, delete the duplicate Role row
