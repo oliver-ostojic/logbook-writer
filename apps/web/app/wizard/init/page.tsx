@@ -39,7 +39,7 @@ export default function WizardInitPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, []);
+  }, [API_URL]);
 
   // Load all crew for selected store to compute availability
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function WizardInitPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, [localStoreId]);
+  }, [API_URL, localStoreId]);
 
   const canProceed = useMemo(() => {
     if (!date) return false;

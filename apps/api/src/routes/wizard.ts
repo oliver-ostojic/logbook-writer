@@ -4,6 +4,14 @@ import { startOfDay, parseMaybeHM, hourOf, clamp } from '../utils';
 import { segmentShiftByRegisterWindow, hhmmToMin, minToHHMM } from '../services/segmentation';
 import { suggestDemoWindow, contiguousSegments, loadRulesByHour, type Shift } from '../services/demo-window';
 import { normalize as domainNormalize } from '@logbook-writer/domain';
+import {
+  generateScheduleOptions,
+  formatScheduleOption,
+  findAllLongestWindows,
+  buildAvailability,
+  type Shift as OptionShift,
+  type Eligibility
+} from '../services/schedule-options';
 
 const prisma = new PrismaClient();
 
@@ -200,4 +208,91 @@ export function registerWizardRoutes(app: FastifyInstance) {
 
     return { ok: true, normalizedDate: normDate };
   });
+
+  // Step 2C: Generate coverage window options
+  // Returns top 3 combinations of DEMO + WINE_DEMO windows sorted by crew orderings
+  app.post<{ Body: { date: string; store_id: number; shifts: Shift[]; selectedRoles: string[] } }>(
+    '/wizard/compute-coverage-combinations',
+    async (req, reply) => {
+      const { date, store_id, shifts, selectedRoles } = req.body;
+      const n = domainNormalize({ dates: date });
+      if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+      const normDate = n.data!.dates[0];
+
+      // Load DEMO and WINE_DEMO role IDs
+      const roles = await prisma.role.findMany({
+        where: { name: { in: ['DEMO', 'WINE_DEMO'] } },
+      });
+      
+      const demoRole = roles.find((r: any) => r.name === 'DEMO');
+      const wineDemoRole = roles.find((r: any) => r.name === 'WINE_DEMO');
+
+      if (!demoRole || !wineDemoRole) {
+        return reply.code(400).send({ error: 'DEMO or WINE_DEMO role not found' });
+      }
+
+      // Load crew eligibilities
+      const crewIds = Array.from(new Set(shifts.map(s => s.crewId)));
+      const crewWithRoles = await prisma.crewMember.findMany({
+        where: { id: { in: crewIds } },
+        include: { roles: { include: { role: true } } },
+      });
+
+      const eligibilities: Eligibility[] = crewWithRoles.flatMap((c: any) =>
+        c.roles.map((r: any) => ({
+          crewId: c.id,
+          roleId: r.role.id,
+          roleName: r.role.name,
+        }))
+      );
+
+      if (selectedRoles.length === 2) {
+        // Both roles selected - generate 3 combined options
+        const options = generateScheduleOptions(
+          demoRole.id,
+          wineDemoRole.id,
+          eligibilities,
+          shifts as OptionShift[]
+        );
+
+        console.log('\n=== COMBINED SCHEDULE OPTIONS ===');
+        options.forEach(opt => {
+          console.log('\n' + formatScheduleOption(opt));
+        });
+        console.log('\n=================================\n');
+
+        return {
+          ok: true,
+          normalizedDate: normDate,
+          options,
+          message: `Generated ${options.length} combined schedule option(s).`,
+        };
+      } else {
+        // Single role - return all longest windows
+        const roleName = selectedRoles[0];
+        const role = roleName === 'DEMO' ? demoRole : wineDemoRole;
+        
+        if (!role) {
+          return reply.code(400).send({ error: `Role ${roleName} not found` });
+        }
+
+        // Use the schedule options helper to find longest windows
+        const avail = buildAvailability(role.id, eligibilities, shifts as OptionShift[]);
+        const windows = findAllLongestWindows(avail, role.id, eligibilities, shifts as OptionShift[]);
+
+        console.log(`\n=== ${roleName} LONGEST WINDOWS ===`);
+        windows.forEach((w: any) => {
+          console.log(`${w.startHour}:00 - ${w.endHour}:00 (${w.length} hours)`);
+        });
+        console.log('\n===================================\n');
+
+        return {
+          ok: true,
+          normalizedDate: normDate,
+          windows,
+          message: `Found ${windows.length} longest window(s) for ${roleName}.`,
+        };
+      }
+    }
+  );
 }
