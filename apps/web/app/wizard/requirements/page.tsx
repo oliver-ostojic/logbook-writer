@@ -30,7 +30,7 @@ type RequirementRow = {
 
 export default function WizardRequirementsPage() {
   const router = useRouter();
-  const { date, storeId, setStoreId, shifts } = useWizardStore();
+  const { date, storeId, shifts } = useWizardStore();
 
   const [initData, setInitData] = useState<InitResp | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -38,11 +38,7 @@ export default function WizardRequirementsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reqs, setReqs] = useState<RequirementRow[]>([]);
-  const [localStoreId, setLocalStoreId] = useState<number>(storeId ?? 1);
-
-  useEffect(() => {
-    setStoreId(localStoreId);
-  }, [localStoreId, setStoreId]);
+  // Store is locked after init; use read-only storeId from wizard store
 
   // Load stores list
   useEffect(() => {
@@ -60,14 +56,14 @@ export default function WizardRequirementsPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, [API_URL]);
+  }, []);
 
   // Load init data and roles
   useEffect(() => {
     let cancelled = false;
     async function run() {
       if (!API_URL) return;
-      if (!date || !shifts?.length || !localStoreId) return;
+      if (!date || !shifts?.length || !storeId) return;
       setLoading(true);
       setError(null);
       try {
@@ -75,7 +71,7 @@ export default function WizardRequirementsPage() {
           fetch(`${API_URL}/wizard/init`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ date, store_id: localStoreId, shifts }),
+            body: JSON.stringify({ date, store_id: storeId, shifts }),
           }),
           fetch(`${API_URL}/roles`),
         ]);
@@ -95,13 +91,7 @@ export default function WizardRequirementsPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, [API_URL, date, shifts, localStoreId]);
-
-  const crewIds = useMemo(() => {
-    const ids = new Set<string>();
-    initData?.normalizedShifts.forEach(s => ids.add(s.crewId));
-    return Array.from(ids);
-  }, [initData]);
+  }, [date, shifts, storeId]);
 
   const eligByCrew = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -194,13 +184,13 @@ export default function WizardRequirementsPage() {
   }
 
   async function handleNext() {
-    if (!API_URL || !date || !localStoreId || !reqs.length) return;
+    if (!API_URL || !date || !storeId || !reqs.length) return;
     try {
       setLoading(true);
       setError(null);
       const body = {
         date,
-        store_id: localStoreId,
+        store_id: storeId,
         requirements: reqs,
       };
       const res = await fetch(`${API_URL}/wizard/requirements`, {
