@@ -194,6 +194,16 @@ export function registerCrewRoutes(app: FastifyInstance) {
 
     try {
       const normalizedRoleIds = normalizeRoleIds(roleIds);
+      
+      // Fetch role details if we have roleIds, so we can populate crewName and roleName
+      let roleData: Array<{ id: number; displayName: string }> = [];
+      if (normalizedRoleIds && normalizedRoleIds.length > 0) {
+        roleData = await prisma.role.findMany({
+          where: { id: { in: normalizedRoleIds } },
+          select: { id: true, displayName: true }
+        });
+      }
+      
       const crew = await prisma.crew.create({
         data: {
           id,
@@ -210,8 +220,12 @@ export function registerCrewRoutes(app: FastifyInstance) {
           ...(consecutiveRegWeight !== undefined && { consecutiveRegWeight }),
           ...(prefBreakTiming !== undefined && { prefBreakTiming }),
           ...(prefBreakTimingWeight !== undefined && { prefBreakTimingWeight }),
-          CrewRole: normalizedRoleIds && normalizedRoleIds.length > 0 ? {
-            create: normalizedRoleIds.map(roleId => ({ roleId })),
+          CrewRole: roleData.length > 0 ? {
+            create: roleData.map(role => ({ 
+              roleId: role.id,
+              roleName: role.displayName,
+              crewName: name
+            })),
           } : undefined,
         },
         include: crewInclude,
@@ -304,10 +318,24 @@ export function registerCrewRoutes(app: FastifyInstance) {
     if (!existing) return reply.code(404).send({ error: 'Crew member not found' });
 
     const normalizedRoleIds = normalizeRoleIds(roleIds);
-    const roleUpdate = normalizedRoleIds !== undefined ? {
-      deleteMany: {},
-      create: normalizedRoleIds.map(roleId => ({ roleId })),
-    } : undefined;
+    
+    // Fetch role details if we're replacing roles
+    let roleUpdate: any = undefined;
+    if (normalizedRoleIds !== undefined) {
+      const roleData = await prisma.role.findMany({
+        where: { id: { in: normalizedRoleIds } },
+        select: { id: true, displayName: true }
+      });
+      
+      roleUpdate = {
+        deleteMany: {},
+        create: roleData.map(role => ({ 
+          roleId: role.id,
+          roleName: role.displayName,
+          crewName: name || existing.name  // Use new name if provided, else keep existing
+        })),
+      };
+    }
 
     const updated = await prisma.crew.update({
       where: { id: crewId },
@@ -352,7 +380,14 @@ export function registerCrewRoutes(app: FastifyInstance) {
     }
 
     try {
-    await prisma.crewRole.create({ data: { crewId, roleId: role.id } });
+    await prisma.crewRole.create({ 
+      data: { 
+        crewId, 
+        roleId: role.id,
+        crewName: crew.name,
+        roleName: role.displayName
+      } 
+    });
     } catch (e: any) {
       if (e?.code === 'P2002') {
         return reply.code(409).send({ error: 'Crew member already has this role' });

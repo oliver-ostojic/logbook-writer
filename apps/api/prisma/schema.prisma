@@ -136,10 +136,12 @@ model Crew {
 model CrewRole {
   crewId             String     @db.Char(7)
   roleId             Int
-  assignedAt         DateTime @default(now())
+  roleName           String
+  crewName           String
+  assignedAt         DateTime   @default(now())
   specializationType String?
-  Crew               Crew     @relation(fields: [crewId], references: [id])
-  Role               Role     @relation(fields: [roleId], references: [id])
+  Crew               Crew       @relation(fields: [crewId], references: [id])
+  Role               Role       @relation(fields: [roleId], references: [id])
 
   @@id([crewId, roleId])
 }
