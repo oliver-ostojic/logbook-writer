@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "metadata": {
+    "status": "OPTIMAL",
+    "objectiveScore": 0,
+    "runtimeMs": 13,
+    "mipGap": 0.0,
+    "numCrew": 5,
+    "numHours": 24,
+    "numAssignments": 0,
+    "violations": []
+  },
+  "assignments": []
+}

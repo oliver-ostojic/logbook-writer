@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:normalize-demo-role": "tsx prisma/normalize-demo-role.ts"
+    "db:normalize-demo-role": "tsx prisma/normalize-demo-role.ts",
+    "assign:shifts": "tsx scripts/assign_shifts_and_prefs.ts",
+    "assign:shifts:store": "tsx scripts/assign_shifts_and_prefs.ts --store=768",
+    "assign:shifts:config": "tsx scripts/assign_shifts_and_prefs.ts scripts/shifts_prefs.sample.json",
+    "assign:shifts:store:config": "tsx scripts/assign_shifts_and_prefs.ts scripts/shifts_prefs.sample.json --store=768"
   },
   "dependencies": {
     "@fastify/cors": "^8.4.0",
@@ -33,8 +37,5 @@
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

@@ -1,0 +1,43 @@
+{
+  "date": "2025-11-19",
+  "store": {
+    "storeId": 768,
+    "minRegisterHours": 5,
+    "maxRegisterHours": 20,
+    "regHoursStartMin": 480,
+    "regHoursEndMin": 1020
+  },
+  "crew": [
+    {
+      "id": "CREW001",
+      "name": "Alice",
+      "shiftStartMin": 480,
+      "shiftEndMin": 960,
+      "eligibleRoles": ["REGISTER", "PRODUCT", "ART", "MEAL_BREAK"],
+      "canBreak": false,
+      "canParkingHelms": false
+    }
+  ],
+  "hourlyRequirements": [
+    {"hour": 8, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 9, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 10, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 11, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 12, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 13, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 14, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0},
+    {"hour": 15, "requiredRegister": 0, "requiredProduct": 0, "requiredParkingHelm": 0}
+  ],
+  "crewRoleRequirements": [
+    {"crewId": "CREW001", "role": "ART", "requiredHours": 3},
+    {"crewId": "CREW001", "role": "PRODUCT", "requiredHours": 3}
+  ],
+  "coverageWindows": [],
+  "roleMetadata": [
+    {"role": "REGISTER", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": false},
+    {"role": "PRODUCT", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": false},
+    {"role": "ART", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": true},
+    {"role": "MEAL_BREAK", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": true}
+  ],
+  "timeLimitSeconds": 10
+}

@@ -44,7 +44,9 @@ type CombinationsResponse = {
 };
 
 function hh(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:00 ${period}`;
 }
 
 export default function WizardCoveragePage() {
@@ -56,6 +58,7 @@ export default function WizardCoveragePage() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [combinations, setCombinations] = useState<CombinationsResponse | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [selectedWindowIndex, setSelectedWindowIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [computing, setComputing] = useState(false);
@@ -136,6 +139,7 @@ export default function WizardCoveragePage() {
     // Clear results when selection changes
     setCombinations(null);
     setSelectedOption(null);
+    setSelectedWindowIndex(null);
     setError(null);
   };
 
@@ -302,19 +306,52 @@ export default function WizardCoveragePage() {
                   <h3 style={{ fontSize: 16, marginBottom: 12, color: "#333" }}>{selectedRoles[0]}</h3>
                   <div style={{ display: "grid", gap: 8 }}>
                     {combinations.windows.map((window, idx) => (
-                      <div 
+                      <div
                         key={idx}
-                        style={{ 
-                          padding: 12, 
-                          background: "#f0f8ff", 
-                          border: "1px solid #b3d9ff", 
-                          borderRadius: 6 
+                        onClick={() => setSelectedWindowIndex(idx)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedWindowIndex(idx);
+                          }
+                        }}
+                        style={{
+                          padding: 12,
+                          background: selectedWindowIndex === idx ? "#e6f2ff" : "#f0f8ff",
+                          border: selectedWindowIndex === idx ? "2px solid #0070f3" : "1px solid #b3d9ff",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                         }}
                       >
-                        {hh(window.startHour)} - {hh(window.endHour)} ({window.length} hours)
+                        <span>
+                          {hh(window.startHour)} - {hh(window.endHour)} ({window.length} hours)
+                        </span>
+                        {selectedWindowIndex === idx && (
+                          <span style={{
+                            padding: "2px 8px",
+                            background: "#0070f3",
+                            color: "white",
+                            borderRadius: 10,
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}>
+                            Selected
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
+                  {selectedWindowIndex !== null && (
+                    <div style={{ marginTop: 12, padding: 10, background: "#eefbea", border: "1px solid #b4e2b5", borderRadius: 6 }}>
+                      <strong>✓ Selected:</strong> {hh(combinations.windows[selectedWindowIndex].startHour)} - {hh(combinations.windows[selectedWindowIndex].endHour)}
+                    </div>
+                  )}
                 </div>
               )}
             </section>

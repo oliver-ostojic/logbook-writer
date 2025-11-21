@@ -9,35 +9,35 @@ const STORE_ID = 768;
 const DATE_ISO = '2025-11-15';
 
 let app: Awaited<ReturnType<typeof buildServer>>;
-let demoRoleId: string;
-let orderWriterRoleId: string;
+let demoRoleId: number;
+let orderWriterRoleId: number;
 
 async function seedCoverageTest() {
   // Store
   await prisma.store.upsert({
     where: { id: STORE_ID },
     update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 8 },
+    create: { id: STORE_ID, name: 'Dr. Phillips' },
   });
 
   // Roles
   const demoRole = await prisma.role.upsert({
-    where: { name: 'DEMO' },
+    where: { code: 'DEMO' },
     update: {},
-    create: { name: 'DEMO' },
+    create: { code: 'DEMO', displayName: 'Demo' },
   });
   demoRoleId = demoRole.id;
 
   const orderWriterRole = await prisma.role.upsert({
-    where: { name: 'ORDER_WRITER' },
+    where: { code: 'ORDER_WRITER' },
     update: {},
-    create: { name: 'ORDER_WRITER' },
+    create: { code: 'ORDER_WRITER', displayName: 'Order Writer' },
   });
   orderWriterRoleId = orderWriterRole.id;
 
   // Clean any existing coverage rows for the day
   const day = startOfDay(DATE_ISO);
-  await prisma.roleCoverageWindow.deleteMany({ where: { date: day, storeId: STORE_ID } });
+  await prisma.coverageWindow.deleteMany({ where: { date: day, storeId: STORE_ID } });
 }
 
 describe('Wizard Coverage - POST /wizard/coverage', () => {
@@ -67,18 +67,15 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
   expect(res.json()).toEqual(expect.objectContaining({ ok: true }));
 
     const day = startOfDay(DATE_ISO);
-    const row = await prisma.roleCoverageWindow.findUnique({
-      where: { date_storeId_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
+    const row = await prisma.coverageWindow.findUnique({
+      where: { storeId_date_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
     });
     expect(row).toBeTruthy();
     expect(row?.requiredPerHour).toBe(2);
-    expect(row?.createdBy).toBe('mate-demo');
   // Window sanity: both on the same date as row.date and proper order, duration 8h
-  expect(row!.windowStart < row!.windowEnd).toBe(true);
-  const dateStr = row!.date.toISOString().slice(0,10);
-  expect(row!.windowStart.toISOString().slice(0,10)).toBe(dateStr);
-  expect(row!.windowEnd.toISOString().slice(0,10)).toBe(dateStr);
-  expect(row!.windowEnd.getTime() - row!.windowStart.getTime()).toBe(8 * 60 * 60 * 1000);
+  expect(row!.startHour).toBe(9);
+  expect(row!.endHour).toBe(17);
+  expect(row!.date.toISOString().slice(0,10)).toBe(DATE_ISO);
   });
 
   it('upserts existing coverage for same (date, storeId, roleId)', async () => {
@@ -110,13 +107,13 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
     expect(res2.statusCode).toBe(200);
 
     const day = startOfDay(DATE_ISO);
-    const row = await prisma.roleCoverageWindow.findUnique({
-      where: { date_storeId_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
+    const row = await prisma.coverageWindow.findUnique({
+      where: { storeId_date_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
     });
     expect(row).toBeTruthy();
     expect(row!.requiredPerHour).toBe(3);
   // New window should reflect last post (duration 7h)
-  expect(row!.windowEnd.getTime() - row!.windowStart.getTime()).toBe(7 * 60 * 60 * 1000);
+  expect(row!.endHour - row!.startHour).toBe(7);
   });
 
   it('defaults requiredPerHour to 1 when omitted', async () => {
@@ -133,8 +130,8 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
     expect(res.statusCode).toBe(200);
 
     const day = startOfDay(DATE_ISO);
-    const row = await prisma.roleCoverageWindow.findUnique({
-      where: { date_storeId_roleId: { date: day, storeId: STORE_ID, roleId: orderWriterRoleId } },
+    const row = await prisma.coverageWindow.findUnique({
+      where: { storeId_date_roleId: { date: day, storeId: STORE_ID, roleId: orderWriterRoleId } },
     });
     expect(row).toBeTruthy();
     expect(row!.requiredPerHour).toBe(1);
@@ -160,18 +157,18 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
     expect(res.statusCode).toBe(200);
 
     const day = startOfDay(DATE_ISO);
-    const row = await prisma.roleCoverageWindow.findUnique({
-      where: { date_storeId_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
+    const row = await prisma.coverageWindow.findUnique({
+      where: { storeId_date_roleId: { date: day, storeId: STORE_ID, roleId: demoRoleId } },
     });
     expect(row).toBeTruthy();
-    expect(row!.windowStart.toISOString()).toBe(ws);
-    expect(row!.windowEnd.toISOString()).toBe(we);
+    expect(row!.startHour).toBe(9);
+    expect(row!.endHour).toBe(15);
   });
 
   it('creates independent rows for different roles on same date/store', async () => {
     const day = startOfDay(DATE_ISO);
 
-  await prisma.roleCoverageWindow.deleteMany({ where: { date: day, storeId: STORE_ID } });
+  await prisma.coverageWindow.deleteMany({ where: { date: day, storeId: STORE_ID } });
 
     const p1 = app.inject({ method: 'POST', url: '/wizard/coverage', payload: { date: DATE_ISO, store_id: STORE_ID, role_id: demoRoleId, windowStart: '09:00', windowEnd: '12:00' } });
     const p2 = app.inject({ method: 'POST', url: '/wizard/coverage', payload: { date: DATE_ISO, store_id: STORE_ID, role_id: orderWriterRoleId, windowStart: '13:00', windowEnd: '16:00' } });
@@ -179,7 +176,7 @@ describe('Wizard Coverage - POST /wizard/coverage', () => {
     expect(r1.statusCode).toBe(200);
     expect(r2.statusCode).toBe(200);
 
-  const rows = await prisma.roleCoverageWindow.findMany({ where: { date: day, storeId: STORE_ID } });
+  const rows = await prisma.coverageWindow.findMany({ where: { date: day, storeId: STORE_ID } });
     expect(rows.length).toBe(2);
     const byRole = new Map(rows.map(r => [r.roleId, r]));
     expect(byRole.get(demoRoleId)).toBeTruthy();

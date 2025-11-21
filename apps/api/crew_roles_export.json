@@ -1,0 +1,514 @@
+[
+  {
+    "id": "1281401",
+    "name": "Melissa Ochoa",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1280713",
+    "name": "Abigail Perez",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1281457",
+    "name": "Aaron Haverstock",
+    "roles": []
+  },
+  {
+    "id": "1284593",
+    "name": "Adam Carey",
+    "roles": []
+  },
+  {
+    "id": "1287295",
+    "name": "Adam Levi",
+    "roles": []
+  },
+  {
+    "id": "1285485",
+    "name": "Adrian Pena",
+    "roles": []
+  },
+  {
+    "id": "1280794",
+    "name": "Alexa Adams",
+    "roles": [
+      {
+        "role": "ART",
+        "info": "Decor",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1269090",
+    "name": "Oliver Ostojic",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1286136",
+    "name": "Ben Stogis",
+    "roles": []
+  },
+  {
+    "id": "1280093",
+    "name": "Carissa Butz",
+    "roles": []
+  },
+  {
+    "id": "1288495",
+    "name": "Q Mowatt",
+    "roles": []
+  },
+  {
+    "id": "1284472",
+    "name": "Rachel Haverstock",
+    "roles": []
+  },
+  {
+    "id": "1286568",
+    "name": "Reece Lohrey",
+    "roles": []
+  },
+  {
+    "id": "1287808",
+    "name": "Ruth Charles",
+    "roles": []
+  },
+  {
+    "id": "1284255",
+    "name": "Randy Guardado",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1281876",
+    "name": "Sammantha Buckley",
+    "roles": []
+  },
+  {
+    "id": "1283755",
+    "name": "Sammi Martinez",
+    "roles": []
+  },
+  {
+    "id": "1281474",
+    "name": "Savannah Fraijo",
+    "roles": []
+  },
+  {
+    "id": "1281497",
+    "name": "Sharon Garcia",
+    "roles": []
+  },
+  {
+    "id": "1287136",
+    "name": "Stephanie Mitchell",
+    "roles": []
+  },
+  {
+    "id": "1283030",
+    "name": "Talye DeMaio",
+    "roles": []
+  },
+  {
+    "id": "1280680",
+    "name": "Mati Mayea Ortiz",
+    "roles": []
+  },
+  {
+    "id": "1285537",
+    "name": "Taylor Yackulics",
+    "roles": []
+  },
+  {
+    "id": "1281967",
+    "name": "Tori Borrowdale",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1284247",
+    "name": "Vaughn Diana",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": "Frozen",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1285324",
+    "name": "Wade Davis",
+    "roles": []
+  },
+  {
+    "id": "1282597",
+    "name": "Yeffer Arestigueta",
+    "roles": []
+  },
+  {
+    "id": "1282186",
+    "name": "Shushan Royer",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1284237",
+    "name": "Ashley Andrejko",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "ORDER_WRITER",
+        "info": "Coffee/Tea",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1289923",
+    "name": "Andrea Canizares",
+    "roles": [
+      {
+        "role": "ART_TEAM",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "ART",
+        "info": "Decor",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1286822",
+    "name": "Alice De Simoni",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1283615",
+    "name": "Leo Kelly",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1284686",
+    "name": "Kelly Mayo",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": "HABA",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1287114",
+    "name": "Chase Watts",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1289829",
+    "name": "Leonardo Saenz-Marmol",
+    "roles": []
+  },
+  {
+    "id": "1287886",
+    "name": "Carolyn Shephard",
+    "roles": []
+  },
+  {
+    "id": "1287714",
+    "name": "Carter Greenwood",
+    "roles": []
+  },
+  {
+    "id": "1280801",
+    "name": "Cheri Reimann",
+    "roles": []
+  },
+  {
+    "id": "1286061",
+    "name": "Cianna Sala",
+    "roles": []
+  },
+  {
+    "id": "1286067",
+    "name": "Daniel Leon",
+    "roles": []
+  },
+  {
+    "id": "1281029",
+    "name": "Di Cannon",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1288667",
+    "name": "Elder De Leon",
+    "roles": []
+  },
+  {
+    "id": "1280941",
+    "name": "Emma Boles",
+    "roles": []
+  },
+  {
+    "id": "1288448",
+    "name": "Fiona Coffey",
+    "roles": []
+  },
+  {
+    "id": "1285978",
+    "name": "Gabby Tejada",
+    "roles": [
+      {
+        "role": "ART",
+        "info": "Signs",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1281666",
+    "name": "Gary Tejada",
+    "roles": []
+  },
+  {
+    "id": "1280716",
+    "name": "Hannah Reshel",
+    "roles": []
+  },
+  {
+    "id": "1289147",
+    "name": "Jill Sachs",
+    "roles": []
+  },
+  {
+    "id": "1282399",
+    "name": "Juan Caceres",
+    "roles": []
+  },
+  {
+    "id": "1286407",
+    "name": "Kacey Nakasen",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1283108",
+    "name": "Kayla Girouard",
+    "roles": []
+  },
+  {
+    "id": "1282934",
+    "name": "Kenny Brooke",
+    "roles": []
+  },
+  {
+    "id": "1286052",
+    "name": "Khadijah Robbins",
+    "roles": []
+  },
+  {
+    "id": "1285256",
+    "name": "Kristalie Medina",
+    "roles": []
+  },
+  {
+    "id": "1282008",
+    "name": "Denise Madrid",
+    "roles": [
+      {
+        "role": "DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "ORDER_WRITER",
+        "info": "Grocery",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1286180",
+    "name": "Lindsey Wellington",
+    "roles": []
+  },
+  {
+    "id": "1286015",
+    "name": "Marcela Soto",
+    "roles": []
+  },
+  {
+    "id": "1286758",
+    "name": "Marcos Reinoso",
+    "roles": []
+  },
+  {
+    "id": "1282382",
+    "name": "Maricel Cabal",
+    "roles": []
+  },
+  {
+    "id": "1287952",
+    "name": "Matt Connor",
+    "roles": []
+  },
+  {
+    "id": "1289842",
+    "name": "Matthew Studebaker",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": "Beverage",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1287392",
+    "name": "Morgan Bussius",
+    "roles": [
+      {
+        "role": "WINE_DEMO",
+        "info": null,
+        "detail": null
+      },
+      {
+        "role": "ORDER_WRITER",
+        "info": "DFN",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1289679",
+    "name": "Nikki Lera",
+    "roles": [
+      {
+        "role": "ART",
+        "info": "Decor",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1286675",
+    "name": "Nine Payne",
+    "roles": []
+  },
+  {
+    "id": "1284938",
+    "name": "Ofelia Aguirre",
+    "roles": [
+      {
+        "role": "ORDER_WRITER",
+        "info": "HABA",
+        "detail": null
+      }
+    ]
+  },
+  {
+    "id": "1281050",
+    "name": "Patricia Edgar",
+    "roles": []
+  }
+]

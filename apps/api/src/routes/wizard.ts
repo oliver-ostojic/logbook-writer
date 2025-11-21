@@ -82,12 +82,12 @@ export function registerWizardRoutes(app: FastifyInstance) {
 
     // Eligibilities: from implicit many-to-many (CrewMember.roles)
     const crewIds = Array.from(new Set(normalizedShifts.map(s => s.crewId)));
-    const crewWithRoles = await prisma.crewMember.findMany({
+    const crewWithRoles = await prisma.crew.findMany({
       where: { id: { in: crewIds } },
-      include: { roles: { include: { role: true } } },
+      include: { CrewRole: { include: { Role: true } } },
     });
     const eligibilities = crewWithRoles.flatMap((c: any) =>
-      c.roles.map((r: any) => ({ crewId: c.id, roleName: r.role.name }))
+      c.CrewRole.map((r: any) => ({ crewId: c.id, roleName: r.Role.code }))
     );
 
     // Rules by hour
@@ -156,25 +156,25 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const day = startOfDay(normDate);
     // Upsert by unique (date, storeId, crewId, roleId)
     const ops = requirements.map((r) =>
-      prisma.dailyRoleRequirement.upsert({
+      prisma.crewRoleRequirement.upsert({
         where: {
-          date_storeId_crewId_roleId: {
+          storeId_date_crewId_roleId: {
             date: day,
             storeId: store_id,
             crewId: r.crewId,
-            roleId: r.roleId,
+            roleId: Number(r.roleId),
           },
         },
         update: {
           requiredHours: r.requiredHours,
         },
         create: {
-          id: crypto.randomUUID(),
           date: day,
           storeId: store_id,
           crewId: r.crewId,
-          roleId: r.roleId,
+          roleId: Number(r.roleId),
           requiredHours: r.requiredHours,
+          updatedAt: new Date(),
         },
       })
     );
@@ -195,14 +195,13 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const we = parseMaybeHM(day, windowEnd);
     if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });
 
-    await prisma.roleCoverageWindow.upsert({
-      where: { date_storeId_roleId: { date: day, storeId: store_id, roleId: role_id } },
-      update: { windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1 },
+    await prisma.coverageWindow.upsert({
+      where: { storeId_date_roleId: { storeId: store_id, date: day, roleId: Number(role_id) } },
+      update: { startHour: ws.getUTCHours(), endHour: we.getUTCHours(), requiredPerHour: requiredPerHour ?? 1 },
       create: {
-        id: crypto.randomUUID(),
-        date: day, storeId: store_id, roleId: role_id,
-        windowStart: ws, windowEnd: we, requiredPerHour: requiredPerHour ?? 1,
-        createdBy: 'mate-demo', // TODO: from auth
+        date: day, storeId: store_id, roleId: Number(role_id),
+        startHour: ws.getUTCHours(), endHour: we.getUTCHours(), requiredPerHour: requiredPerHour ?? 1,
+        updatedAt: new Date(),
       }
     });
 
@@ -221,11 +220,11 @@ export function registerWizardRoutes(app: FastifyInstance) {
 
       // Load DEMO and WINE_DEMO role IDs
       const roles = await prisma.role.findMany({
-        where: { name: { in: ['DEMO', 'WINE_DEMO'] } },
+        where: { code: { in: ['DEMO', 'WINE_DEMO'] } },
       });
       
-      const demoRole = roles.find((r: any) => r.name === 'DEMO');
-      const wineDemoRole = roles.find((r: any) => r.name === 'WINE_DEMO');
+      const demoRole = roles.find((r: any) => r.code === 'DEMO');
+      const wineDemoRole = roles.find((r: any) => r.code === 'WINE_DEMO');
 
       if (!demoRole || !wineDemoRole) {
         return reply.code(400).send({ error: 'DEMO or WINE_DEMO role not found' });
@@ -233,24 +232,24 @@ export function registerWizardRoutes(app: FastifyInstance) {
 
       // Load crew eligibilities
       const crewIds = Array.from(new Set(shifts.map(s => s.crewId)));
-      const crewWithRoles = await prisma.crewMember.findMany({
+      const crewWithRoles = await prisma.crew.findMany({
         where: { id: { in: crewIds } },
-        include: { roles: { include: { role: true } } },
+        include: { CrewRole: { include: { Role: true } } },
       });
 
       const eligibilities: Eligibility[] = crewWithRoles.flatMap((c: any) =>
-        c.roles.map((r: any) => ({
+        c.CrewRole.map((r: any) => ({
           crewId: c.id,
-          roleId: r.role.id,
-          roleName: r.role.name,
+          roleId: r.roleId.toString(),
+          roleName: r.Role.code,
         }))
       );
 
       if (selectedRoles.length === 2) {
         // Both roles selected - generate 3 combined options
         const options = generateScheduleOptions(
-          demoRole.id,
-          wineDemoRole.id,
+          demoRole.id.toString(),
+          wineDemoRole.id.toString(),
           eligibilities,
           shifts as OptionShift[]
         );
@@ -277,8 +276,8 @@ export function registerWizardRoutes(app: FastifyInstance) {
         }
 
         // Use the schedule options helper to find longest windows
-        const avail = buildAvailability(role.id, eligibilities, shifts as OptionShift[]);
-        const windows = findAllLongestWindows(avail, role.id, eligibilities, shifts as OptionShift[]);
+        const avail = buildAvailability(role.id.toString(), eligibilities, shifts as OptionShift[]);
+        const windows = findAllLongestWindows(avail, role.id.toString(), eligibilities, shifts as OptionShift[]);
 
         console.log(`\n=== ${roleName} LONGEST WINDOWS ===`);
         windows.forEach((w: any) => {
@@ -293,6 +292,46 @@ export function registerWizardRoutes(app: FastifyInstance) {
           message: `Found ${windows.length} longest window(s) for ${roleName}.`,
         };
       }
+    }
+  );
+
+  // Step 3: Save store hour rules
+  app.post<{ Body: { date: string; store_id: number; rules: Array<{ hour: number; requiredRegisters: number; requiredParkingHelms: number }> } }>(
+    '/wizard/store-rules',
+    async (req, reply) => {
+      const { date, store_id, rules } = req.body;
+      const n = domainNormalize({ dates: date });
+      if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
+      const normDate = n.data!.dates[0];
+      const day = startOfDay(normDate);
+
+      // Upsert rules by unique (storeId, date, hour)
+      const ops = rules.map((r) =>
+        prisma.hourlyRequirement.upsert({
+          where: {
+            storeId_date_hour: {
+              storeId: store_id,
+              date: day,
+              hour: r.hour,
+            },
+          },
+          update: {
+            requiredRegister: r.requiredRegisters,
+            requiredParkingHelm: r.requiredParkingHelms,
+          },
+          create: {
+            storeId: store_id,
+            date: day,
+            hour: r.hour,
+            requiredRegister: r.requiredRegisters,
+            requiredParkingHelm: r.requiredParkingHelms,
+            updatedAt: new Date(),
+          },
+        })
+      );
+
+      await prisma.$transaction(ops);
+      return { ok: true, normalizedDate: normDate, upserted: ops.length };
     }
   );
 }

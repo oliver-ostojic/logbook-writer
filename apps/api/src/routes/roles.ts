@@ -1,10 +1,22 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, SlotSizeMode } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 type CreateRoleBody = {
-  name: string;
+  code?: string;
+  name?: string; // legacy alias for code
+  displayName?: string;
+  storeId?: number;
+  slotSizeMode?: SlotSizeMode;
+  isUniversal?: boolean;
+  isCoverageRole?: boolean;
+  isBreakRole?: boolean;
+  isParkingRole?: boolean;
+  isConsecutive?: boolean;
+  minContinuousSlots?: number;
+  maxContinuousSlots?: number;
+  family?: string;
 };
 
 type UpdateRoleBody = {
@@ -12,22 +24,71 @@ type UpdateRoleBody = {
 };
 
 export function registerRoleRoutes(app: FastifyInstance) {
+  const roleInclude = {
+    CrewRole: {
+      include: {
+        Crew: { select: { id: true, name: true } },
+      },
+    },
+  } satisfies Prisma.RoleInclude;
+
+  type RoleWithCrew = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;
+
+  const formatRole = (role: RoleWithCrew) => {
+    const { CrewRole, ...rest } = role;
+    return {
+      ...rest,
+      crewMembers: CrewRole.map((cr) => ({
+        crewId: cr.crewId,
+        crewMember: cr.Crew,
+        roleId: cr.roleId,
+        assignedAt: cr.assignedAt,
+      })),
+    };
+  };
+
   // Create a new role
   app.post<{ Body: CreateRoleBody }>('/roles', async (req, reply) => {
-    const { name } = req.body;
-    
-    if (!name) {
-      return reply.code(400).send({ error: 'name is required' });
+    const {
+      code,
+      name,
+      displayName,
+      storeId,
+      slotSizeMode,
+      isUniversal,
+      isCoverageRole,
+      isBreakRole,
+      isParkingRole,
+      isConsecutive,
+      minContinuousSlots,
+      maxContinuousSlots,
+      family,
+    } = req.body;
+
+    const resolvedCode = code ?? name;
+    if (!resolvedCode) {
+      return reply.code(400).send({ error: 'code is required' });
     }
     
     const role = await prisma.role.create({
       data: {
-        name,
+        code: resolvedCode,
+        displayName: displayName ?? resolvedCode,
+        ...(storeId !== undefined && { storeId }),
+        ...(slotSizeMode && { slotSizeMode }),
+        ...(isUniversal !== undefined && { isUniversal }),
+        ...(isCoverageRole !== undefined && { isCoverageRole }),
+        ...(isBreakRole !== undefined && { isBreakRole }),
+        ...(isParkingRole !== undefined && { isParkingRole }),
+        ...(isConsecutive !== undefined && { isConsecutive }),
+        ...(minContinuousSlots !== undefined && { minContinuousSlots }),
+        ...(maxContinuousSlots !== undefined && { maxContinuousSlots }),
+        ...(family !== undefined && { family }),
       },
-      include: { crewMembers: { include: { crewMember: true } } },
+      include: roleInclude,
     });
     
-    return role;
+    return formatRole(role);
   });
 
   // Read all roles or a specific one by id
@@ -35,29 +96,33 @@ export function registerRoleRoutes(app: FastifyInstance) {
     const { id } = req.query as any;
     
     if (id) {
+      const roleId = Number(id);
+      if (Number.isNaN(roleId)) {
+        return reply.code(400).send({ error: 'id must be a number' });
+      }
       const role = await prisma.role.findUnique({
-        where: { id },
-        include: { crewMembers: { include: { crewMember: true } } },
+        where: { id: roleId },
+        include: roleInclude,
       });
       if (!role) return reply.code(404).send({ error: 'Role not found' });
-      return role;
+      return formatRole(role);
     }
     
     const allRoles = await prisma.role.findMany({
-      include: { crewMembers: { include: { crewMember: true } } },
+      include: roleInclude,
     });
-    return allRoles;
+    return allRoles.map(formatRole);
   });
 
   // List crew (id, name) for a role by its name
   app.get<{ Params: { name: string } }>('/roles/:name/crew', async (req, reply) => {
     const { name } = req.params;
     const role = await prisma.role.findUnique({
-      where: { name },
-      include: { crewMembers: { include: { crewMember: { select: { id: true, name: true } } } } },
+      where: { code: name },
+      include: roleInclude,
     });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
-    const crew = role.crewMembers.map(cm => cm.crewMember);
+    const crew = role.CrewRole.map((cr) => cr.Crew);
     return crew;
   });
 
@@ -69,34 +134,43 @@ export function registerRoleRoutes(app: FastifyInstance) {
     if (!removeCrewMemberId) {
       return reply.code(400).send({ error: 'removeCrewMemberId is required' });
     }
-    
-    const existing = await prisma.role.findUnique({ where: { id } });
+    const roleId = Number(id);
+    if (Number.isNaN(roleId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const existing = await prisma.role.findUnique({ where: { id: roleId } });
     if (!existing) return reply.code(404).send({ error: 'Role not found' });
     
     // Remove the crew member from this role
-    await prisma.crewMemberRole.deleteMany({
+    await prisma.crewRole.deleteMany({
       where: {
-        roleId: id,
-        crewMemberId: removeCrewMemberId,
+        roleId,
+        crewId: removeCrewMemberId,
       },
     });
     
     const updated = await prisma.role.findUnique({
-      where: { id },
-      include: { crewMembers: { include: { crewMember: true } } },
+      where: { id: roleId },
+      include: roleInclude,
     });
     
-    return updated;
+    return updated ? formatRole(updated) : null;
   });
 
   // Delete a role
   app.delete<{ Params: { id: string } }>('/roles/:id', async (req, reply) => {
     const { id } = req.params;
     
-    const existing = await prisma.role.findUnique({ where: { id } });
+    const roleId = Number(id);
+    if (Number.isNaN(roleId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const existing = await prisma.role.findUnique({ where: { id: roleId } });
     if (!existing) return reply.code(404).send({ error: 'Role not found' });
     
-    await prisma.role.delete({ where: { id } });
-    return { ok: true, deleted: id };
+    await prisma.role.delete({ where: { id: roleId } });
+    return { ok: true, deleted: roleId };
   });
 }

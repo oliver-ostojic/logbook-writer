@@ -63,6 +63,47 @@ Note: Wizard endpoints coerce the provided date (string/number/Date) to a canoni
 - Crew
 	- `POST /crew`, `GET /crew`, `GET /crew?id=...`, `PUT /crew/:id`, `POST /crew/:id/add-role`, `DELETE /crew/:id`
 
+### Tuning (preferences & weights)
+
+- `GET /tuning/preferences` – derive recommended preference weights from current crew distribution.
+
+Query params:
+```
+mode=rarity|popularity   # scaling strategy (default rarity)
+storeId=NUMBER           # optional: restrict to one store
+min=INT                  # minimum weight bound (default 0)
+max=INT                  # maximum weight bound (default 100)
+penaltyScale=INT         # scale for consecutive PRODUCT/REGISTER penalty suggestions (default 10)
+```
+
+Sample response (truncated):
+```json
+{
+	"storeId": 768,
+	"totalCrew": 89,
+	"mode": "rarity",
+	"bounds": { "min": 0, "max": 100 },
+	"generatedAt": "2025-11-20T21:04:15.123Z",
+	"dimensions": {
+		"prefTask": {
+			"counts": { "REGISTER": 50, "PRODUCT": 30, "NONE": 9 },
+			"recommendations": { "REGISTER": 40, "PRODUCT": 60 }
+		},
+		"prefFirstHour": { "counts": { ... }, "recommendations": { ... } },
+		"prefBreakTiming": {
+			"counts": { "early": 25, "late": 40, "none": 24 },
+			"recommendations": { "early": 75, "late": 50 }
+		},
+		"consecutive": {
+			"suggestions": { "consecutiveProdWeight": 10, "consecutiveRegWeight": 5 },
+			"reasoning": "Heuristic based on relative PRODUCT vs REGISTER proportions and selected mode."
+		}
+	}
+}
+```
+
+Use these recommendation blocks to batch update crew preference weights or to feed scenario experiments before running the solver.
+
 ## Getting started
 
 Prereqs

@@ -51,36 +51,35 @@ function logScenario(
 }
 
 let app: Awaited<ReturnType<typeof buildServer>>;
-let demoRoleId: string;
 
 async function seedDemo() {
   // Store
   await prisma.store.upsert({
     where: { id: STORE_ID },
     update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 8 },
+    create: { id: STORE_ID, name: 'Dr. Phillips' },
   });
 
-  // Create DEMO role (mixed case to verify case-insensitive lookup)
-  const role = await prisma.role.upsert({
-    where: { name: 'DeMo' },
-    update: {},
-    create: { name: 'DeMo' },
+  // Look up existing DEMO role (case-insensitive)
+  const demoRole = await prisma.role.findFirst({
+    where: { code: { equals: 'DEMO', mode: 'insensitive' } },
   });
-  demoRoleId = role.id;
+  if (!demoRole) {
+    throw new Error('Expected DEMO role to exist in database for wizard demo tests');
+  }
 
   // Upsert DEMO crew and attach role
   for (const c of DEMO_CREW) {
-    await prisma.crewMember.upsert({
+    await prisma.crew.upsert({
       where: { id: c.id },
       update: { name: c.name, storeId: STORE_ID },
       create: { id: c.id, name: c.name, storeId: STORE_ID },
     });
     // link role if not already
-    await prisma.crewMemberRole.upsert({
-      where: { crewMemberId_roleId: { crewMemberId: c.id, roleId: role.id } },
+    await prisma.crewRole.upsert({
+      where: { crewId_roleId: { crewId: c.id, roleId: demoRole.id } },
       update: {},
-      create: { crewMemberId: c.id, roleId: role.id },
+      create: { crewId: c.id, roleId: demoRole.id },
     });
   }
 
@@ -88,16 +87,16 @@ async function seedDemo() {
   const day = new Date(DATE_ISO);
   day.setHours(0,0,0,0);
   for (const h of [9, 10, 11, 12]) {
-    await prisma.storeHourRule.upsert({
+    await prisma.hourlyRequirement.upsert({
       where: { storeId_date_hour: { storeId: STORE_ID, date: day, hour: h } },
       update: {},
       create: {
-        id: crypto.randomUUID(),
         storeId: STORE_ID,
         date: day,
         hour: h,
-        requiredRegisters: 1,
-        minParking: 0,
+        requiredRegister: 1,
+        requiredParkingHelm: 0,
+        updatedAt: new Date(),
       },
     });
   }
@@ -188,7 +187,7 @@ describe('Wizard Init - DEMO feasibility', () => {
   it('returns no segments when none of the shifted crew are DEMO-eligible', async () => {
     // create a non-DEMO crew
     const nonDemoId = '1289998';
-    await prisma.crewMember.upsert({
+    await prisma.crew.upsert({
       where: { id: nonDemoId },
       update: { name: 'Non Demo', storeId: STORE_ID },
       create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
@@ -311,20 +310,20 @@ describe('Wizard Init - DEMO feasibility', () => {
   it('ignores non-DEMO crew when mixed with DEMO shifts in the same payload', async () => {
     // Ensure a non-DEMO role and crew with that role exist
     const nonDemoRole = await prisma.role.upsert({
-      where: { name: 'OrderWriter' },
+      where: { code: 'OrderWriter' },
       update: {},
-      create: { name: 'OrderWriter' },
+      create: { code: 'OrderWriter', displayName: 'Order Writer' },
     });
     const nonDemoId = '1289998';
-    await prisma.crewMember.upsert({
+    await prisma.crew.upsert({
       where: { id: nonDemoId },
       update: { name: 'Non Demo', storeId: STORE_ID },
       create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
     });
-    await prisma.crewMemberRole.upsert({
-      where: { crewMemberId_roleId: { crewMemberId: nonDemoId, roleId: nonDemoRole.id } },
+    await prisma.crewRole.upsert({
+      where: { crewId_roleId: { crewId: nonDemoId, roleId: nonDemoRole.id } },
       update: {},
-      create: { crewMemberId: nonDemoId, roleId: nonDemoRole.id },
+      create: { crewId: nonDemoId, roleId: nonDemoRole.id },
     });
 
     const demoId = DEMO_CREW[1].id; // 09-11

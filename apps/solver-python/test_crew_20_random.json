@@ -1,0 +1,369 @@
+{
+  "date": "2025-11-20",
+  "store": {
+    "id": 1,
+    "name": "Test Store",
+    "minRegisterHours": 2,
+    "maxRegisterHours": 8,
+    "regHoursStartMin": 300,
+    "regHoursEndMin": 1020
+  },
+  "crew": [
+    {
+      "id": "1280716",
+      "name": "Hannah Reshel",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284247",
+      "name": "Vaughn Diana",
+      "roles": [
+        {
+          "role": "ORDER_WRITER",
+          "info": "Frozen",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1286136",
+      "name": "Ben Stogis",
+      "roles": [],
+      "shiftStartHour": 14,
+      "shiftStartMin": 840,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281457",
+      "name": "Aaron Haverstock",
+      "roles": [],
+      "shiftStartHour": 13,
+      "shiftStartMin": 780,
+      "shiftLength": 8
+    },
+    {
+      "id": "1280941",
+      "name": "Emma Boles",
+      "roles": [],
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284255",
+      "name": "Randy Guardado",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1286407",
+      "name": "Kacey Nakasen",
+      "roles": [
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 13,
+      "shiftStartMin": 780,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281497",
+      "name": "Sharon Garcia",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1285485",
+      "name": "Adrian Pena",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1282008",
+      "name": "Denise Madrid",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "ORDER_WRITER",
+          "info": "Grocery",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 14,
+      "shiftStartMin": 840,
+      "shiftLength": 8
+    },
+    {
+      "id": "1289842",
+      "name": "Matthew Studebaker",
+      "roles": [
+        {
+          "role": "ORDER_WRITER",
+          "info": "Beverage",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+      "shiftLength": 8
+    },
+    {
+      "id": "1280794",
+      "name": "Alexa Adams",
+      "roles": [
+        {
+          "role": "ART",
+          "info": "Decor",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284938",
+      "name": "Ofelia Aguirre",
+      "roles": [
+        {
+          "role": "ORDER_WRITER",
+          "info": "HABA",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 13,
+      "shiftStartMin": 780,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281474",
+      "name": "Savannah Fraijo",
+      "roles": [],
+      "shiftStartHour": 14,
+      "shiftStartMin": 840,
+      "shiftLength": 8
+    },
+    {
+      "id": "1289923",
+      "name": "Andrea Canizares",
+      "roles": [
+        {
+          "role": "ART_TEAM",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "ART",
+          "info": "Decor",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 14,
+      "shiftStartMin": 840,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281029",
+      "name": "Di Cannon",
+      "roles": [
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281967",
+      "name": "Tori Borrowdale",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1288495",
+      "name": "Q Mowatt",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1287952",
+      "name": "Matt Connor",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1285537",
+      "name": "Taylor Yackulics",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    }
+  ],
+  "crewRoleRequirements": [
+    {
+      "crewId": "1284247",
+      "role": "ORDER_WRITER",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1284255",
+      "role": "DEMO",
+      "requiredHours": 2
+    },
+    {
+      "crewId": "1286407",
+      "role": "WINE_DEMO",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1282008",
+      "role": "ORDER_WRITER",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1289842",
+      "role": "ORDER_WRITER",
+      "requiredHours": 3
+    },
+    {
+      "crewId": "1280794",
+      "role": "ART",
+      "requiredHours": 3
+    },
+    {
+      "crewId": "1284938",
+      "role": "ORDER_WRITER",
+      "requiredHours": 3
+    },
+    {
+      "crewId": "1289923",
+      "role": "DEMO",
+      "requiredHours": 2
+    },
+    {
+      "crewId": "1281029",
+      "role": "WINE_DEMO",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1281967",
+      "role": "DEMO",
+      "requiredHours": 1
+    }
+  ],
+  "hourlyRequirements": [
+    {
+      "hour": 5,
+      "register": 10
+    },
+    {
+      "hour": 6,
+      "register": 10
+    },
+    {
+      "hour": 7,
+      "register": 10
+    },
+    {
+      "hour": 8,
+      "register": 10
+    },
+    {
+      "hour": 9,
+      "register": 10
+    },
+    {
+      "hour": 10,
+      "register": 10
+    },
+    {
+      "hour": 11,
+      "register": 10
+    },
+    {
+      "hour": 12,
+      "register": 10
+    },
+    {
+      "hour": 13,
+      "register": 10
+    },
+    {
+      "hour": 14,
+      "register": 10
+    },
+    {
+      "hour": 15,
+      "register": 10
+    },
+    {
+      "hour": 16,
+      "register": 10
+    }
+  ],
+  "coverageWindows": [
+    {
+      "role": "WINE_DEMO",
+      "windowStart": 840,
+      "windowEnd": 960,
+      "requiredPerHour": 1
+    },
+    {
+      "role": "DEMO",
+      "windowStart": 840,
+      "windowEnd": 960,
+      "requiredPerHour": 1
+    }
+  ]
+}

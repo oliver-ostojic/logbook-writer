@@ -30,7 +30,7 @@ type RequirementRow = {
 
 export default function WizardRequirementsPage() {
   const router = useRouter();
-  const { date, storeId, shifts } = useWizardStore();
+  const { date, storeId, setStoreId, shifts } = useWizardStore();
 
   const [initData, setInitData] = useState<InitResp | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -38,7 +38,11 @@ export default function WizardRequirementsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reqs, setReqs] = useState<RequirementRow[]>([]);
-  // Store is locked after init; use read-only storeId from wizard store
+  const [localStoreId, setLocalStoreId] = useState<number>(storeId ?? 1);
+
+  useEffect(() => {
+    setStoreId(localStoreId);
+  }, [localStoreId, setStoreId]);
 
   // Load stores list
   useEffect(() => {
@@ -56,14 +60,14 @@ export default function WizardRequirementsPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, []);
+  }, [API_URL]);
 
   // Load init data and roles
   useEffect(() => {
     let cancelled = false;
     async function run() {
       if (!API_URL) return;
-      if (!date || !shifts?.length || !storeId) return;
+      if (!date || !shifts?.length || !localStoreId) return;
       setLoading(true);
       setError(null);
       try {
@@ -71,7 +75,7 @@ export default function WizardRequirementsPage() {
           fetch(`${API_URL}/wizard/init`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ date, store_id: storeId, shifts }),
+            body: JSON.stringify({ date, store_id: localStoreId, shifts }),
           }),
           fetch(`${API_URL}/roles`),
         ]);
@@ -91,7 +95,13 @@ export default function WizardRequirementsPage() {
     }
     run();
     return () => { cancelled = true; };
-  }, [date, shifts, storeId]);
+  }, [API_URL, date, shifts, localStoreId]);
+
+  const crewIds = useMemo(() => {
+    const ids = new Set<string>();
+    initData?.normalizedShifts.forEach(s => ids.add(s.crewId));
+    return Array.from(ids);
+  }, [initData]);
 
   const eligByCrew = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -154,7 +164,7 @@ export default function WizardRequirementsPage() {
     const rc = crew ? nonCoverageRoleOptionsForCrew(crew) : [];
     const roleId = rc[0]?.id || "";
     
-    setReqs(prev => [...prev, { crewId: crew, roleId, requiredHours: 1 }]);
+    setReqs(prev => [...prev, { crewId: crew, roleId, requiredHours: 0 }]);
   }
 
   function updateReq(i: number, patch: Partial<RequirementRow>) {
@@ -184,13 +194,13 @@ export default function WizardRequirementsPage() {
   }
 
   async function handleNext() {
-    if (!API_URL || !date || !storeId || !reqs.length) return;
+    if (!API_URL || !date || !localStoreId) return;
     try {
       setLoading(true);
       setError(null);
       const body = {
         date,
-        store_id: storeId,
+        store_id: localStoreId,
         requirements: reqs,
       };
       const res = await fetch(`${API_URL}/wizard/requirements`, {
@@ -278,7 +288,25 @@ export default function WizardRequirementsPage() {
               </label>
               <label>
                 Required hours
-                <input type="number" min={0} max={24} value={r.requiredHours} onChange={(e) => updateReq(i, { requiredHours: Number(e.target.value || 0) })} style={{ marginLeft: 6, width: 70 }} />
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={r.requiredHours === 0 ? '' : r.requiredHours} 
+                  placeholder="0"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      updateReq(i, { requiredHours: 0 });
+                    } else {
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num) && num >= 0 && num <= 24) {
+                        updateReq(i, { requiredHours: num });
+                      }
+                    }
+                  }} 
+                  style={{ marginLeft: 6, width: 70 }} 
+                />
               </label>
               <button type="button" onClick={() => removeReq(i)} aria-label="remove">✕</button>
             </div>
@@ -288,7 +316,7 @@ export default function WizardRequirementsPage() {
       )}
       {!noEligible && (
         <div style={{ marginTop: 20 }}>
-          <button type="button" onClick={handleNext} disabled={!reqs.length || loading}>Next →</button>
+          <button type="button" onClick={handleNext} disabled={loading}>Next →</button>
         </div>
       )}
     </main>

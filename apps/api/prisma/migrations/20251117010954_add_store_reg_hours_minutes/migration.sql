@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Store" ADD COLUMN     "regHoursEndMin" INTEGER NOT NULL DEFAULT 1260,
-ADD COLUMN     "regHoursStartMin" INTEGER NOT NULL DEFAULT 480;

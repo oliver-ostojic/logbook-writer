@@ -19,16 +19,14 @@ export function contiguousSegments(avail: number[], threshold = 1) {
 
 export async function suggestDemoWindow(dateISO: string, shifts: Shift[]) {
   startOfDay(new Date(dateISO)); // retain for future day-based filtering
-  // Fetch ALL roles matching 'demo' case-insensitively to avoid picking a later duplicate
-  // Some tests (CRUD) may create an additional 'DEMO' role without crew assignments which was
-  // previously selected by findFirst(), resulting in empty availability.
+  // Fetch ALL roles matching 'DEMO' 
   const demoRoles = await prisma.role.findMany({
-    where: { name: { equals: 'demo', mode: 'insensitive' } },
-    include: { crewMembers: true },
+    where: { code: 'DEMO' },
+    include: { CrewRole: { include: { Crew: true } } },
   });
   // Union all crew member IDs across any matching demo roles
   const demoCrewSet = new Set(
-    demoRoles.flatMap((r: any) => (r.crewMembers ?? []).map((cm: any) => cm.crewMemberId))
+    demoRoles.flatMap((r: any) => (r.CrewRole ?? []).map((cr: any) => cr.Crew.id))
   );
   // If multiple demo roles exist, prefer the one with most crew for recommended metadata (not strictly needed now)
   // Create hourly availability map
@@ -55,15 +53,15 @@ export async function suggestDemoWindow(dateISO: string, shifts: Shift[]) {
 }
 
 export async function loadRulesByHour(storeId: number, day: Date) {
-  const rules = await prisma.storeHourRule.findMany({
+  const rules = await prisma.hourlyRequirement.findMany({
     where: { storeId, date: day },
     orderBy: { hour: 'asc' },
   });
   return rules.map((r: any) => ({
     hour: r.hour,
-    requiredRegisters: r.requiredRegisters,
-    minProduct: r.minProduct,
-    minParking: r.minParking,
-    maxParking: r.maxParking,
+    requiredRegisters: r.requiredRegister,
+    minProduct: 0, // Not tracked separately in new schema
+    minParking: r.requiredParkingHelm,
+    maxParking: r.requiredParkingHelm, // Same as min in new schema
   }));
 }

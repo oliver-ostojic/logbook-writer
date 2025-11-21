@@ -27,10 +27,10 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const regEndMin = (storeAny?.regHoursEndMin ?? 1260) as number;    // 21:00
 
     // Load requirements & coverage from wizard steps
-    const requirements = await prisma.dailyRoleRequirement.findMany({ 
+    const requirements = await prisma.crewRoleRequirement.findMany({ 
       where: { date: day, storeId: store_id }
     });
-    const coverages = await prisma.roleCoverageWindow.findMany({ 
+    const coverages = await prisma.coverageWindow.findMany({ 
       where: { date: day, storeId: store_id }
     });
 

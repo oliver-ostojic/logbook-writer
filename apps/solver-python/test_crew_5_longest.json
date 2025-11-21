@@ -1,0 +1,162 @@
+{
+  "date": "2025-11-20",
+  "store": {
+    "id": 1,
+    "name": "Test Store",
+    "minRegisterHours": 2,
+    "maxRegisterHours": 8,
+    "regHoursStartMin": 300,
+    "regHoursEndMin": 1020
+  },
+  "crew": [
+    {
+      "id": "1284255",
+      "name": "Randy Guardado",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284593",
+      "name": "Adam Carey",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1287886",
+      "name": "Carolyn Shephard",
+      "roles": [],
+      "shiftStartHour": 13,
+      "shiftStartMin": 780,
+      "shiftLength": 8
+    },
+    {
+      "id": "1283615",
+      "name": "Leo Kelly",
+      "roles": [
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284237",
+      "name": "Ashley Andrejko",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "ORDER_WRITER",
+          "info": "Coffee/Tea",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+      "shiftLength": 8
+    }
+  ],
+  "crewRoleRequirements": [
+    {
+      "crewId": "1284255",
+      "role": "DEMO",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1283615",
+      "role": "WINE_DEMO",
+      "requiredHours": 1
+    },
+    {
+      "crewId": "1284237",
+      "role": "DEMO",
+      "requiredHours": 3
+    }
+  ],
+  "hourlyRequirements": [
+    {
+      "hour": 5,
+      "register": 2
+    },
+    {
+      "hour": 6,
+      "register": 2
+    },
+    {
+      "hour": 7,
+      "register": 2
+    },
+    {
+      "hour": 8,
+      "register": 2
+    },
+    {
+      "hour": 9,
+      "register": 2
+    },
+    {
+      "hour": 10,
+      "register": 2
+    },
+    {
+      "hour": 11,
+      "register": 2
+    },
+    {
+      "hour": 12,
+      "register": 2
+    },
+    {
+      "hour": 13,
+      "register": 2
+    },
+    {
+      "hour": 14,
+      "register": 2
+    },
+    {
+      "hour": 15,
+      "register": 2
+    },
+    {
+      "hour": 16,
+      "register": 2
+    }
+  ],
+  "coverageWindows": [
+    {
+      "role": "WINE_DEMO",
+      "windowStart": 480,
+      "windowEnd": 1020,
+      "requiredPerHour": 1
+    },
+    {
+      "role": "DEMO",
+      "windowStart": 480,
+      "windowEnd": 1020,
+      "requiredPerHour": 1
+    }
+  ]
+}

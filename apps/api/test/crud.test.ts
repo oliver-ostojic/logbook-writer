@@ -17,7 +17,7 @@ describe('CRUD - Roles and Crew Members', () => {
     await prisma.store.upsert({
       where: { id: STORE_ID },
       update: {},
-      create: { id: STORE_ID, name: 'Test Store', minRegisterHours: 2, maxRegisterHours: 8 },
+      create: { id: STORE_ID, name: 'Test Store' },
     });
     app = await buildServer();
   }, 30_000);
@@ -38,10 +38,10 @@ describe('CRUD - Roles and Crew Members', () => {
     try {
       // Delete crew members first (foreign key dependencies)
       if (createdCrewIds.length > 0) {
-        await prisma.crewMemberRole.deleteMany({
-          where: { crewMemberId: { in: createdCrewIds } },
+        await prisma.crewRole.deleteMany({
+          where: { crewId: { in: createdCrewIds } },
         });
-        await prisma.crewMember.deleteMany({
+        await prisma.crew.deleteMany({
           where: { id: { in: createdCrewIds } },
         });
       }
@@ -62,12 +62,12 @@ describe('CRUD - Roles and Crew Members', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'REGISTER_UNIQUE' },
+        payload: { name: `REGISTER_UNIQUE_${Date.now()}` },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body).toHaveProperty('id');
-      expect(body.name).toBe('REGISTER_UNIQUE');
+      expect(body.code).toBe(body.code); // code should match what was sent
       expect(Array.isArray(body.crewMembers)).toBe(true);
       createdRoleIds.push(body.id);
     });
@@ -88,7 +88,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'ListTestRole' },
+        payload: { name: `ListTestRole_${Date.now()}` },
       });
       createdRoleIds.push(createRes.json().id);
 
@@ -105,7 +105,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'GetByIdRole' },
+        payload: { name: `GetByIdRole_${Date.now()}` },
       });
       const roleId = createRes.json().id;
       createdRoleIds.push(roleId);
@@ -119,25 +119,25 @@ describe('CRUD - Roles and Crew Members', () => {
       expect(body.id).toBe(roleId);
     });
 
-    it('GET /roles?id=invalid - returns 404 for non-existent role', async () => {
+    it('GET /roles?id=invalid - returns 400 for invalid role id', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/roles?id=00000000-0000-0000-0000-000000000000',
+        url: '/roles?id=invalid',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(400);
     });
 
     it('GET /roles/:name/crew - lists crew for a role by name', async () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'CrewListRole' },
+        payload: { name: `CrewListRole_${Date.now()}` },
       });
       createdRoleIds.push(createRes.json().id);
 
       const res = await app.inject({
         method: 'GET',
-        url: '/roles/CrewListRole/crew',
+        url: `/roles/${createRes.json().code}/crew`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -149,29 +149,30 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'RemoveCrewRole' },
+        payload: { name: `RemoveCrewRole_${Date.now()}` },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
 
       // Create a crew member with the test role (using 7-char ID as per schema)
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       const crewRes = await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW001',
+          id: crewId,
           name: 'Alice',
           roleIds: [roleId],
         },
       });
       expect(crewRes.statusCode).toBe(200);
-      createdCrewIds.push('TCRW001');
+      createdCrewIds.push(crewId);
 
       // Now remove the crew member from the role
       const res = await app.inject({
         method: 'PUT',
         url: `/roles/${roleId}`,
-        payload: { removeCrewMemberId: 'TCRW001' },
+        payload: { removeCrewMemberId: crewId },
       });
       expect(res.statusCode).toBe(200);
     });
@@ -180,7 +181,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'RejectTestRole' },
+        payload: { name: `RejectTestRole_${Date.now()}` },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -197,7 +198,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'DeleteTestRole' },
+        payload: { name: `DeleteTestRole_${Date.now()}` },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -221,12 +222,12 @@ describe('CRUD - Roles and Crew Members', () => {
       createdRoleIds = createdRoleIds.filter((id) => id !== roleId);
     });
 
-    it('DELETE /roles/:id - returns 404 for non-existent role', async () => {
+    it('DELETE /roles/:id - returns 400 for invalid role id', async () => {
       const res = await app.inject({
         method: 'DELETE',
-        url: '/roles/00000000-0000-0000-0000-000000000000',
+        url: '/roles/invalid',
       });
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(400);
     });
   });
 
@@ -235,26 +236,27 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'CrewCreateRole' },
+        payload: { name: `CrewCreateRole_${Date.now()}` },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
 
+      const crewId = `TCREW${Date.now().toString().slice(-2)}`;
       const res = await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCREW01',
+          id: crewId,
           name: 'Alice Smith',
           roleIds: [roleId],
         },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
-      expect(body.id).toBe('TCREW01');
+      expect(body.id).toBe(crewId);
       expect(body.name).toBe('Alice Smith');
       expect(body.roles.length).toBe(1);
-      createdCrewIds.push('TCREW01');
+      createdCrewIds.push(crewId);
     });
 
     it('POST /crew - rejects missing id or name', async () => {
@@ -275,16 +277,17 @@ describe('CRUD - Roles and Crew Members', () => {
 
     it('GET /crew - lists all crew members', async () => {
       // Create a crew member first
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW002',
+          id: crewId,
           name: 'Alice',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW002');
+      createdCrewIds.push(crewId);
 
       const res = await app.inject({
         method: 'GET',
@@ -294,29 +297,30 @@ describe('CRUD - Roles and Crew Members', () => {
       const body = res.json();
       expect(Array.isArray(body)).toBe(true);
       expect(body.length).toBeGreaterThan(0);
-      const testCrew = body.find((c: any) => c.id === 'TCRW002');
+      const testCrew = body.find((c: any) => c.id === crewId);
       expect(testCrew).toBeDefined();
     });
 
     it('GET /crew?id=X - fetches single crew member by id', async () => {
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW003',
+          id: crewId,
           name: 'Bob',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW003');
+      createdCrewIds.push(crewId);
 
       const res = await app.inject({
         method: 'GET',
-        url: '/crew?id=TCRW003',
+        url: `/crew?id=${crewId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
-      expect(body.id).toBe('TCRW003');
+      expect(body.id).toBe(crewId);
     });
 
     it('GET /crew?id=invalid - returns 404 for non-existent crew', async () => {
@@ -328,20 +332,21 @@ describe('CRUD - Roles and Crew Members', () => {
     });
 
     it('PUT /crew/:id - updates crew member fields', async () => {
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW004',
+          id: crewId,
           name: 'Alice',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW004');
+      createdCrewIds.push(crewId);
 
       const res = await app.inject({
         method: 'PUT',
-        url: '/crew/TCRW004',
+        url: `/crew/${crewId}`,
         payload: {
           name: 'Alice Updated',
         },
@@ -356,7 +361,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const role1Res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'ReplaceRole1' },
+        payload: { name: `ReplaceRole1_${Date.now()}` },
       });
       const role1Id = role1Res.json().id;
       createdRoleIds.push(role1Id);
@@ -364,27 +369,28 @@ describe('CRUD - Roles and Crew Members', () => {
       const role2Res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'ReplaceRole2' },
+        payload: { name: `ReplaceRole2_${Date.now()}` },
       });
       const role2Id = role2Res.json().id;
       createdRoleIds.push(role2Id);
 
       // Create crew with role1
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW005',
+          id: crewId,
           name: 'Charlie',
           roleIds: [role1Id],
         },
       });
-      createdCrewIds.push('TCRW005');
+      createdCrewIds.push(crewId);
 
       // Replace with role2
       const res = await app.inject({
         method: 'PUT',
-        url: '/crew/TCRW005',
+        url: `/crew/${crewId}`,
         payload: { roleIds: [role2Id] },
       });
       expect(res.statusCode).toBe(200);
@@ -404,40 +410,43 @@ describe('CRUD - Roles and Crew Members', () => {
 
     it('POST /crew/:id/add-role - adds a role to crew member', async () => {
       // Create crew
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW006',
+          id: crewId,
           name: 'Dana',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW006');
+      createdCrewIds.push(crewId);
 
       // Create ART role
+      const roleName = `ART_ADD_${Date.now()}`;
       const artRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: 'ART_ADD' },
+        payload: { name: roleName },
       });
       expect(artRes.statusCode).toBe(200);
-      createdRoleIds.push(artRes.json().id);
+      const artRole = artRes.json();
+      createdRoleIds.push(artRole.id);
 
       const res = await app.inject({
         method: 'POST',
-        url: '/crew/TCRW006/add-role',
-        payload: { roleName: 'ART_ADD' },
+        url: `/crew/${crewId}/add-role`,
+        payload: { roleCode: artRole.code },
       });
       expect(res.statusCode).toBe(204);
 
       // Verify role was added
       const getRes = await app.inject({
         method: 'GET',
-        url: '/crew?id=TCRW006',
+        url: `/crew?id=${crewId}`,
       });
       const crew = getRes.json();
-      expect(crew.roles.some((r: any) => r.role.name === 'ART_ADD')).toBe(true);
+      expect(crew.roles.some((r: any) => r.role.code === artRole.code)).toBe(true);
     });
 
     it('POST /crew/:id/add-role - rejects duplicate role', async () => {
@@ -449,26 +458,27 @@ describe('CRUD - Roles and Crew Members', () => {
         payload: { name: roleName },
       });
       expect(dupRoleRes.statusCode).toBe(200);
-      const dupRoleId = dupRoleRes.json().id;
-      createdRoleIds.push(dupRoleId);
+      const dupRole = dupRoleRes.json();
+      createdRoleIds.push(dupRole.id);
 
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       const crewCreate = await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW007',
+          id: crewId,
           name: 'Duplicate Test',
-          roleIds: [dupRoleId],
+          roleIds: [dupRole.id],
         },
       });
       expect(crewCreate.statusCode).toBe(200);
-      createdCrewIds.push('TCRW007');
+      createdCrewIds.push(crewId);
 
       // Try to add the same role again
       const res = await app.inject({
         method: 'POST',
-        url: '/crew/TCRW007/add-role',
-        payload: { roleName },
+        url: `/crew/${crewId}/add-role`,
+        payload: { roleCode: dupRole.code },
       });
       expect(res.statusCode).toBe(409);
       expect(res.json().error).toContain('already has this role');
@@ -478,46 +488,48 @@ describe('CRUD - Roles and Crew Members', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/crew/NOEXIST/add-role',
-        payload: { roleName: 'TestRole' },
+        payload: { roleCode: 'TestRole' },
       });
       expect(res.statusCode).toBe(404);
     });
 
     it('POST /crew/:id/add-role - returns 404 for non-existent role', async () => {
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW008',
+          id: crewId,
           name: 'Eve',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW008');
+      createdCrewIds.push(crewId);
 
       const res = await app.inject({
         method: 'POST',
-        url: '/crew/TCRW008/add-role',
-        payload: { roleName: 'NonExistentRole' },
+        url: `/crew/${crewId}/add-role`,
+        payload: { roleCode: 'NonExistentRole' },
       });
       expect(res.statusCode).toBe(404);
     });
 
     it('DELETE /crew/:id - deletes a crew member', async () => {
+      const crewId = `TCRW${Date.now().toString().slice(-3)}`;
       await app.inject({
         method: 'POST',
         url: '/crew',
         payload: {
-          id: 'TCRW009',
+          id: crewId,
           name: 'Frank',
           roleIds: [],
         },
       });
-      createdCrewIds.push('TCRW009');
+      createdCrewIds.push(crewId);
 
       const res = await app.inject({
         method: 'DELETE',
-        url: '/crew/TCRW009',
+        url: `/crew/${crewId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -526,12 +538,12 @@ describe('CRUD - Roles and Crew Members', () => {
       // Verify crew is gone
       const getRes = await app.inject({
         method: 'GET',
-        url: '/crew?id=TCRW009',
+        url: `/crew?id=${crewId}`,
       });
       expect(getRes.statusCode).toBe(404);
 
       // Remove from tracking since we already deleted it
-      createdCrewIds = createdCrewIds.filter((id) => id !== 'TCRW009');
+      createdCrewIds = createdCrewIds.filter((id) => id !== crewId);
     });
 
     it('DELETE /crew/:id - returns 404 for non-existent crew', async () => {

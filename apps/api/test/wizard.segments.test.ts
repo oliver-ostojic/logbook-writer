@@ -14,7 +14,7 @@ describe('Wizard Segments - POST /wizard/segments', () => {
     await prisma.store.upsert({
       where: { id: STORE_ID },
       update: { name: 'Dr. Phillips' },
-      create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 8 },
+      create: { id: STORE_ID, name: 'Dr. Phillips' },
     });
     app = await buildServer();
   }, 30_000);

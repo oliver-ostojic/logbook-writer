@@ -11,4 +11,5 @@ export interface Schedule {
   // Add more schedule properties
 }
 
-// Add more shared types and interfaces
+// Export solver types
+export * from './solver';

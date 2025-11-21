@@ -1,0 +1,51 @@
+{
+  "date": "2025-11-20",
+  "store": {},
+  "crew": [
+    {
+      "id": "crew_1",
+      "name": "Crew Member 1",
+      "shiftStartHour": 12,
+      "shiftStartMin": 720,
+    "shiftLength": 8,
+    "shiftEndMin": 1200
+    },
+    {
+      "id": "crew_2",
+      "name": "Crew Member 2",
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+    "shiftLength": 8,
+    "shiftEndMin": 780
+    },
+    {
+      "id": "crew_3",
+      "name": "Crew Member 3",
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+    "shiftLength": 8,
+    "shiftEndMin": 840
+    },
+    {
+      "id": "crew_4",
+      "name": "Crew Member 4",
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+    "shiftLength": 8,
+    "shiftEndMin": 780
+    },
+    {
+      "id": "crew_5",
+      "name": "Crew Member 5",
+      "shiftStartHour": 13,
+      "shiftStartMin": 780,
+    "shiftLength": 8,
+    "shiftEndMin": 1260
+    }
+  ],
+  "hourlyRequirements": [],
+  "crewRoleRequirements": [],
+  "coverageWindows": [],
+  "roleMetadata": [],
+  "timeLimitSeconds": 120
+}

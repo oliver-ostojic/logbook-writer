@@ -1,0 +1,212 @@
+{
+  "date": "2025-11-20",
+  "store": {
+    "id": 1,
+    "name": "Test Store",
+    "minRegisterHours": 2,
+    "maxRegisterHours": 8,
+    "regHoursStartMin": 300,
+    "regHoursEndMin": 1020
+  },
+  "crew": [
+    {
+      "id": "1285256",
+      "name": "Kristalie Medina",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1284237",
+      "name": "Ashley Andrejko",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "ORDER_WRITER",
+          "info": "Coffee/Tea",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 8,
+      "shiftStartMin": 480,
+      "shiftLength": 8
+    },
+    {
+      "id": "1286758",
+      "name": "Marcos Reinoso",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1280801",
+      "name": "Cheri Reimann",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281474",
+      "name": "Savannah Fraijo",
+      "roles": [],
+      "shiftStartHour": 14,
+      "shiftStartMin": 840,
+      "shiftLength": 8
+    },
+    {
+      "id": "1282934",
+      "name": "Kenny Brooke",
+      "roles": [],
+      "shiftStartHour": 5,
+      "shiftStartMin": 300,
+      "shiftLength": 8
+    },
+    {
+      "id": "1286180",
+      "name": "Lindsey Wellington",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1281401",
+      "name": "Melissa Ochoa",
+      "roles": [
+        {
+          "role": "ORDER_WRITER",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        },
+        {
+          "role": "WINE_DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1282399",
+      "name": "Juan Caceres",
+      "roles": [],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    },
+    {
+      "id": "1289842",
+      "name": "Matthew Studebaker",
+      "roles": [
+        {
+          "role": "ORDER_WRITER",
+          "info": "Beverage",
+          "detail": null
+        }
+      ],
+      "shiftStartHour": 6,
+      "shiftStartMin": 360,
+      "shiftLength": 8
+    }
+  ],
+  "crewRoleRequirements": [
+    {
+      "crewId": "1284237",
+      "role": "DEMO",
+      "requiredHours": 3
+    },
+    {
+      "crewId": "1281401",
+      "role": "DEMO",
+      "requiredHours": 3
+    },
+    {
+      "crewId": "1289842",
+      "role": "ORDER_WRITER",
+      "requiredHours": 2
+    }
+  ],
+  "hourlyRequirements": [
+    {
+      "hour": 5,
+      "register": 5
+    },
+    {
+      "hour": 6,
+      "register": 5
+    },
+    {
+      "hour": 7,
+      "register": 5
+    },
+    {
+      "hour": 8,
+      "register": 5
+    },
+    {
+      "hour": 9,
+      "register": 5
+    },
+    {
+      "hour": 10,
+      "register": 5
+    },
+    {
+      "hour": 11,
+      "register": 5
+    },
+    {
+      "hour": 12,
+      "register": 5
+    },
+    {
+      "hour": 13,
+      "register": 5
+    },
+    {
+      "hour": 14,
+      "register": 5
+    },
+    {
+      "hour": 15,
+      "register": 5
+    },
+    {
+      "hour": 16,
+      "register": 5
+    }
+  ],
+  "coverageWindows": [
+    {
+      "role": "WINE_DEMO",
+      "windowStart": 480,
+      "windowEnd": 1020,
+      "requiredPerHour": 1
+    },
+    {
+      "role": "DEMO",
+      "windowStart": 480,
+      "windowEnd": 1020,
+      "requiredPerHour": 1
+    }
+  ]
+}

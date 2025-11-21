@@ -19,68 +19,68 @@ async function seedMinimal() {
   await prisma.store.upsert({
     where: { id: STORE_ID },
     update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 7 },
+    create: { id: STORE_ID, name: 'Dr. Phillips' },
   });
 
   // Roles
   const demo = await prisma.role.upsert({
-    where: { name: 'DEMO' },
+    where: { code: 'DEMO' },
     update: {},
-    create: { id: crypto.randomUUID(), name: 'DEMO' },
+    create: { code: 'DEMO', displayName: 'Demo' },
   });
   demoRoleId = demo.id;
 
   const orderWriter = await prisma.role.upsert({
-    where: { name: 'OrderWriter' },
+    where: { code: 'OrderWriter' },
     update: {},
-    create: { id: crypto.randomUUID(), name: 'OrderWriter' },
+    create: { code: 'OrderWriter', displayName: 'Order Writer' },
   });
 
   // Crew members
-  await prisma.crewMember.upsert({
+  await prisma.crew.upsert({
     where: { id: CREW_DEMO.id },
     update: {},
     create: {
       id: CREW_DEMO.id,
       name: CREW_DEMO.name,
       storeId: STORE_ID,
-      roles: { create: [{ roleId: demo.id }] },
+      CrewRole: { create: [{ roleId: demo.id }] },
     },
   });
-  await prisma.crewMember.upsert({
+  await prisma.crew.upsert({
     where: { id: CREW_OTHER.id },
     update: {},
     create: {
       id: CREW_OTHER.id,
       name: CREW_OTHER.name,
       storeId: STORE_ID,
-      roles: { create: [{ roleId: orderWriter.id }] },
+      CrewRole: { create: [{ roleId: orderWriter.id }] },
     },
   });
 
   // Two rules for today
-  await prisma.storeHourRule.upsert({
+  await prisma.hourlyRequirement.upsert({
     where: { storeId_date_hour: { storeId: STORE_ID, date: TODAY, hour: 9 } },
     update: {},
     create: {
-      id: crypto.randomUUID(),
       storeId: STORE_ID,
       date: TODAY,
       hour: 9,
-      requiredRegisters: 2,
-      minParking: 1,
+      requiredRegister: 2,
+      requiredParkingHelm: 1,
+      updatedAt: new Date(),
     },
   });
-  await prisma.storeHourRule.upsert({
+  await prisma.hourlyRequirement.upsert({
     where: { storeId_date_hour: { storeId: STORE_ID, date: TODAY, hour: 10 } },
     update: {},
     create: {
-      id: crypto.randomUUID(),
       storeId: STORE_ID,
       date: TODAY,
       hour: 10,
-      requiredRegisters: 3,
-      minParking: 1,
+      requiredRegister: 3,
+      requiredParkingHelm: 1,
+      updatedAt: new Date(),
     },
   });
 }

@@ -1,0 +1,14 @@
+{
+  "success": false,
+  "metadata": {
+    "status": "ERROR",
+    "runtimeMs": 0,
+    "numCrew": 0,
+    "numHours": 0,
+    "numAssignments": 0,
+    "violations": [
+      "'eligibleRoles'"
+    ]
+  },
+  "error": "'eligibleRoles'"
+}

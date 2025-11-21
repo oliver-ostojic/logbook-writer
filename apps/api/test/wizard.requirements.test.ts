@@ -24,27 +24,27 @@ async function seedRequirementsTest() {
   await prisma.store.upsert({
     where: { id: STORE_ID },
     update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips', minRegisterHours: 2, maxRegisterHours: 8 },
+    create: { id: STORE_ID, name: 'Dr. Phillips' },
   });
 
   // Create roles
   const demoRole = await prisma.role.upsert({
-    where: { name: 'DEMO' },
+    where: { code: 'DEMO' },
     update: {},
-    create: { name: 'DEMO' },
+    create: { code: 'DEMO', displayName: 'Demo' },
   });
   demoRoleId = demoRole.id;
 
   const orderWriterRole = await prisma.role.upsert({
-    where: { name: 'ORDER_WRITER' },
+    where: { code: 'ORDER_WRITER' },
     update: {},
-    create: { name: 'ORDER_WRITER' },
+    create: { code: 'ORDER_WRITER', displayName: 'Order Writer' },
   });
   orderWriterRoleId = orderWriterRole.id;
 
   // Upsert test crew
   for (const c of TEST_CREW) {
-    await prisma.crewMember.upsert({
+    await prisma.crew.upsert({
       where: { id: c.id },
       update: { name: c.name, storeId: STORE_ID },
       create: { id: c.id, name: c.name, storeId: STORE_ID },
@@ -53,7 +53,7 @@ async function seedRequirementsTest() {
 
   // Clean up any existing requirements for the test date
   const day = startOfDay(DATE_ISO);
-  await prisma.dailyRoleRequirement.deleteMany({
+  await prisma.crewRoleRequirement.deleteMany({
     where: { date: day, storeId: STORE_ID },
   });
 }
@@ -92,7 +92,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
 
     // Verify in DB
     const day = startOfDay(DATE_ISO);
-    const reqs = await prisma.dailyRoleRequirement.findMany({
+    const reqs = await prisma.crewRoleRequirement.findMany({
       where: { date: day, storeId: STORE_ID },
     });
     expect(reqs.length).toBe(2);
@@ -138,9 +138,9 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
 
     // Verify updated in DB
     const day = startOfDay(DATE_ISO);
-    const req = await prisma.dailyRoleRequirement.findUnique({
+    const req = await prisma.crewRoleRequirement.findUnique({
       where: {
-        date_storeId_crewId_roleId: {
+        storeId_date_crewId_roleId: {
           date: day,
           storeId: STORE_ID,
           crewId: TEST_CREW[0].id,
@@ -174,7 +174,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
 
     // Verify in DB - same crew, different roles
     const day = startOfDay(DATE_ISO);
-    const reqs = await prisma.dailyRoleRequirement.findMany({
+    const reqs = await prisma.crewRoleRequirement.findMany({
       where: { date: day, storeId: STORE_ID, crewId: TEST_CREW[2].id },
     });
     expect(reqs.length).toBe(2);
@@ -205,7 +205,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
     const day = startOfDay(DATE_ISO);
 
     // Clear existing
-    await prisma.dailyRoleRequirement.deleteMany({
+    await prisma.crewRoleRequirement.deleteMany({
       where: { date: day, storeId: STORE_ID },
     });
 
@@ -233,7 +233,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
     expect(res2.statusCode).toBe(200);
 
     // Verify only one record exists
-    const reqs = await prisma.dailyRoleRequirement.findMany({
+    const reqs = await prisma.crewRoleRequirement.findMany({
       where: {
         date: day,
         storeId: STORE_ID,
@@ -249,7 +249,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
     const day = startOfDay(DATE_ISO);
 
     // Clear existing
-    await prisma.dailyRoleRequirement.deleteMany({
+    await prisma.crewRoleRequirement.deleteMany({
       where: { date: day, storeId: STORE_ID },
     });
 
@@ -277,7 +277,7 @@ describe('Wizard Requirements - POST /wizard/requirements', () => {
     expect(body.upserted).toBe(5);
 
     // Verify all in DB
-    const reqs = await prisma.dailyRoleRequirement.findMany({
+    const reqs = await prisma.crewRoleRequirement.findMany({
       where: { date: day, storeId: STORE_ID },
     });
     expect(reqs.length).toBe(5);

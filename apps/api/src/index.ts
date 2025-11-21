@@ -5,6 +5,8 @@ import { registerCrewRoutes } from './routes/crew';
 import { registerRoleRoutes } from './routes/roles';
 import { registerWizardRoutes } from './routes/wizard';
 import { registerScheduleRoutes } from './routes/schedule';
+import { registerSolverRoutes } from './routes/solver';
+import { registerTuningRoutes } from './routes/tuning';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
@@ -16,6 +18,8 @@ export async function buildServer() {
   registerRoleRoutes(app);
   registerWizardRoutes(app);
   registerScheduleRoutes(app);
+  registerSolverRoutes(app);
+  registerTuningRoutes(app);
 
   return app;
 }

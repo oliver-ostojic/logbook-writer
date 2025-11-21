@@ -1,0 +1,199 @@
+{
+  "date": "2025-11-20",
+  "store": {
+    "id": 768,
+    "name": "Test Store",
+    "regHoursStartMin": 300,
+    "regHoursEndMin": 1020
+  },
+  "crew": [
+    {
+      "id": "1284255",
+      "name": "Randy Guardado",
+      "roles": [
+        {
+          "role": "DEMO",
+          "info": null,
+          "detail": null
+        }
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320,
+      "prefBreakTiming": -1,
+      "prefBreakTimingWeight": 25,
+      "canParkingHelms": true,
+      "canBreak": true
+    },
+    {
+      "id": "1284593",
+      "name": "Adam Carey",
+      "roles": [],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1287886",
+      "name": "Carolyn Shephard",
+      "roles": [],
+      "shiftStartMin": 480,
+      "shiftEndMin": 960
+    },
+    {
+      "id": "1281876",
+      "name": "Sammantha Buckley",
+      "roles": [],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1281050",
+      "name": "Patricia Edgar",
+      "roles": [],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1286136",
+      "name": "Ben Stogis",
+      "roles": [],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1289147",
+      "name": "Jill Sachs",
+      "roles": [],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1280794",
+      "name": "Alexa Adams",
+      "roles": [
+        {
+          "role": "ART",
+          "info": "Decor",
+          "detail": null
+        }
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780,
+      "prefBreakTiming": 1,
+      "prefBreakTimingWeight": 25,
+      "canParkingHelms": true,
+      "canBreak": true
+    },
+    {
+      "id": "1288448",
+      "name": "Fiona Coffey",
+      "roles": [],
+      "shiftStartMin": 780,
+      "shiftEndMin": 1260
+    },
+    {
+      "id": "1287952",
+      "name": "Matt Connor",
+      "roles": [],
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
+    }
+  ],
+  "roleMetadata": [
+    {
+      "role": "DEMO",
+      "assignmentMode": "INDIVIDUAL_HOURS",
+      "isConsecutive": false,
+      "detail": null
+    },
+    {
+      "role": "ART",
+      "assignmentMode": "INDIVIDUAL_HOURS",
+      "isConsecutive": false,
+      "detail": null
+    }
+  ],
+  "crewRoleRequirements": [],
+  "hourlyRequirements": [
+    {
+      "hour": 5,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 6,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 7,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 8,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 9,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 10,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 1
+    },
+    {
+      "hour": 11,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 2
+    },
+    {
+      "hour": 12,
+      "requiredRegister": 2,
+      "requiredProduct": 2,
+      "requiredParkingHelm": 3
+    },
+    {
+      "hour": 13,
+      "requiredRegister": 1,
+      "requiredProduct": 1,
+      "requiredParkingHelm": 2
+    },
+    {
+      "hour": 14,
+      "requiredRegister": 1,
+      "requiredProduct": 1,
+      "requiredParkingHelm": 2
+    },
+    {
+      "hour": 15,
+      "requiredRegister": 1,
+      "requiredProduct": 1,
+      "requiredParkingHelm": 2
+    },
+    {
+      "hour": 16,
+      "requiredRegister": 1,
+      "requiredProduct": 1,
+      "requiredParkingHelm": 2
+    }
+  ],
+  "coverageWindows": [
+    {
+      "role": "DEMO",
+      "startHour": 14,
+      "endHour": 15,
+      "requiredPerHour": 1
+    }
+  ],
+  "timeLimitSeconds": 90
+}
