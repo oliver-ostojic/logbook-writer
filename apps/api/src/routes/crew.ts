@@ -100,23 +100,27 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
 
-  // POST /stores - create a store (explicit id + name; defaults for timezone/startRegHour/endRegHour)
-  app.post<{ Body: { id: number; name: string; timezone?: string; startRegHour?: number; endRegHour?: number } }>('/stores', async (req, reply) => {
-    const { id, name, timezone, startRegHour, endRegHour } = req.body;
+  // POST /stores - create a store (explicit id + name; defaults for timezone/regHoursStartMin/regHoursEndMin)
+  app.post<{ Body: { id: number; name: string; timezone?: string; regHoursStartMin?: number; regHoursEndMin?: number; startRegHour?: number; endRegHour?: number } }>('/stores', async (req, reply) => {
+    const { id, name, timezone, regHoursStartMin, regHoursEndMin, startRegHour, endRegHour } = req.body;
     if (id === undefined || Number.isNaN(id)) {
       return reply.code(400).send({ error: 'id is required and must be a number' });
     }
     if (!name) {
       return reply.code(400).send({ error: 'name is required' });
     }
+
+    const startMinutes = regHoursStartMin ?? startRegHour;
+    const endMinutes = regHoursEndMin ?? endRegHour;
+
     try {
       const store = await prisma.store.create({
         data: {
           id,
           name,
           ...(timezone !== undefined && { timezone }),
-          ...(startRegHour !== undefined && { startRegHour }),
-          ...(endRegHour !== undefined && { endRegHour }),
+          ...(startMinutes !== undefined && { regHoursStartMin: startMinutes }),
+          ...(endMinutes !== undefined && { regHoursEndMin: endMinutes }),
         },
       });
       return store;

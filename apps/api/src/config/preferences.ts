@@ -179,7 +179,12 @@ export const SATISFACTION_TUNING = {
 /**
  * Utility function to calculate scaled preference weight based on strategy
  */
-export function calculateScaledWeight(baseWeight: number, preferenceType: 'firstHour' | 'task' | 'breakTiming'): number {
+export function calculateScaledWeight(baseWeight: number | null | undefined, preferenceType: 'firstHour' | 'task' | 'breakTiming'): number {
+  // Treat null/undefined as 0 (no preference)
+  if (baseWeight == null) {
+    return 0;
+  }
+  
   const { weightScaling, preferenceWeights } = SATISFACTION_TUNING;
   
   // Apply base scaling strategy

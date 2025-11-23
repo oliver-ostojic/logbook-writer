@@ -296,7 +296,7 @@ export function registerWizardRoutes(app: FastifyInstance) {
   );
 
   // Step 3: Save store hour rules
-  app.post<{ Body: { date: string; store_id: number; rules: Array<{ hour: number; requiredRegisters: number; requiredParkingHelms: number }> } }>(
+  app.post<{ Body: { date: string; store_id: number; rules: Array<{ hour: number; requiredRegisters: number; requiredProducts?: number; requiredParkingHelms: number }> } }>(
     '/wizard/store-rules',
     async (req, reply) => {
       const { date, store_id, rules } = req.body;
@@ -317,6 +317,8 @@ export function registerWizardRoutes(app: FastifyInstance) {
           },
           update: {
             requiredRegister: r.requiredRegisters,
+            // @ts-expect-error Required once Prisma client regenerated with requiredProduct column
+            requiredProduct: r.requiredProducts ?? 0,
             requiredParkingHelm: r.requiredParkingHelms,
           },
           create: {
@@ -324,6 +326,8 @@ export function registerWizardRoutes(app: FastifyInstance) {
             date: day,
             hour: r.hour,
             requiredRegister: r.requiredRegisters,
+            // @ts-expect-error Required once Prisma client regenerated with requiredProduct column
+            requiredProduct: r.requiredProducts ?? 0,
             requiredParkingHelm: r.requiredParkingHelms,
             updatedAt: new Date(),
           },

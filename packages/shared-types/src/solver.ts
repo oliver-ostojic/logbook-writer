@@ -83,6 +83,12 @@ export interface SolverCrewMember {
   
   /** Weight/priority for break timing preference (8/40/200/1000) */
   prefBreakTimingWeight?: number;
+
+  /** Minimum hours this crew must spend on REGISTER (daily) */
+  minRegisterHours?: number;
+
+  /** Maximum hours this crew can spend on REGISTER (daily) */
+  maxRegisterHours?: number;
 }
 
 /**
@@ -145,12 +151,32 @@ export interface CoverageWindow {
 export interface StoreConstraints {
   /** Store ID */
   storeId: number;
-  
-  /** Store operating hours start (minutes since midnight) */
-  regHoursStartMin: number;
-  
-  /** Store operating hours end (minutes since midnight) */
-  regHoursEndMin: number;
+
+  /** Solver slot size in minutes */
+  baseSlotMinutes: number;
+
+  /** Store open/close minutes from midnight */
+  openMinutesFromMidnight: number;
+  closeMinutesFromMidnight: number;
+
+  /** Register staffing window override */
+  startRegHour: number;
+  endRegHour: number;
+
+  /** Break policy */
+  minShiftMinutesForBreak: number;
+  breakWindowStartOffsetMinutes: number;
+  breakWindowEndOffsetMinutes: number;
+
+  /** Store-level preference weights */
+  consecutiveProdWeight: number;
+  consecutiveRegWeight: number;
+  earlyBreakWeight: number;
+  lateBreakWeight: number;
+  productFirstHourWeight: number;
+  productTaskWeight: number;
+  registerFirstHourWeight: number;
+  registerTaskWeight: number;
 }
 
 /**
@@ -159,13 +185,26 @@ export interface StoreConstraints {
 export interface RoleMetadata {
   /** Role name */
   role: TaskType;
-  
-  /** Assignment mode: team window or individual hours */
-  assignmentMode: 'TEAM_WINDOW' | 'INDIVIDUAL_HOURS';
-  
-  /** Whether hours should be kept consecutive/blocked */
-  isConsecutive: boolean;
-  
+
+  /** Assignment model communicated to solver */
+  assignmentModel: 'HOURLY_ROLE_CONSTRAINT' | 'COVERAGE_WINDOW' | 'CREW_ROLE_REQUIREMENT';
+
+  /** Scheduling knobs */
+  blockSizeMinutes?: number;
+  minSegments?: number;
+  maxSegments?: number;
+  allowOutsideStoreHours?: boolean;
+
+  /** Behavioral flags */
+  isUniversal?: boolean;
+  isBreakRole?: boolean;
+  isParkingRole?: boolean;
+  isConsecutive?: boolean;
+
+  /** Per-crew time bounds for this role */
+  minMinutesPerCrew?: number;
+  maxMinutesPerCrew?: number;
+
   /** Optional detail/variant (e.g. "bread", "signs") */
   detail?: string;
 }
