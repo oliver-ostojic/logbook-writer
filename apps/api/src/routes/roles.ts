@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { Prisma, PrismaClient, SlotSizeMode } from '@prisma/client';
+import { Prisma, PrismaClient, AssignmentModel } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -8,15 +8,11 @@ type CreateRoleBody = {
   name?: string; // legacy alias for code
   displayName?: string;
   storeId?: number;
-  slotSizeMode?: SlotSizeMode;
-  isUniversal?: boolean;
-  isCoverageRole?: boolean;
-  isBreakRole?: boolean;
-  isParkingRole?: boolean;
-  isConsecutive?: boolean;
-  minContinuousSlots?: number;
-  maxContinuousSlots?: number;
-  family?: string;
+  assignmentModel?: AssignmentModel;
+  slotsMustBeConsecutive?: boolean;
+  minSlots?: number;
+  maxSlots?: number;
+  allowOutsideStoreHours?: boolean;
 };
 
 type UpdateRoleBody = {
@@ -25,9 +21,9 @@ type UpdateRoleBody = {
 
 export function registerRoleRoutes(app: FastifyInstance) {
   const roleInclude = {
-    CrewRole: {
+    crewRoles: {
       include: {
-        Crew: { select: { id: true, name: true } },
+        crew: { select: { id: true, name: true } },
       },
     },
   } satisfies Prisma.RoleInclude;
@@ -35,14 +31,15 @@ export function registerRoleRoutes(app: FastifyInstance) {
   type RoleWithCrew = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;
 
   const formatRole = (role: RoleWithCrew) => {
-    const { CrewRole, ...rest } = role;
+    const { crewRoles, ...rest } = role;
     return {
       ...rest,
-      crewMembers: CrewRole.map((cr) => ({
+      crewMembers: crewRoles.map((cr) => ({
         crewId: cr.crewId,
-        crewMember: cr.Crew,
+        crewMember: cr.crew,
         roleId: cr.roleId,
         assignedAt: cr.assignedAt,
+        specialization: cr.specializationType,
       })),
     };
   };
@@ -54,15 +51,11 @@ export function registerRoleRoutes(app: FastifyInstance) {
       name,
       displayName,
       storeId,
-      slotSizeMode,
-      isUniversal,
-      isCoverageRole,
-      isBreakRole,
-      isParkingRole,
-      isConsecutive,
-      minContinuousSlots,
-      maxContinuousSlots,
-      family,
+      assignmentModel,
+      slotsMustBeConsecutive,
+      minSlots,
+      maxSlots,
+      allowOutsideStoreHours,
     } = req.body;
 
     const resolvedCode = code ?? name;
@@ -70,20 +63,20 @@ export function registerRoleRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'code is required' });
     }
     
+    if (storeId === undefined) {
+      return reply.code(400).send({ error: 'storeId is required' });
+    }
+    
     const role = await prisma.role.create({
       data: {
         code: resolvedCode,
         displayName: displayName ?? resolvedCode,
-        ...(storeId !== undefined && { storeId }),
-        ...(slotSizeMode && { slotSizeMode }),
-        ...(isUniversal !== undefined && { isUniversal }),
-        ...(isCoverageRole !== undefined && { isCoverageRole }),
-        ...(isBreakRole !== undefined && { isBreakRole }),
-        ...(isParkingRole !== undefined && { isParkingRole }),
-        ...(isConsecutive !== undefined && { isConsecutive }),
-        ...(minContinuousSlots !== undefined && { minContinuousSlots }),
-        ...(maxContinuousSlots !== undefined && { maxContinuousSlots }),
-        ...(family !== undefined && { family }),
+        storeId,
+        assignmentModel: assignmentModel ?? 'UNIVERSAL',
+        slotsMustBeConsecutive: slotsMustBeConsecutive ?? false,
+        minSlots: minSlots ?? 1,
+        maxSlots: maxSlots ?? 1,
+        allowOutsideStoreHours: allowOutsideStoreHours ?? false,
       },
       include: roleInclude,
     });
@@ -122,7 +115,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
       include: roleInclude,
     });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
-    const crew = role.CrewRole.map((cr) => cr.Crew);
+    const crew = role.crewRoles.map((cr) => cr.crew);
     return crew;
   });
 

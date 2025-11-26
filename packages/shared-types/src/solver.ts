@@ -15,6 +15,7 @@ export enum TaskType {
   PARKING_HELM = 'PARKING_HELM',
   ORDER_WRITER = 'ORDER_WRITER',
   ART = 'ART',
+  BREAK = 'BREAK',
   MEAL_BREAK = 'MEAL_BREAK',
   TRUCK = 'TRUCK',
   DEMO = 'DEMO',
@@ -57,37 +58,11 @@ export interface SolverCrewMember {
   
   /** Can this crew member do parking helms? */
   canParkingHelms: boolean;
-  
-  // ===== Preferences =====
-  
-  /** Preferred task type for first working hour */
-  prefFirstHour?: TaskType;
-  
-  /** Weight/priority for first hour preference (8/40/200/1000) */
-  prefFirstHourWeight?: number;
-  
-  /** Preferred task type overall (product vs register bias) */
-  prefTask?: TaskType;
-  
-  /** Weight/priority for task preference (8/40/200/1000) */
-  prefTaskWeight?: number;
-  
-  /** Switch penalty weight for consecutive product blocks (higher = prefer longer blocks) */
-  consecutiveProdWeight?: number;
-  
-  /** Switch penalty weight for consecutive register blocks (higher = prefer longer blocks) */
-  consecutiveRegWeight?: number;
-  
-  /** Break timing preference: -1 = earlier (3h), 0 = neutral, +1 = later (4.5h) */
-  prefBreakTiming?: number;
-  
-  /** Weight/priority for break timing preference (8/40/200/1000) */
-  prefBreakTimingWeight?: number;
 
-  /** Minimum hours this crew must spend on REGISTER (daily) */
+  /** Minimum hours this crew must spend on REGISTER (daily) - LEGACY FIELD */
   minRegisterHours?: number;
 
-  /** Maximum hours this crew can spend on REGISTER (daily) */
+  /** Maximum hours this crew can spend on REGISTER (daily) - LEGACY FIELD */
   maxRegisterHours?: number;
 }
 
@@ -146,6 +121,45 @@ export interface CoverageWindow {
 }
 
 /**
+ * Preference type for scoring crew satisfaction
+ */
+export enum PreferenceType {
+  FIRST_HOUR = 'FIRST_HOUR',
+  FAVORITE = 'FAVORITE',
+  CONSECUTIVE = 'CONSECUTIVE',
+  TIMING = 'TIMING',
+}
+
+/**
+ * Crew preference configuration for objective function
+ * 
+ * Represents a single preference that can be satisfied/scored.
+ * Multiple preferences can exist for the same crew.
+ */
+export interface PreferenceConfig {
+  /** Crew member ID */
+  crewId: string;
+  
+  /** Role this preference applies to (null = any role for this preference type) */
+  role: TaskType | null;
+  
+  /** Type of preference */
+  preferenceType: PreferenceType;
+  
+  /** Base weight from role preference (store-level default) */
+  baseWeight: number;
+  
+  /** Crew-specific weight multiplier (0.0-5.0, typically 0.5, 1.0, 2.0) */
+  crewWeight: number;
+  
+  /** Dynamic adaptive boost based on historical satisfaction (default 1.0) */
+  adaptiveBoost: number;
+  
+  /** Optional integer value for preferences needing it (e.g., TIMING: -1 early, +1 late) */
+  intValue?: number;
+}
+
+/**
  * Store-level constraints
  */
 export interface StoreConstraints {
@@ -164,19 +178,9 @@ export interface StoreConstraints {
   endRegHour: number;
 
   /** Break policy */
-  minShiftMinutesForBreak: number;
-  breakWindowStartOffsetMinutes: number;
-  breakWindowEndOffsetMinutes: number;
-
-  /** Store-level preference weights */
-  consecutiveProdWeight: number;
-  consecutiveRegWeight: number;
-  earlyBreakWeight: number;
-  lateBreakWeight: number;
-  productFirstHourWeight: number;
-  productTaskWeight: number;
-  registerFirstHourWeight: number;
-  registerTaskWeight: number;
+  reqShiftLengthForBreak: number;
+  breakWindowStart: number;
+  breakWindowEnd: number;
 }
 
 /**
@@ -187,13 +191,14 @@ export interface RoleMetadata {
   role: TaskType;
 
   /** Assignment model communicated to solver */
-  assignmentModel: 'HOURLY_ROLE_CONSTRAINT' | 'COVERAGE_WINDOW' | 'CREW_ROLE_REQUIREMENT';
+  assignmentModel: 'HOURLY' | 'HOURLY_WINDOW' | 'DAILY';
 
   /** Scheduling knobs */
-  blockSizeMinutes?: number;
-  minSegments?: number;
-  maxSegments?: number;
   allowOutsideStoreHours?: boolean;
+  slotsMustBeConsecutive?: boolean;
+  minSlots?: number;
+  maxSlots?: number;
+  blockSize?: number;  // Assignment increment (1=any, 2=2-slot blocks, 4=4-slot blocks, etc.)
 
   /** Behavioral flags */
   isUniversal?: boolean;
@@ -221,6 +226,9 @@ export interface SolverInput {
   
   /** List of crew members working this day */
   crew: SolverCrewMember[];
+  
+  /** Crew preferences for objective function scoring */
+  preferences: PreferenceConfig[];
   
   /** Per-hour staffing requirements */
   hourlyRequirements: HourlyStaffingRequirement[];

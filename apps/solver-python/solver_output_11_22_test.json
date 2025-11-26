@@ -1,0 +1,17 @@
+{
+  "success": false,
+  "metadata": {
+    "status": "INFEASIBLE",
+    "objectiveScore": null,
+    "runtimeMs": 115,
+    "mipGap": null,
+    "numCrew": 61,
+    "numSlots": 48,
+    "slotMinutes": 30,
+    "numAssignments": 0,
+    "violations": [
+      "Model is infeasible but specific violations could not be determined"
+    ]
+  },
+  "assignments": []
+}

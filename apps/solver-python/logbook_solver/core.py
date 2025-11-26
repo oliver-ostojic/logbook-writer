@@ -20,12 +20,13 @@ class LogbookSolver:
         # Raw inputs
         # ------------------------------------------------------------------
         self.date = data['date']
-        self.store = data.get('store', {})
+        self.store = data.get('storeMetadata', {})
         self.crew = data['crew']
         self.hourly_requirements = data.get('hourlyRequirements', [])
         self.crew_role_requirements = data.get('crewRoleRequirements', [])
         self.coverage_windows = data.get('coverageWindows', [])
         self.role_metadata = data.get('roleMetadata', [])
+        self.preferences = data.get('preferences', [])
         self.time_limit = data.get('timeLimitSeconds', 300)
 
         # ------------------------------------------------------------------
@@ -49,7 +50,6 @@ class LogbookSolver:
         # ------------------------------------------------------------------
         # Derived indices & metadata
         # ------------------------------------------------------------------
-        self._default_universal_roles = {'REGISTER', 'PRODUCT', 'PARKING_HELM', 'MEAL_BREAK'}
         self.role_meta_map: Dict[str, Dict[str, Any]] = {
             meta['role']: meta for meta in self.role_metadata if 'role' in meta
         }
@@ -73,46 +73,127 @@ class LogbookSolver:
         self.crew_by_id = {c['id']: c for c in self.crew}
 
     def _index_roles(self) -> None:
+        """
+        Index all roles and build tracking sets for different assignment models.
+        
+        Assignment Models:
+        - HOURLY: Roles everyone can work (may or may not have hourly staffing requirements)
+        - DAILY: Roles with per-crew daily requirements (only crew with requirements)
+        - HOURLY_WINDOW: Roles with hourly requirements in time windows (must be in eligibleRoles)
+        """
         self.roles = set()
+        
+        # Collect all roles from crew eligibleRoles
         for crew in self.crew:
             for role in self._crew_roles(crew):
                 self.roles.add(role)
-        self.roles.update(self._default_universal_roles)
-
-        self.half_hour_roles = set()
-        for role in self.roles:
-            slot_mode = self._get_slot_size_mode(role)
-            if slot_mode in ('HALF_HOUR_ONLY', 'HALF_OR_FULL'):
-                self.half_hour_roles.add(role)
+        
+        # Build HOURLY roles: Check roleMetadata for assignmentModel='HOURLY'
+        # These roles are available to everyone, regardless of hourly requirements
+        self._hourly_roles = set()
+        for role_meta in self.role_metadata:
+            role = role_meta.get('role')
+            if role and role_meta.get('assignmentModel') == 'HOURLY':
+                self._hourly_roles.add(role)
+                self.roles.add(role)
+        
+        # Build DAILY roles: roles with per-crew daily requirements
+        self._daily_roles = set()
+        self._crew_daily_requirements = {}  # (crew_id, role) -> required_hours
+        for req in self.crew_role_requirements:
+            role = req['role']
+            crew_id = req['crewId']
+            self._daily_roles.add(role)
+            self._crew_daily_requirements[(crew_id, role)] = req['requiredHours']
+            self.roles.add(role)
+        
+        # Build HOURLY_WINDOW roles: Check roleMetadata for assignmentModel='HOURLY_WINDOW'
+        self._hourly_window_roles = set()
+        for role_meta in self.role_metadata:
+            role = role_meta.get('role')
+            if role and role_meta.get('assignmentModel') == 'HOURLY_WINDOW':
+                self._hourly_window_roles.add(role)
+                self.roles.add(role)
+        
+        # TODO: Build exemptions map
+        # self._crew_role_exemptions = set()  # (crew_id, role) tuples
+        # for exemption in data.get('crewRoleExemptions', []):
+        #     self._crew_role_exemptions.add((exemption['crewId'], exemption['role']))
 
     # ------------------------------------------------------------------
     # Decision variables
     # ------------------------------------------------------------------
     def _build_decision_variables(self) -> None:
+        """
+        Create boolean decision variables x[(crew_id, slot, role)] = 1 if assigned.
+        
+        Variable creation rules by assignment model:
+        1. HOURLY roles: Create for ALL crew (REGISTER, PRODUCT, PARKING_HELM, BREAK)
+        2. DAILY roles: Only create for crew with daily requirements (ORDER_WRITER, ART)
+        3. HOURLY_WINDOW roles: Create for crew in eligibleRoles (DEMO, WINE_DEMO)
+        4. TODO: Exemptions - never create if crew is exempt from role
+        """
+        x = {}
+        
         for crew_id in self.crew_ids:
             crew = self.crew_by_id[crew_id]
-            assigned_roles = self._crew_roles(crew)
-
+            eligible_roles = set(self._crew_roles(crew))
+            
             shift_start_slot = self._minutes_to_slot_floor(crew.get('shiftStartMin', 0))
             shift_end_slot = min(
                 self._minutes_to_slot_ceil(crew.get('shiftEndMin', 24 * 60)),
                 self.num_slots,
             )
-
+            
             for slot in range(shift_start_slot, shift_end_slot):
                 inside_store_hours = self._slot_inside_store_hours(slot)
+                
                 for role in self.roles:
-                    if not (self._is_universal_role(role) or role in assigned_roles):
+                    # TODO: Check exemptions first
+                    # if (crew_id, role) in self._crew_role_exemptions:
+                    #     continue
+                    
+                    # Determine if we should create a variable for this (crew, slot, role)
+                    should_create = False
+                    
+                    if role in self._hourly_roles:
+                        # HOURLY: create for all crew (includes BREAK, REGISTER, PRODUCT, PARKING_HELM)
+                        should_create = True
+                    
+                    elif role in self._daily_roles:
+                        # DAILY: only create if crew has requirement
+                        should_create = (crew_id, role) in self._crew_daily_requirements
+                    
+                    elif role in self._hourly_window_roles:
+                        # HOURLY_WINDOW: must be in eligibleRoles
+                        should_create = role in eligible_roles
+                    
+                    else:
+                        # Unknown role - skip
+                        should_create = False
+                    
+                    if not should_create:
                         continue
-
+                    
+                    # Apply slot-level constraints
+                    
+                    # Store hours: Skip if outside and role doesn't allow it
                     if not inside_store_hours and not self._role_allows_outside_hours(role):
                         continue
-
+                    
+                    # Register window: Skip if outside window
                     if self._is_register_role(role) and not self._slot_inside_register_window(slot):
                         continue
-
+                    
+                    # Coverage window: Skip if outside window
+                    if not self._slot_inside_coverage_window(slot, role):
+                        continue
+                    
+                    # CREATE VARIABLE
                     var_name = f'x_{crew_id}_{slot}_{role}'
-                    self.x[(crew_id, slot, role)] = self.model.NewBoolVar(var_name)
+                    x[(crew_id, slot, role)] = self.model.NewBoolVar(var_name)
+        
+        self.x = x
 
     # ------------------------------------------------------------------
     # Solve & results
@@ -166,37 +247,25 @@ class LogbookSolver:
         legacy_roles = crew.get('roles', []) or []
         return [r['role'] for r in legacy_roles if isinstance(r, dict) and 'role' in r]
 
-    def _is_universal_role(self, role: str) -> bool:
-        meta = self.role_meta_map.get(role)
-        if meta is not None and 'isUniversal' in meta:
-            return bool(meta.get('isUniversal'))
-        return role in self._default_universal_roles
-
-    def _get_slot_size_mode(self, role: str) -> str:
-        meta = self.role_meta_map.get(role)
-        if meta is not None and 'slotSizeMode' in meta:
-            return meta.get('slotSizeMode')
-        return 'HOUR_ONLY' if role == 'REGISTER' else 'HALF_OR_FULL'
-
     def _break_roles(self) -> List[str]:
         roles = [r for r, meta in self.role_meta_map.items() if meta.get('isBreakRole', False)]
-        return roles or ['MEAL_BREAK']
+        return roles if roles else []
 
     def _parking_roles(self) -> List[str]:
         roles = [r for r, meta in self.role_meta_map.items() if meta.get('isParkingRole', False)]
-        return roles or ['PARKING_HELM']
+        return roles if roles else []
 
     def _is_break_role(self, role: str) -> bool:
         meta = self.role_meta_map.get(role)
         if meta is not None and 'isBreakRole' in meta:
             return bool(meta.get('isBreakRole'))
-        return role == 'MEAL_BREAK'
+        return False
 
     def _is_parking_role(self, role: str) -> bool:
         meta = self.role_meta_map.get(role)
         if meta is not None and 'isParkingRole' in meta:
             return bool(meta.get('isParkingRole'))
-        return role == 'PARKING_HELM'
+        return False
 
     def _is_register_role(self, role: str) -> bool:
         return role == 'REGISTER'
@@ -217,6 +286,25 @@ class LogbookSolver:
         start_reg, end_reg = self.register_window
         return start_reg <= slot_start < end_reg
 
+    def _get_coverage_window(self, role: str) -> tuple[int, int] | None:
+        """Get the coverage window for a role, returns (start_min, end_min) or None."""
+        for window in self.coverage_windows:
+            if window['role'] == role:
+                start_hour = window['startHour']
+                end_hour = window['endHour']
+                return (start_hour * 60, end_hour * 60)
+        return None
+
+    def _slot_inside_coverage_window(self, slot: int, role: str) -> bool:
+        """Check if a slot is inside the role's coverage window (if it has one)."""
+        window = self._get_coverage_window(role)
+        if window is None:
+            return True  # No coverage window means no restriction
+        
+        slot_start = self._slot_start_minute(slot)
+        start_min, end_min = window
+        return start_min <= slot_start < end_min
+
     def _minutes_to_slot_floor(self, minutes: int) -> int:
         return max(0, minutes // self.slot_minutes)
 
@@ -230,9 +318,9 @@ class LogbookSolver:
 
     def _store_break_policy(self) -> Dict[str, int]:
         return {
-            'min_shift_minutes': self.store.get('minShiftMinutesForBreak', 360),
-            'break_start_offset_minutes': self.store.get('breakWindowStartOffsetMinutes', 180),
-            'break_end_offset_minutes': self.store.get('breakWindowEndOffsetMinutes', 270),
+            'min_shift_minutes': self.store.get('reqShiftLengthForBreak', 360),
+            'break_start_offset_minutes': self.store.get('breakWindowStart', 180),
+            'break_end_offset_minutes': self.store.get('breakWindowEnd', 270),
         }
 
     def _min_shift_slots_for_break(self) -> int:

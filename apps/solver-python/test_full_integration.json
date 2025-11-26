@@ -1,0 +1,457 @@
+{
+  "date": "2025-11-26",
+  "store": {
+    "storeId": 768,
+    "baseSlotMinutes": 30,
+    "openMinutesFromMidnight": 480,
+    "closeMinutesFromMidnight": 1260,
+    "startRegHour": 480,
+    "endRegHour": 1260,
+    "reqShiftLengthForBreak": 360,
+    "breakWindowStart": 180,
+    "breakWindowEnd": 270
+  },
+  "crew": [
+    {
+      "id": "1289515",
+      "name": "Adam Carey",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [
+        "ORDER_WRITER",
+        "DEMO",
+        "WINE_DEMO"
+      ],
+      "canBreak": true,
+      "canParkingHelms": false
+    },
+    {
+      "id": "1284548",
+      "name": "Leo Kelly",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [
+        "ORDER_WRITER"
+      ],
+      "canBreak": true,
+      "canParkingHelms": false
+    },
+    {
+      "id": "1286090",
+      "name": "Matt Connor",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [
+        "ORDER_WRITER"
+      ],
+      "canBreak": true,
+      "canParkingHelms": false
+    },
+    {
+      "id": "1281990",
+      "name": "Matthew Studebaker",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [
+        "ORDER_WRITER",
+        "DEMO",
+        "WINE_DEMO"
+      ],
+      "canBreak": true,
+      "canParkingHelms": false
+    },
+    {
+      "id": "1281205",
+      "name": "Stephanie Mitchell",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [
+        "ORDER_WRITER",
+        "DEMO",
+        "WINE_DEMO"
+      ],
+      "canBreak": true,
+      "canParkingHelms": false
+    },
+    {
+      "id": "1286542",
+      "name": "Sharon Garcia",
+      "shiftStartMin": 0,
+      "shiftEndMin": 0,
+      "eligibleRoles": [],
+      "canBreak": true,
+      "canParkingHelms": false
+    }
+  ],
+  "preferences": [
+    {
+      "crewId": "1281205",
+      "role": "REGISTER",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1281990",
+      "role": "REGISTER",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "REGISTER",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1281990",
+      "role": "PRODUCT",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "PRODUCT",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "PRODUCT",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 1000,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1286090",
+      "role": "REGISTER",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 200,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1281205",
+      "role": "PRODUCT",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 200,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "PRODUCT",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 200,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "PRODUCT",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 200,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1286090",
+      "role": "PRODUCT",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 200,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1281205",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": -1
+    },
+    {
+      "crewId": "1281990",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1286090",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1286542",
+      "role": "PARKING_HELMS",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1286542",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1281990",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1286090",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1281205",
+      "role": "BREAK",
+      "preferenceType": "TIMING",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1
+    },
+    {
+      "crewId": "1281205",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1281990",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1286542",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1284548",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1286090",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "PRODUCT",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    },
+    {
+      "crewId": "1289515",
+      "role": "REGISTER",
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 40,
+      "crewWeight": 1,
+      "adaptiveBoost": 1
+    }
+  ],
+  "hourlyRequirements": [],
+  "crewRoleRequirements": [],
+  "coverageWindows": [],
+  "roleMetadata": [
+    {
+      "role": "PARKING_HELMS",
+      "assignmentModel": "UNIVERSAL",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": false,
+      "minSlots": 1,
+      "maxSlots": 1,
+      "blockSize": 1,
+      "isConsecutive": false,
+      "isUniversal": true,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Parking Helms"
+    },
+    {
+      "role": "ART",
+      "assignmentModel": "CREW_SPECIFIC",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": true,
+      "minSlots": 0,
+      "maxSlots": 8,
+      "blockSize": 1,
+      "isConsecutive": true,
+      "isUniversal": false,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Art"
+    },
+    {
+      "role": "PRODUCT",
+      "assignmentModel": "UNIVERSAL",
+      "allowOutsideStoreHours": true,
+      "slotsMustBeConsecutive": false,
+      "minSlots": 4,
+      "maxSlots": 8,
+      "blockSize": 1,
+      "isConsecutive": false,
+      "isUniversal": true,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Product"
+    },
+    {
+      "role": "ORDER_WRITER",
+      "assignmentModel": "CREW_SPECIFIC",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": true,
+      "minSlots": 0,
+      "maxSlots": 4,
+      "blockSize": 1,
+      "isConsecutive": true,
+      "isUniversal": false,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Order Writer"
+    },
+    {
+      "role": "BREAK",
+      "assignmentModel": "UNIVERSAL",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": true,
+      "minSlots": 1,
+      "maxSlots": 2,
+      "blockSize": 1,
+      "isConsecutive": true,
+      "isUniversal": true,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Break"
+    },
+    {
+      "role": "DEMO",
+      "assignmentModel": "COVERAGE_WINDOW",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": false,
+      "minSlots": 0,
+      "maxSlots": 4,
+      "blockSize": 2,
+      "isConsecutive": false,
+      "isUniversal": false,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Demo"
+    },
+    {
+      "role": "WINE_DEMO",
+      "assignmentModel": "COVERAGE_WINDOW",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": false,
+      "minSlots": 0,
+      "maxSlots": 4,
+      "blockSize": 2,
+      "isConsecutive": false,
+      "isUniversal": false,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Wine Demo"
+    },
+    {
+      "role": "REGISTER",
+      "assignmentModel": "UNIVERSAL",
+      "allowOutsideStoreHours": false,
+      "slotsMustBeConsecutive": false,
+      "minSlots": 4,
+      "maxSlots": 8,
+      "blockSize": 2,
+      "isConsecutive": false,
+      "isUniversal": true,
+      "isBreakRole": false,
+      "isParkingRole": false,
+      "detail": "Register"
+    }
+  ]
+}

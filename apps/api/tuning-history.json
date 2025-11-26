@@ -1,0 +1,174 @@
+[
+  {
+    "timestamp": "2025-11-26T21:42:41.528Z",
+    "method": "minority",
+    "weights": {
+      "FIRST_HOUR": 4,
+      "FAVORITE": 4,
+      "TIMING": 4,
+      "CONSECUTIVE": 4
+    },
+    "satisfaction": {
+      "total": 217,
+      "met": 83,
+      "metRate": 0.3824884792626728,
+      "avgSatisfaction": 0.3598287017641855,
+      "byType": {
+        "FIRST_HOUR": {
+          "total": 56,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "FAVORITE": {
+          "total": 58,
+          "met": 39,
+          "sumSat": 39,
+          "avgSat": 0.6724137931034483
+        },
+        "TIMING": {
+          "total": 59,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "CONSECUTIVE": {
+          "total": 44,
+          "met": 44,
+          "sumSat": 39.08282828282827,
+          "avgSat": 0.8882460973370061
+        }
+      }
+    },
+    "score": 38.637503671708345
+  },
+  {
+    "timestamp": "2025-11-26T21:43:19.372Z",
+    "method": "majority",
+    "weights": {
+      "FIRST_HOUR": 2,
+      "FAVORITE": 2,
+      "TIMING": 2,
+      "CONSECUTIVE": 2
+    },
+    "satisfaction": {
+      "total": 217,
+      "met": 83,
+      "metRate": 0.3824884792626728,
+      "avgSatisfaction": 0.3582926034538935,
+      "byType": {
+        "FIRST_HOUR": {
+          "total": 56,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "FAVORITE": {
+          "total": 58,
+          "met": 39,
+          "sumSat": 39,
+          "avgSat": 0.6724137931034483
+        },
+        "TIMING": {
+          "total": 59,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "CONSECUTIVE": {
+          "total": 44,
+          "met": 44,
+          "sumSat": 38.749494949494945,
+          "avgSat": 0.8806703397612488
+        }
+      }
+    },
+    "score": 38.59142072239958
+  },
+  {
+    "timestamp": "2025-11-26T21:43:57.252Z",
+    "method": "gradient",
+    "weights": {
+      "FIRST_HOUR": 5,
+      "FAVORITE": 4,
+      "TIMING": 4,
+      "CONSECUTIVE": 4
+    },
+    "satisfaction": {
+      "total": 217,
+      "met": 81,
+      "metRate": 0.37327188940092165,
+      "avgSatisfaction": 0.3310157855612399,
+      "byType": {
+        "FIRST_HOUR": {
+          "total": 56,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "FAVORITE": {
+          "total": 58,
+          "met": 37,
+          "sumSat": 37,
+          "avgSat": 0.6379310344827587
+        },
+        "TIMING": {
+          "total": 59,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "CONSECUTIVE": {
+          "total": 44,
+          "met": 44,
+          "sumSat": 39.46464646464645,
+          "avgSat": 0.8969237832874193
+        }
+      }
+    },
+    "score": 37.14583190149475
+  },
+  {
+    "timestamp": "2025-11-26T21:48:31.165Z",
+    "method": "hybrid",
+    "weights": {
+      "FIRST_HOUR": 4,
+      "FAVORITE": 4,
+      "TIMING": 4,
+      "CONSECUTIVE": 4
+    },
+    "satisfaction": {
+      "total": 217,
+      "met": 81,
+      "metRate": 0.37327188940092165,
+      "avgSatisfaction": 0.3504166084811244,
+      "byType": {
+        "FIRST_HOUR": {
+          "total": 56,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "FAVORITE": {
+          "total": 58,
+          "met": 37,
+          "sumSat": 37,
+          "avgSat": 0.6379310344827587
+        },
+        "TIMING": {
+          "total": 59,
+          "met": 0,
+          "sumSat": 0,
+          "avgSat": 0
+        },
+        "CONSECUTIVE": {
+          "total": 44,
+          "met": 44,
+          "sumSat": 39.040404040404034,
+          "avgSat": 0.8872819100091826
+        }
+      }
+    },
+    "score": 37.72785658909129
+  }
+]

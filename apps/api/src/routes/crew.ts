@@ -81,7 +81,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
         crewId: cr.crewId,
         roleId: cr.roleId,
         assignedAt: cr.assignedAt,
-        specializationType: cr.specializationType,
+  specialization: (cr as any).specialization ?? (cr as any).specializationType ?? null,
         role: cr.Role,
       })),
     };

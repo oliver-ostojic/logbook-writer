@@ -29,7 +29,7 @@ const normalizeTask = (value?: string): TaskType | undefined => {
 async function addCrew() {
   // Helper to find or create roles
   const getRole = async (code: string) => {
-    const role = await prisma.role.findUnique({ where: { name: code } });
+    const role = await prisma.role.findUnique({ where: { code } });
     if (!role) {
       console.log(`⚠️  Role '${code}' not found in database. Please seed roles first.`);
       process.exit(1);

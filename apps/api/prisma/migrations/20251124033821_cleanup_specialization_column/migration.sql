@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Role" ALTER COLUMN "minSlots" SET DEFAULT 1,
+ALTER COLUMN "maxSlots" SET DEFAULT 1;

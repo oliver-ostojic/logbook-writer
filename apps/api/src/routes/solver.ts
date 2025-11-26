@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { Prisma, PrismaClient, Role } from '@prisma/client';
+import { Prisma, PrismaClient, type Role, type RolePreference as RolePreferenceModel, type CrewPreference as CrewPreferenceModel } from '@prisma/client';
 import { spawn } from 'child_process';
 import path from 'path';
+import crypto from 'crypto';
 import { 
   SolverInput, 
   SolverOutput, 
@@ -13,19 +14,36 @@ import {
   TaskType,
   TaskAssignment,
   SolverStatus,
+  PreferenceConfig,
+  PreferenceType,
 } from '@logbook-writer/shared-types';
+import { saveLogbookWithMetadata } from '../services/logbook-manager';
 
 const prisma = new PrismaClient();
 
 const crewInclude = {
-  CrewRole: {
+  crewRoles: {
     include: {
-      Role: true,
+      role: true,
     },
   },
 } satisfies Prisma.CrewInclude;
 
 type CrewWithRoles = Prisma.CrewGetPayload<{ include: typeof crewInclude }>;
+
+type RolePreferenceWithRole = Awaited<
+  ReturnType<typeof prisma.rolePreference.findMany>
+>[number];
+
+type CrewPreferenceWithRole = Awaited<
+  ReturnType<typeof prisma.crewPreference.findMany>
+>[number];
+
+type AssignmentModelValue = 'HOURLY' | 'HOURLY_WINDOW' | 'DAILY';
+
+type CrewPreferenceRecord = CrewPreferenceModel & {
+  rolePreference: RolePreferenceModel & { role: Role | null };
+};
 
 // Path to Python solver
 const SOLVER_DIR = path.join(process.cwd(), '..', 'solver-python');
@@ -58,8 +76,232 @@ const toTaskType = (value?: string | null): TaskType | undefined => {
   return Object.values(TaskType).includes(upper as TaskType) ? (upper as TaskType) : undefined;
 };
 
-const preferenceToTaskType = (value?: string | null): TaskType | undefined =>
-  value ? toTaskType(value) : undefined;
+/**
+ * Calculate adaptive boost for a crew's preference based on recent satisfaction history
+ * 
+ * @param crewId - Crew member ID
+ * @param rolePreferenceId - Role preference ID
+ * @param lookbackDays - Number of days to look back for satisfaction history (default: 7)
+ * @returns adaptiveBoost value (>= 1.0, higher = more priority)
+ * 
+ * Algorithm:
+ * - Query PreferenceSatisfaction records for last N days
+ * - Calculate satisfaction rate (met / total days)
+ * - Lower satisfaction = higher boost (fairness mechanism)
+ * - No history = 1.0 (neutral, no boost)
+ * 
+ * Examples:
+ * - 0% satisfied over 7 days → boost = 3.0 (high priority)
+ * - 50% satisfied → boost = 2.0 (medium priority)
+ * - 100% satisfied → boost = 1.0 (normal priority)
+ */
+async function calculateAdaptiveBoost(
+  crewId: string,
+  rolePreferenceId: number,
+  lookbackDays: number = 7
+): Promise<number> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - lookbackDays);
+  
+  const history = await prisma.preferenceSatisfaction.findMany({
+    where: {
+      crewId,
+      rolePreferenceId,
+      date: { gte: cutoffDate }
+    },
+    orderBy: { date: 'desc' }
+  });
+  
+  // No history = default to 1.0 (neutral, no boost or penalty)
+  if (history.length === 0) {
+    return 1.0;
+  }
+  
+  // Calculate satisfaction rate
+  const metCount = history.filter(h => h.met).length;
+  const satisfactionRate = metCount / history.length;
+  
+  // Adaptive boost formula: lower satisfaction = higher boost
+  // Tunable parameter controls max boost (currently 2.0 = up to 3.0x)
+  const BOOST_MULTIPLIER = 2.0;
+  const adaptiveBoost = 1.0 + (1.0 - satisfactionRate) * BOOST_MULTIPLIER;
+  
+  return adaptiveBoost;
+}
+
+/**
+ * Calculate and save preference satisfaction after solver completes
+ * 
+ * This creates the historical data that feeds back into calculateAdaptiveBoost
+ */
+async function savePreferenceSatisfaction(
+  logbookId: string,
+  date: Date,
+  assignments: TaskAssignment[],
+  preferences: PreferenceConfig[]
+): Promise<void> {
+  // Group assignments by crewId for efficient lookup
+  const assignmentsByCrew = new Map<string, TaskAssignment[]>();
+  for (const assignment of assignments) {
+    if (!assignmentsByCrew.has(assignment.crewId)) {
+      assignmentsByCrew.set(assignment.crewId, []);
+    }
+    assignmentsByCrew.get(assignment.crewId)!.push(assignment);
+  }
+  
+  const satisfactionRecords: Prisma.PreferenceSatisfactionCreateManyInput[] = [];
+  
+  for (const pref of preferences) {
+    const crewAssignments = assignmentsByCrew.get(pref.crewId) || [];
+    
+    let met = false;
+    let satisfaction = 0.0;
+    
+    // Calculate satisfaction based on preference type
+    switch (pref.preferenceType) {
+      case 'FIRST_HOUR': {
+        // Check if crew got preferred role in first assignment
+        if (crewAssignments.length > 0 && pref.role) {
+          const firstAssignment = crewAssignments[0];
+          met = firstAssignment.taskType === pref.role;
+          satisfaction = met ? 1.0 : 0.0;
+        }
+        break;
+      }
+      
+      case 'FAVORITE': {
+        // Calculate percentage of time spent on favorite role
+        if (pref.role) {
+          const totalMinutes = crewAssignments.reduce(
+            (sum, a) => sum + (a.endTime - a.startTime), 
+            0
+          );
+          const favoriteMinutes = crewAssignments
+            .filter(a => a.taskType === pref.role)
+            .reduce((sum, a) => sum + (a.endTime - a.startTime), 0);
+          
+          satisfaction = totalMinutes > 0 ? favoriteMinutes / totalMinutes : 0;
+          met = satisfaction >= 0.5; // Met if >50% on favorite role
+        }
+        break;
+      }
+      
+      case 'CONSECUTIVE': {
+        // Check if role assignments are consecutive (no breaks in role)
+        if (pref.role) {
+          const roleAssignments = crewAssignments
+            .filter(a => a.taskType === pref.role)
+            .sort((a, b) => a.startTime - b.startTime);
+          
+          if (roleAssignments.length > 0) {
+            let isConsecutive = true;
+            for (let i = 0; i < roleAssignments.length - 1; i++) {
+              if (roleAssignments[i].endTime !== roleAssignments[i + 1].startTime) {
+                isConsecutive = false;
+                break;
+              }
+            }
+            met = isConsecutive;
+            satisfaction = met ? 1.0 : 0.0;
+          }
+        }
+        break;
+      }
+      
+      case 'TIMING': {
+        // Check if break timing matches preference (early vs late)
+        const breakAssignments = crewAssignments.filter(
+          a => a.taskType === 'BREAK' || a.taskType === 'MEAL_BREAK'
+        );
+        
+        if (breakAssignments.length > 0 && pref.intValue !== undefined && pref.intValue !== null) {
+          const shiftStart = Math.min(...crewAssignments.map(a => a.startTime));
+          const shiftEnd = Math.max(...crewAssignments.map(a => a.endTime));
+          const shiftLength = shiftEnd - shiftStart;
+          
+          const breakStart = breakAssignments[0].startTime;
+          const breakOffset = breakStart - shiftStart;
+          const breakPosition = shiftLength > 0 ? breakOffset / shiftLength : 0;
+          
+          // intValue > 0 = prefer late, intValue < 0 = prefer early
+          if (pref.intValue > 0) {
+            satisfaction = breakPosition; // 0.0 = early, 1.0 = late
+            met = breakPosition > 0.5;
+          } else {
+            satisfaction = 1.0 - breakPosition; // 1.0 = early, 0.0 = late
+            met = breakPosition < 0.5;
+          }
+        }
+        break;
+      }
+    }
+    
+    // Find rolePreferenceId from the preference config
+    // We need to look it up from CrewPreference
+    const crewPref = await prisma.crewPreference.findFirst({
+      where: {
+        crewId: pref.crewId,
+        rolePreference: {
+          preferenceType: pref.preferenceType as any,
+          role: pref.role ? { code: pref.role as string } : undefined,
+        }
+      },
+      select: { rolePreferenceId: true }
+    });
+    
+    if (!crewPref) {
+      continue; // Skip if we can't find the role preference
+    }
+    
+    const effectiveWeight = pref.baseWeight * pref.crewWeight * pref.adaptiveBoost;
+    
+    satisfactionRecords.push({
+      logbookId,
+      crewId: pref.crewId,
+      rolePreferenceId: crewPref.rolePreferenceId,
+      date,
+      satisfaction,
+      met,
+      weightApplied: effectiveWeight,
+      adaptiveBoost: pref.adaptiveBoost,
+      fairnessAdjustment: 0, // TODO: Calculate fairness adjustment
+    });
+  }
+  
+  // Bulk insert all satisfaction records
+  if (satisfactionRecords.length > 0) {
+    await prisma.preferenceSatisfaction.createMany({
+      data: satisfactionRecords,
+      skipDuplicates: true,
+    });
+  }
+  
+  // Update logbook preference metadata summary
+  const totalPreferences = satisfactionRecords.length;
+  const preferencesMet = satisfactionRecords.filter(r => r.met).length;
+  const averageSatisfaction = totalPreferences > 0
+    ? satisfactionRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / totalPreferences
+    : 0;
+  const totalWeightApplied = satisfactionRecords.reduce((sum, r) => sum + (r.weightApplied ?? 0), 0);
+  
+  await prisma.logPreferenceMetadata.upsert({
+    where: { logbookId },
+    create: {
+      id: crypto.randomUUID(),
+      logbookId,
+      totalPreferences,
+      preferencesMet,
+      averageSatisfaction,
+      totalWeightApplied,
+    },
+    update: {
+      totalPreferences,
+      preferencesMet,
+      averageSatisfaction,
+      totalWeightApplied,
+    },
+  });
+}
 
 /**
  * Build the complete SolverInput from database data
@@ -81,122 +323,124 @@ async function buildSolverInput(
   coverageWindowsInput?: Array<{ roleCode: string; startMin: number; endMin: number; requiredCrew: number }>,
   demoWindows?: Array<{ startMin: number; endMin: number; type: 'demo' | 'wine_demo' }>
 ): Promise<SolverInput> {
-  // Normalize date to YYYY-MM-DD
   const normDate = new Date(date).toISOString().slice(0, 10);
   const day = new Date(normDate);
   day.setUTCHours(0, 0, 0, 0);
-  
-  // Load store constraints and preference weights
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: {
-      id: true,
-      baseSlotMinutes: true,
-      openMinutesFromMidnight: true,
-      closeMinutesFromMidnight: true,
-      minShiftMinutesForBreak: true,
-      breakWindowStartOffsetMinutes: true,
-      breakWindowEndOffsetMinutes: true,
-      startRegHour: true,
-      endRegHour: true,
-      consecutiveProdWeight: true,
-      consecutiveRegWeight: true,
-      earlyBreakWeight: true,
-      lateBreakWeight: true,
-      productFirstHourWeight: true,
-      productTaskWeight: true,
-      registerFirstHourWeight: true,
-      registerTaskWeight: true,
-    },
-  });
-  
+
+  const [store, rolePreferences, allStoreRoles] = await Promise.all([
+    prisma.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        baseSlotMinutes: true,
+        openMinutesFromMidnight: true,
+        closeMinutesFromMidnight: true,
+        reqShiftLengthForBreak: true,
+        breakWindowStart: true,
+        breakWindowEnd: true,
+      },
+    }),
+    prisma.rolePreference.findMany({
+      where: { storeId },
+      include: {
+        role: true,
+      },
+    }),
+    prisma.role.findMany({
+      where: { storeId },
+    }),
+  ]);
+
   if (!store) {
     throw new Error(`Store ${storeId} not found`);
   }
-  
-  // Initialize role metadata map early
-  const roleMetadataMap = new Map<number, Role>();
-  
-  // Load ALL roles for this store to ensure UNIVERSAL roles are in metadata
-  const allStoreRoles = await prisma.role.findMany({
-    where: { storeId }
-  });
-  allStoreRoles.forEach(role => {
-    roleMetadataMap.set(role.id, role);
-  });
 
-  // Determine register role time bounds (fallback to legacy defaults for compatibility)
-  const registerRole = allStoreRoles.find((role) => toTaskType(role.code) === TaskType.REGISTER);
-  const defaultRegisterMinMinutes = 120;
-  const defaultRegisterMaxMinutes = 300;
-  const registerTimeBounds = registerRole
-    ? {
-        minMinutes: registerRole.minMinutesPerCrew ?? defaultRegisterMinMinutes,
-        maxMinutes: registerRole.maxMinutesPerCrew ?? defaultRegisterMaxMinutes,
-      }
-    : null;
+  // Build preferences array from crew preferences
+  const crewIds = shifts.map((shift) => shift.crewId);
   
-  // Load crew members with roles and preferences
-  const crewIds = shifts.map(s => s.crewId);
-  const crewData = await prisma.crew.findMany({
-    where: { id: { in: crewIds } },
-    include: crewInclude,
-  }) as CrewWithRoles[];
+  const [crewData, crewPreferenceRecords] = await Promise.all([
+    prisma.crew.findMany({
+      where: { id: { in: crewIds } },
+      include: crewInclude,
+    }) as Promise<CrewWithRoles[]>,
+    crewIds.length
+      ? prisma.crewPreference.findMany({
+          where: { 
+            crewId: { in: crewIds },
+            enabled: true  // Only get enabled preferences
+          },
+          include: {
+            rolePreference: {
+              include: { role: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Build PreferenceConfig array (replacing old hardcoded approach)
+  const preferences: PreferenceConfig[] = [];
   
-  // Helper: convert HH:mm to minutes since midnight
+  for (const crewPref of crewPreferenceRecords as CrewPreferenceRecord[]) {
+    const roleTaskType = toTaskType(crewPref.rolePreference.role?.code);
+    
+    // Calculate adaptive boost based on historical satisfaction
+    const adaptiveBoost = await calculateAdaptiveBoost(
+      crewPref.crewId,
+      crewPref.rolePreferenceId,
+      7  // Look back 7 days
+    );
+    
+    preferences.push({
+      crewId: crewPref.crewId,
+      role: roleTaskType || null,
+      preferenceType: crewPref.rolePreference.preferenceType as PreferenceType,
+      baseWeight: crewPref.rolePreference.baseWeight,
+      crewWeight: crewPref.crewWeight,
+      adaptiveBoost,
+      intValue: crewPref.intValue ?? undefined,
+    });
+  }
+
+  const roleMetadataMap = new Map<number, Role>();
+  allStoreRoles.forEach((role) => roleMetadataMap.set(role.id, role));
+
   const timeToMinutes = (time: string): number => {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
   };
-  
-  // Build crew array with shifts and preferences
+
   const crew: SolverCrewMember[] = shifts.map((shift) => {
-    const crewMember = crewData.find(c => c.id === shift.crewId);
+    const crewMember = crewData.find((c) => c.id === shift.crewId);
     if (!crewMember) {
       throw new Error(`Crew member ${shift.crewId} not found`);
     }
-    
-  const shiftStartMin = timeToMinutes(shift.start);
-  const shiftEndMin = timeToMinutes(shift.end);
+
+    const shiftStartMin = timeToMinutes(shift.start);
+    const shiftEndMin = timeToMinutes(shift.end);
+
     const eligibleRolesSet = new Set<TaskType>();
-    crewMember.CrewRole.forEach((crewRole) => {
-      const resolvedRole = toTaskType(crewRole.Role.code);
-      if (resolvedRole) {
-        eligibleRolesSet.add(resolvedRole);
-        roleMetadataMap.set(crewRole.roleId, crewRole.Role);
-      }
+    crewMember.crewRoles.forEach((crewRole) => {
+      if (!crewRole.role) return;
+      const resolvedRole = toTaskType(crewRole.role.code);
+      if (!resolvedRole) return;
+      eligibleRolesSet.add(resolvedRole);
+      roleMetadataMap.set(crewRole.roleId, crewRole.role);
     });
 
-    const canBreak = true;
     const eligibleRoles = Array.from(eligibleRolesSet);
+    const canBreak = true;
     const canParkingHelms = eligibleRoles.includes(TaskType.PARKING_HELM);
-    if (canBreak && !eligibleRoles.includes(TaskType.MEAL_BREAK)) {
-      eligibleRoles.push(TaskType.MEAL_BREAK);
+    // Add break role if crew can break and doesn't already have one
+    if (canBreak) {
+      const hasBreak = eligibleRoles.includes(TaskType.BREAK) || eligibleRoles.includes(TaskType.MEAL_BREAK);
+      if (!hasBreak) {
+        // Use BREAK if it exists in the store's roles, otherwise MEAL_BREAK
+        const breakRole = allStoreRoles.find(r => r.code === 'BREAK') ? TaskType.BREAK : TaskType.MEAL_BREAK;
+        eligibleRoles.push(breakRole);
+      }
     }
 
-    const shiftDurationMinutes = Math.max(shiftEndMin - shiftStartMin, 0);
-    const shiftDurationHours = Math.max(shiftDurationMinutes / 60, 0);
-    const hasRegisterEligibility = eligibleRolesSet.has(TaskType.REGISTER);
-    const desiredMinHours = registerTimeBounds?.minMinutes ? registerTimeBounds.minMinutes / 60 : undefined;
-    const desiredMaxHours = registerTimeBounds?.maxMinutes ? registerTimeBounds.maxMinutes / 60 : undefined;
-    const minRegisterHours =
-      hasRegisterEligibility && desiredMinHours !== undefined
-        ? Math.min(desiredMinHours, shiftDurationHours)
-        : undefined;
-    const maxRegisterHours =
-      hasRegisterEligibility && desiredMaxHours !== undefined
-        ? Math.max(minRegisterHours ?? 0, Math.min(desiredMaxHours, shiftDurationHours))
-        : undefined;
-    
-    // Look up weights from store based on crew's preferences
-    const prefFirstHour = preferenceToTaskType(crewMember.prefFirstHour);
-    const prefFirstHourWeight = prefFirstHour ? 1 : undefined;
-
-    const prefTask = preferenceToTaskType(crewMember.prefTask);
-    const prefTaskWeight = prefTask ? 1 : undefined;
-    
-    const prefBreakTimingWeight = crewMember.prefBreakTiming ? 1 : undefined;
-    
     return {
       id: crewMember.id,
       name: crewMember.name,
@@ -205,129 +449,139 @@ async function buildSolverInput(
       eligibleRoles,
       canBreak,
       canParkingHelms,
-      prefFirstHour,
-      prefFirstHourWeight,
-      prefTask,
-      prefTaskWeight,
-      prefBreakTiming: crewMember.prefBreakTiming ?? undefined,
-      prefBreakTimingWeight,
-      minRegisterHours,
-      maxRegisterHours,
+      // Preferences are now in the separate preferences array, not on crew objects
     };
   });
 
-  const crewById = new Map(crew.map(member => [member.id, member] as const));
-  
-  // Load hourly staffing requirements from HourlyRequirement
-  // Load hourly requirements or use provided ones
+  const crewById = new Map(crew.map((member) => [member.id, member] as const));
+
   let hourlyReqs: HourlyStaffingRequirement[] = [];
-  
   if (hourlyRequirements && hourlyRequirements.length > 0) {
-    // Use provided hourly requirements (for testing)
     hourlyReqs = hourlyRequirements;
   } else {
-    // Load from database
-    const hourRules = await prisma.hourlyRequirement.findMany({
-      where: {
-        storeId,
-        date: day,
-      },
-      orderBy: {
-        hour: 'asc',
-      },
+    const hourlyConstraints = await prisma.hourlyRoleConstraint.findMany({
+      where: { storeId, date: day },
+      include: { role: true },
+      orderBy: [{ hour: 'asc' }, { roleId: 'asc' }],
     });
-    
-    hourlyReqs = hourRules.map((rule) => ({
-      hour: rule.hour,
-      requiredRegister: rule.requiredRegister,
-      requiredProduct: rule.requiredProduct ?? 0,
-      requiredParkingHelm: rule.requiredParkingHelm ?? 0,
-    }));
+
+    const requirementMap = new Map<number, HourlyStaffingRequirement>();
+
+    const ensureRequirement = (hour: number) => {
+      let existing = requirementMap.get(hour);
+      if (!existing) {
+        existing = {
+          hour,
+          requiredRegister: 0,
+          requiredProduct: 0,
+          requiredParkingHelm: 0,
+        };
+        requirementMap.set(hour, existing);
+      }
+      return existing;
+    };
+
+    hourlyConstraints.forEach((constraint) => {
+      if (!constraint.role) return;
+      const resolvedRole = toTaskType(constraint.role.code);
+      if (!resolvedRole) return;
+      roleMetadataMap.set(constraint.roleId, constraint.role);
+
+      const entry = ensureRequirement(constraint.hour);
+      switch (resolvedRole) {
+        case TaskType.REGISTER:
+          entry.requiredRegister = constraint.requiredPerHour;
+          break;
+        case TaskType.PRODUCT:
+          entry.requiredProduct = constraint.requiredPerHour;
+          break;
+        case TaskType.PARKING_HELM:
+          entry.requiredParkingHelm = constraint.requiredPerHour;
+          break;
+        default:
+          if (!entry.additionalRequirements) {
+            entry.additionalRequirements = [];
+          }
+          entry.additionalRequirements.push({
+            role: resolvedRole,
+            required: constraint.requiredPerHour,
+          });
+          break;
+      }
+    });
+
+    hourlyReqs = Array.from(requirementMap.values()).sort((a, b) => a.hour - b.hour);
   }
-  
-  // Load per-crew required role hours from CrewRoleRequirement or use provided ones
+
   let crewRoleRequirements: CrewRoleRequirement[] = [];
-  const crewRoleRequirementRoles = new Set<TaskType>();
-  
   if (roleRequirements && roleRequirements.length > 0) {
-    // Use provided roleRequirements (for testing)
-    const roleIds = [...new Set(roleRequirements.map(r => r.roleId))];
+    const roleIds = [...new Set(roleRequirements.map((r) => r.roleId))];
     const roles = await prisma.role.findMany({
-      where: { id: { in: roleIds } }
+      where: { id: { in: roleIds } },
     });
-    
-    roles.forEach(role => {
-      roleMetadataMap.set(role.id, role);
-    });
-    
-    crewRoleRequirements = roleRequirements.map(req => {
-      const role = roles.find(r => r.id === req.roleId);
-      const resolvedRole = role ? toTaskType(role.code) : undefined;
-      if (!resolvedRole) return undefined;
 
-      const minutesFromHours = typeof req.requiredHours === 'number' ? req.requiredHours * 60 : undefined;
-      const minutesFromMinutes = typeof req.requiredMinutes === 'number' ? req.requiredMinutes : undefined;
-      const minutesFromWindow = req.startMin !== undefined && req.endMin !== undefined
-        ? req.endMin - req.startMin
-        : undefined;
-      const requiredMinutes = minutesFromMinutes ?? minutesFromHours ?? minutesFromWindow;
+    roles.forEach((role) => roleMetadataMap.set(role.id, role));
 
-      if (requiredMinutes === undefined || requiredMinutes <= 0) {
-        return undefined;
-      }
+    crewRoleRequirements = roleRequirements
+      .map((req) => {
+        const role = roles.find((r) => r.id === req.roleId);
+        const resolvedRole = role ? toTaskType(role.code) : undefined;
+        if (!resolvedRole) return undefined;
 
-      const requiredHours = requiredMinutes / 60;
+        const minutesFromHours =
+          typeof req.requiredHours === 'number' ? req.requiredHours * 60 : undefined;
+        const minutesFromMinutes =
+          typeof req.requiredMinutes === 'number' ? req.requiredMinutes : undefined;
+        const minutesFromWindow =
+          req.startMin !== undefined && req.endMin !== undefined
+            ? req.endMin - req.startMin
+            : undefined;
+        const requiredMinutes = minutesFromMinutes ?? minutesFromHours ?? minutesFromWindow;
 
-      let targetCrew: SolverCrewMember | undefined;
-      if (req.crewId) {
-        targetCrew = crewById.get(req.crewId);
-        if (!targetCrew) {
-          console.warn(`Role requirement references unknown crew ${req.crewId}`);
+        if (requiredMinutes === undefined || requiredMinutes <= 0) {
           return undefined;
         }
-      } else {
-        targetCrew = crew.find(c => c.eligibleRoles?.includes(resolvedRole));
-        if (!targetCrew) {
-          console.warn(`No eligible crew found for role requirement roleId=${req.roleId}`);
-          return undefined;
+
+        const requiredHours = requiredMinutes / 60;
+
+        let targetCrew: SolverCrewMember | undefined;
+        if (req.crewId) {
+          targetCrew = crewById.get(req.crewId);
+          if (!targetCrew) {
+            console.warn(`Role requirement references unknown crew ${req.crewId}`);
+            return undefined;
+          }
+        } else {
+          targetCrew = crew.find((c) => c.eligibleRoles?.includes(resolvedRole));
+          if (!targetCrew) {
+            console.warn(`No eligible crew found for role requirement roleId=${req.roleId}`);
+            return undefined;
+          }
         }
-      }
 
-      if (!targetCrew.eligibleRoles.includes(resolvedRole)) {
-        targetCrew.eligibleRoles.push(resolvedRole);
-      }
+        if (!targetCrew.eligibleRoles.includes(resolvedRole)) {
+          targetCrew.eligibleRoles.push(resolvedRole);
+        }
 
-      const requirement: CrewRoleRequirement = {
-        crewId: targetCrew.id,
-        role: resolvedRole,
-        requiredHours,
-      };
-      crewRoleRequirementRoles.add(resolvedRole);
-      return requirement;
-    }).filter((req): req is CrewRoleRequirement => Boolean(req));
+        return {
+          crewId: targetCrew.id,
+          role: resolvedRole,
+          requiredHours,
+        };
+      })
+      .filter((req): req is CrewRoleRequirement => Boolean(req));
   } else {
-    // Load from database
-    const dbRoleRequirements = await prisma.crewRoleRequirement.findMany({
-      where: {
-        storeId,
-        date: day,
-      },
-      include: {
-        Role: true,
-      },
-    });
-    
-    dbRoleRequirements.forEach((req) => {
-      if (req.Role) {
-        roleMetadataMap.set(req.roleId, req.Role);
-      }
+    const dbRoleRequirements = await prisma.dailyRoleConstraint.findMany({
+      where: { storeId, date: day },
+      include: { role: true },
     });
 
     crewRoleRequirements = dbRoleRequirements
       .map((req) => {
-        const resolvedRole = req.Role ? toTaskType(req.Role.code) : undefined;
+        if (!req.role) return undefined;
+        const resolvedRole = toTaskType(req.role.code);
         if (!resolvedRole) return undefined;
-        crewRoleRequirementRoles.add(resolvedRole);
+        roleMetadataMap.set(req.roleId, req.role);
         return {
           crewId: req.crewId,
           role: resolvedRole,
@@ -336,90 +590,72 @@ async function buildSolverInput(
       })
       .filter((req): req is CrewRoleRequirement => Boolean(req));
   }
-  
-  // Load coverage windows from CoverageWindow or use provided ones
+
   let coverageWindows: CoverageWindow[] = [];
-  const coverageWindowRoles = new Set<TaskType>();
-  
   if (coverageWindowsInput && coverageWindowsInput.length > 0) {
-    // Use provided coverage windows (for testing)
-    const roleCodes = [...new Set(coverageWindowsInput.map(w => w.roleCode))];
-    
+    const roleCodes = [...new Set(coverageWindowsInput.map((w) => w.roleCode))];
     const roles = await prisma.role.findMany({
-      where: { code: { in: roleCodes } }
+      where: { code: { in: roleCodes } },
     });
-    
-    roles.forEach(role => {
-      roleMetadataMap.set(role.id, role);
-    });
-    
-    coverageWindows = coverageWindowsInput.map(window => {
-      const role = roles.find(r => r.code === window.roleCode);
-      const resolvedRole = role ? toTaskType(role.code) : undefined;
-      if (!resolvedRole) return undefined;
-      
-      coverageWindowRoles.add(resolvedRole);
-      return {
-        role: resolvedRole,
-        startHour: Math.floor(window.startMin / 60),
-        endHour: Math.ceil(window.endMin / 60),
-        requiredPerHour: window.requiredCrew,
-      };
-    }).filter((window): window is CoverageWindow => Boolean(window));
+
+    roles.forEach((role) => roleMetadataMap.set(role.id, role));
+
+    coverageWindows = coverageWindowsInput
+      .map((window) => {
+        const role = roles.find((r) => r.code === window.roleCode);
+        const resolvedRole = role ? toTaskType(role.code) : undefined;
+        if (!resolvedRole) return undefined;
+
+        return {
+          role: resolvedRole,
+          startHour: Math.floor(window.startMin / 60),
+          endHour: Math.ceil(window.endMin / 60),
+          requiredPerHour: window.requiredCrew,
+        };
+      })
+      .filter((window): window is CoverageWindow => Boolean(window));
   } else if (demoWindows && demoWindows.length > 0) {
-    // Use provided demo windows (for backwards compatibility)
     const demoRoleCode = 'demo';
     const wineDemoRoleCode = 'wine_demo';
-    
-    const roleCodes = [...new Set(demoWindows.map(w => 
-      w.type === 'demo' ? demoRoleCode : wineDemoRoleCode
-    ))];
-    
+
+    const roleCodes = [...new Set(
+      demoWindows.map((w) => (w.type === 'demo' ? demoRoleCode : wineDemoRoleCode))
+    )];
+
     const roles = await prisma.role.findMany({
-      where: { code: { in: roleCodes } }
+      where: { code: { in: roleCodes } },
     });
-    
-    roles.forEach(role => {
-      roleMetadataMap.set(role.id, role);
-    });
-    
-    coverageWindows = demoWindows.map(window => {
-      const roleCode = window.type === 'demo' ? demoRoleCode : wineDemoRoleCode;
-      const role = roles.find(r => r.code === roleCode);
-      const resolvedRole = role ? toTaskType(role.code) : undefined;
-      if (!resolvedRole) return undefined;
-      
-      coverageWindowRoles.add(resolvedRole);
-      return {
-        role: resolvedRole,
-        startHour: Math.floor(window.startMin / 60),
-        endHour: Math.ceil(window.endMin / 60),
-        requiredPerHour: 1,
-      };
-    }).filter((window): window is CoverageWindow => Boolean(window));
+
+    roles.forEach((role) => roleMetadataMap.set(role.id, role));
+
+    coverageWindows = demoWindows
+      .map((window) => {
+        const roleCode = window.type === 'demo' ? demoRoleCode : wineDemoRoleCode;
+        const role = roles.find((r) => r.code === roleCode);
+        const resolvedRole = role ? toTaskType(role.code) : undefined;
+        if (!resolvedRole) return undefined;
+
+        return {
+          role: resolvedRole,
+          startHour: Math.floor(window.startMin / 60),
+          endHour: Math.ceil(window.endMin / 60),
+          requiredPerHour: 1,
+        };
+      })
+      .filter((window): window is CoverageWindow => Boolean(window));
   } else {
-    // Load from database
-    const coverageData = await prisma.coverageWindow.findMany({
-      where: {
-        storeId,
-        date: day,
-      },
-      include: {
-        Role: true,
-      },
+    const coverageData = await prisma.windowRoleConstraint.findMany({
+      where: { storeId, date: day },
+      include: { role: true },
     });
-    
-    coverageData.forEach((cov) => {
-      if (cov.Role) {
-        roleMetadataMap.set(cov.roleId, cov.Role);
-      }
-    });
-    
+
     coverageWindows = coverageData
       .map((cov) => {
-        const resolvedRole = cov.Role ? toTaskType(cov.Role.code) : undefined;
+        if (!cov.role) return undefined;
+        const resolvedRole = toTaskType(cov.role.code);
         if (!resolvedRole) return undefined;
-        coverageWindowRoles.add(resolvedRole);
+        roleMetadataMap.set(cov.roleId, cov.role);
+
         return {
           role: resolvedRole,
           startHour: cov.startHour,
@@ -435,30 +671,35 @@ async function buildSolverInput(
       const resolvedRole = toTaskType(role.code);
       if (!resolvedRole) return undefined;
 
-      const assignmentModel: RoleMetadata['assignmentModel'] = role.isCoverageRole
-        ? 'COVERAGE_WINDOW'
-        : crewRoleRequirementRoles.has(resolvedRole)
-        ? 'CREW_ROLE_REQUIREMENT'
-        : 'HOURLY_ROLE_CONSTRAINT';
+      const assignmentModel = (role.assignmentModel ?? 'HOURLY') as AssignmentModelValue;
+      const minMinutesPerCrew = role.minSlots
+        ? role.minSlots * store.baseSlotMinutes
+        : undefined;
+      const maxMinutesPerCrew = role.maxSlots
+        ? role.maxSlots * store.baseSlotMinutes
+        : undefined;
 
-      return {
+      const metadata = {
         role: resolvedRole,
         assignmentModel,
-        blockSizeMinutes: role.blockSizeMinutes ?? undefined,
-        minSegments: role.minSegments ?? undefined,
-        maxSegments: role.maxSegments ?? undefined,
         allowOutsideStoreHours: role.allowOutsideStoreHours ?? false,
-        isConsecutive: role.isConsecutive ?? false,
-        isUniversal: role.isUniversal ?? false,
-        isBreakRole: role.isBreakRole ?? false,
-        isParkingRole: role.isParkingRole ?? false,
-        minMinutesPerCrew: role.minMinutesPerCrew ?? undefined,
-        maxMinutesPerCrew: role.maxMinutesPerCrew ?? undefined,
-        detail: role.family ?? undefined,
+        slotsMustBeConsecutive: role.slotsMustBeConsecutive ?? false,
+        minSlots: role.minSlots ?? undefined,
+        maxSlots: role.maxSlots ?? undefined,
+        blockSize: role.blockSize ?? 1,
+        isConsecutive: role.slotsMustBeConsecutive ?? false,
+        isUniversal: assignmentModel === 'HOURLY',
+        isBreakRole: resolvedRole === TaskType.BREAK || resolvedRole === TaskType.MEAL_BREAK,
+        isParkingRole: resolvedRole === TaskType.PARKING_HELM,
+        minMinutesPerCrew,
+        maxMinutesPerCrew,
+        detail: role.displayName,
       } as RoleMetadata;
+
+      return metadata;
     })
     .filter((meta): meta is RoleMetadata => Boolean(meta));
-  
+
   return {
     date: normDate,
     store: {
@@ -466,21 +707,14 @@ async function buildSolverInput(
       baseSlotMinutes: store.baseSlotMinutes,
       openMinutesFromMidnight: store.openMinutesFromMidnight,
       closeMinutesFromMidnight: store.closeMinutesFromMidnight,
-      startRegHour: store.startRegHour,
-      endRegHour: store.endRegHour,
-      minShiftMinutesForBreak: store.minShiftMinutesForBreak,
-      breakWindowStartOffsetMinutes: store.breakWindowStartOffsetMinutes,
-      breakWindowEndOffsetMinutes: store.breakWindowEndOffsetMinutes,
-      consecutiveProdWeight: store.consecutiveProdWeight,
-      consecutiveRegWeight: store.consecutiveRegWeight,
-      earlyBreakWeight: store.earlyBreakWeight,
-      lateBreakWeight: store.lateBreakWeight,
-      productFirstHourWeight: store.productFirstHourWeight,
-      productTaskWeight: store.productTaskWeight,
-      registerFirstHourWeight: store.registerFirstHourWeight,
-      registerTaskWeight: store.registerTaskWeight,
+      startRegHour: store.openMinutesFromMidnight,
+      endRegHour: store.closeMinutesFromMidnight,
+      reqShiftLengthForBreak: store.reqShiftLengthForBreak,
+      breakWindowStart: store.breakWindowStart,
+      breakWindowEnd: store.breakWindowEnd,
     },
     crew,
+    preferences,  // ← NEW: Structured preference array
     hourlyRequirements: hourlyReqs,
     crewRoleRequirements,
     coverageWindows,
@@ -568,10 +802,25 @@ export function registerSolverRoutes(app: FastifyInstance) {
       // Step 2: Call Python MILP solver
       const solverOutput = await callPythonSolver(solverInput);
       
-      // Step 3: If successful, save results to database
-      if (solverOutput.success && solverOutput.assignments) {
-        // TODO: Create Logbook and Task records
-        // For now, just return the solver output
+      // Step 3: If successful, save complete logbook with metadata, assignments, and satisfaction
+      if (solverOutput.success && solverOutput.assignments && solverOutput.assignments.length > 0) {
+        const normDate = new Date(date).toISOString().slice(0, 10);
+        const day = new Date(normDate);
+        day.setUTCHours(0, 0, 0, 0);
+        
+        // Use comprehensive logbook manager to create:
+        // - Logbook with metadata JSON (solver stats, schedule stats, constraint counts, preference summary)
+        // - Run record (linking solver execution to logbook)
+        // - Assignment records (all task assignments from solver)
+        // - PreferenceSatisfaction records (per-crew-preference satisfaction tracking)
+        // - LogPreferenceMetadata (aggregate satisfaction summary)
+        await saveLogbookWithMetadata(prisma, {
+          storeId: store_id,
+          date: day,
+          solverOutput,
+          solverInput,
+          status: 'DRAFT',
+        });
       }
       
       return {

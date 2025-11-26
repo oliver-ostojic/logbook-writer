@@ -7,238 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Role {
-  id                   Int                      @id @default(autoincrement())
-  storeId              Int?
-  code                 String                   @unique
-  displayName          String
-  AssignmentType AssignmentType
-  blockSizeMinutes     Int
-  isUniversal          Boolean                  @default(false)
-  isCoverageRole       Boolean                  @default(false)
-  isBreakRole          Boolean                  @default(false)
-  isParkingRole        Boolean                  @default(false)
-  isConsecutive        Boolean                  @default(false)
-  allowOutsideStoreHours Boolean                 @default(false)
-  minMinutesPerCrew    Int?
-  maxMinutesPerCrew    Int?
-  minSegments   Int
-  maxSegments   Int
-  family               String?
-  CoverageWindow       CoverageWindow[]
-  CrewRole             CrewRole[]
-  CrewRoleRequirement  CrewRoleRequirement[]
-  Store                Store?                   @relation(fields: [storeId], references: [id])
-}
-
-model Store {
-  id                           Int                   @id
-  name                         String
-  timezone                     String                @default("EST")
-
-  /// Scheduling grid + store hours (used by solver)
-  baseSlotMinutes              Int                   @default(30)   // size of one slot in minutes
-  openMinutesFromMidnight      Int                   @default(420)  // 7:00 AM = 7*60
-  closeMinutesFromMidnight     Int                   @default(1320) // 10:00 PM = 22*60
-
-  /// Break policy (used by solver)
-  minShiftMinutesForBreak      Int                   @default(360)  // 6h shift requires break
-  breakWindowStartOffsetMinutes Int                  @default(180)  // break window starts 3h into shift
-  breakWindowEndOffsetMinutes  Int                   @default(270)  // break window ends 4.5h into shift
-
-  // Existing fields you already had
-  startRegHour                 Int                   @default(480)
-  endRegHour                   Int                   @default(1260)
-  consecutiveProdWeight        Int                   @default(3)
-  consecutiveRegWeight         Int                   @default(3)
-  earlyBreakWeight             Int                   @default(3)
-  lateBreakWeight              Int                   @default(3)
-  productFirstHourWeight       Int                   @default(3)
-  productTaskWeight            Int                   @default(3)
-  registerFirstHourWeight      Int                   @default(3)
-  registerTaskWeight           Int                   @default(3)
-
-  CoverageWindow               CoverageWindow[]
-  Crew                         Crew[]
-  CrewRoleRequirement          CrewRoleRequirement[]
-  HourlyRequirement            HourlyRequirement[]
-  logbooks                     Logbook[]
-  Role                         Role[]
-}
-
-model Logbook {
-  id             String        @id @db.Uuid
-  date           DateTime
-  storeId        Int
-  status         LogbookStatus
-  generatedAt    DateTime
-  storedFilePath String?
-  metadata       Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  store          Store         @relation(fields: [storeId], references: [id])
-  Run            Run[]
-  tasks          Task[]
-
-  @@unique([storeId, date, status], name: "uniq_store_date_status")
-}
-
-model Task {
-  id        String     @id @db.Uuid
-  logbookId String     @db.Uuid
-  crewId    String     @db.Char(7)
-  type      TaskType
-  startTime DateTime
-  endTime   DateTime
-  origin    TaskOrigin @default(ENGINE)
-  locked    Boolean    @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  crew      Crew       @relation(fields: [crewId], references: [id])
-  logbook   Logbook    @relation(fields: [logbookId], references: [id])
-
-  @@index([crewId, startTime])
-}
-
-model Run {
-  id             String    @id @db.Uuid
-  date           DateTime
-  storeId        Int
-  engine         String
-  seed           Int
-  status         RunStatus
-  runtimeMs      Int
-  violations     Json
-  objectiveScore Int?
-  mipGap         Float?
-  logbookId      String?   @db.Uuid
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  logbook        Logbook?  @relation(fields: [logbookId], references: [id])
-
-  @@index([storeId, date])
-}
-
-model CoverageWindow {
-  id              Int      @id @default(autoincrement())
-  storeId         Int
-  date            DateTime
-  roleId          Int
-  startHour       Int
-  endHour         Int
-  requiredPerHour Int      @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime
-  Role            Role     @relation(fields: [roleId], references: [id])
-  Store           Store    @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, roleId])
-  @@index([storeId, date])
-}
-
-model Crew {
-  id                     String                   @id @db.Char(7)
-  name                   String
-  storeId                Int
-  shiftStartMin          Int                      @default(0)
-  shiftEndMin            Int                      @default(0)
-  prefBreakTiming        Int?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  prefFirstHour          PrefenceTask?
-  prefTask               PrefenceTask?
-  BankedPreference       BankedPreference[]
-  Store                  Store                    @relation(fields: [storeId], references: [id])
-  CrewRole               CrewRole[]
-  CrewRoleRequirement    CrewRoleRequirement[]
-  PreferenceSatisfaction PreferenceSatisfaction[]
-  tasks                  Task[]
-}
-
-model CrewRole {
-  crewId             String   @db.Char(7)
-  roleId             Int
-  assignedAt         DateTime @default(now())
-  specializationType String?
-  crewName           String
-  roleName           String
-  Crew               Crew     @relation(fields: [crewId], references: [id])
-  Role               Role     @relation(fields: [roleId], references: [id])
-
-  @@id([crewId, roleId])
-}
-
-model CrewRoleRequirement {
-  id            Int      @id @default(autoincrement())
-  storeId       Int
-  date          DateTime
-  crewId        String   @db.Char(7)
-  roleId        Int
-  requiredHours Int
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
-  Crew          Crew     @relation(fields: [crewId], references: [id])
-  Role          Role     @relation(fields: [roleId], references: [id])
-  Store         Store    @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, crewId, roleId])
-  @@index([storeId, date])
-}
-
-model HourlyRequirement {
-  id                  Int      @id @default(autoincrement())
-  storeId             Int
-  date                DateTime
-  hour                Int
-  requiredRegister    Int      @default(0)
-  requiredProduct     Int      @default(0)
-  requiredParkingHelm Int      @default(0)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime
-  Store               Store    @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, hour])
-}
-
-model PreferenceSatisfaction {
-  id                      Int      @id @default(autoincrement())
-  crewId                  String   @db.Char(7)
-  date                    DateTime
-  logbookId               String   @db.Uuid
-  firstHourSatisfaction   Float    @default(0)
-  taskSatisfaction        Float    @default(0)
-  breakTimingSatisfaction Float    @default(0)
-  overallSatisfaction     Float    @default(0)
-  firstHourMet            Boolean  @default(false)
-  taskPrefMet             Boolean  @default(false)
-  breakTimingMet          Boolean  @default(false)
-  adaptiveBoost           Float    @default(1.0)
-  fairnessAdjustment      Float    @default(0)
-  createdAt               DateTime @default(now())
-  Crew                    Crew     @relation(fields: [crewId], references: [id])
-
-  @@unique([crewId, date, logbookId])
-  @@index([crewId, date])
-  @@index([date])
-}
-
-model BankedPreference {
-  id              Int            @id @default(autoincrement())
-  crewId          String         @db.Char(7)
-  preferenceType  PreferenceType
-  preferenceValue String
-  weight          Int
-  originalDate    DateTime
-  expiresAt       DateTime
-  usedDate        DateTime?
-  status          BankingStatus  @default(ACTIVE)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  Crew            Crew           @relation(fields: [crewId], references: [id])
-
-  @@index([crewId, status])
-  @@index([crewId, expiresAt])
-}
+//
+// ENUMS
+//
 
 enum RunStatus {
   QUEUED
@@ -257,39 +28,15 @@ enum LogbookStatus {
   SUPERSEDED
 }
 
-enum TaskType {
-  REGISTER
-  PRODUCT
-  PARKING_HELM
-  ORDER_WRITER
-  ART
-  MEAL_BREAK
-  TRUCK
-  DEMO
-  WINE_DEMO
-}
-
-enum TaskOrigin {
+enum AssignmentOrigin {
   ENGINE
   MANUAL
-  IMPORT
-}
-
-enum PrefenceTask {
-  REGISTER
-  PRODUCT
-}
-
-enum AssignmentType {
-  UNIVERSAL        // No constraints, can be assigned to anyone anytime (REGISTER, PRODUCT, PARKING_HELM, MEAL_BREAK)
-  COVERAGE_WINDOW  // Need N crew during time window, solver picks who (DEMO, WINE_DEMO)
-  CREW_SPECIFIC    // Specific crew must do this role for X hours (ORDER_WRITER, ART)
 }
 
 enum PreferenceType {
   FIRST_HOUR
-  TASK
-  BREAK_TIMING
+  FAVORITE
+  TIMING
   CONSECUTIVE
 }
 
@@ -298,4 +45,376 @@ enum BankingStatus {
   USED
   EXPIRED
   CANCELED
+}
+
+enum AssignmentModel {
+  HOURLY        // Hourly staffing: "N crew per hour" (e.g., REGISTER, PRODUCT, PARKING_HELM)
+  HOURLY_WINDOW // Hourly staffing in time window: "N crew per hour between A–B" (e.g., DEMO, WINE_DEMO)
+  DAILY         // Per-crew daily hours: "this crew must do Xh on this role" (e.g., ORDER_WRITER, ART)
+}
+
+//
+// CORE ENTITIES
+//
+
+model Store {
+  id      Int    @id
+  name    String
+  timezone String @default("EST")
+
+  // Solver time grid + store hours
+  baseSlotMinutes         Int @default(30)   // size of one slot in minutes
+  openMinutesFromMidnight Int @default(480)  // 8:00 = 8*60
+  closeMinutesFromMidnight Int @default(1260) // 21:00 = 21*60
+
+  // Break / lunch policy
+  reqShiftLengthForBreak Int @default(360) // min shift length (minutes) that requires a break
+  breakWindowStart       Int @default(180) // offset in minutes from shift start
+  breakWindowEnd         Int @default(270) // offset in minutes from shift start
+
+  // Relations
+  roles                  Role[]
+  crew                   Crew[]
+  shifts                 Shift[]
+  windowRoleConstraints  WindowRoleConstraint[]
+  hourlyRoleConstraints  HourlyRoleConstraint[]
+  dailyRoleConstraints   DailyRoleConstraint[]
+  logbooks               Logbook[]
+  runs                   Run[]
+  rolePreferences        RolePreference[]
+  bankedPreferences      BankedPreference[]
+}
+
+model Role {
+  id        Int    @id @default(autoincrement())
+  storeId   Int
+  code      String @unique
+  displayName String
+
+  // How this role is assigned in the solver
+  assignmentModel AssignmentModel?
+
+  // Role behavior flags
+  slotsMustBeConsecutive  Boolean @default(false)
+
+  // Block / segment sizing (solver uses this with baseSlotMinutes)
+  // If Store.baseSlotMinutes == 30: Register.minSlots == 2, Register.maxSlots == 10.
+  minSlots      Int @default(1)
+  maxSlots      Int @default(1)
+  blockSize     Int @default(1)  // assignments must be multiples of this many slots
+
+  // TODO: Add timing window fields for roles (e.g., BREAK should be 3-4.5hrs into shift)
+  // windowStartOffsetMin Int? // offset in minutes from shift start
+  // windowEndOffsetMin   Int? // offset in minutes from shift start
+
+  // If true, this role may be assigned outside store open/close
+  allowOutsideStoreHours Boolean @default(false)
+
+  // Relations
+  store                  Store                 @relation(fields: [storeId], references: [id])
+  crewRoles              CrewRole[]
+  windowRoleConstraints  WindowRoleConstraint[]
+  hourlyRoleConstraints  HourlyRoleConstraint[]
+  dailyRoleConstraints   DailyRoleConstraint[]
+  rolePreferences        RolePreference[]
+  assignments            Assignment[]
+}
+
+model Crew {
+  id            String   @id @db.Char(7)
+  name          String
+  storeId       Int
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  store              Store              @relation(fields: [storeId], references: [id])
+  crewRoles          CrewRole[]
+  dailyRoleConstraints DailyRoleConstraint[]
+  assignments              Assignment[]
+  preferenceSatisfactions PreferenceSatisfaction[]
+  bankedPreferences  BankedPreference[]
+  crewPreferences    CrewPreference[]
+  shifts             Shift[]
+}
+
+//
+// SHIFT DATA (imported from DayForce)
+//
+
+model Shift {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  crewId      String   @db.Char(7)
+  storeId     Int
+
+  // Shift bounds in minutes from midnight
+  startMin    Int
+  endMin      Int
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  crew  Crew  @relation(fields: [crewId], references: [id])
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, date, crewId])
+  @@index([storeId, date])
+}
+
+//
+// LOGBOOK + ASSIGNMENTS + RUNS
+//
+
+model Logbook {
+  id             String        @id @db.Uuid
+  date           DateTime
+  storeId        Int
+  status         LogbookStatus
+  generatedAt    DateTime
+  storedFilePath String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  store          Store         @relation(fields: [storeId], references: [id])
+  runs           Run[]
+  assignments          Assignment[]
+  preferenceSatisfactions PreferenceSatisfaction[]
+  preferenceMetadata      LogPreferenceMetadata?
+
+  @@unique([storeId, date, status], name: "uniq_store_date_status")
+}
+
+model Assignment {
+  id        String     @id @db.Uuid
+  logbookId String     @db.Uuid
+  crewId    String     @db.Char(7)
+  roleId    Int
+
+  role      Role       @relation(fields: [roleId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  origin    AssignmentOrigin @default(ENGINE)
+  locked    Boolean    @default(false)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  crew    Crew    @relation(fields: [crewId], references: [id])
+  logbook Logbook @relation(fields: [logbookId], references: [id])
+
+  @@index([crewId, startTime])
+}
+
+model Run {
+  id             String    @id @db.Uuid
+  date           DateTime
+  storeId        Int
+  engine         String
+  seed           Int
+  status         RunStatus
+  runtimeMs      Int
+  violations     Json
+  objectiveScore Int?
+  mipGap         Float?
+  logbookId      String?   @db.Uuid
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  store    Store    @relation(fields: [storeId], references: [id])
+  logbook  Logbook? @relation(fields: [logbookId], references: [id])
+
+  @@index([storeId, date])
+}
+
+//
+// ASSIGNMENT MODELS (HOURLY / HOURLY_WINDOW / DAILY)
+//
+
+/// HOURLY: "N crew per hour on this role" (e.g., REGISTER, PRODUCT, PARKING_HELM)
+model HourlyRoleConstraint {
+  id              Int      @id @default(autoincrement())
+  date            DateTime
+  hour            Int      // 0–23
+  requiredPerHour Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  storeId         Int
+  roleId          Int
+  role   Role   @relation(fields: [roleId], references: [id])
+  store  Store  @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, date, hour, roleId])
+  @@index([storeId, date, hour])
+}
+
+/// HOURLY_WINDOW: "N crew per hour between startHour–endHour" (e.g., DEMO, WINE_DEMO)
+model WindowRoleConstraint {
+  id              Int      @id @default(autoincrement())
+  date            DateTime
+  startHour       Int
+  endHour         Int
+  requiredPerHour Int      @default(1)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  // Relations
+  storeId         Int
+  roleId          Int
+  role   Role   @relation(fields: [roleId], references: [id])
+  store  Store  @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, date, roleId])
+  @@index([storeId, date])
+}
+
+/// DAILY: "this crew must do Xhr(s) on this role" (e.g., ORDER_WRITER, ART)
+model DailyRoleConstraint {
+  id            Int      @id @default(autoincrement())
+  storeId       Int
+  date          DateTime
+  crewId        String   @db.Char(7)
+  roleId        Int
+  requiredHours Int
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  crew   Crew   @relation(fields: [crewId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+  store  Store  @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, date, crewId, roleId])
+  @@index([storeId, date])
+}
+
+//
+// CREW↔ROLE MAPPING
+//
+
+model CrewRole {
+  specialization String?
+  crewName           String
+  roleName           String
+  assignedAt         DateTime @default(now())
+
+  // Relations
+  crewId             String   @db.Char(7)
+  roleId             Int
+  crew               Crew     @relation(fields: [crewId], references: [id])
+  role               Role     @relation(fields: [roleId], references: [id])
+
+  @@id([crewId, roleId])
+}
+
+//
+// PREFERENCES + FAIRNESS
+//
+
+/// Store + role level “template” for a preference
+model RolePreference {
+  id             Int            @id @default(autoincrement())
+  storeId        Int
+  roleId         Int?           // null = generic (e.g. BREAK_TIMING)
+  preferenceType PreferenceType
+  baseWeight     Int            @default(1)   // tuned at store level
+  allowBanking   Boolean        @default(true)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  role  Role?  @relation(fields: [roleId], references: [id])
+  store Store  @relation(fields: [storeId], references: [id])
+
+  crewPreferences        CrewPreference[]
+  preferenceSatisfactions PreferenceSatisfaction[]
+
+  @@unique([storeId, roleId, preferenceType])
+  @@index([storeId, preferenceType])
+}
+
+/// Per-crew opt-in to a RolePreference
+model CrewPreference {
+  id               Int            @id @default(autoincrement())
+  crewId           String         @db.Char(7)
+  rolePreferenceId Int
+
+  crewWeight       Int            @default(1)   // crew-specific strength
+  intValue         Int?           // e.g. -1 / +1 for BREAK_TIMING earlier/later
+  enabled          Boolean        @default(true)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  crew          Crew          @relation(fields: [crewId], references: [id])
+  rolePreference RolePreference @relation(fields: [rolePreferenceId], references: [id])
+
+  @@index([crewId, rolePreferenceId])
+}
+
+/// Snapshot of how well the schedule satisfied prefs for that day/logbook
+model PreferenceSatisfaction {
+  id                Int      @id @default(autoincrement())
+  logbookId         String   @db.Uuid
+  crewId            String   @db.Char(7)
+  rolePreferenceId  Int
+  date              DateTime
+
+  satisfaction      Float    @default(0)
+  met               Boolean  @default(false)
+  weightApplied     Float    @default(0)
+  adaptiveBoost     Float    @default(1.0)
+  fairnessAdjustment Float    @default(0)
+
+  createdAt         DateTime @default(now())
+
+  logbook       Logbook        @relation(fields: [logbookId], references: [id])
+  crew          Crew           @relation(fields: [crewId], references: [id])
+  rolePreference RolePreference @relation(fields: [rolePreferenceId], references: [id])
+
+  @@unique([logbookId, crewId, rolePreferenceId])
+  @@index([crewId, date])
+  @@index([logbookId])
+}
+
+model LogPreferenceMetadata {
+  id                   String  @id @db.Uuid
+  logbookId            String  @db.Uuid @unique
+  totalPreferences     Int     @default(0)
+  preferencesMet       Int     @default(0)
+  averageSatisfaction  Float   @default(0)
+  totalWeightApplied   Float   @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  logbook Logbook @relation(fields: [logbookId], references: [id])
+}
+
+/// “Banked” preferences over time (reward system)
+model BankedPreference {
+  id              Int            @id @default(autoincrement())
+  crewId          String         @db.Char(7)
+  preferenceType  PreferenceType
+  preferenceValue String
+  weight          Int
+  originalDate    DateTime
+  expiresAt       DateTime
+  usedDate        DateTime?
+  status          BankingStatus  @default(ACTIVE)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  Crew            Crew           @relation(fields: [crewId], references: [id])
+  storeId Int
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@index([crewId, status])
+  @@index([crewId, expiresAt])
 }

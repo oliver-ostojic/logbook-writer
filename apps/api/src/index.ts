@@ -7,6 +7,7 @@ import { registerWizardRoutes } from './routes/wizard';
 import { registerScheduleRoutes } from './routes/schedule';
 import { registerSolverRoutes } from './routes/solver';
 import { registerTuningRoutes } from './routes/tuning';
+import { solverInputRoutes } from './routes/solver-input';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
@@ -20,6 +21,7 @@ export async function buildServer() {
   registerScheduleRoutes(app);
   registerSolverRoutes(app);
   registerTuningRoutes(app);
+  await app.register(solverInputRoutes);
 
   return app;
 }

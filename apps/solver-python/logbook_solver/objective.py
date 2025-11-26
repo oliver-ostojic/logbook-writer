@@ -9,22 +9,51 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def add_objective(solver: "LogbookSolver") -> None:
-    """Build and attach the weighted preference objective."""
+    """Build and attach the weighted preference objective using preferences array."""
 
     terms = []
 
-    for crew_id in solver.crew_ids:
-        crew = solver.crew_by_id[crew_id]
+    # NEW: Iterate over preferences array instead of hardcoded crew/store fields
+    for pref in solver.preferences:
+        crew_id = pref['crewId']
+        pref_type = pref['preferenceType']
+        role = pref.get('role')
+        base_weight = pref['baseWeight']
+        crew_weight = pref['crewWeight']
+        adaptive_boost = pref.get('adaptiveBoost', 1.0)
+        int_value = pref.get('intValue')
+
+        crew = solver.crew_by_id.get(crew_id)
+        if not crew:
+            continue
+
         shift_start_slot = crew['shiftStartMin'] // solver.slot_minutes
         shift_end_slot = crew['shiftEndMin'] // solver.slot_minutes
 
-        terms.extend(_first_slot_preference(solver, crew_id, crew, shift_start_slot))
-        terms.extend(_task_bias(solver, crew_id, crew, shift_start_slot, shift_end_slot))
-        terms.extend(_product_switch_penalty(solver, crew_id, crew, shift_start_slot, shift_end_slot))
-        terms.extend(_register_switch_penalty(solver, crew_id, crew, shift_start_slot, shift_end_slot))
-        terms.extend(_break_timing_preference(solver, crew_id, crew, shift_start_slot, shift_end_slot))
-        terms.extend(_parking_distance_preference(solver, crew_id, crew, shift_start_slot, shift_end_slot))
+        # Route to appropriate scorer based on preference type
+        if pref_type == 'FIRST_HOUR' and role:
+            terms.extend(_first_hour_preference(
+                solver, crew_id, role, shift_start_slot, 
+                base_weight, crew_weight, adaptive_boost
+            ))
+        elif pref_type == 'FAVORITE' and role:
+            terms.extend(_favorite_preference(
+                solver, crew_id, role, shift_start_slot, shift_end_slot,
+                base_weight, crew_weight, adaptive_boost
+            ))
+        elif pref_type == 'CONSECUTIVE' and role:
+            terms.extend(_consecutive_preference(
+                solver, crew_id, role, shift_start_slot, shift_end_slot,
+                base_weight, crew_weight, adaptive_boost
+            ))
+        elif pref_type == 'TIMING' and int_value is not None:
+            terms.extend(_timing_preference(
+                solver, crew_id, int_value, shift_start_slot, shift_end_slot,
+                base_weight, crew_weight, adaptive_boost
+            ))
 
+    # Domain-specific objectives (not preference-based)
+    terms.extend(_parking_distance_preference(solver))
     terms.extend(_consecutive_role_penalty(solver))
 
     if terms:
@@ -33,112 +62,94 @@ def add_objective(solver: "LogbookSolver") -> None:
         solver.model.Maximize(sum(solver.x.values()))
 
 
-def _first_slot_preference(solver: "LogbookSolver", crew_id: str, crew, shift_start_slot: int) -> List:
-    pref_first_role = crew.get('prefFirstHour')
-    if not pref_first_role:
+def _first_hour_preference(
+    solver: "LogbookSolver",
+    crew_id: str,
+    role: str,
+    shift_start_slot: int,
+    base_weight: float,
+    crew_weight: float,
+    adaptive_boost: float
+) -> List:
+    """Score FIRST_HOUR preference - crew gets preferred role in first slot."""
+    effective_weight = _combine_weights(base_weight, crew_weight, adaptive_boost)
+    if effective_weight <= 0:
         return []
 
-    store_weight = _first_hour_store_weight(solver, pref_first_role)
-    crew_weight = crew.get('prefFirstHourWeight')
-    effective_weight = _combine_weights(store_weight, crew_weight)
-    if effective_weight > 0:
-        key = (crew_id, shift_start_slot, pref_first_role)
-        if key in solver.x:
-            return [effective_weight * solver.x[key]]
+    key = (crew_id, shift_start_slot, role)
+    if key in solver.x:
+        return [effective_weight * solver.x[key]]
     return []
 
 
-def _task_bias(
+def _favorite_preference(
     solver: "LogbookSolver",
     crew_id: str,
-    crew,
+    role: str,
     shift_start_slot: int,
     shift_end_slot: int,
+    base_weight: float,
+    crew_weight: float,
+    adaptive_boost: float
 ) -> List:
-    terms = []
-    pref_task = crew.get('prefTask')
-    if pref_task:
-        store_weight = _task_store_weight(solver, pref_task)
-        crew_weight = crew.get('prefTaskWeight')
-        effective_weight = _combine_weights(store_weight, crew_weight)
-        if effective_weight > 0:
-            pref_task_slots = [
-                solver.x[(crew_id, s, pref_task)]
-                for s in range(shift_start_slot, shift_end_slot)
-                if (crew_id, s, pref_task) in solver.x
-            ]
-            if pref_task_slots:
-                terms.append(effective_weight * sum(pref_task_slots))
-    return terms
+    """Score FAVORITE preference - reward time spent on preferred role."""
+    effective_weight = _combine_weights(base_weight, crew_weight, adaptive_boost)
+    if effective_weight <= 0:
+        return []
+
+    role_slots = [
+        solver.x[(crew_id, s, role)]
+        for s in range(shift_start_slot, shift_end_slot)
+        if (crew_id, s, role) in solver.x
+    ]
+
+    if role_slots:
+        return [effective_weight * sum(role_slots)]
+    return []
 
 
-def _product_switch_penalty(
+def _consecutive_preference(
     solver: "LogbookSolver",
     crew_id: str,
-    crew,
+    role: str,
     shift_start_slot: int,
     shift_end_slot: int,
+    base_weight: float,
+    crew_weight: float,
+    adaptive_boost: float
 ) -> List:
-    store_weight = solver.store.get('consecutiveProdWeight', 0)
-    crew_weight = crew.get('consecutiveProdWeight')
-    weight = _combine_weights(store_weight, crew_weight)
-    if weight <= 0 or 'PRODUCT' not in solver.roles:
+    """Score CONSECUTIVE preference - penalize role switches."""
+    effective_weight = _combine_weights(base_weight, crew_weight, adaptive_boost)
+    if effective_weight <= 0 or role not in solver.roles:
         return []
 
     terms = []
     for slot in range(shift_start_slot, shift_end_slot - 1):
-        key_s = (crew_id, slot, 'PRODUCT')
-        key_s1 = (crew_id, slot + 1, 'PRODUCT')
+        key_s = (crew_id, slot, role)
+        key_s1 = (crew_id, slot + 1, role)
         if key_s in solver.x and key_s1 in solver.x:
-            switch_var = solver.model.NewBoolVar(f'switch_prod_{crew_id}_{slot}')
+            switch_var = solver.model.NewBoolVar(f'switch_{role}_{crew_id}_{slot}')
             x_s = solver.x[key_s]
             x_s1 = solver.x[key_s1]
             solver.model.Add(switch_var >= x_s - x_s1)
             solver.model.Add(switch_var >= x_s1 - x_s)
-            terms.append(-weight * switch_var)
+            terms.append(-effective_weight * switch_var)
     return terms
 
 
-def _register_switch_penalty(
+def _timing_preference(
     solver: "LogbookSolver",
     crew_id: str,
-    crew,
+    timing_value: int,  # -1 = earlier, +1 = later
     shift_start_slot: int,
     shift_end_slot: int,
+    base_weight: float,
+    crew_weight: float,
+    adaptive_boost: float
 ) -> List:
-    store_weight = solver.store.get('consecutiveRegWeight', 0)
-    crew_weight = crew.get('consecutiveRegWeight')
-    weight = _combine_weights(store_weight, crew_weight)
-    if weight <= 0 or 'REGISTER' not in solver.roles:
-        return []
-
-    terms = []
-    for slot in range(shift_start_slot, shift_end_slot - 1):
-        key_s = (crew_id, slot, 'REGISTER')
-        key_s1 = (crew_id, slot + 1, 'REGISTER')
-        if key_s in solver.x and key_s1 in solver.x:
-            switch_var = solver.model.NewBoolVar(f'switch_reg_{crew_id}_{slot}')
-            x_s = solver.x[key_s]
-            x_s1 = solver.x[key_s1]
-            solver.model.Add(switch_var >= x_s - x_s1)
-            solver.model.Add(switch_var >= x_s1 - x_s)
-            terms.append(-weight * switch_var)
-    return terms
-
-
-def _break_timing_preference(
-    solver: "LogbookSolver",
-    crew_id: str,
-    crew,
-    shift_start_slot: int,
-    shift_end_slot: int,
-) -> List:
+    """Score TIMING preference - prefer break earlier or later in shift."""
     break_roles = [r for r in solver._break_roles() if r in solver.roles]
-    if not break_roles:
-        return []
-
-    pref_break_timing = crew.get('prefBreakTiming', 0)
-    if pref_break_timing == 0:
+    if not break_roles or timing_value == 0:
         return []
 
     break_role = break_roles[0]
@@ -148,18 +159,12 @@ def _break_timing_preference(
     latest_break_slot = min(latest_break_slot, shift_end_slot - 1)
     if earliest_break_slot >= latest_break_slot:
         return []
+
     max_offset = latest_break_slot - earliest_break_slot
     if max_offset <= 0:
         return []
 
-    store_break_weight = 0
-    if pref_break_timing > 0:
-        store_break_weight = solver.store.get('lateBreakWeight', 0)
-    elif pref_break_timing < 0:
-        store_break_weight = solver.store.get('earlyBreakWeight', 0)
-
-    crew_weight = crew.get('prefBreakTimingWeight')
-    effective_weight = _combine_weights(store_break_weight, crew_weight)
+    effective_weight = _combine_weights(base_weight, crew_weight, adaptive_boost)
     if effective_weight <= 0:
         return []
 
@@ -169,44 +174,68 @@ def _break_timing_preference(
         if key not in solver.x:
             continue
         offset = slot - earliest_break_slot
-        if pref_break_timing > 0:
+        if timing_value > 0:  # Prefer later
             score = (offset / max_offset) * effective_weight
-        else:
+        else:  # Prefer earlier
             score = ((max_offset - offset) / max_offset) * effective_weight
         terms.append(score * solver.x[key])
     return terms
 
 
-def _parking_distance_preference(
-    solver: "LogbookSolver",
-    crew_id: str,
-    crew,
-    shift_start_slot: int,
-    shift_end_slot: int,
-) -> List:
+def _parking_distance_preference(solver: "LogbookSolver") -> List:
+    """Domain-specific: Push parking helm away from first hour."""
     parking_roles = [r for r in solver._parking_roles() if r in solver.roles]
-    if not parking_roles or not crew.get('canParkingHelms', True):
+    if not parking_roles:
         return []
 
     terms = []
-    for role in parking_roles:
-        for slot in range(shift_start_slot + 2, shift_end_slot):
-            key = (crew_id, slot, role)
-            if key not in solver.x:
-                continue
-            distance = slot - shift_start_slot
-            max_distance = shift_end_slot - shift_start_slot - 1
-            if max_distance <= 0:
-                continue
-            penalty_weight = 50
-            normalized_distance = distance / max_distance
-            score = normalized_distance * penalty_weight
-            terms.append(score * solver.x[key])
+    for crew_id in solver.crew_ids:
+        crew = solver.crew_by_id[crew_id]
+        if not crew.get('canParkingHelms', True):
+            continue
+
+        shift_start_slot = crew['shiftStartMin'] // solver.slot_minutes
+        shift_end_slot = crew['shiftEndMin'] // solver.slot_minutes
+
+        for role in parking_roles:
+            for slot in range(shift_start_slot + 2, shift_end_slot):
+                key = (crew_id, slot, role)
+                if key not in solver.x:
+                    continue
+                distance = slot - shift_start_slot
+                max_distance = shift_end_slot - shift_start_slot - 1
+                if max_distance <= 0:
+                    continue
+                penalty_weight = 50
+                normalized_distance = distance / max_distance
+                score = normalized_distance * penalty_weight
+                terms.append(score * solver.x[key])
     return terms
 
 
-def _combine_weights(store_weight: float, crew_weight: float | None, default_multiplier: float = 1.0) -> float:
-    store_weight = store_weight or 0
+def _combine_weights(
+    base_weight: float, 
+    crew_weight: float | None, 
+    adaptive_boost: float = 1.0,
+    default_multiplier: float = 1.0
+) -> float:
+    """
+    Calculate effective weight using 3-component formula:
+    effective_weight = baseWeight × crewWeight × adaptiveBoost
+    
+    Args:
+        base_weight: Base weight from role preference (store-level default)
+        crew_weight: Crew-specific weight multiplier (how much this crew cares)
+        adaptive_boost: Dynamic boost based on historical satisfaction (default 1.0)
+        default_multiplier: Default crew component if crew_weight is None
+    
+    Returns:
+        Combined weight score
+    """
+    base_weight = base_weight or 0
+    adaptive_boost = adaptive_boost or 1.0
+    
+    # Determine crew component
     if crew_weight is None:
         crew_component = default_multiplier
     elif crew_weight <= 0:
@@ -214,27 +243,16 @@ def _combine_weights(store_weight: float, crew_weight: float | None, default_mul
     else:
         crew_component = crew_weight
 
-    if store_weight <= 0 and crew_weight is None:
+    # Early exit if no base weight and no explicit crew preference
+    if base_weight <= 0 and crew_weight is None:
         return 0
-    if store_weight <= 0:
-        return crew_component
-    return store_weight * crew_component
-
-
-def _first_hour_store_weight(solver: "LogbookSolver", role: str) -> float:
-    if role == 'PRODUCT':
-        return solver.store.get('productFirstHourWeight', 0)
-    if role == 'REGISTER':
-        return solver.store.get('registerFirstHourWeight', 0)
-    return 0
-
-
-def _task_store_weight(solver: "LogbookSolver", role: str) -> float:
-    if role == 'PRODUCT':
-        return solver.store.get('productTaskWeight', 0)
-    if role == 'REGISTER':
-        return solver.store.get('registerTaskWeight', 0)
-    return 0
+    
+    # If only crew weight (no store base weight), return crew component
+    if base_weight <= 0:
+        return crew_component * adaptive_boost
+    
+    # Full formula: baseWeight × crewWeight × adaptiveBoost
+    return base_weight * crew_component * adaptive_boost
 
 
 def _consecutive_role_penalty(solver: "LogbookSolver") -> List:

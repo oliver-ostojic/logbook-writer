@@ -13,3 +13,6 @@ export interface Schedule {
 
 // Export solver types
 export * from './solver';
+
+// Export constraint testing types
+export * from './constraint-testing';

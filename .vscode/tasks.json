@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run analysis: preference pipeline",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"ts-node",
+				"apps/api/scripts/analyze-preference-pipeline.ts"
+			],
+			"group": "build"
+		}
+	]
+}

@@ -2,10 +2,22 @@
   "date": "2025-11-19",
   "store": {
     "storeId": 768,
-    "minRegisterHours": 10,
-    "maxRegisterHours": 30,
-    "regHoursStartMin": 480,
-    "regHoursEndMin": 1260
+    "baseSlotMinutes": 30,
+    "openMinutesFromMidnight": 480,
+    "closeMinutesFromMidnight": 1260,
+    "startRegHour": 480,
+    "endRegHour": 1260,
+    "reqShiftLengthForBreak": 360,
+    "breakWindowStart": 180,
+    "breakWindowEnd": 270,
+    "productFirstHourWeight": 1000,
+    "registerFirstHourWeight": 1000,
+    "productTaskWeight": 200,
+    "registerTaskWeight": 200,
+    "consecutiveProdWeight": 40,
+    "consecutiveRegWeight": 40,
+    "earlyBreakWeight": 40,
+    "lateBreakWeight": 40
   },
   "crew": [
     {
@@ -20,8 +32,8 @@
       "prefFirstHourWeight": 1000,
       "prefTask": "REGISTER",
       "prefTaskWeight": 200,
-      "prefBlocksizeProdWeight": 40,
-      "prefBlocksizeRegWeight": 1000,
+      "consecutiveProdWeight": 40,
+      "consecutiveRegWeight": 1000,
       "prefBreakTiming": -1,
       "prefBreakTimingWeight": 40
     },
@@ -37,8 +49,8 @@
       "prefFirstHourWeight": 1000,
       "prefTask": "PRODUCT",
       "prefTaskWeight": 200,
-      "prefBlocksizeProdWeight": 1000,
-      "prefBlocksizeRegWeight": 40,
+      "consecutiveProdWeight": 1000,
+      "consecutiveRegWeight": 40,
       "prefBreakTiming": 1,
       "prefBreakTimingWeight": 40
     },
@@ -54,35 +66,35 @@
       "prefFirstHourWeight": 200,
       "prefTask": "PRODUCT",
       "prefTaskWeight": 1000,
-      "prefBlocksizeProdWeight": 200,
-      "prefBlocksizeRegWeight": 40,
+      "consecutiveProdWeight": 200,
+      "consecutiveRegWeight": 40,
       "prefBreakTiming": 0,
       "prefBreakTimingWeight": 8
     }
   ],
   "hourlyRequirements": [
-    {"hour": 8, "requiredRegister": 1, "requiredProduct": 0, "requiredParkingHelm": 0},
-    {"hour": 9, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 10, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 11, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 12, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 13, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 14, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0},
-    {"hour": 15, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 1},
-    {"hour": 16, "requiredRegister": 1, "requiredProduct": 0, "requiredParkingHelm": 0}
+    { "hour": 8, "requiredRegister": 1, "requiredProduct": 0, "requiredParkingHelm": 0 },
+    { "hour": 9, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 10, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 11, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 12, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 13, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 14, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 0 },
+    { "hour": 15, "requiredRegister": 1, "requiredProduct": 1, "requiredParkingHelm": 1 },
+    { "hour": 16, "requiredRegister": 1, "requiredProduct": 0, "requiredParkingHelm": 0 }
   ],
   "crewRoleRequirements": [
-    {"crewId": "CREW001", "role": "DEMO", "requiredHours": 2}
+    { "crewId": "CREW001", "role": "DEMO", "requiredHours": 2 }
   ],
   "coverageWindows": [
-    {"role": "DEMO", "startHour": 10, "endHour": 12, "requiredPerHour": 1}
+    { "role": "DEMO", "startHour": 10, "endHour": 12, "requiredPerHour": 1 }
   ],
   "roleMetadata": [
-    {"role": "REGISTER", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": false},
-    {"role": "PRODUCT", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": false},
-    {"role": "DEMO", "assignmentMode": "TEAM_WINDOW", "isConsecutive": false},
-    {"role": "PARKING_HELM", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": false},
-    {"role": "MEAL_BREAK", "assignmentMode": "INDIVIDUAL_HOURS", "isConsecutive": true}
+    { "role": "REGISTER", "assignmentModel": "UNIVERSAL", "isConsecutive": false, "isUniversal": true },
+    { "role": "PRODUCT", "assignmentModel": "UNIVERSAL", "isConsecutive": false, "isUniversal": true },
+    { "role": "DEMO", "assignmentModel": "COVERAGE_WINDOW", "isConsecutive": false },
+    { "role": "PARKING_HELM", "assignmentModel": "UNIVERSAL", "isConsecutive": false },
+    { "role": "MEAL_BREAK", "assignmentModel": "UNIVERSAL", "isConsecutive": true, "isBreakRole": true }
   ],
   "timeLimitSeconds": 10
 }

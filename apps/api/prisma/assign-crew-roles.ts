@@ -54,10 +54,10 @@ async function main() {
   // First, ensure all roles exist
   const roleNames = ['DEMO', 'ORDER_WRITER', 'ART', 'WINE_DEMO'];
   const roles = await prisma.role.findMany({
-    where: { name: { in: roleNames } },
+    where: { code: { in: roleNames } },
   });
 
-  const existingRoleNames = roles.map(r => r.name);
+  const existingRoleNames = roles.map(r => r.code);
   const missingRoles = roleNames.filter(name => !existingRoleNames.includes(name));
 
   if (missingRoles.length > 0) {

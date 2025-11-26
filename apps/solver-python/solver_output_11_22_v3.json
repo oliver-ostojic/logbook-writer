@@ -1,0 +1,5776 @@
+{
+  "success": true,
+  "metadata": {
+    "status": "OPTIMAL",
+    "objectiveScore": -65340,
+    "runtimeMs": 292,
+    "mipGap": 0.0,
+    "numCrew": 61,
+    "numSlots": 48,
+    "slotMinutes": 30,
+    "numAssignments": 960,
+    "violations": []
+  },
+  "assignments": [
+    {
+      "crewId": "1289515",
+      "taskType": "ORDER_WRITER",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "ORDER_WRITER",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PARKING_HELMS",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PARKING_HELM",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289515",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PARKING_HELM",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PARKING_HELM",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PARKING_HELMS",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289526",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PARKING_HELM",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1285100",
+      "taskType": "PRODUCT",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PARKING_HELMS",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "WINE_DEMO",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "WINE_DEMO",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1280510",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PARKING_HELMS",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281830",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PRODUCT",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PARKING_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "PARKING_HELMS",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "BREAK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1282742",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PARKING_HELMS",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PARKING_HELM",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "WINE_DEMO",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "WINE_DEMO",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PARKING_HELM",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1280508",
+      "taskType": "PARKING_HELM",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1286351",
+      "taskType": "PRODUCT",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "BREAK",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "PARKING_HELMS",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "DEMO",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "DEMO",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1288725",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PARKING_HELMS",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "REGISTER",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "REGISTER",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1285704",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "WINE_DEMO",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "WINE_DEMO",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PARKING_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PRODUCT",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PRODUCT",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1286862",
+      "taskType": "PRODUCT",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PARKING_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PARKING_HELM",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "BREAK",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PRODUCT",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PRODUCT",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PARKING_HELM",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1281444",
+      "taskType": "PARKING_HELM",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "REGISTER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "REGISTER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PARKING_HELMS",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PARKING_HELM",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PARKING_HELM",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "WINE_DEMO",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "WINE_DEMO",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1289755",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PARKING_HELM",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "WINE_DEMO",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "WINE_DEMO",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "BREAK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "DEMO",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "DEMO",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1285607",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PARKING_HELMS",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PARKING_HELM",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1286099",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PARKING_HELM",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "BREAK",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "PARKING_HELMS",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1285995",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PARKING_HELMS",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281123",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "PARKING_HELMS",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "BREAK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1284064",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PRODUCT",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PARKING_HELM",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PARKING_HELM",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PARKING_HELM",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PARKING_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "PARKING_HELMS",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "BREAK",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1284548",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "PARKING_HELMS",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "BREAK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1284419",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "ORDER_WRITER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "ORDER_WRITER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "PARKING_HELMS",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1284569",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PARKING_HELM",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PARKING_HELM",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "PARKING_HELMS",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284355",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PARKING_HELMS",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PARKING_HELM",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289672",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PARKING_HELMS",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PARKING_HELM",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PARKING_HELM",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1286090",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "ORDER_WRITER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "ORDER_WRITER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "DEMO",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "DEMO",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "DEMO",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "DEMO",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "BREAK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281990",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "DEMO",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "DEMO",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "DEMO",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "DEMO",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1288616",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PARKING_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1285798",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PARKING_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PARKING_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PARKING_HELM",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "PARKING_HELM",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1288913",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "PARKING_HELMS",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1282026",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PARKING_HELM",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "PARKING_HELMS",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "BREAK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1289775",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1282861",
+      "taskType": "PARKING_HELM",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PARKING_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PARKING_HELM",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PARKING_HELM",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1281859",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PRODUCT",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PARKING_HELMS",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PARKING_HELM",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PARKING_HELM",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "PARKING_HELM",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "BREAK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281224",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "BREAK",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1281205",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "PARKING_HELMS",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "BREAK",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1284452",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1289875",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "ORDER_WRITER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "BREAK",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "REGISTER",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "REGISTER",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1283995",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "PRODUCT",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1280059",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "BREAK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1281714",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PARKING_HELMS",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "BREAK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "REGISTER",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "REGISTER",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PARKING_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1283646",
+      "taskType": "PARKING_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "ORDER_WRITER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "ORDER_WRITER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "PRODUCT",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "DEMO",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "DEMO",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "DEMO",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "DEMO",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "BREAK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "PARKING_HELMS",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1283622",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "ORDER_WRITER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "ORDER_WRITER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "BREAK",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PRODUCT",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PARKING_HELM",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PARKING_HELM",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PARKING_HELMS",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "PARKING_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281919",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "ORDER_WRITER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "ORDER_WRITER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "ORDER_WRITER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "ORDER_WRITER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "BREAK",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1280703",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PARKING_HELMS",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PARKING_HELM",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "PARKING_HELM",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1288759",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "ORDER_WRITER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "ORDER_WRITER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PARKING_HELM",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "BREAK",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "DEMO",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "DEMO",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1286326",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "ORDER_WRITER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "ORDER_WRITER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PARKING_HELMS",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PARKING_HELM",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1285308",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PARKING_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "PARKING_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1288041",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PRODUCT",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PRODUCT",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "REGISTER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "REGISTER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PARKING_HELMS",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PARKING_HELM",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "PRODUCT",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289725",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PARKING_HELM",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PRODUCT",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PRODUCT",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "PARKING_HELMS",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "WINE_DEMO",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1280411",
+      "taskType": "WINE_DEMO",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PRODUCT",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PARKING_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "BREAK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PARKING_HELMS",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PARKING_HELM",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "PARKING_HELM",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1288298",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELM",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "PARKING_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1282422",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PARKING_HELMS",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "BREAK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PARKING_HELM",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PARKING_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PRODUCT",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "ORDER_WRITER",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "ORDER_WRITER",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "PARKING_HELMS",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281338",
+      "taskType": "PRODUCT",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "ORDER_WRITER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "ORDER_WRITER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "PRODUCT",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "PARKING_HELMS",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "BREAK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1283065",
+      "taskType": "PRODUCT",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PARKING_HELM",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PARKING_HELM",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PARKING_HELM",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PARKING_HELMS",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "WINE_DEMO",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "WINE_DEMO",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "BREAK",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "REGISTER",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "REGISTER",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "REGISTER",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1280743",
+      "taskType": "REGISTER",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PARKING_HELMS",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "REGISTER",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "REGISTER",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "PRODUCT",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "BREAK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1288969",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PARKING_HELMS",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PARKING_HELM",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PRODUCT",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "BREAK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "PARKING_HELM",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1286542",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "ORDER_WRITER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "ORDER_WRITER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PRODUCT",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PARKING_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "BREAK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PRODUCT",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PRODUCT",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PARKING_HELM",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PARKING_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "PARKING_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "REGISTER",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1289093",
+      "taskType": "REGISTER",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "REGISTER",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "BREAK",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PARKING_HELM",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PRODUCT",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PARKING_HELMS",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PRODUCT",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PRODUCT",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PARKING_HELM",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PARKING_HELM",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PARKING_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1285114",
+      "taskType": "PRODUCT",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "ORDER_WRITER",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "ORDER_WRITER",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PARKING_HELMS",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PARKING_HELM",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PRODUCT",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PRODUCT",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "REGISTER",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "REGISTER",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PARKING_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "BREAK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PRODUCT",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1269091",
+      "taskType": "PRODUCT",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "REGISTER",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "REGISTER",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PRODUCT",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELMS",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "BREAK",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PRODUCT",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "REGISTER",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "REGISTER",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PRODUCT",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PRODUCT",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1289018",
+      "taskType": "PARKING_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    }
+  ]
+}

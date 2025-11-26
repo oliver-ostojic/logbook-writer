@@ -13,13 +13,15 @@ def add_all_constraints(solver: "LogbookSolver") -> None:
     """Attach all hard constraints to the solver model."""
 
     _one_task_per_slot(solver)
+    _store_hours(solver)
     _hourly_staffing_requirements(solver)
     _parking_first_hour(solver)
     _crew_role_requirements(solver)
     _coverage_windows(solver)
     _role_min_max(solver)
     _meal_breaks(solver)
-    _hour_long_roles_snap(solver)
+    _block_size_snap(solver)  # Enforces blockSize for all roles
+    _consecutive_slots(solver)
 
 
 def _one_task_per_slot(solver: "LogbookSolver") -> None:
@@ -37,6 +39,36 @@ def _one_task_per_slot(solver: "LogbookSolver") -> None:
             ]
             if role_vars:
                 m.Add(sum(role_vars) == 1)
+
+
+def _store_hours(solver: "LogbookSolver") -> None:
+    """Prevent assignments outside store hours unless role explicitly allows it."""
+    m = solver.model
+    
+    open_min = solver.store.get('openMinutesFromMidnight')
+    close_min = solver.store.get('closeMinutesFromMidnight')
+    
+    if open_min is None or close_min is None:
+        return  # No store hours defined
+    
+    open_slot = open_min // solver.slot_minutes
+    close_slot = close_min // solver.slot_minutes
+    
+    for crew_id in solver.crew_ids:
+        crew = solver.crew_by_id[crew_id]
+        shift_start_slot = crew['shiftStartMin'] // solver.slot_minutes
+        shift_end_slot = crew['shiftEndMin'] // solver.slot_minutes
+        
+        for slot in range(shift_start_slot, shift_end_slot):
+            # Slots outside store hours
+            if slot < open_slot or slot >= close_slot:
+                for role in solver.roles:
+                    role_meta = solver.role_meta_map.get(role, {})
+                    # Only allow if role explicitly permits outside hours
+                    if not role_meta.get('allowOutsideStoreHours', False):
+                        key = (crew_id, slot, role)
+                        if key in solver.x:
+                            m.Add(solver.x[key] == 0)
 
 
 def _hourly_staffing_requirements(solver: "LogbookSolver") -> None:
@@ -94,6 +126,11 @@ def _parking_first_hour(solver: "LogbookSolver") -> None:
 
 
 def _crew_role_requirements(solver: "LogbookSolver") -> None:
+    """
+    Enforce crew-specific role hour requirements.
+    Crew WITH requirements get exactly the required hours.
+    Crew WITHOUT requirements don't get variables created (see core.py _build_decision_variables)
+    """
     m = solver.model
     slots_per_hour = 60 // solver.slot_minutes
 
@@ -122,6 +159,14 @@ def _crew_role_requirements(solver: "LogbookSolver") -> None:
 
 
 def _coverage_windows(solver: "LogbookSolver") -> None:
+    """
+    Enforce coverage window requirements: specific number of crew during time window.
+    Coverage window roles are restricted to ONLY be assigned during their window
+    (see _build_decision_variables in core.py).
+    
+    TODO: Test with requiredPerHour > 1 to ensure multiple crew can be assigned
+          simultaneously to the same coverage window role.
+    """
     m = solver.model
     for window in solver.coverage_windows:
         role = window['role']
@@ -140,21 +185,37 @@ def _coverage_windows(solver: "LogbookSolver") -> None:
                     raise ValueError(
                         f"Coverage window for {role}: hour {hour}, slot {slot} "
                         f"requires {required_per_hour} crew but no crew can be assigned."
-                )
+                    )
                 m.Add(sum(hour_coverage) == required_per_hour)
-
-
 def _role_min_max(solver: "LogbookSolver") -> None:
+    """
+    Enforce total time bounds per crew per role.
+    Uses Role.minSlots and Role.maxSlots from database.
+    
+    Note: Break roles are excluded because they have special handling in _meal_breaks.
+    """
     m = solver.model
     slots_per_hour = 60 // solver.slot_minutes
 
     for role in solver.roles:
+        # Skip break roles - they have special handling in _meal_breaks
+        if solver._is_break_role(role):
+            continue
+        
         role_meta = solver.role_meta_map.get(role, {})
-        role_min_minutes = role_meta.get('minMinutesPerCrew')
-        role_max_minutes = role_meta.get('maxMinutesPerCrew')
-
-        role_min_slots = _minutes_to_slots(role_min_minutes, solver, rounding='ceil')
-        role_max_slots = _minutes_to_slots(role_max_minutes, solver, rounding='floor')
+        
+        # Primary: Use minSlots/maxSlots from database (already in slot units)
+        role_min_slots = role_meta.get('minSlots')
+        role_max_slots = role_meta.get('maxSlots')
+        
+        # Fallback: Support legacy minMinutesPerCrew/maxMinutesPerCrew if provided
+        if role_min_slots is None:
+            role_min_minutes = role_meta.get('minMinutesPerCrew')
+            role_min_slots = _minutes_to_slots(role_min_minutes, solver, rounding='ceil')
+        
+        if role_max_slots is None:
+            role_max_minutes = role_meta.get('maxMinutesPerCrew')
+            role_max_slots = _minutes_to_slots(role_max_minutes, solver, rounding='floor')
 
         # Skip roles without any bounds defined (unless register uses crew overrides)
         if role_min_slots is None and role_max_slots is None and role != 'REGISTER':
@@ -262,7 +323,18 @@ def _meal_breaks(solver: "LogbookSolver") -> None:
                     m.Add(solver.x[key] == 0)
 
 
-def _hour_long_roles_snap(solver: "LogbookSolver") -> None:
+def _block_size_snap(solver: "LogbookSolver") -> None:
+    """
+    Enforce blockSize constraints for roles.
+    
+    For a role with blockSize=N, assignments must be in multiples of N slots.
+    - blockSize=1: Any number of slots allowed (30min, 1hr, 1.5hr, etc.)
+    - blockSize=2: Must be 2-slot increments (1hr, 2hr, 3hr if baseSlotMinutes=30)
+    - blockSize=4: Must be 4-slot increments (2hr, 4hr, 6hr if baseSlotMinutes=30)
+    
+    Strategy: For each block of blockSize consecutive slots, either ALL are assigned
+    or NONE are assigned. This forces assignments to snap to blockSize boundaries.
+    """
     m = solver.model
 
     for crew_id in solver.crew_ids:
@@ -270,31 +342,31 @@ def _hour_long_roles_snap(solver: "LogbookSolver") -> None:
         shift_start_slot = crew['shiftStartMin'] // solver.slot_minutes
         shift_end_slot = crew['shiftEndMin'] // solver.slot_minutes
 
-        slots_per_hour = solver.slots_per_hour
-        first_hour_index = shift_start_slot // slots_per_hour
-        last_hour_index = (shift_end_slot - 1) // slots_per_hour
-
-        for hour in range(first_hour_index, last_hour_index + 1):
-            slot1 = hour * slots_per_hour
-            slot2 = slot1 + slots_per_hour - 1
-            if slot1 < shift_start_slot or slot2 >= shift_end_slot:
+        for role in solver.roles:
+            role_meta = solver.role_meta_map.get(role, {})
+            block_size = role_meta.get('blockSize', 1)
+            
+            # blockSize=1 means no snapping needed (any combination allowed)
+            if block_size <= 1:
                 continue
-
-            for role in solver.roles:
-                if role in solver.half_hour_roles:
-                    continue
-                hour_slots = [slot1 + offset for offset in range(slots_per_hour)]
-                hour_slots = [s for s in hour_slots if shift_start_slot <= s < shift_end_slot]
-                if len(hour_slots) < slots_per_hour:
-                    continue
-                key_vars = [
-                    solver.x[(crew_id, s, role)]
-                    for s in hour_slots
-                    if (crew_id, s, role) in solver.x
-                ]
-                if len(key_vars) == slots_per_hour:
-                    for var in key_vars[1:]:
-                        m.Add(var == key_vars[0])
+            
+            # For each potential block of blockSize slots
+            slot = shift_start_slot
+            while slot + block_size <= shift_end_slot:
+                # Collect all vars in this block
+                block_vars = []
+                for offset in range(block_size):
+                    key = (crew_id, slot + offset, role)
+                    if key in solver.x:
+                        block_vars.append(solver.x[key])
+                
+                # If we have a full block, enforce all-or-nothing
+                if len(block_vars) == block_size:
+                    # All vars in block must be equal (all 0 or all 1)
+                    for var in block_vars[1:]:
+                        m.Add(var == block_vars[0])
+                
+                slot += block_size
 
 
 def _minutes_to_slots(minutes: int | None, solver: "LogbookSolver", rounding: str) -> int | None:
@@ -314,3 +386,61 @@ def _max_defined_slot_requirement(*values: int | None) -> int | None:
 def _min_defined_slot_requirement(*values: int | None) -> int | None:
     defined = [v for v in values if v is not None]
     return min(defined) if defined else None
+
+
+def _consecutive_slots(solver: "LogbookSolver") -> None:
+    """
+    Enforce slotsMustBeConsecutive for roles that require it.
+    
+    If a role has slotsMustBeConsecutive=true, all assignments for that role
+    must form a single consecutive block with no gaps.
+    
+    This is a HARD constraint (unlike _consecutive_role_penalty which is soft).
+    """
+    m = solver.model
+    
+    # Find roles that require consecutive slots
+    consecutive_roles = [
+        role for role, meta in solver.role_meta_map.items()
+        if meta.get('slotsMustBeConsecutive', False)
+    ]
+    
+    if not consecutive_roles:
+        return  # No roles require consecutive slots
+    
+    for role in consecutive_roles:
+        if role not in solver.roles:
+            continue
+            
+        for crew_id in solver.crew_ids:
+            crew = solver.crew_by_id[crew_id]
+            shift_start_slot = crew['shiftStartMin'] // solver.slot_minutes
+            shift_end_slot = crew['shiftEndMin'] // solver.slot_minutes
+            
+            # Collect all possible assignments for this crew+role
+            role_vars = []
+            for slot in range(shift_start_slot, shift_end_slot):
+                key = (crew_id, slot, role)
+                if key in solver.x:
+                    role_vars.append((slot, solver.x[key]))
+            
+            if len(role_vars) <= 1:
+                continue  # 0 or 1 assignment is always consecutive
+            
+            # Ensure consecutive: if slot S is assigned AND slot S+2 is assigned,
+            # then slot S+1 MUST also be assigned (no gaps)
+            for i in range(len(role_vars) - 1):
+                slot_i, var_i = role_vars[i]
+                slot_next, var_next = role_vars[i + 1]
+                
+                # Check if these slots are adjacent (diff of 1)
+                if slot_next == slot_i + 1:
+                    continue  # Adjacent slots, no constraint needed
+                
+                # Non-adjacent: if both are assigned, it's a gap (violation)
+                # Constraint: var_i + var_next <= 1 (can't both be 1)
+                # This prevents gaps by disallowing non-adjacent assignments
+                m.Add(var_i + var_next <= 1)
+
+
+

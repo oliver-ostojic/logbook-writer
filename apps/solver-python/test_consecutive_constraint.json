@@ -1,0 +1,46 @@
+{
+  "date": "2025-11-25",
+  "store": {
+    "baseSlotMinutes": 30,
+    "openMinutesFromMidnight": 480,
+    "closeMinutesFromMidnight": 1200,
+    "startRegHour": 480,
+    "endRegHour": 1200
+  },
+  "crew": [
+    {
+      "id": "crew_1",
+      "name": "Alice",
+      "shiftStartMin": 480,
+      "shiftEndMin": 960,
+      "eligibleRoles": ["DEMO", "PRODUCT", "MEAL_BREAK"]
+    }
+  ],
+  "preferences": [],
+  "hourlyRequirements": [],
+  "crewRoleRequirements": [
+    {
+      "crewId": "crew_1",
+      "role": "DEMO",
+      "requiredHours": 3
+    }
+  ],
+  "coverageWindows": [],
+  "roleMetadata": [
+    {
+      "role": "DEMO",
+      "slotsMustBeConsecutive": true,
+      "allowOutsideStoreHours": false,
+      "isBreakRole": false,
+      "isParkingRole": false
+    },
+    {
+      "role": "PRODUCT",
+      "slotsMustBeConsecutive": false,
+      "allowOutsideStoreHours": false,
+      "isBreakRole": false,
+      "isParkingRole": false
+    }
+  ],
+  "timeLimitSeconds": 60
+}

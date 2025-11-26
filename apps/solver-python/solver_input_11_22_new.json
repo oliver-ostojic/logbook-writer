@@ -1,0 +1,44 @@
+🔍 Fetching solver input from API...
+   URL: http://localhost:4000/solver/input/768/2025-11-22
+
+✅ Data received:
+   Store: Dr. Phillips (768)
+   Date: 2025-11-22
+   Crew: 59 with shifts (30 without)
+   Roles: 8
+   Preferences: 217
+   Constraints:
+     - Hourly: 13
+     - Window: 2
+     - Daily: 18
+
+💾 Saving to /Users/oliver-ostojic/Desktop/logbook-writer/apps/api/solver_input_11_22.json...
+✅ File saved
+
+🐍 Running Python solver...
+   Working directory: /Users/oliver-ostojic/Desktop/logbook-writer/apps/solver-python
+   Command: /Users/oliver-ostojic/Desktop/logbook-writer/apps/solver-python/venv/bin/python /Users/oliver-ostojic/Desktop/logbook-writer/apps/solver-python/solver.py < /Users/oliver-ostojic/Desktop/logbook-writer/apps/api/solver_input_11_22.json
+
+📊 Solver Output:
+════════════════════════════════════════════════════════════════════════════════
+{
+  "success": false,
+  "metadata": {
+    "status": "INFEASIBLE",
+    "objectiveScore": null,
+    "runtimeMs": 7,
+    "mipGap": null,
+    "numCrew": 59,
+    "numSlots": 48,
+    "slotMinutes": 30,
+    "numAssignments": 0,
+    "violations": [
+      "Model is infeasible but specific violations could not be determined"
+    ]
+  },
+  "assignments": []
+}
+
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Complete!

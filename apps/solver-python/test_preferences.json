@@ -1,0 +1,57 @@
+{
+  "date": "2025-11-25",
+  "store": {
+    "baseSlotMinutes": 30,
+    "openMinutesFromMidnight": 420,
+    "closeMinutesFromMidnight": 1260,
+    "startRegHour": 420,
+    "endRegHour": 1260
+  },
+  "crew": [
+    {
+      "id": "crew_1",
+      "name": "Alice",
+      "shiftStartMin": 480,
+      "shiftEndMin": 960,
+      "roles": ["PRODUCT", "REGISTER"]
+    },
+    {
+      "id": "crew_2", 
+      "name": "Bob",
+      "shiftStartMin": 540,
+      "shiftEndMin": 1020,
+      "roles": ["PRODUCT", "REGISTER"]
+    }
+  ],
+  "preferences": [
+    {
+      "crewId": "crew_1",
+      "role": "PRODUCT",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 100,
+      "crewWeight": 2,
+      "adaptiveBoost": 1.0
+    },
+    {
+      "crewId": "crew_1",
+      "role": "PRODUCT",
+      "preferenceType": "FAVORITE",
+      "baseWeight": 50,
+      "crewWeight": 3,
+      "adaptiveBoost": 1.5
+    },
+    {
+      "crewId": "crew_2",
+      "role": "REGISTER",
+      "preferenceType": "FIRST_HOUR",
+      "baseWeight": 100,
+      "crewWeight": 1,
+      "adaptiveBoost": 1.0
+    }
+  ],
+  "hourlyRequirements": [],
+  "crewRoleRequirements": [],
+  "coverageWindows": [],
+  "roleMetadata": [],
+  "timeLimitSeconds": 60
+}
