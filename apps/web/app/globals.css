@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'WF Visual Sans';
+  src: url('/fonts/WFVisualSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'WF Visual Sans';
+  src: url('/fonts/WFVisualSans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'WF Visual Sans';
+  src: url('/fonts/WFVisualSans-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'WF Visual Sans';
+  src: url('/fonts/WFVisualSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  color: rgb(17 24 39); /* gray-900 */
+  background-color: #fff;
+}
+
+/* Theme variables: brand color and font
+   - Use HSL components for easier adjustments and consistent alpha support
+   - Switch themes by setting data-theme on the <html> element
+*/
+:root {
+  /* Brand color (default: red-500) */
+  --brand-h: 0;    /* hue */
+  --brand-s: 84%;  /* saturation */
+  --brand-l: 60%;  /* lightness */
+  /* Corner radius used by bento grid (matches ~2rem) */
+  --radius-lg: 2rem;
+
+  /* Font families - WF Visual Sans for headings, Open Sans for body text */
+  --font-heading: 'WF Visual Sans', var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-open-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Optional theme presets */
+:root[data-theme="red"]    { --brand-h: 0;   --brand-s: 84%; --brand-l: 60%; }
+:root[data-theme="indigo"] { --brand-h: 231; --brand-s: 93%; --brand-l: 60%; }
+:root[data-theme="blue"]   { --brand-h: 217; --brand-s: 91%; --brand-l: 60%; }
+:root[data-theme="green"]  { --brand-h: 142; --brand-s: 71%; --brand-l: 45%; }
+
+/* Convenience utility classes for using the theme vars */
+.brand-bg     { background-color: hsl(var(--brand-h) var(--brand-s) var(--brand-l)); }
+.brand-text   { color:            hsl(var(--brand-h) var(--brand-s) var(--brand-l)); }
+.brand-border { border-color:     hsl(var(--brand-h) var(--brand-s) var(--brand-l)); }
+
+/* Apply global font via CSS variable so you can change it once */
+body { font-family: var(--font-sans); }
+
+/* Apply Roboto to all headings */
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+

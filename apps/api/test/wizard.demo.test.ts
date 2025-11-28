@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
 import { buildServer } from '../src/index';
-
-const prisma = new PrismaClient();
 
 const STORE_ID = 768;
 const DATE_ISO = '2025-11-15';
@@ -52,65 +49,44 @@ function logScenario(
 
 let app: Awaited<ReturnType<typeof buildServer>>;
 
-async function seedDemo() {
-  // Store
-  await prisma.store.upsert({
-    where: { id: STORE_ID },
-    update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips' },
-  });
+async function apiSeedDemo(app: Awaited<ReturnType<typeof buildServer>>): Promise<{ demoRoleId: number }> {
+  // Create store (ignore conflict)
+  const storeRes = await app.inject({ method: 'POST', url: '/stores', payload: { id: STORE_ID, name: 'Dr. Phillips' } });
+  if (![200,409].includes(storeRes.statusCode)) throw new Error('Failed to ensure store');
 
-  // Look up existing DEMO role (case-insensitive)
-  const demoRole = await prisma.role.findFirst({
-    where: { code: { equals: 'DEMO', mode: 'insensitive' } },
-  });
-  if (!demoRole) {
-    throw new Error('Expected DEMO role to exist in database for wizard demo tests');
+  // Create DEMO role (idempotent via conflict handling pattern)
+  const roleRes = await app.inject({ method: 'POST', url: '/roles', payload: { code: 'DEMO', storeId: STORE_ID } });
+  let demoRoleId: number;
+  if (roleRes.statusCode === 200) {
+    demoRoleId = roleRes.json().id;
+  } else if (roleRes.statusCode === 409) {
+    const list = await app.inject({ method: 'GET', url: '/roles' });
+    demoRoleId = list.json().find((r: any) => r.code === 'DEMO').id;
+  } else {
+    throw new Error('Failed to create DEMO role');
   }
 
-  // Upsert DEMO crew and attach role
+  // Seed crew with DEMO role
   for (const c of DEMO_CREW) {
-    await prisma.crew.upsert({
-      where: { id: c.id },
-      update: { name: c.name, storeId: STORE_ID },
-      create: { id: c.id, name: c.name, storeId: STORE_ID },
+    const crewRes = await app.inject({
+      method: 'POST', url: '/crew',
+      payload: { id: c.id, name: c.name, storeId: STORE_ID, roleIds: [demoRoleId] }
     });
-    // link role if not already
-    await prisma.crewRole.upsert({
-      where: { crewId_roleId: { crewId: c.id, roleId: demoRole.id } },
-      update: {},
-      create: { crewId: c.id, roleId: demoRole.id },
-    });
+    if (crewRes.statusCode !== 200 && crewRes.statusCode !== 409) {
+      throw new Error(`Failed to create crew ${c.id}: ${crewRes.statusCode}`);
+    }
   }
-
-  // A couple of hour rules for the date
-  const day = new Date(DATE_ISO);
-  day.setHours(0,0,0,0);
-  for (const h of [9, 10, 11, 12]) {
-    await prisma.hourlyRequirement.upsert({
-      where: { storeId_date_hour: { storeId: STORE_ID, date: day, hour: h } },
-      update: {},
-      create: {
-        storeId: STORE_ID,
-        date: day,
-        hour: h,
-        requiredRegister: 1,
-        requiredParkingHelm: 0,
-        updatedAt: new Date(),
-      },
-    });
-  }
+  return { demoRoleId };
 }
 
 describe('Wizard Init - DEMO feasibility', () => {
   beforeAll(async () => {
-    await seedDemo();
     app = await buildServer();
+    await apiSeedDemo(app);
   }, 30_000);
 
   afterAll(async () => {
     await app.close();
-    await prisma.$disconnect();
   });
 
   it('normalizes shift times to whole hours', async () => {
@@ -152,7 +128,8 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('one contiguous segment 9-12 across DEMO crew', payload.shifts, body);
     expect(Array.isArray(body.demoFeasible.segments)).toBe(true);
     expect(body.demoFeasible.segments).toEqual([{ startHour: 9, endHour: 12 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 9, endHour: 12 });
+  // recommended is deprecated and now null
+  expect(body.demoFeasible.recommended).toBeNull();
     // availability should be >=1 for 9,10,11 hours
     expect(body.demoFeasible.availByHour[9]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[10]).toBeGreaterThanOrEqual(1);
@@ -181,21 +158,23 @@ describe('Wizard Init - DEMO feasibility', () => {
       { startHour: 12, endHour: 13 },
     ]);
     // tie on length 1 hour each, current implementation keeps the first
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 9, endHour: 10 });
+  expect(body.demoFeasible.recommended).toBeNull();
   });
 
   it('returns no segments when none of the shifted crew are DEMO-eligible', async () => {
-    // create a non-DEMO crew
-    const nonDemoId = '1289998';
-    await prisma.crew.upsert({
-      where: { id: nonDemoId },
-      update: { name: 'Non Demo', storeId: STORE_ID },
-      create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
+    // ensure a non-DEMO crew exists (no roles assigned)
+    const crewRes = await app.inject({
+      method: 'POST',
+      url: '/crew',
+      payload: { id: NON_DEMO_ID, name: 'Non Demo', storeId: STORE_ID }
     });
+    if (![200,409].includes(crewRes.statusCode)) {
+      throw new Error('Failed to create non-DEMO crew');
+    }
 
     const payload = {
       date: DATE_ISO, store_id: STORE_ID,
-      shifts: [ { crewId: nonDemoId, start: '09:00', end: '11:00' } ],
+      shifts: [ { crewId: NON_DEMO_ID, start: '09:00', end: '11:00' } ],
     };
     const res = await app.inject({
       method: 'POST', url: '/wizard/init',
@@ -205,7 +184,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     const body = res.json();
     logScenario('no segments for non-DEMO-only shifts', payload.shifts, body);
     expect(body.demoFeasible.segments.length).toBe(0);
-    expect(body.demoFeasible.recommended).toBeNull();
+  expect(body.demoFeasible.recommended).toBeNull();
   });
 
   it('includes eligibilities mapping roles for crew present in the request', async () => {
@@ -268,7 +247,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     const body = res.json();
     logScenario('all-day availability (00-24)', payload.shifts, body);
     expect(body.demoFeasible.segments).toEqual([{ startHour: 0, endHour: 24 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 0, endHour: 24 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[0]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[23]).toBeGreaterThanOrEqual(1);
   });
@@ -308,30 +287,28 @@ describe('Wizard Init - DEMO feasibility', () => {
   });
 
   it('ignores non-DEMO crew when mixed with DEMO shifts in the same payload', async () => {
-    // Ensure a non-DEMO role and crew with that role exist
-    const nonDemoRole = await prisma.role.upsert({
-      where: { code: 'OrderWriter' },
-      update: {},
-      create: { code: 'OrderWriter', displayName: 'Order Writer' },
-    });
-    const nonDemoId = '1289998';
-    await prisma.crew.upsert({
-      where: { id: nonDemoId },
-      update: { name: 'Non Demo', storeId: STORE_ID },
-      create: { id: nonDemoId, name: 'Non Demo', storeId: STORE_ID },
-    });
-    await prisma.crewRole.upsert({
-      where: { crewId_roleId: { crewId: nonDemoId, roleId: nonDemoRole.id } },
-      update: {},
-      create: { crewId: nonDemoId, roleId: nonDemoRole.id },
-    });
+    // Ensure a non-DEMO role exists (idempotent)
+    const roleCreate = await app.inject({ method: 'POST', url: '/roles', payload: { code: 'OrderWriter', storeId: STORE_ID } });
+    if (![200,409].includes(roleCreate.statusCode)) {
+      throw new Error('Failed to ensure non-DEMO role');
+    }
+    // Ensure non-DEMO crew exists (may have been created in previous test)
+    const crewCreate = await app.inject({ method: 'POST', url: '/crew', payload: { id: NON_DEMO_ID, name: 'Non Demo', storeId: STORE_ID } });
+    if (![200,409].includes(crewCreate.statusCode)) {
+      throw new Error('Failed to ensure non-DEMO crew');
+    }
+    // Add non-DEMO role to crew (ignore 409 if already linked)
+    const addRole = await app.inject({ method: 'POST', url: `/crew/${NON_DEMO_ID}/add-role`, payload: { roleCode: 'OrderWriter' } });
+    if (![204,409].includes(addRole.statusCode)) {
+      throw new Error('Failed to add non-DEMO role to crew');
+    }
 
     const demoId = DEMO_CREW[1].id; // 09-11
     const payload = {
       date: DATE_ISO, store_id: STORE_ID,
       shifts: [
         { crewId: demoId, start: '09:00', end: '11:00' },
-        { crewId: nonDemoId, start: '09:00', end: '12:00' },
+        { crewId: NON_DEMO_ID, start: '09:00', end: '12:00' },
       ],
     };
     const res = await app.inject({
@@ -392,7 +369,7 @@ describe('Wizard Init - DEMO feasibility', () => {
       { startHour: 9, endHour: 10 },
       { startHour: 12, endHour: 14 },
     ]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 12, endHour: 14 });
+  expect(body.demoFeasible.recommended).toBeNull();
   });
 
   it('uses all DEMO crew with realistic 8-hour shifts within store hours (08:00-21:00)', async () => {
@@ -418,7 +395,7 @@ describe('Wizard Init - DEMO feasibility', () => {
 
     // Expect a single continuous feasible segment from 08 to 21
     expect(body.demoFeasible.segments).toEqual([{ startHour: 8, endHour: 21 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 21 });
+  expect(body.demoFeasible.recommended).toBeNull();
 
     // Boundary checks: outside hours 7 and 21 should be 0; edges should be >=1
     expect(body.demoFeasible.availByHour[7]).toBe(0);
@@ -459,7 +436,7 @@ describe('Wizard Init - DEMO feasibility', () => {
 
     // Continuous coverage from 08 to 20
     expect(body.demoFeasible.segments).toEqual([{ startHour: 8, endHour: 20 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 20 });
+  expect(body.demoFeasible.recommended).toBeNull();
 
     // Step checks: 8 >= 4, 10 >= 7, 12 >= 10, tailing off later
     expect(body.demoFeasible.availByHour[8]).toBeGreaterThanOrEqual(4);
@@ -494,7 +471,7 @@ describe('Wizard Init - DEMO feasibility', () => {
 
     // Continuous coverage from 08 to 17
     expect(body.demoFeasible.segments).toEqual([{ startHour: 8, endHour: 17 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 17 });
+  expect(body.demoFeasible.recommended).toBeNull();
 
     // Peak overlap around 09-15 should be high (10 at 09..15)
     expect(body.demoFeasible.availByHour[9]).toBeGreaterThanOrEqual(10);
@@ -529,7 +506,7 @@ describe('Wizard Init - DEMO feasibility', () => {
 
     // Continuous coverage from 12 to 21
     expect(body.demoFeasible.segments).toEqual([{ startHour: 12, endHour: 21 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 12, endHour: 21 });
+  expect(body.demoFeasible.recommended).toBeNull();
 
     // Early boundary should be empty; ramp up later
     expect(body.demoFeasible.availByHour[11]).toBe(0);
@@ -565,7 +542,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('morning gap (no 08:00 starts) -> segment 09-21', payload.shifts, body);
 
     expect(body.demoFeasible.segments).toEqual([{ startHour: 9, endHour: 21 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 9, endHour: 21 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[8]).toBe(0);
     expect(body.demoFeasible.availByHour[9]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[20]).toBeGreaterThanOrEqual(1);
@@ -597,7 +574,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('evening gap (no 13:00 starts) -> segment 08-20', payload.shifts, body);
 
     expect(body.demoFeasible.segments).toEqual([{ startHour: 8, endHour: 20 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 20 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[8]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[19]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[20]).toBe(0);
@@ -628,7 +605,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('both edges gapped (no 08:00 or 13:00) -> segment 09-20', payload.shifts, body);
 
     expect(body.demoFeasible.segments).toEqual([{ startHour: 9, endHour: 20 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 9, endHour: 20 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[8]).toBe(0);
     expect(body.demoFeasible.availByHour[9]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[19]).toBeGreaterThanOrEqual(1);
@@ -657,7 +634,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('5-hour morning shifts (08-16) -> single segment', payload.shifts, body);
 
     expect(body.demoFeasible.segments).toEqual([{ startHour: 8, endHour: 16 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 16 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[7]).toBe(0);
     expect(body.demoFeasible.availByHour[8]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[15]).toBeGreaterThanOrEqual(1);
@@ -686,7 +663,7 @@ describe('Wizard Init - DEMO feasibility', () => {
     logScenario('5-hour evening shifts (13-21) -> single segment', payload.shifts, body);
 
     expect(body.demoFeasible.segments).toEqual([{ startHour: 13, endHour: 21 }]);
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 13, endHour: 21 });
+  expect(body.demoFeasible.recommended).toBeNull();
     expect(body.demoFeasible.availByHour[12]).toBe(0);
     expect(body.demoFeasible.availByHour[13]).toBeGreaterThanOrEqual(1);
     expect(body.demoFeasible.availByHour[20]).toBeGreaterThanOrEqual(1);
@@ -722,7 +699,7 @@ describe('Wizard Init - DEMO feasibility', () => {
       { startHour: 15, endHour: 21 },
     ]);
     // Recommended should be the longest (both are same length, so first by tie-break)
-    expect(body.demoFeasible.recommended).toEqual({ startHour: 8, endHour: 14 });
+  expect(body.demoFeasible.recommended).toBeNull();
 
     // Boundary checks: gap at 14-15
     expect(body.demoFeasible.availByHour[13]).toBeGreaterThanOrEqual(1);

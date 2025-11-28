@@ -21,24 +21,7 @@ type InitBody = {
   shifts: Shift[];
 };
 
-type RequirementsBody = {
-  date: string;
-  store_id: number;
-  requirements: Array<{
-    crewId: string;
-    roleId: string;
-    requiredHours: number;
-  }>;
-};
-
-type CoverageBody = {
-  date: string;
-  store_id: number;
-  role_id: string; // UUID for DEMO role
-  windowStart: string; // ISO or HH:mm
-  windowEnd: string;   // ISO or HH:mm
-  requiredPerHour?: number; // default 1
-};
+// Deprecated types (requirements, coverage) removed with simplification of wizard API.
 
 type DemoFeasible = {
   segments: Array<{ startHour: number; endHour: number }>; // [start,end) hours where avail>=1 continuously
@@ -84,28 +67,19 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const crewIds = Array.from(new Set(normalizedShifts.map(s => s.crewId)));
     const crewWithRoles = await prisma.crew.findMany({
       where: { id: { in: crewIds } },
-      include: { CrewRole: { include: { Role: true } } },
+      include: { crewRoles: { include: { role: true } } },
     });
     const eligibilities = crewWithRoles.flatMap((c: any) =>
-      c.CrewRole.map((r: any) => ({ crewId: c.id, roleName: r.Role.code }))
+      c.crewRoles.map((cr: any) => ({ crewId: c.id, roleName: cr.role.code }))
     );
 
     // Rules by hour
     const rulesByHour = await loadRulesByHour(store_id, day);
 
     // Build avail[24] and feasible segments
-  const { availByHour } = await suggestDemoWindow(normDate, normalizedShifts);
-    const segments = contiguousSegments(availByHour, 1);
-    const recommended =
-      segments.reduce<{ startHour:number; endHour:number } | null>(
-        (best, seg) =>
-          best && (best.endHour - best.startHour) >= (seg.endHour - seg.startHour)
-            ? best
-            : seg,
-        null
-      );
-
-    const demoFeasible: DemoFeasible = { segments, recommended, availByHour };
+    const { segments, availByHour } = await suggestDemoWindow(normDate, normalizedShifts);
+    // Recommended window deprecated – managers choose manually.
+    const demoFeasible: DemoFeasible = { segments, recommended: null, availByHour };
 
     return { normalizedDate: normDate, normalizedShifts, eligibilities, rulesByHour, demoFeasible };
   });
@@ -146,196 +120,5 @@ export function registerWizardRoutes(app: FastifyInstance) {
     }
   );
 
-  // Step 2A: upsert per-crew role requirements
-  app.post<{ Body: RequirementsBody }>('/wizard/requirements', async (req, reply) => {
-    const { date, store_id, requirements } = req.body;
-    // Normalize and validate date and provided crew ids
-    const n = domainNormalize({ crews: (requirements || []).map(r => ({ id: r.crewId })), dates: date });
-    if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
-    const normDate = n.data!.dates[0];
-    const day = startOfDay(normDate);
-    // Upsert by unique (date, storeId, crewId, roleId)
-    const ops = requirements.map((r) =>
-      prisma.crewRoleRequirement.upsert({
-        where: {
-          storeId_date_crewId_roleId: {
-            date: day,
-            storeId: store_id,
-            crewId: r.crewId,
-            roleId: Number(r.roleId),
-          },
-        },
-        update: {
-          requiredHours: r.requiredHours,
-        },
-        create: {
-          date: day,
-          storeId: store_id,
-          crewId: r.crewId,
-          roleId: Number(r.roleId),
-          requiredHours: r.requiredHours,
-          updatedAt: new Date(),
-        },
-      })
-    );
-
-    await prisma.$transaction(ops);
-    return { ok: true, normalizedDate: normDate, upserted: ops.length };
-  });
-
-  // Step 2B: upsert DEMO coverage (per-day/per-role)
-  app.post<{ Body: CoverageBody }>('/wizard/coverage', async (req, reply) => {
-    const { date, store_id, role_id, windowStart, windowEnd, requiredPerHour } = req.body;
-    // Normalize and validate date only
-    const n = domainNormalize({ dates: date });
-    if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
-    const normDate = n.data!.dates[0];
-    const day = startOfDay(normDate);
-    const ws = parseMaybeHM(day, windowStart);
-    const we = parseMaybeHM(day, windowEnd);
-    if (!ws || !we || ws >= we) return reply.code(400).send({ error: 'Invalid window' });
-
-    await prisma.coverageWindow.upsert({
-      where: { storeId_date_roleId: { storeId: store_id, date: day, roleId: Number(role_id) } },
-      update: { startHour: ws.getUTCHours(), endHour: we.getUTCHours(), requiredPerHour: requiredPerHour ?? 1 },
-      create: {
-        date: day, storeId: store_id, roleId: Number(role_id),
-        startHour: ws.getUTCHours(), endHour: we.getUTCHours(), requiredPerHour: requiredPerHour ?? 1,
-        updatedAt: new Date(),
-      }
-    });
-
-    return { ok: true, normalizedDate: normDate };
-  });
-
-  // Step 2C: Generate coverage window options
-  // Returns top 3 combinations of DEMO + WINE_DEMO windows sorted by crew orderings
-  app.post<{ Body: { date: string; store_id: number; shifts: Shift[]; selectedRoles: string[] } }>(
-    '/wizard/compute-coverage-combinations',
-    async (req, reply) => {
-      const { date, store_id, shifts, selectedRoles } = req.body;
-      const n = domainNormalize({ dates: date });
-      if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
-      const normDate = n.data!.dates[0];
-
-      // Load DEMO and WINE_DEMO role IDs
-      const roles = await prisma.role.findMany({
-        where: { code: { in: ['DEMO', 'WINE_DEMO'] } },
-      });
-      
-      const demoRole = roles.find((r: any) => r.code === 'DEMO');
-      const wineDemoRole = roles.find((r: any) => r.code === 'WINE_DEMO');
-
-      if (!demoRole || !wineDemoRole) {
-        return reply.code(400).send({ error: 'DEMO or WINE_DEMO role not found' });
-      }
-
-      // Load crew eligibilities
-      const crewIds = Array.from(new Set(shifts.map(s => s.crewId)));
-      const crewWithRoles = await prisma.crew.findMany({
-        where: { id: { in: crewIds } },
-        include: { CrewRole: { include: { Role: true } } },
-      });
-
-      const eligibilities: Eligibility[] = crewWithRoles.flatMap((c: any) =>
-        c.CrewRole.map((r: any) => ({
-          crewId: c.id,
-          roleId: r.roleId.toString(),
-          roleName: r.Role.code,
-        }))
-      );
-
-      if (selectedRoles.length === 2) {
-        // Both roles selected - generate 3 combined options
-        const options = generateScheduleOptions(
-          demoRole.id.toString(),
-          wineDemoRole.id.toString(),
-          eligibilities,
-          shifts as OptionShift[]
-        );
-
-        console.log('\n=== COMBINED SCHEDULE OPTIONS ===');
-        options.forEach(opt => {
-          console.log('\n' + formatScheduleOption(opt));
-        });
-        console.log('\n=================================\n');
-
-        return {
-          ok: true,
-          normalizedDate: normDate,
-          options,
-          message: `Generated ${options.length} combined schedule option(s).`,
-        };
-      } else {
-        // Single role - return all longest windows
-        const roleName = selectedRoles[0];
-        const role = roleName === 'DEMO' ? demoRole : wineDemoRole;
-        
-        if (!role) {
-          return reply.code(400).send({ error: `Role ${roleName} not found` });
-        }
-
-        // Use the schedule options helper to find longest windows
-        const avail = buildAvailability(role.id.toString(), eligibilities, shifts as OptionShift[]);
-        const windows = findAllLongestWindows(avail, role.id.toString(), eligibilities, shifts as OptionShift[]);
-
-        console.log(`\n=== ${roleName} LONGEST WINDOWS ===`);
-        windows.forEach((w: any) => {
-          console.log(`${w.startHour}:00 - ${w.endHour}:00 (${w.length} hours)`);
-        });
-        console.log('\n===================================\n');
-
-        return {
-          ok: true,
-          normalizedDate: normDate,
-          windows,
-          message: `Found ${windows.length} longest window(s) for ${roleName}.`,
-        };
-      }
-    }
-  );
-
-  // Step 3: Save store hour rules
-  app.post<{ Body: { date: string; store_id: number; rules: Array<{ hour: number; requiredRegisters: number; requiredProducts?: number; requiredParkingHelms: number }> } }>(
-    '/wizard/store-rules',
-    async (req, reply) => {
-      const { date, store_id, rules } = req.body;
-      const n = domainNormalize({ dates: date });
-      if (!n.valid) return reply.code(400).send({ error: 'Invalid input', details: n.errors });
-      const normDate = n.data!.dates[0];
-      const day = startOfDay(normDate);
-
-      // Upsert rules by unique (storeId, date, hour)
-      const ops = rules.map((r) =>
-        prisma.hourlyRequirement.upsert({
-          where: {
-            storeId_date_hour: {
-              storeId: store_id,
-              date: day,
-              hour: r.hour,
-            },
-          },
-          update: {
-            requiredRegister: r.requiredRegisters,
-            // @ts-expect-error Required once Prisma client regenerated with requiredProduct column
-            requiredProduct: r.requiredProducts ?? 0,
-            requiredParkingHelm: r.requiredParkingHelms,
-          },
-          create: {
-            storeId: store_id,
-            date: day,
-            hour: r.hour,
-            requiredRegister: r.requiredRegisters,
-            // @ts-expect-error Required once Prisma client regenerated with requiredProduct column
-            requiredProduct: r.requiredProducts ?? 0,
-            requiredParkingHelm: r.requiredParkingHelms,
-            updatedAt: new Date(),
-          },
-        })
-      );
-
-      await prisma.$transaction(ops);
-      return { ok: true, normalizedDate: normDate, upserted: ops.length };
-    }
-  );
+  // Deprecated endpoints (/wizard/requirements, /wizard/coverage, /wizard/compute-coverage-combinations, /wizard/store-rules) removed.
 }

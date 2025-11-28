@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { buildServer } from '../src/index';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// Refactored to use public API endpoints for seeding/cleanup instead of direct Prisma coupling
 const STORE_ID = 768;
 
 let app: Awaited<ReturnType<typeof buildServer>>;
@@ -13,18 +11,14 @@ describe('CRUD - Roles and Crew Members', () => {
   let createdCrewIds: string[] = [];
 
   beforeAll(async () => {
-    // Ensure store exists
-    await prisma.store.upsert({
-      where: { id: STORE_ID },
-      update: {},
-      create: { id: STORE_ID, name: 'Test Store' },
-    });
     app = await buildServer();
+    // Create store (idempotent: 200 or 409 OK)
+    const storeRes = await app.inject({ method: 'POST', url: '/stores', payload: { id: STORE_ID, name: 'Test Store' } });
+    expect([200,409]).toContain(storeRes.statusCode);
   }, 30_000);
 
   afterAll(async () => {
     await app.close();
-    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -34,26 +28,15 @@ describe('CRUD - Roles and Crew Members', () => {
   });
 
   afterEach(async () => {
-    // Clean up all created test data
-    try {
-      // Delete crew members first (foreign key dependencies)
-      if (createdCrewIds.length > 0) {
-        await prisma.crewRole.deleteMany({
-          where: { crewId: { in: createdCrewIds } },
-        });
-        await prisma.crew.deleteMany({
-          where: { id: { in: createdCrewIds } },
-        });
-      }
-
-      // Delete roles
-      if (createdRoleIds.length > 0) {
-        await prisma.role.deleteMany({
-          where: { id: { in: createdRoleIds } },
-        });
-      }
-    } catch (err) {
-      console.error('Cleanup error:', err);
+    // API cleanup: delete crew then roles
+    for (const crewId of createdCrewIds) {
+      const res = await app.inject({ method: 'DELETE', url: `/crew/${crewId}` });
+      // Accept 200 (deleted) or 404 (already gone)
+      expect([200,404]).toContain(res.statusCode);
+    }
+    for (const roleId of createdRoleIds) {
+      const res = await app.inject({ method: 'DELETE', url: `/roles/${roleId}` });
+      expect([200,404,400]).toContain(res.statusCode); // 400 if id invalid, 404 if already removed
     }
   });
 
@@ -62,7 +45,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `REGISTER_UNIQUE_${Date.now()}` },
+        payload: { code: `REGISTER_UNIQUE_${Date.now()}`, storeId: STORE_ID },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -76,7 +59,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: '' },
+        payload: { code: '', storeId: STORE_ID },
       });
       expect(res.statusCode).toBe(400);
       const body = res.json();
@@ -88,7 +71,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `ListTestRole_${Date.now()}` },
+        payload: { code: `ListTestRole_${Date.now()}`, storeId: STORE_ID },
       });
       createdRoleIds.push(createRes.json().id);
 
@@ -105,7 +88,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `GetByIdRole_${Date.now()}` },
+        payload: { code: `GetByIdRole_${Date.now()}`, storeId: STORE_ID },
       });
       const roleId = createRes.json().id;
       createdRoleIds.push(roleId);
@@ -131,7 +114,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `CrewListRole_${Date.now()}` },
+        payload: { code: `CrewListRole_${Date.now()}`, storeId: STORE_ID },
       });
       createdRoleIds.push(createRes.json().id);
 
@@ -149,7 +132,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `RemoveCrewRole_${Date.now()}` },
+        payload: { code: `RemoveCrewRole_${Date.now()}`, storeId: STORE_ID },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -181,7 +164,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `RejectTestRole_${Date.now()}` },
+        payload: { code: `RejectTestRole_${Date.now()}`, storeId: STORE_ID },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -198,7 +181,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `DeleteTestRole_${Date.now()}` },
+        payload: { code: `DeleteTestRole_${Date.now()}`, storeId: STORE_ID },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -236,7 +219,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const roleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `CrewCreateRole_${Date.now()}` },
+        payload: { code: `CrewCreateRole_${Date.now()}`, storeId: STORE_ID },
       });
       const roleId = roleRes.json().id;
       createdRoleIds.push(roleId);
@@ -361,7 +344,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const role1Res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `ReplaceRole1_${Date.now()}` },
+        payload: { code: `ReplaceRole1_${Date.now()}`, storeId: STORE_ID },
       });
       const role1Id = role1Res.json().id;
       createdRoleIds.push(role1Id);
@@ -369,7 +352,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const role2Res = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: `ReplaceRole2_${Date.now()}` },
+        payload: { code: `ReplaceRole2_${Date.now()}`, storeId: STORE_ID },
       });
       const role2Id = role2Res.json().id;
       createdRoleIds.push(role2Id);
@@ -427,7 +410,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const artRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: roleName },
+        payload: { code: roleName, storeId: STORE_ID },
       });
       expect(artRes.statusCode).toBe(200);
       const artRole = artRes.json();
@@ -455,7 +438,7 @@ describe('CRUD - Roles and Crew Members', () => {
       const dupRoleRes = await app.inject({
         method: 'POST',
         url: '/roles',
-        payload: { name: roleName },
+        payload: { code: roleName, storeId: STORE_ID },
       });
       expect(dupRoleRes.statusCode).toBe(200);
       const dupRole = dupRoleRes.json();

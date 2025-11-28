@@ -113,12 +113,6 @@ describe('Solver Integration Tests', () => {
           select: { 
             id: true, 
             name: true,
-            prefFirstHour: true,
-            prefFirstHourWeight: true,
-            prefTask: true,
-            prefTaskWeight: true,
-            consecutiveProdWeight: true,
-            consecutiveRegWeight: true,
           },
         });
 
@@ -175,18 +169,7 @@ describe('Solver Integration Tests', () => {
           console.log(`  Per assignment:     ${scorePerAssignment}`);
           
           // Preference statistics
-          const prefStats = {
-            firstHour: crew.filter(c => c.prefFirstHour && c.prefFirstHourWeight && c.prefFirstHourWeight > 0).length,
-            taskBias: crew.filter(c => c.prefTask && c.prefTaskWeight && c.prefTaskWeight > 0).length,
-            productBlock: crew.filter(c => c.consecutiveProdWeight && c.consecutiveProdWeight > 0).length,
-            registerBlock: crew.filter(c => c.consecutiveRegWeight && c.consecutiveRegWeight > 0).length,
-          };
-          
-          console.log(`\nPreference Configuration:`);
-          console.log(`  First hour task:    ${prefStats.firstHour}/${actualSize} crew`);
-          console.log(`  Task bias (R/P):    ${prefStats.taskBias}/${actualSize} crew`);
-          console.log(`  Product blocks:     ${prefStats.productBlock}/${actualSize} crew`);
-          console.log(`  Register blocks:    ${prefStats.registerBlock}/${actualSize} crew`);
+          console.log(`\nPreference Configuration: (skipped - fields moved to new model)`);
           
           // Calculate assignment distribution
           const taskCounts: Record<string, number> = {};

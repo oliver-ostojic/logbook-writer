@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { buildServer } from '../src/index';
 
-const prisma = new PrismaClient();
+// Chosen store id for tests; idempotent creation handled via POST /stores (409 tolerated)
 const STORE_ID = 768;
 
 describe('Crew Preferences API', () => {
@@ -11,21 +10,19 @@ describe('Crew Preferences API', () => {
 
   beforeAll(async () => {
     app = await buildServer();
-
-    // Ensure store exists
-      await prisma.store.upsert({
-        where: { id: STORE_ID },
-        update: {},
-        create: {
-          id: STORE_ID,
-          name: 'Test Store',
-        },
-      });
+    // Ensure store exists via API; ignore 409 conflict if already present
+    const res = await app.inject({
+      method: 'POST',
+      url: '/stores',
+      payload: { id: STORE_ID, name: 'Test Store' },
+    });
+    if (![200,409].includes(res.statusCode)) {
+      throw new Error(`Failed to create test store: ${res.statusCode} ${res.body}`);
+    }
   });
 
   afterAll(async () => {
     await app.close();
-    await prisma.$disconnect();
   });
 
   describe('Crew Preferences via Crew CRUD', () => {
@@ -56,24 +53,20 @@ describe('Crew Preferences API', () => {
       expect(body.prefFirstHour).toBe('REGISTER');
       expect(body.prefTask).toBe('PRODUCT');
 
-      // Cleanup
-      await prisma.crew.delete({ where: { id: crewId } });
+      // Cleanup via API
+      const del = await app.inject({ method: 'DELETE', url: `/crew/${crewId}` });
+      expect(del.statusCode).toBe(200);
     });
 
     it('updates preferences via PUT /crew/:id', async () => {
-      // Create crew first
       const crewId = `PREF${Date.now().toString().slice(-3)}`;
-      await app.inject({
+      const create = await app.inject({
         method: 'POST',
         url: '/crew',
-        payload: {
-          id: crewId,
-          name: 'Test Preferences Update',
-          storeId: STORE_ID,
-        },
+        payload: { id: crewId, name: 'Test Preferences Update', storeId: STORE_ID },
       });
+      expect(create.statusCode).toBe(200);
 
-      // Update preferences
       const res = await app.inject({
         method: 'PUT',
         url: `/crew/${crewId}`,
@@ -86,7 +79,6 @@ describe('Crew Preferences API', () => {
           consecutiveRegWeight: 90,
         },
       });
-
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.prefFirstHour).toBe('REGISTER');
@@ -96,92 +88,61 @@ describe('Crew Preferences API', () => {
       expect(body.consecutiveProdWeight).toBe(120);
       expect(body.consecutiveRegWeight).toBe(90);
 
-      // Cleanup
-      await prisma.crew.delete({ where: { id: crewId } });
+      const del = await app.inject({ method: 'DELETE', url: `/crew/${crewId}` });
+      expect(del.statusCode).toBe(200);
     });
 
     it('validates preference weight range (0-4)', async () => {
-      // Test weight > 4 (should fail validation)
-      const timestamp1 = Date.now();
-      const crewId1 = `PREF${timestamp1.toString().slice(-3)}`;
-      const res1 = await app.inject({
-        method: 'POST',
-        url: '/crew',
-        payload: {
-          id: crewId1,
-          name: 'Test Validation',
-          storeId: STORE_ID,
-          prefFirstHourWeight: 5, // Invalid
-        },
-      });
-      expect(res1.statusCode).toBe(400);
-
-      // Test valid weight
-      const timestamp2 = Date.now() + 100; // Ensure unique ID
-      const crewId2 = `PREF${timestamp2.toString().slice(-3)}`;
-      const res2 = await app.inject({
-        method: 'POST',
-        url: '/crew',
-        payload: {
-          id: crewId2,
-          name: 'Test Validation',
-          storeId: STORE_ID,
-          prefFirstHourWeight: 4, // Valid
-        },
-      });
-      expect(res2.statusCode).toBe(200);
-
-      // Cleanup
-      await prisma.crew.delete({ where: { id: crewId1 } }).catch(() => {});
-      await prisma.crew.delete({ where: { id: crewId2 } });
-    });
-
-    it('validates preference task enum values', async () => {
-      // Test invalid enum value
+      // Invalid weight
       const crewId1 = `PREF${Date.now().toString().slice(-3)}`;
       const res1 = await app.inject({
         method: 'POST',
         url: '/crew',
-        payload: {
-          id: crewId1,
-          name: 'Test Enum Validation',
-          storeId: STORE_ID,
-          prefFirstHour: 'INVALID_TASK', // Invalid
-        },
+        payload: { id: crewId1, name: 'Test Validation', storeId: STORE_ID, prefFirstHourWeight: 5 },
       });
       expect(res1.statusCode).toBe(400);
 
-      // Test valid enum value
-      const crewId2 = `PREF${(Date.now() + 1).toString().slice(-3)}`;
+      // Valid weight
+      const crewId2 = `PREF${(Date.now()+50).toString().slice(-3)}`;
       const res2 = await app.inject({
         method: 'POST',
         url: '/crew',
-        payload: {
-          id: crewId2,
-          name: 'Test Enum Validation',
-          storeId: STORE_ID,
-          prefFirstHour: 'REGISTER', // Valid
-        },
+        payload: { id: crewId2, name: 'Test Validation', storeId: STORE_ID, prefFirstHourWeight: 4 },
       });
       expect(res2.statusCode).toBe(200);
 
-      // Cleanup
-      await prisma.crew.delete({ where: { id: crewId1 } }).catch(() => {});
-      await prisma.crew.delete({ where: { id: crewId2 } });
+      const del2 = await app.inject({ method: 'DELETE', url: `/crew/${crewId2}` });
+      expect(del2.statusCode).toBe(200);
+    });
+
+    it('validates preference task enum values', async () => {
+      const crewId1 = `PREF${Date.now().toString().slice(-3)}`;
+      const invalid = await app.inject({
+        method: 'POST',
+        url: '/crew',
+        payload: { id: crewId1, name: 'Test Enum Validation', storeId: STORE_ID, prefFirstHour: 'INVALID_TASK' },
+      });
+      expect(invalid.statusCode).toBe(400);
+
+      const crewId2 = `PREF${(Date.now()+60).toString().slice(-3)}`;
+      const valid = await app.inject({
+        method: 'POST',
+        url: '/crew',
+        payload: { id: crewId2, name: 'Test Enum Validation', storeId: STORE_ID, prefFirstHour: 'REGISTER' },
+      });
+      expect(valid.statusCode).toBe(200);
+      const del = await app.inject({ method: 'DELETE', url: `/crew/${crewId2}` });
+      expect(del.statusCode).toBe(200);
     });
 
     it('updates both weights and values together', async () => {
-      // Create crew
       const crewId = `PREF${Date.now().toString().slice(-3)}`;
-      await app.inject({
+      const create = await app.inject({
         method: 'POST',
         url: '/crew',
-        payload: {
-          id: crewId,
-          name: 'Test Combined Update',
-          storeId: STORE_ID,
-        },
+        payload: { id: crewId, name: 'Test Combined Update', storeId: STORE_ID },
       });
+      expect(create.statusCode).toBe(200);
 
       const res = await app.inject({
         method: 'PUT',
@@ -195,7 +156,6 @@ describe('Crew Preferences API', () => {
           consecutiveRegWeight: 60,
         },
       });
-
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.prefFirstHourWeight).toBe(4);
@@ -205,8 +165,8 @@ describe('Crew Preferences API', () => {
       expect(body.consecutiveProdWeight).toBe(150);
       expect(body.consecutiveRegWeight).toBe(60);
 
-      // Cleanup
-      await prisma.crew.delete({ where: { id: crewId } });
+      const del = await app.inject({ method: 'DELETE', url: `/crew/${crewId}` });
+      expect(del.statusCode).toBe(200);
     });
   });
 });

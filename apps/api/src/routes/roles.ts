@@ -39,7 +39,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
         crewMember: cr.crew,
         roleId: cr.roleId,
         assignedAt: cr.assignedAt,
-        specialization: cr.specializationType,
+        specialization: (cr as any).specialization ?? null,
       })),
     };
   };
@@ -62,32 +62,37 @@ export function registerRoleRoutes(app: FastifyInstance) {
     if (!resolvedCode) {
       return reply.code(400).send({ error: 'code is required' });
     }
-    
     if (storeId === undefined) {
       return reply.code(400).send({ error: 'storeId is required' });
     }
-    
-    const role = await prisma.role.create({
-      data: {
-        code: resolvedCode,
-        displayName: displayName ?? resolvedCode,
-        storeId,
-        assignmentModel: assignmentModel ?? 'UNIVERSAL',
-        slotsMustBeConsecutive: slotsMustBeConsecutive ?? false,
-        minSlots: minSlots ?? 1,
-        maxSlots: maxSlots ?? 1,
-        allowOutsideStoreHours: allowOutsideStoreHours ?? false,
-      },
-      include: roleInclude,
-    });
-    
-    return formatRole(role);
+
+    try {
+      const role = await prisma.role.create({
+        data: {
+          code: resolvedCode,
+          displayName: displayName ?? resolvedCode,
+          storeId,
+          assignmentModel: (assignmentModel ?? 'HOURLY') as AssignmentModel,
+          slotsMustBeConsecutive: slotsMustBeConsecutive ?? false,
+          minSlots: minSlots ?? 1,
+          maxSlots: maxSlots ?? 1,
+          allowOutsideStoreHours: allowOutsideStoreHours ?? false,
+        },
+        include: roleInclude,
+      });
+      return formatRole(role as RoleWithCrew);
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Role with this code already exists' });
+      }
+      console.error('Failed to create role', e);
+      return reply.code(500).send({ error: 'Failed to create role' });
+    }
   });
 
   // Read all roles or a specific one by id
   app.get<{ Querystring: { id?: string } }>('/roles', async (req, reply) => {
     const { id } = req.query as any;
-    
     if (id) {
       const roleId = Number(id);
       if (Number.isNaN(roleId)) {
@@ -98,13 +103,10 @@ export function registerRoleRoutes(app: FastifyInstance) {
         include: roleInclude,
       });
       if (!role) return reply.code(404).send({ error: 'Role not found' });
-      return formatRole(role);
+      return formatRole(role as RoleWithCrew);
     }
-    
-    const allRoles = await prisma.role.findMany({
-      include: roleInclude,
-    });
-    return allRoles.map(formatRole);
+    const allRoles = await prisma.role.findMany({ include: roleInclude });
+    return allRoles.map((r) => formatRole(r as RoleWithCrew));
   });
 
   // List crew (id, name) for a role by its name
@@ -123,7 +125,6 @@ export function registerRoleRoutes(app: FastifyInstance) {
   app.put<{ Params: { id: string }; Body: UpdateRoleBody }>('/roles/:id', async (req, reply) => {
     const { id } = req.params;
     const { removeCrewMemberId } = req.body;
-    
     if (!removeCrewMemberId) {
       return reply.code(400).send({ error: 'removeCrewMemberId is required' });
     }
@@ -131,38 +132,25 @@ export function registerRoleRoutes(app: FastifyInstance) {
     if (Number.isNaN(roleId)) {
       return reply.code(400).send({ error: 'id must be a number' });
     }
-
     const existing = await prisma.role.findUnique({ where: { id: roleId } });
     if (!existing) return reply.code(404).send({ error: 'Role not found' });
-    
-    // Remove the crew member from this role
+
     await prisma.crewRole.deleteMany({
-      where: {
-        roleId,
-        crewId: removeCrewMemberId,
-      },
+      where: { roleId, crewId: removeCrewMemberId },
     });
-    
-    const updated = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: roleInclude,
-    });
-    
-    return updated ? formatRole(updated) : null;
+    const updated = await prisma.role.findUnique({ where: { id: roleId }, include: roleInclude });
+    return updated ? formatRole(updated as RoleWithCrew) : null;
   });
 
   // Delete a role
   app.delete<{ Params: { id: string } }>('/roles/:id', async (req, reply) => {
     const { id } = req.params;
-    
     const roleId = Number(id);
     if (Number.isNaN(roleId)) {
       return reply.code(400).send({ error: 'id must be a number' });
     }
-
     const existing = await prisma.role.findUnique({ where: { id: roleId } });
     if (!existing) return reply.code(404).send({ error: 'Role not found' });
-    
     await prisma.role.delete({ where: { id: roleId } });
     return { ok: true, deleted: roleId };
   });

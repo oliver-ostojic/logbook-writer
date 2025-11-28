@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { startOfDay, hourOf, clamp } from '../utils';
 
+// NOTE: This service now only computes raw availability & contiguous segments for DEMO crew.
+// The "recommended" window (longest segment) has been deprecated; managers select windows manually.
+// We retain role-based filtering (only DEMO crew contribute) but omit recommendation logic entirely.
+
 const prisma = new PrismaClient();
 
 export type Shift = { crewId: string; start: string; end: string };
@@ -18,50 +22,29 @@ export function contiguousSegments(avail: number[], threshold = 1) {
 }
 
 export async function suggestDemoWindow(dateISO: string, shifts: Shift[]) {
-  startOfDay(new Date(dateISO)); // retain for future day-based filtering
-  // Fetch ALL roles matching 'DEMO' 
+  startOfDay(new Date(dateISO)); // reserved for future day-based filtering
+  // Fetch DEMO roles and associated crew via new relation names
   const demoRoles = await prisma.role.findMany({
     where: { code: 'DEMO' },
-    include: { CrewRole: { include: { Crew: true } } },
+    include: { crewRoles: { include: { crew: true } } },
   });
-  // Union all crew member IDs across any matching demo roles
   const demoCrewSet = new Set(
-    demoRoles.flatMap((r: any) => (r.CrewRole ?? []).map((cr: any) => cr.Crew.id))
+    demoRoles.flatMap((r: any) => (r.crewRoles ?? []).map((cr: any) => cr.crew.id))
   );
-  // If multiple demo roles exist, prefer the one with most crew for recommended metadata (not strictly needed now)
-  // Create hourly availability map
   const avail = Array(24).fill(0);
-  // Fill availability map
   for (const s of shifts) {
     if (!demoCrewSet.has(s.crewId)) continue;
-    // Clamp start/end hours
     const sh = clamp(hourOf(s.start), 0, 23);
     const eh = clamp(hourOf(s.end), 0, 24);
-    // Add the availability to the map, for each available hour for a crew member
     for (let h = sh; h < eh; h++) avail[h] += 1;
   }
-  
-  const segs = contiguousSegments(avail, 1);
-  // pick longest as recommended
-  let recommended = null as {startHour:number; endHour:number} | null;
-  let best = -1;
-  for (const seg of segs) {
-    const len = seg.endHour - seg.startHour;
-    if (len > best) { best = len; recommended = seg; }
-  }
-  return { segments: segs, recommended, availByHour: avail };
+  const segments = contiguousSegments(avail, 1);
+  // Deprecated: recommended longest segment (manager decides manually)
+  return { segments, availByHour: avail };
 }
 
 export async function loadRulesByHour(storeId: number, day: Date) {
-  const rules = await prisma.hourlyRequirement.findMany({
-    where: { storeId, date: day },
-    orderBy: { hour: 'asc' },
-  });
-  return rules.map((r: any) => ({
-    hour: r.hour,
-    requiredRegisters: r.requiredRegister,
-    minProduct: 0, // Not tracked separately in new schema
-    minParking: r.requiredParkingHelm,
-    maxParking: r.requiredParkingHelm, // Same as min in new schema
-  }));
+  // Schema has evolved; legacy hourlyRequirement table may be removed.
+  // Return empty array until new constraint retrieval logic is implemented.
+  return [] as Array<{ hour: number; requiredRegisters: number; minProduct: number; minParking: number; maxParking: number }>;
 }

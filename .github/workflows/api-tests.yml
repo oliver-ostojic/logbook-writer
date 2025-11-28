@@ -65,9 +65,7 @@ jobs:
         working-directory: apps/api
         run: pnpm db:push
 
-      - name: Seed database
-        working-directory: apps/api
-        run: pnpm db:seed
+      # Seed step removed: tests no longer require seed data. Fixtures are created per test.
 
       - name: Run API tests
         working-directory: apps/api

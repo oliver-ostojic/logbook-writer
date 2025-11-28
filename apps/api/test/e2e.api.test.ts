@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../src/index';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// Use API endpoints for seeding to avoid schema coupling
 
 const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
@@ -12,88 +10,55 @@ const CREW_DEMO = { id: '1269090', name: 'Oliver Ostojic' };
 const CREW_OTHER = { id: '1280713', name: 'Abigail Perez' };
 
 let app: Awaited<ReturnType<typeof buildServer>>;
-let demoRoleId: string;
+let demoRoleId: number;
 
-async function seedMinimal() {
+async function seedMinimal(app: Awaited<ReturnType<typeof buildServer>>) {
   // Store
-  await prisma.store.upsert({
-    where: { id: STORE_ID },
-    update: { name: 'Dr. Phillips' },
-    create: { id: STORE_ID, name: 'Dr. Phillips' },
-  });
+  const storeRes = await app.inject({ method: 'POST', url: '/stores', payload: { id: STORE_ID, name: 'Dr. Phillips' } });
+  if (!(storeRes.statusCode === 200 || storeRes.statusCode === 409)) throw new Error('Failed to create store');
 
   // Roles
-  const demo = await prisma.role.upsert({
-    where: { code: 'DEMO' },
-    update: {},
-    create: { code: 'DEMO', displayName: 'Demo' },
-  });
-  demoRoleId = demo.id;
+  const demoRes = await app.inject({ method: 'POST', url: '/roles', payload: { code: 'DEMO', displayName: 'Demo', storeId: STORE_ID } });
+  if (demoRes.statusCode === 200) {
+    demoRoleId = demoRes.json().id;
+  } else if (demoRes.statusCode === 409) {
+    // Already exists, fetch
+    const listRes = await app.inject({ method: 'GET', url: '/roles' });
+    const existing = listRes.statusCode === 200 ? listRes.json().find((r: any) => r.code === 'DEMO') : null;
+    if (!existing) throw new Error('DEMO role exists but could not be fetched');
+    demoRoleId = existing.id;
+  } else {
+    throw new Error('Failed to create DEMO role');
+  }
 
-  const orderWriter = await prisma.role.upsert({
-    where: { code: 'OrderWriter' },
-    update: {},
-    create: { code: 'OrderWriter', displayName: 'Order Writer' },
-  });
+  const owRes = await app.inject({ method: 'POST', url: '/roles', payload: { code: 'ORDER_WRITER', displayName: 'Order Writer', storeId: STORE_ID } });
+  let orderWriterId: number;
+  if (owRes.statusCode === 200) {
+    orderWriterId = owRes.json().id;
+  } else if (owRes.statusCode === 409) {
+    const listRes = await app.inject({ method: 'GET', url: '/roles' });
+    const existing = listRes.statusCode === 200 ? listRes.json().find((r: any) => r.code === 'ORDER_WRITER') : null;
+    if (!existing) throw new Error('ORDER_WRITER role exists but could not be fetched');
+    orderWriterId = existing.id;
+  } else {
+    throw new Error('Failed to create ORDER_WRITER role');
+  }
 
   // Crew members
-  await prisma.crew.upsert({
-    where: { id: CREW_DEMO.id },
-    update: {},
-    create: {
-      id: CREW_DEMO.id,
-      name: CREW_DEMO.name,
-      storeId: STORE_ID,
-      CrewRole: { create: [{ roleId: demo.id }] },
-    },
-  });
-  await prisma.crew.upsert({
-    where: { id: CREW_OTHER.id },
-    update: {},
-    create: {
-      id: CREW_OTHER.id,
-      name: CREW_OTHER.name,
-      storeId: STORE_ID,
-      CrewRole: { create: [{ roleId: orderWriter.id }] },
-    },
-  });
-
-  // Two rules for today
-  await prisma.hourlyRequirement.upsert({
-    where: { storeId_date_hour: { storeId: STORE_ID, date: TODAY, hour: 9 } },
-    update: {},
-    create: {
-      storeId: STORE_ID,
-      date: TODAY,
-      hour: 9,
-      requiredRegister: 2,
-      requiredParkingHelm: 1,
-      updatedAt: new Date(),
-    },
-  });
-  await prisma.hourlyRequirement.upsert({
-    where: { storeId_date_hour: { storeId: STORE_ID, date: TODAY, hour: 10 } },
-    update: {},
-    create: {
-      storeId: STORE_ID,
-      date: TODAY,
-      hour: 10,
-      requiredRegister: 3,
-      requiredParkingHelm: 1,
-      updatedAt: new Date(),
-    },
-  });
+  const crew1 = await app.inject({ method: 'POST', url: '/crew', payload: { id: CREW_DEMO.id, name: CREW_DEMO.name, roleIds: [demoRoleId] } });
+  if (crew1.statusCode !== 200) throw new Error('Failed to create crew1');
+  const crew2 = await app.inject({ method: 'POST', url: '/crew', payload: { id: CREW_OTHER.id, name: CREW_OTHER.name, roleIds: [orderWriterId] } });
+  if (crew2.statusCode !== 200) throw new Error('Failed to create crew2');
 }
 
 describe('API e2e', () => {
   beforeAll(async () => {
-    await seedMinimal();
     app = await buildServer();
+    await seedMinimal(app);
   }, 30_000);
 
   afterAll(async () => {
     await app.close();
-    await prisma.$disconnect();
   });
 
   it('GET /me', async () => {

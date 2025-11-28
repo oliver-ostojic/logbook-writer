@@ -122,7 +122,8 @@ cd apps/api
 export DATABASE_URL="postgresql://user:pass@localhost:5432/logbook"
 # For local dev, keep schema in sync and seed demo data
 pnpm db:push
-pnpm db:seed
+# Optional: if you maintain a local seed script
+# pnpm db:seed
 # Run API
 pnpm dev
 ```

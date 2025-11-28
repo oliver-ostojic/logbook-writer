@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
     "@logbook-writer/domain": "workspace:*",
     "@logbook-writer/shared-types": "workspace:*",
     "@tanstack/react-query": "^4.36.1",
     "axios": "^1.5.1",
+    "dayjs": "^1.11.19",
     "next": "13.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -20,6 +23,8 @@
     "zustand": "^4.4.3"
   },
   "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.8.0",
     "@types/react": "^18.2.24",
     "@types/react-dom": "^18.2.8",
