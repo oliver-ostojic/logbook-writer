@@ -11,10 +11,15 @@ let app: Awaited<ReturnType<typeof buildServer>>;
 describe('Wizard Segments - POST /wizard/segments', () => {
   beforeAll(async () => {
     // Ensure store exists with defaults (08:00-21:00)
+    // Create a company inline to satisfy required relation
     await prisma.store.upsert({
       where: { id: STORE_ID },
       update: { name: 'Dr. Phillips' },
-      create: { id: STORE_ID, name: 'Dr. Phillips' },
+      create: { 
+        id: STORE_ID, 
+        name: 'Dr. Phillips',
+        company: { create: { name: 'Test Company' } },
+      },
     });
     app = await buildServer();
   }, 30_000);

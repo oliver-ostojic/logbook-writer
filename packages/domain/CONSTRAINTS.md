@@ -136,24 +136,24 @@ function validateAssignment(assignment, store, role, crew) {
 - `isWithinSlotBounds()` - Quick boolean check if duration is valid
 - `getAllowedDurationRange()` - Get min/max hours and slots for a role
 
-### ✅ Consecutive Slots (Role.slotsMustBeConsecutive)
+### ✅ Consecutive Slots (Role.consecutivePolicy)
 
 **File**: `validators/consecutiveSlots.ts`
 
-**Purpose**: Enforces that when a role requires consecutive slots, assignments cannot have gaps
+**Purpose**: Enforces that when a role's `consecutivePolicy` is `REQUIRED`, assignments cannot have gaps
 
 **Rules**:
-- When `role.slotsMustBeConsecutive = true`: All assignments for the same crew+role must form ONE continuous block
-- When `role.slotsMustBeConsecutive = false`: Assignments can be split with gaps (allowed)
+- When `role.consecutivePolicy = REQUIRED`: All assignments for the same crew+role must form ONE continuous block
+- When `role.consecutivePolicy = PREFERRED/NONE`: Assignments can be split with gaps (allowed)
 
 **Example**:
-- Register (slotsMustBeConsecutive=true): ✓ 9:00-12:00 (one block), ✗ 9:00-10:00 + 11:00-12:00 (gap)
-- Order Writer (slotsMustBeConsecutive=false): ✓ 9:00-10:00 + 2:00-3:00 (split allowed)
+- Register (`consecutivePolicy=REQUIRED`): ✓ 9:00-12:00 (one block), ✗ 9:00-10:00 + 11:00-12:00 (gap)
+- Order Writer (`consecutivePolicy=NONE`): ✓ 9:00-10:00 + 2:00-3:00 (split allowed)
 
 **Tests**: 21 test cases covering:
 - Single assignment validation (always passes)
-- Multiple assignments with slotsMustBeConsecutive=false (splits allowed)
-- Multiple assignments with slotsMustBeConsecutive=true:
+- Multiple assignments with `consecutivePolicy=NONE` (splits allowed)
+- Multiple assignments with `consecutivePolicy=REQUIRED`:
   - Empty array (valid)
   - Single assignment (valid)
   - Perfectly adjacent assignments (valid)

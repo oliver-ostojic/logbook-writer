@@ -5,7 +5,9 @@ import {
   saveLogPreferenceMetadata,
   type AssignmentRecord,
   type PreferenceRecord,
-  type StoreBreakConfig
+  type CrewShiftWindow,
+  type RoleTimingWindow,
+  type TimingPreferenceContext,
 } from './src/services/preference-satisfaction';
 
 const prisma = new PrismaClient();
@@ -18,38 +20,16 @@ async function main() {
   console.log(`Store: ${storeId}`);
   console.log(`Date: ${testDate.toISOString().split('T')[0]}\n`);
 
-  // Fetch store break configuration
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: {
-      breakWindowStart: true,
-      breakWindowEnd: true,
-      reqShiftLengthForBreak: true,
-    }
+  const roles = await prisma.role.findMany({ where: { storeId } });
+
+  const roleWindowMap: Map<number, RoleTimingWindow> = new Map();
+  roles.forEach(role => {
+    roleWindowMap.set(role.id, {
+      startOffsetMin: (role as any).windowStartOffsetMin ?? undefined,
+      endOffsetMin: (role as any).windowEndOffsetMin ?? undefined,
+    });
   });
-
-  if (!store) {
-    throw new Error('Store not found');
-  }
-
-  const storeConfig: StoreBreakConfig = {
-    breakWindowStart: store.breakWindowStart,
-    breakWindowEnd: store.breakWindowEnd,
-    reqShiftLengthForBreak: store.reqShiftLengthForBreak,
-  };
-
-  console.log('Store Break Config:');
-  console.log(`  Window: ${storeConfig.breakWindowStart}-${storeConfig.breakWindowEnd} minutes from shift start`);
-  console.log(`  Required shift length: ${storeConfig.reqShiftLengthForBreak} minutes\n`);
-
-  // Find break role IDs
-  const breakRoles = await prisma.role.findMany({
-    where: { storeId, code: { in: ['BREAK', 'MEAL_BREAK'] } },
-    select: { id: true, code: true }
-  });
-
-  const breakRoleIds = breakRoles.map(r => r.id);
-  console.log(`Break roles: ${breakRoles.map(r => `${r.code} (${r.id})`).join(', ')}\n`);
+  console.log(`Loaded ${roleWindowMap.size} role window configs\n`);
 
   // For this test, we'll create mock assignments based on common scenarios
   // In real usage, you'd fetch from Assignment table or solver output
@@ -150,11 +130,15 @@ async function main() {
     console.log('═══════════════════════════════════════════════════════════════\n');
     console.log('CALCULATING SATISFACTION\n');
     
+    const timingContext: TimingPreferenceContext = {
+      crewShifts: buildCrewShiftMap(mockAssignments),
+      roleWindows: roleWindowMap,
+    };
+
     const results = await calculateAllSatisfaction(
       mockAssignments,
       samplePreferences,
-      breakRoleIds,
-      storeConfig
+      timingContext
     );
 
     // Display results
@@ -192,11 +176,15 @@ async function main() {
     console.log('   • CONSECUTIVE: 0-1 range (how many role switches vs worst case?)\n');
   } else {
     // Calculate with real preferences
+    const timingContext: TimingPreferenceContext = {
+      crewShifts: buildCrewShiftMap(mockAssignments),
+      roleWindows: roleWindowMap,
+    };
+
     const results = await calculateAllSatisfaction(
       mockAssignments,
       preferences,
-      breakRoleIds,
-      storeConfig
+      timingContext
     );
 
     console.log(`Calculated satisfaction for ${results.length} preferences\n`);
@@ -224,3 +212,20 @@ async function main() {
 main()
   .catch(console.error)
   .finally(() => prisma.$disconnect());
+
+function buildCrewShiftMap(assignments: AssignmentRecord[]): Map<string, CrewShiftWindow> {
+  const map = new Map<string, CrewShiftWindow>();
+  for (const assignment of assignments) {
+    const existing = map.get(assignment.crewId);
+    if (!existing) {
+      map.set(assignment.crewId, {
+        shiftStartMin: assignment.startMinutes,
+        shiftEndMin: assignment.endMinutes,
+      });
+    } else {
+      existing.shiftStartMin = Math.min(existing.shiftStartMin, assignment.startMinutes);
+      existing.shiftEndMin = Math.max(existing.shiftEndMin, assignment.endMinutes);
+    }
+  }
+  return map;
+}

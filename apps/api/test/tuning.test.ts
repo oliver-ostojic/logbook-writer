@@ -1,3 +1,4 @@
+/*
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildServer } from '../src/index';
 
@@ -13,71 +14,64 @@ import { buildServer } from '../src/index';
 
  */
 
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { buildServer } from '../src/index';
+import { PrismaClient } from '@prisma/client';
+import { cleanupTestCrew, disconnectPrisma } from './test-cleanup';
+
 // Use a unique store id for each test run to avoid conflicts
+const STORE_ID = 99999 + Math.floor(Math.random() * 1000);
+const prisma = new PrismaClient();
+let app: Awaited<ReturnType<typeof buildServer>>;
 
-import { cleanupTestStores, cleanupTestCrew, disconnectPrisma } from './test-cleanup';const STORE_ID = 99999 + Math.floor(Math.random() * 1000);
+async function seedData() {
+  // Clean up any existing test crew first
+  await cleanupTestCrew('TUN');
 
+  // Ensure a company exists and create the store linked to it
+  const company = await prisma.company.upsert({
+    where: { id: 1 },
+    update: { name: 'Tuning Test Co' },
+    create: { name: 'Tuning Test Co' }
+  });
 
+  await prisma.store.upsert({
+    where: { id: STORE_ID },
+    update: { name: 'Tuning Test Store', companyId: company.id },
+    create: { id: STORE_ID, name: 'Tuning Test Store', companyId: company.id }
+  });
 
-async function main() {async function seedCrew() {
-
-  console.log('🧹 Starting manual test data cleanup...\n');  // Clean up any existing test crew first
-
-    await cleanupTestCrew('TUN');
-
-  // Clean up test crew with common prefixes
-
-  console.log('Cleaning up test crew members...');  // Ensure store exists
-
-  await cleanupTestCrew(); // Cleans TUN, TST, TEST prefixes  await prisma.store.upsert({
-
-      where: { id: STORE_ID },
-
-  // Clean up test stores and all related data    update: { name: 'Tuning Test Store' },
-
-  console.log('\nCleaning up test stores...');    create: { id: STORE_ID, name: 'Tuning Test Store' }
-
-  await cleanupTestStores();  });
-
-  
-
-  console.log('🎉 Manual cleanup complete!');  // Create a handful of crew with varied preferences
-
-  await disconnectPrisma();  const crewPayloads = [
-
-}    { id: 'TUN0001', name: 'Alice A', storeId: STORE_ID, prefTask: 'REGISTER' },
-
-    { id: 'TUN0002', name: 'Bob B', storeId: STORE_ID, prefTask: 'PRODUCT' },
-
-main().catch((error) => {    { id: 'TUN0003', name: 'Cara C', storeId: STORE_ID, prefTask: 'PRODUCT', prefFirstHour: 'PRODUCT', prefBreakTiming: -1 },
-
-  console.error('💥 Cleanup failed:', error);    { id: 'TUN0004', name: 'Dan D', storeId: STORE_ID, prefTask: 'REGISTER', prefFirstHour: 'REGISTER', prefBreakTiming: 1 },
-
-  process.exit(1);    { id: 'TUN0005', name: 'Eve E', storeId: STORE_ID }
-
-});  ];
-
+  // Create a handful of crew with varied preferences
+  const crewPayloads = [
+    { id: 'TUN0001', name: 'Alice A', storeId: STORE_ID },
+    { id: 'TUN0002', name: 'Bob B', storeId: STORE_ID },
+    { id: 'TUN0003', name: 'Cara C', storeId: STORE_ID },
+    { id: 'TUN0004', name: 'Dan D', storeId: STORE_ID },
+    { id: 'TUN0005', name: 'Eve E', storeId: STORE_ID }
+  ] as const;
 
   for (const c of crewPayloads) {
     await prisma.crew.upsert({
       where: { id: c.id },
       update: {},
-      create: c
+      create: c as any
     });
   }
 }
 
 describe('Tuning preferences endpoint', () => {
   beforeAll(async () => {
-    await seedCrew();
+    await seedData();
     app = await buildServer();
   }, 30_000);
 
   afterAll(async () => {
-    // Clean up test stores and crew
-    await cleanupTestStores();
+  // Clean up test crew and test store
+  await cleanupTestCrew('TUN');
+  await prisma.store.deleteMany({ where: { id: STORE_ID } });
     await app.close();
     await prisma.$disconnect();
+    await disconnectPrisma();
   });
 
   it('GET /tuning/preferences returns recommendations', async () => {
@@ -100,3 +94,4 @@ describe('Tuning preferences endpoint', () => {
     expect(recs.REGISTER).toBeLessThanOrEqual(50);
   });
 });
+    

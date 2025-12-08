@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Combobox,
   ComboboxButton,
@@ -13,35 +13,22 @@ import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import { BarsArrowUpIcon, BarsArrowDownIcon, UsersIcon } from '@heroicons/react/20/solid'
 
 type Person = {
-  id: number | null
-  name: string
-  email: string
+  id: number | null;
+  name: string;
+  email: string;
+  crewId?: string; // backend crew id (7-char string) retained for later wiring
 }
 
 type CrewComboboxProps = {
   people: Person[];
   onSelectCrew: (person: Person & { id: number }) => void;
+  loading?: boolean;
 };
 
-export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps) {
+export default function CrewCombobox({ people, onSelectCrew, loading = false }: CrewComboboxProps) {
   const [query, setQuery] = useState('')
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
-  const optionsRef = useRef<HTMLDivElement>(null)
-
-  // Prevent scroll on arrow key navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        if (optionsRef.current && document.activeElement?.closest('[role="combobox"]')) {
-          e.preventDefault()
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => document.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [])
 
   const filteredPeople =
     query === ''
@@ -50,11 +37,23 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
           person.name.toLowerCase().includes(query.toLowerCase())
         )
 
-  const sortedPeople = [...filteredPeople].sort((a, b) =>
-    sortAsc
+  const sortedPeople = [...filteredPeople].sort((a, b) => {
+    const queryLower = query.toLowerCase();
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    
+    // Prioritize names that start with the query
+    const aStarts = aName.startsWith(queryLower);
+    const bStarts = bName.startsWith(queryLower);
+    
+    if (aStarts && !bStarts) return -1;
+    if (!aStarts && bStarts) return 1;
+    
+    // Then apply the sort direction
+    return sortAsc
       ? a.name.localeCompare(b.name)
-      : b.name.localeCompare(a.name)
-  )
+      : b.name.localeCompare(a.name);
+  })
 
   return (
     <div className="max-w-md">
@@ -62,10 +61,10 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
         as="div"
         value={selectedPerson}
         onChange={(person: Person | null) => {
-          setQuery('')
-          setSelectedPerson(null)
+          setQuery('');
+          setSelectedPerson(null);
           if (person && person.id !== null) {
-            onSelectCrew(person as Person & { id: number })
+            onSelectCrew(person as Person & { id: number });
           }
         }}
       >
@@ -74,9 +73,16 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
         {/* Input + user icon + chevron */}
         <div className="-mr-px relative grid grow grid-cols-1 focus-within:relative">
           <ComboboxInput
-            className="col-start-1 row-start-1 block w-full rounded-l-md border border-gray-300 bg-white py-1.5 pr-0 pl-10 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0 sm:pl-9 sm:text-sm/6"
+            className="col-start-1 row-start-1 block w-full rounded-l-md border border-gray-300 bg-white py-1.5 pr-8 pl-10 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0 sm:pl-9 sm:text-sm/6 [&::placeholder]:text-ellipsis"
             placeholder="Oliver Ostojic"
-            onChange={(event) => setQuery(event.target.value)}
+            value={query}
+            onChange={(event) => {
+              const capitalized = event.target.value
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+              setQuery(capitalized);
+            }}
             onBlur={() => setQuery('')}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && sortedPeople.length > 0) {
@@ -89,7 +95,7 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
                 }
               }
             }}
-            displayValue={(person: Person | null) => person?.name ?? ''}
+            displayValue={() => query}
             style={{ fontFamily: 'var(--font-sans)' }}
           />
 
@@ -106,10 +112,12 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
 
           {/* Options dropdown */}
           <ComboboxOptions
-            ref={optionsRef as any}
             transition
-            className="absolute z-10 mt-1 max-w-sm max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="absolute z-10 mt-1 max-w-sm max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm"
           >
+            {loading && (
+              <div className="px-10 pr-3 py-2 text-gray-500 sm:px-9">Loading crew…</div>
+            )}
             {query.length > 0 && (
               <ComboboxOption
                 value={{ id: null, name: query }}
@@ -117,6 +125,14 @@ export default function CrewCombobox({ people, onSelectCrew }: CrewComboboxProps
               >
                 {query}
               </ComboboxOption>
+            )}
+
+            {/* Empty states */}
+            {!loading && people.length === 0 && query.length === 0 && (
+              <div className="px-10 pr-3 py-2 text-gray-500 sm:px-9">No crew</div>
+            )}
+            {!loading && people.length > 0 && query.length > 0 && sortedPeople.length === 0 && (
+              <div className="px-10 pr-3 py-2 text-gray-500 sm:px-9">No matches</div>
             )}
 
             {sortedPeople.map((person, index) => (

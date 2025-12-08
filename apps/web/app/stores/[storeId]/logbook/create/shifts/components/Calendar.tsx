@@ -1,66 +1,56 @@
 'use client';
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import { useMemo, useState } from 'react';
 
-const days = [
-  { date: '2021-12-27' },
-  { date: '2021-12-28' },
-  { date: '2021-12-29' },
-  { date: '2021-12-30' },
-  { date: '2021-12-31' },
-  { date: '2022-01-01', isCurrentMonth: true },
-  { date: '2022-01-02', isCurrentMonth: true },
-  { date: '2022-01-03', isCurrentMonth: true },
-  { date: '2022-01-04', isCurrentMonth: true },
-  { date: '2022-01-05', isCurrentMonth: true },
-  { date: '2022-01-06', isCurrentMonth: true },
-  { date: '2022-01-07', isCurrentMonth: true },
-  { date: '2022-01-08', isCurrentMonth: true },
-  { date: '2022-01-09', isCurrentMonth: true },
-  { date: '2022-01-10', isCurrentMonth: true },
-  { date: '2022-01-11', isCurrentMonth: true },
-  { date: '2022-01-12', isCurrentMonth: true, isToday: true },
-  { date: '2022-01-13', isCurrentMonth: true },
-  { date: '2022-01-14', isCurrentMonth: true },
-  { date: '2022-01-15', isCurrentMonth: true },
-  { date: '2022-01-16', isCurrentMonth: true },
-  { date: '2022-01-17', isCurrentMonth: true },
-  { date: '2022-01-18', isCurrentMonth: true },
-  { date: '2022-01-19', isCurrentMonth: true },
-  { date: '2022-01-20', isCurrentMonth: true },
-  { date: '2022-01-21', isCurrentMonth: true },
-  { date: '2022-01-22', isCurrentMonth: true, isSelected: true },
-  { date: '2022-01-23', isCurrentMonth: true },
-  { date: '2022-01-24', isCurrentMonth: true },
-  { date: '2022-01-25', isCurrentMonth: true },
-  { date: '2022-01-26', isCurrentMonth: true },
-  { date: '2022-01-27', isCurrentMonth: true },
-  { date: '2022-01-28', isCurrentMonth: true },
-  { date: '2022-01-29', isCurrentMonth: true },
-  { date: '2022-01-30', isCurrentMonth: true },
-  { date: '2022-01-31', isCurrentMonth: true },
-  { date: '2022-02-01' },
-  { date: '2022-02-02' },
-  { date: '2022-02-03' },
-  { date: '2022-02-04' },
-  { date: '2022-02-05' },
-  { date: '2022-02-06' },
-]
+dayjs.extend(isoWeek);
 
-export default function Calendar() {
+type CalendarProps = {
+  selectedDate: string; // YYYY-MM-DD
+  onChange: (date: string) => void;
+};
+
+export default function Calendar({ selectedDate, onChange }: CalendarProps) {
+  const selected = dayjs(selectedDate);
+  const [visibleMonth, setVisibleMonth] = useState(dayjs(selectedDate).startOf('month'));
+
+  const days = useMemo(() => {
+    const start = visibleMonth.startOf('month').startOf('isoWeek');
+    const end = visibleMonth.endOf('month').endOf('isoWeek');
+    const list: Array<{ date: string; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean }> = [];
+    let cur = start;
+    while (cur.isBefore(end) || cur.isSame(end, 'day')) {
+      const iso = cur.format('YYYY-MM-DD');
+      list.push({
+        date: iso,
+        isCurrentMonth: cur.month() === visibleMonth.month(),
+        isToday: cur.isSame(dayjs(), 'day'),
+        isSelected: cur.isSame(selected, 'day'),
+      });
+      cur = cur.add(1, 'day');
+    }
+    return list;
+  }, [visibleMonth, selectedDate]);
+
+  const monthLabel = visibleMonth.format('MMMM');
+
   return (
     <div className="text-center">
       <div className="flex items-center text-gray-900">
         <button
           type="button"
+          onClick={() => setVisibleMonth((m) => m.subtract(1, 'month'))}
           className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
         >
           <span className="sr-only">Previous month</span>
           <ChevronLeftIcon aria-hidden="true" className="size-5" />
         </button>
-        <div className="flex-auto text-sm font-semibold">January</div>
+        <div className="flex-auto text-sm font-semibold">{monthLabel}</div>
         <button
           type="button"
+          onClick={() => setVisibleMonth((m) => m.add(1, 'month'))}
           className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
         >
           <span className="sr-only">Next month</span>
@@ -77,10 +67,11 @@ export default function Calendar() {
         <div>S</div>
       </div>
       <div className="isolate mt-2 grid grid-cols-7 gap-px rounded-lg bg-gray-200 text-sm shadow ring-1 ring-gray-200">
-        {days.map((day) => (
+        {days.map((day, idx) => (
           <button
             key={day.date}
             type="button"
+            onClick={() => onChange(day.date)}
             data-is-today={day.isToday ? '' : undefined}
             data-is-selected={day.isSelected ? '' : undefined}
             data-is-current-month={day.isCurrentMonth ? '' : undefined}
@@ -88,7 +79,7 @@ export default function Calendar() {
           >
             <time
               dateTime={day.date}
-              className="mx-auto flex size-7 items-center justify-center rounded-full [[data-is-selected]_&]:[&:not([data-is-today]_*)]:bg-gray-900 [[data-is-selected]_&]:[[data-is-today]_&]:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]"
+              className="mx-auto flex size-7 items-center justify-center rounded-full [[data-is-selected]_&]:bg-gray-900 [[data-is-selected]_&]:text-white"
             >
               {day.date.split('-').pop()?.replace(/^0/, '') || ''}
             </time>

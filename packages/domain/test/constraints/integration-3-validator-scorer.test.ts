@@ -47,7 +47,8 @@ describe('Integration #3: Validator + Scorer', () => {
     minSlots: 2,
     maxSlots: 16,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
+    consecutiveWeight: 1,
     allowOutsideStoreHours: false,
   };
 

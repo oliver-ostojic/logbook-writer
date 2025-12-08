@@ -8,6 +8,9 @@ if TYPE_CHECKING:  # pragma: no cover
     from .core import LogbookSolver
 
 
+BASE_CONSECUTIVE_GAP_PENALTY = 500
+
+
 def add_objective(solver: "LogbookSolver") -> None:
     """Build and attach the weighted preference objective using preferences array."""
 
@@ -257,12 +260,16 @@ def _combine_weights(
 
 def _consecutive_role_penalty(solver: "LogbookSolver") -> List:
     consecutive_roles = [
-        role for role, meta in solver.role_meta_map.items()
-        if meta.get('isConsecutive', False)
+        role for role in solver.role_meta_map
+        if solver._role_consecutive_policy(role) == 'PREFERRED'
     ]
     terms = []
     for role in consecutive_roles:
         if role not in solver.roles:
+            continue
+
+        penalty_weight = BASE_CONSECUTIVE_GAP_PENALTY * solver._role_consecutive_weight(role)
+        if penalty_weight <= 0:
             continue
         for crew_id in solver.crew_ids:
             crew = solver.crew_by_id[crew_id]
@@ -277,5 +284,5 @@ def _consecutive_role_penalty(solver: "LogbookSolver") -> List:
                     x_s1 = solver.x[key_s1]
                     solver.model.Add(gap_var >= x_s - x_s1)
                     solver.model.Add(gap_var >= x_s1 - x_s)
-                    terms.append(-500 * gap_var)
+                    terms.append(-penalty_weight * gap_var)
     return terms

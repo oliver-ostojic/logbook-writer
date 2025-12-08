@@ -24,10 +24,19 @@ export interface PreferenceRecord {
   intValue: number | null; // For TIMING (-1/+1) and CONSECUTIVE
 }
 
-export interface StoreBreakConfig {
-  breakWindowStart: number; // minutes from shift start
-  breakWindowEnd: number;
-  reqShiftLengthForBreak: number;
+export interface CrewShiftWindow {
+  shiftStartMin: number;
+  shiftEndMin: number;
+}
+
+export interface RoleTimingWindow {
+  startOffsetMin?: number;
+  endOffsetMin?: number;
+}
+
+export interface TimingPreferenceContext {
+  crewShifts: Map<string, CrewShiftWindow>;
+  roleWindows: Map<number, RoleTimingWindow>;
 }
 
 export interface SatisfactionResult {
@@ -153,15 +162,14 @@ export function calculateFavoriteSatisfaction(
 /**
  * Calculate TIMING preference satisfaction
  * 
- * Continuous 0-1: Based on where break falls in the allowed window
+ * Continuous 0-1: Based on where the preferred role falls in its allowed window
  * - intValue = -1 (prefer early): satisfaction = 1 - normalizedPosition
  * - intValue = +1 (prefer late): satisfaction = normalizedPosition
  */
 export function calculateTimingSatisfaction(
   preference: PreferenceRecord,
   assignments: AssignmentRecord[],
-  breakRoleIds: number[],
-  storeConfig: StoreBreakConfig
+  timingContext?: TimingPreferenceContext
 ): SatisfactionResult {
   const timingPreference = preference.intValue ?? 0;
 
@@ -191,63 +199,77 @@ export function calculateTimingSatisfaction(
     };
   }
 
-  const shiftStart = crewAssignments[0].startMinutes;
-  const shiftEnd = crewAssignments[crewAssignments.length - 1].endMinutes;
-  const shiftLength = shiftEnd - shiftStart;
-
-  // Check if shift requires a break
-  if (shiftLength < storeConfig.reqShiftLengthForBreak) {
+  if (preference.roleId == null) {
     return {
       rolePreferenceId: preference.id,
       crewId: preference.crewId,
       satisfaction: 0,
       met: false,
       weightApplied: preference.baseWeight * preference.crewWeight,
-      details: `Shift too short for break (${shiftLength} < ${storeConfig.reqShiftLengthForBreak} minutes)`
+      details: 'TIMING preference requires a roleId'
     };
   }
 
-  // Find break assignment
-  const breakAssignment = crewAssignments.find(a => breakRoleIds.includes(a.roleId));
+  const targetAssignment = crewAssignments.find(a => a.roleId === preference.roleId);
 
-  if (!breakAssignment) {
+  if (!targetAssignment) {
     return {
       rolePreferenceId: preference.id,
       crewId: preference.crewId,
       satisfaction: 0,
       met: false,
       weightApplied: preference.baseWeight * preference.crewWeight,
-      details: 'No break assignment found'
+      details: 'No assignment found for preferred role'
     };
   }
 
-  // Calculate break window
-  const earliestBreakStart = shiftStart + storeConfig.breakWindowStart;
-  const latestBreakStart = shiftStart + storeConfig.breakWindowEnd;
-  const windowSize = latestBreakStart - earliestBreakStart;
+  const shiftWindow = timingContext?.crewShifts.get(preference.crewId) ?? {
+    shiftStartMin: crewAssignments[0].startMinutes,
+    shiftEndMin: crewAssignments[crewAssignments.length - 1].endMinutes,
+  };
 
-  if (windowSize <= 0) {
+  const shiftStart = shiftWindow.shiftStartMin;
+  const shiftEnd = shiftWindow.shiftEndMin;
+
+  if (shiftEnd <= shiftStart) {
     return {
       rolePreferenceId: preference.id,
       crewId: preference.crewId,
       satisfaction: 0,
       met: false,
       weightApplied: preference.baseWeight * preference.crewWeight,
-      details: 'Invalid break window (start >= end)'
+      details: 'Invalid shift window for crew'
     };
   }
 
-  // Calculate where break falls in the window (0 = earliest, 1 = latest)
-  const breakOffset = breakAssignment.startMinutes - earliestBreakStart;
-  const normalizedPosition = Math.max(0, Math.min(1, breakOffset / windowSize));
+  const roleWindow = timingContext?.roleWindows.get(preference.roleId) ?? undefined;
+  const earliestStart = shiftStart + (roleWindow?.startOffsetMin ?? 0);
+  const latestStart = roleWindow?.endOffsetMin != null
+    ? shiftStart + roleWindow.endOffsetMin
+    : shiftEnd;
+
+  if (latestStart <= earliestStart) {
+    return {
+      rolePreferenceId: preference.id,
+      crewId: preference.crewId,
+      satisfaction: 0,
+      met: false,
+      weightApplied: preference.baseWeight * preference.crewWeight,
+      details: 'Invalid timing window (start >= end)'
+    };
+  }
+
+  const windowSize = latestStart - earliestStart;
+  const offset = targetAssignment.startMinutes - earliestStart;
+  const normalizedPosition = Math.max(0, Math.min(1, offset / windowSize));
 
   // Calculate satisfaction
   let satisfaction: number;
   if (timingPreference > 0) {
-    // Prefer late breaks: score increases with position
+    // Prefer late assignments: score increases with position
     satisfaction = normalizedPosition;
   } else {
-    // Prefer early breaks: score decreases with position
+    // Prefer early assignments: score decreases with position
     satisfaction = 1 - normalizedPosition;
   }
 
@@ -261,7 +283,7 @@ export function calculateTimingSatisfaction(
     satisfaction,
     met,
     weightApplied: preference.baseWeight * preference.crewWeight,
-    details: `Break at ${positionDesc}% through window (prefers ${timingDesc}), satisfaction: ${(satisfaction * 100).toFixed(1)}%`
+    details: `Assignment at ${positionDesc}% through window (prefers ${timingDesc}), satisfaction: ${(satisfaction * 100).toFixed(1)}%`
   };
 }
 
@@ -379,8 +401,7 @@ export function calculateConsecutiveSatisfaction(
 export async function calculateAllSatisfaction(
   assignments: AssignmentRecord[],
   preferences: PreferenceRecord[],
-  breakRoleIds: number[],
-  storeConfig: StoreBreakConfig
+  timingContext?: TimingPreferenceContext
 ): Promise<SatisfactionResult[]> {
   const results: SatisfactionResult[] = [];
 
@@ -397,7 +418,7 @@ export async function calculateAllSatisfaction(
         break;
 
       case 'TIMING':
-        result = calculateTimingSatisfaction(pref, assignments, breakRoleIds, storeConfig);
+        result = calculateTimingSatisfaction(pref, assignments, timingContext);
         break;
 
       case 'CONSECUTIVE':
@@ -469,14 +490,52 @@ export async function saveLogPreferenceMetadata(
     ? totalWeightedSatisfaction / totalWeightApplied 
     : 0;
 
+  // Compute fairness using Gini on per-crew weighted satisfaction totals
+  const scoresByCrew = new Map<string, number>();
+  for (const r of satisfactionResults) {
+    const cur = scoresByCrew.get(r.crewId) ?? 0;
+    scoresByCrew.set(r.crewId, cur + r.satisfaction * r.weightApplied);
+  }
+
+  const scores = Array.from(scoresByCrew.values());
+  const fairnessIndex = computeFairnessIndexFromScores(scores);
+
+  const data: any = {
+    id: crypto.randomUUID(),
+    logbookId,
+    totalPreferences,
+    preferencesMet,
+    averageSatisfaction,
+    totalWeightApplied,
+    fairnessIndex,
+  };
+
   await prisma.logPreferenceMetadata.create({
-    data: {
-      id: crypto.randomUUID(),
-      logbookId,
-      totalPreferences,
-      preferencesMet,
-      averageSatisfaction,
-      totalWeightApplied,
-    }
+    data,
   });
+}
+
+/**
+ * Compute Gini-based fairness index in [0,100].
+ * - If no scores or all zeros: 100 (nothing to be unfair about)
+ * - fairnessIndex = 100 * (1 - gini)
+ */
+function computeFairnessIndexFromScores(scores: number[]): number {
+  const n = scores.length;
+  if (n === 0) return 100;
+
+  const sorted = [...scores].sort((a, b) => a - b);
+  const sum = sorted.reduce((s, v) => s + v, 0);
+  if (sum <= 0) return 100; // all zero or negative (shouldn't be negative) → perfectly fair
+
+  // Gini via mean absolute difference: g = (Σ_i Σ_j |x_i - x_j|) / (2 n Σ_i x_i)
+  let absDiffSum = 0;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      absDiffSum += Math.abs(sorted[i] - sorted[j]);
+    }
+  }
+  const gini = absDiffSum / (2 * n * sum);
+  const fairnessIndex = Math.max(0, Math.min(100, 100 * (1 - gini)));
+  return fairnessIndex;
 }

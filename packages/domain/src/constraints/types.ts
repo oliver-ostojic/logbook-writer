@@ -2,6 +2,8 @@
  * Constraint validation and scoring types
  */
 
+import { ConsecutivePolicy } from '@logbook-writer/shared-types';
+
 export interface ValidationResult {
   valid: boolean;
   violations: string[];
@@ -43,7 +45,7 @@ export interface RoleConfig {
   minSlots: number;
   maxSlots: number;
   blockSize: number; // assignments must be multiples of this many slots
-  slotsMustBeConsecutive: boolean;
+  consecutivePolicy: ConsecutivePolicy;
   allowOutsideStoreHours: boolean;
 }
 

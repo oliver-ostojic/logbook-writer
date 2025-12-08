@@ -9,6 +9,16 @@ if TYPE_CHECKING:  # pragma: no cover - for type checking only
     from .core import LogbookSolver
 
 
+_ROLE_ALIAS_MAP = {
+    'REGISTER': ['REGISTER', 'REG'],
+    'REG': ['REG', 'REGISTER'],
+    'PRODUCT': ['PRODUCT', 'PROD'],
+    'PROD': ['PROD', 'PRODUCT'],
+    'PARKING_HELM': ['PARKING_HELM', 'P_HELM'],
+    'P_HELM': ['P_HELM', 'PARKING_HELM'],
+}
+
+
 def add_all_constraints(solver: "LogbookSolver") -> None:
     """Attach all hard constraints to the solver model."""
 
@@ -76,32 +86,80 @@ def _hourly_staffing_requirements(solver: "LogbookSolver") -> None:
     slots_per_hour = solver.slots_per_hour
     for req in solver.hourly_requirements:
         hour = req['hour']
-        start_slot = hour * slots_per_hour
-        hour_slots = list(range(start_slot, min(start_slot + slots_per_hour, solver.num_slots)))
 
-        if req.get('requiredRegister', 0) > 0:
-            _enforce_hourly_role(solver, m, hour_slots, 'REGISTER', req['requiredRegister'])
+        _enforce_balanced_hourly_role(
+            solver,
+            m,
+            hour,
+            'REGISTER',
+            int(req.get('requiredRegister', 0) or 0),
+            slots_per_hour,
+        )
+        _enforce_balanced_hourly_role(
+            solver,
+            m,
+            hour,
+            'PRODUCT',
+            int(req.get('requiredProduct', 0) or 0),
+            slots_per_hour,
+        )
+        _enforce_balanced_hourly_role(
+            solver,
+            m,
+            hour,
+            'PARKING_HELM',
+            int(req.get('requiredParkingHelm', 0) or 0),
+            slots_per_hour,
+        )
 
-        if req.get('requiredProduct', 0) > 0:
-            _enforce_hourly_role(solver, m, hour_slots, 'PRODUCT', req['requiredProduct'])
 
-        if req.get('requiredParkingHelm', 0) > 0:
-            _enforce_hourly_role(solver, m, hour_slots, 'PARKING_HELM', req['requiredParkingHelm'])
+def _enforce_balanced_hourly_role(
+    solver: "LogbookSolver",
+    m,
+    hour: int,
+    role: str,
+    required_per_hour: int,
+    slots_per_hour: int,
+) -> None:
+    if required_per_hour <= 0:
+        return
 
+    role_meta = _get_role_meta(solver, role) or {}
+    block_size = int(role_meta.get('blockSize', 1) or 1)
+    if block_size <= 0:
+        block_size = 1
 
-def _enforce_hourly_role(solver: "LogbookSolver", m, hour_slots, role: str, required: int) -> None:
-    for slot in hour_slots:
-        role_vars = [
-            solver.x[(c, slot, role)]
-            for c in solver.crew_ids
-            if (c, slot, role) in solver.x
-        ]
-        if not role_vars:
-            raise ValueError(
-                f"Hour slot {solver._slot_to_hour_index(slot)} (slot {slot}, minute {solver._slot_start_minute(slot)}): "
-                f"role {role} requires {required} crew but no crew can be assigned."
-            )
-        m.Add(sum(role_vars) == required)
+    if slots_per_hour % block_size != 0:
+        raise ValueError(
+            f"Hourly requirement for {role}: blockSize={block_size} must divide slots-per-hour ({slots_per_hour})."
+        )
+
+    block_requirements = _balanced_block_distribution(required_per_hour, slots_per_hour, block_size, role)
+    hour_start_slot = hour * slots_per_hour
+
+    for block_index, block_requirement in enumerate(block_requirements):
+        block_slots = range(
+            hour_start_slot + block_index * block_size,
+            hour_start_slot + (block_index + 1) * block_size,
+        )
+
+        for slot in block_slots:
+            if slot >= solver.num_slots:
+                continue
+
+            role_vars = [
+                solver.x[(c, slot, role)]
+                for c in solver.crew_ids
+                if (c, slot, role) in solver.x
+            ]
+
+            if block_requirement > 0 and not role_vars:
+                raise ValueError(
+                    f"Hour {hour}: slot {slot} requires {block_requirement} {role} crew but none can be assigned."
+                )
+
+            if role_vars:
+                m.Add(sum(role_vars) == block_requirement)
 
 
 def _parking_first_hour(solver: "LogbookSolver") -> None:
@@ -138,7 +196,7 @@ def _crew_role_requirements(solver: "LogbookSolver") -> None:
         crew_id = req['crewId']
         role = req['role']
         required_hours = req['requiredHours']
-        required_slots = required_hours * slots_per_hour
+        required_slots = int(round(required_hours * slots_per_hour))
 
         role_slots = [
             solver.x[(crew_id, s, role)]
@@ -164,29 +222,57 @@ def _coverage_windows(solver: "LogbookSolver") -> None:
     Coverage window roles are restricted to ONLY be assigned during their window
     (see _build_decision_variables in core.py).
     
-    TODO: Test with requiredPerHour > 1 to ensure multiple crew can be assigned
-          simultaneously to the same coverage window role.
+    Required coverage is distributed evenly across block-sized chunks inside each hour.
+    Example (baseSlot=30, blockSize=1): requiredPerHour=3 -> first half-hour needs 2 crew,
+    second half-hour needs 1 crew. Distribution difference between blocks is at most 1.
     """
     m = solver.model
+    slots_per_hour = solver.slots_per_hour
     for window in solver.coverage_windows:
         role = window['role']
         start_hour = window['startHour']
         end_hour = window['endHour']
-        required_per_hour = window['requiredPerHour']
+        required_per_hour = int(window.get('requiredPerHour', 0) or 0)
+
+        role_meta = _get_role_meta(solver, role) or {}
+        block_size = int(role_meta.get('blockSize', 1) or 1)
+        if block_size <= 0:
+            block_size = 1
+
+        block_requirements = _balanced_block_distribution(
+            required_per_hour, slots_per_hour, block_size, role
+        )
 
         for hour in range(start_hour, end_hour):
-            for slot in solver._hour_slots(hour):
-                hour_coverage = [
-                    solver.x[(c, slot, role)]
-                    for c in solver.crew_ids
-                    if (c, slot, role) in solver.x
-                ]
-                if required_per_hour > 0 and not hour_coverage:
-                    raise ValueError(
-                        f"Coverage window for {role}: hour {hour}, slot {slot} "
-                        f"requires {required_per_hour} crew but no crew can be assigned."
-                    )
-                m.Add(sum(hour_coverage) == required_per_hour)
+            hour_start_slot = hour * slots_per_hour
+
+            for block_index, block_requirement in enumerate(block_requirements):
+                block_slots = range(
+                    hour_start_slot + block_index * block_size,
+                    hour_start_slot + (block_index + 1) * block_size,
+                )
+
+                for slot in block_slots:
+                    if slot >= solver.num_slots:
+                        continue
+
+                    slot_vars = [
+                        solver.x[(c, slot, role)]
+                        for c in solver.crew_ids
+                        if (c, slot, role) in solver.x
+                    ]
+
+                    if block_requirement > 0 and not slot_vars:
+                        raise ValueError(
+                            f"Coverage window for {role}: hour {hour}, slot {slot} requires "
+                            f"{block_requirement} crew but no crew can be assigned."
+                        )
+
+                    if slot_vars:
+                        m.Add(sum(slot_vars) == block_requirement)
+                    else:
+                        # No variables exist and requirement is zero, nothing to constrain
+                        continue
 def _role_min_max(solver: "LogbookSolver") -> None:
     """
     Enforce total time bounds per crew per role.
@@ -369,6 +455,42 @@ def _block_size_snap(solver: "LogbookSolver") -> None:
                 slot += block_size
 
 
+def _balanced_block_distribution(
+    required_per_hour: int,
+    slots_per_hour: int,
+    block_size: int,
+    role: str = 'role',
+) -> list[int]:
+    block_size = max(1, int(block_size))
+    if slots_per_hour % block_size != 0:
+        raise ValueError(
+            f"Role {role}: blockSize={block_size} must divide slots-per-hour ({slots_per_hour})."
+        )
+
+    blocks_per_hour = slots_per_hour // block_size
+    if blocks_per_hour <= 0:
+        return []
+
+    base = required_per_hour // blocks_per_hour
+    extra = required_per_hour % blocks_per_hour
+    requirements: list[int] = []
+    for i in range(blocks_per_hour):
+        requirements.append(base + (1 if i < extra else 0))
+    return requirements
+
+
+def _get_role_meta(solver: "LogbookSolver", role: str):
+    if role in solver.role_meta_map:
+        return solver.role_meta_map[role]
+
+    lookup_keys = _ROLE_ALIAS_MAP.get(role) or _ROLE_ALIAS_MAP.get(role.upper()) or []
+    for key in lookup_keys:
+        meta = solver.role_meta_map.get(key)
+        if meta is not None:
+            return meta
+    return None
+
+
 def _minutes_to_slots(minutes: int | None, solver: "LogbookSolver", rounding: str) -> int | None:
     if minutes is None:
         return None
@@ -390,19 +512,17 @@ def _min_defined_slot_requirement(*values: int | None) -> int | None:
 
 def _consecutive_slots(solver: "LogbookSolver") -> None:
     """
-    Enforce slotsMustBeConsecutive for roles that require it.
+    Enforce consecutivePolicy=REQUIRED for roles that demand hard consecutiveness.
     
-    If a role has slotsMustBeConsecutive=true, all assignments for that role
-    must form a single consecutive block with no gaps.
-    
-    This is a HARD constraint (unlike _consecutive_role_penalty which is soft).
+    Roles marked as REQUIRED must form a single contiguous block with no gaps.
+    This remains a hard constraint separate from the soft objective penalties.
     """
     m = solver.model
     
     # Find roles that require consecutive slots
     consecutive_roles = [
-        role for role, meta in solver.role_meta_map.items()
-        if meta.get('slotsMustBeConsecutive', False)
+        role for role in solver.role_meta_map
+        if solver._role_consecutive_policy(role) == 'REQUIRED'
     ]
     
     if not consecutive_roles:

@@ -1,6 +1,7 @@
 """Debug infeasibility by checking every constraint type for potential issues."""
 
 import json
+import math
 import sys
 from collections import defaultdict
 
@@ -10,14 +11,54 @@ def load_data():
     global _cached_data
     if _cached_data is None:
         # Get filename from command line or use default
-        filename = sys.argv[1] if len(sys.argv) > 1 else 'solver_input_11_22.json'
+        filename = sys.argv[1] if len(sys.argv) > 1 else '../api/solver_input_store768_2025-11-25.json'
         with open(filename, 'r') as f:
             _cached_data = json.load(f)
     return _cached_data
 
+
+def _build_assignment_index(role_metadata):
+    index = defaultdict(set)
+    for meta in role_metadata:
+        role = meta.get('role') if isinstance(meta, dict) else None
+        model = meta.get('assignmentModel') if isinstance(meta, dict) else None
+        if not role or model is None:
+            continue
+
+        if isinstance(model, (list, tuple, set)):
+            models = {str(m).upper() for m in model if m}
+        else:
+            models = {str(model).upper()}
+
+        for normalized in models:
+            index[normalized].add(role)
+    return index
+
+
+def _universal_roles(role_metadata):
+    assignment_index = _build_assignment_index(role_metadata)
+    universal = set(assignment_index.get('HOURLY', set())) | set(assignment_index.get('SOLVER', set()))
+    if not universal:
+        universal = {'REGISTER', 'PRODUCT', 'PARKING_HELM'}
+    return universal, assignment_index
+
+
+def _format_slot_label(slot, slot_minutes):
+    minutes = slot * slot_minutes
+    hour = minutes // 60
+    minute = minutes % 60
+    return f"{hour:02d}:{minute:02d}"
+
+
+def _max_defined(*values):
+    defined = [v for v in values if v is not None]
+    return max(defined) if defined else None
+
+
 def check_crew_coverage():
     """Check if every crew slot can be assigned to at least one role."""
     data = load_data()
+    universal_roles, _ = _universal_roles(data.get('roleMetadata', []))
     
     print("="*80)
     print("CONSTRAINT 1: Can every crew slot be assigned?")
@@ -25,13 +66,7 @@ def check_crew_coverage():
     
     issues = []
     
-    # Get HOURLY roles (available to all crew)
-    hourly_roles = [
-        r['role'] for r in data['roleMetadata'] 
-        if r.get('assignmentModel') == 'HOURLY'
-    ]
-    
-    print(f"\nHOURLY roles (available to all crew): {hourly_roles}")
+    print(f"\nUniversal roles (HOURLY + SOLVER assignment models): {sorted(universal_roles)}")
     
     for crew in data['crew']:
         crew_id = crew['id']
@@ -42,8 +77,8 @@ def check_crew_coverage():
         
         num_slots = (shift_end - shift_start) // 30
         
-        # Crew can work HOURLY roles + their eligible roles
-        all_available_roles = set(hourly_roles) | set(eligible_roles)
+        # Crew can work universal roles + their eligible roles
+        all_available_roles = set(universal_roles) | set(eligible_roles)
         
         # Check if crew has ANY roles available
         if not all_available_roles:
@@ -59,7 +94,7 @@ def check_crew_coverage():
         for issue in issues:
             print(f"  - {issue['crew']} ({issue['crew_id']}): {issue['slots_needed']} slots need assignment")
     else:
-        print("\n✅ All crew have at least one role available (HOURLY or eligible)")
+        print("\n✅ All crew have at least one role available (universal or eligible)")
     
     return issues
 
@@ -139,6 +174,7 @@ def check_crew_role_requirements():
 def check_hourly_requirements():
     """Check if hourly staffing requirements can be met."""
     data = load_data()
+    universal_roles, _ = _universal_roles(data.get('roleMetadata', []))
     
     print("\n" + "="*80)
     print("CONSTRAINT 3: Hourly Staffing Requirements")
@@ -156,7 +192,7 @@ def check_hourly_requirements():
         eligible_roles = crew.get('eligibleRoles', [])
         
         # Add universal roles
-        all_roles = set(eligible_roles) | {'REGISTER', 'PRODUCT', 'PARKING_HELM'}
+        all_roles = set(eligible_roles) | set(universal_roles)
         
         for hour in range(24):
             hour_start = hour * 60
@@ -304,9 +340,226 @@ def check_decision_variables():
         print(f"   Total decision variables: {len(solver.x)}")
         print(f"   DAILY roles: {sorted(solver._daily_roles)}")
         print(f"   HOURLY roles: {sorted(solver._hourly_roles)}")
+        print(f"   SOLVER roles: {sorted(getattr(solver, '_solver_roles', set()))}")
         print(f"   HOURLY_WINDOW roles: {sorted(solver._hourly_window_roles)}")
         print(f"   Crew with daily requirements: {len(solver._crew_daily_requirements)}")
     
+    return issues
+
+def check_role_capacity():
+    """Verify each crew has enough role capacity (respecting maxSlots/blockSize) to cover their shift."""
+    from logbook_solver.core import LogbookSolver
+
+    data = load_data()
+    solver = LogbookSolver(data)
+
+    print("\n" + "="*80)
+    print("CONSTRAINT 6: Total Role Capacity per Crew")
+    print("="*80)
+
+    issues = []
+    slots_per_hour = solver.slots_per_hour
+
+    crew_role_slots = defaultdict(lambda: defaultdict(list))
+    for (crew_id, slot, role), _var in solver.x.items():
+        crew_role_slots[crew_id][role].append(slot)
+
+    for crew_id in solver.crew_ids:
+        crew = solver.crew_by_id[crew_id]
+        shift_start = solver._minutes_to_slot_floor(crew.get('shiftStartMin', 0))
+        shift_end = solver._minutes_to_slot_ceil(crew.get('shiftEndMin', 24 * 60))
+        shift_slots = max(0, shift_end - shift_start)
+        if shift_slots == 0:
+            continue
+
+        role_map = crew_role_slots.get(crew_id, {})
+        total_capacity = 0
+        role_details = []
+
+        for role, slot_indices in role_map.items():
+            if not slot_indices:
+                continue
+            block_size = solver.role_meta_map.get(role, {}).get('blockSize', 1) or 1
+            block_size = int(block_size)
+            contiguous_capacity = len(slot_indices)
+            if block_size > 1:
+                run = 0
+                cap = 0
+                prev = None
+                for slot in slot_indices:
+                    if prev is not None and slot == prev + 1:
+                        run += 1
+                    else:
+                        cap += (run // block_size) * block_size
+                        run = 1
+                    prev = slot
+                cap += (run // block_size) * block_size
+                contiguous_capacity = cap
+
+            max_slots = solver.role_meta_map.get(role, {}).get('maxSlots')
+            if max_slots is not None:
+                contiguous_capacity = min(contiguous_capacity, max_slots)
+
+            if contiguous_capacity <= 0:
+                continue
+
+            total_capacity += contiguous_capacity
+            role_details.append((role, contiguous_capacity))
+
+        if total_capacity + 1e-9 >= shift_slots:
+            continue
+
+        issues.append({
+            'crew': crew.get('name', crew_id),
+            'shift_hours': shift_slots / slots_per_hour,
+            'capacity_hours': total_capacity / slots_per_hour,
+            'details': role_details,
+        })
+
+    if issues:
+        print(f"\n❌ Found {len(issues)} crews with insufficient role capacity:")
+        for issue in issues[:10]:
+            detail = ", ".join(
+                f"{role}≤{slots / slots_per_hour:.1f}h" for role, slots in sorted(issue['details'], key=lambda x: -x[1])
+            ) or "no eligible roles"
+            print(
+                f"  - {issue['crew']}: shift {issue['shift_hours']:.1f}h vs capacity {issue['capacity_hours']:.1f}h ({detail})"
+            )
+        if len(issues) > 10:
+            print(f"  ... {len(issues) - 10} more crews truncated")
+    else:
+        print("\n✅ Every crew has enough role capacity to cover their shift")
+
+    return issues
+
+
+def check_shift_time_budget():
+    """Flag crews whose mandatory time exceeds their shift length."""
+    from logbook_solver.core import LogbookSolver
+
+    data = load_data()
+    solver = LogbookSolver(data)
+
+    print("\n" + "="*80)
+    print("CONSTRAINT 7: Minimum Time Budget per Crew")
+    print("="*80)
+
+    issues = []
+    slots_per_hour = solver.slots_per_hour
+
+    crew_role_slots = defaultdict(lambda: defaultdict(list))
+    for (crew_id, slot, role), _var in solver.x.items():
+        crew_role_slots[crew_id][role].append(slot)
+
+    for crew_id in solver.crew_ids:
+        crew = solver.crew_by_id[crew_id]
+        shift_start = solver._minutes_to_slot_floor(crew.get('shiftStartMin', 0))
+        shift_end = solver._minutes_to_slot_ceil(crew.get('shiftEndMin', 24 * 60))
+        shift_slots = max(0, shift_end - shift_start)
+        if shift_slots == 0:
+            continue
+
+        min_demand = 0
+        details = []
+
+        for (req_crew_id, role), required_hours in solver._crew_daily_requirements.items():
+            if req_crew_id != crew_id:
+                continue
+            required_slots = int(round(required_hours * slots_per_hour))
+            if required_slots <= 0:
+                continue
+            min_demand += required_slots
+            details.append(f"{role} requirement={required_slots}")
+
+        for role, role_meta in solver.role_meta_map.items():
+            slot_indices = sorted(set(crew_role_slots[crew_id][role]))
+            if not slot_indices:
+                continue
+            role_min_slots = role_meta.get('minSlots')
+            if role_min_slots is None:
+                minutes = role_meta.get('minMinutesPerCrew')
+                if minutes is not None:
+                    role_min_slots = math.ceil(minutes / solver.slot_minutes - 1e-9)
+
+            crew_min_slots = None
+            if role == 'REGISTER':
+                min_hours = crew.get('minRegisterHours')
+                if min_hours is not None and min_hours > 0:
+                    crew_min_slots = math.ceil(min_hours * slots_per_hour - 1e-9)
+
+            effective_min = _max_defined(role_min_slots, crew_min_slots)
+            if effective_min:
+                min_demand += effective_min
+                details.append(f"{role} minSlots={effective_min}")
+
+        if min_demand > shift_slots + 1e-9:
+            issues.append({
+                'crew': crew.get('name', crew_id),
+                'shift_hours': shift_slots / slots_per_hour,
+                'demand_hours': min_demand / slots_per_hour,
+                'details': details,
+            })
+
+    if issues:
+        print(f"\n❌ Found {len(issues)} crews with impossible minimum time budgets:")
+        for issue in issues[:10]:
+            detail = ", ".join(issue['details'][:4])
+            if len(issue['details']) > 4:
+                detail += ", ..."
+            print(
+                f"  - {issue['crew']}: min {issue['demand_hours']:.1f}h vs shift {issue['shift_hours']:.1f}h ({detail})"
+            )
+        if len(issues) > 10:
+            print(f"  ... {len(issues) - 10} more crews truncated")
+    else:
+        print("\n✅ All crews can fit mandatory time into their shifts")
+
+    return issues
+
+def check_slot_role_variables():
+    """Ensure every crew slot inside store hours has at least one decision variable."""
+    from logbook_solver.core import LogbookSolver
+
+    data = load_data()
+    solver = LogbookSolver(data)
+
+    print("\n" + "="*80)
+    print("CONSTRAINT 8: Slot-Level Role Availability")
+    print("="*80)
+
+    issues = []
+    slot_presence = defaultdict(int)
+    for (crew_id, slot, _role), _var in solver.x.items():
+        slot_presence[(crew_id, slot)] += 1
+
+    for crew_id in solver.crew_ids:
+        crew = solver.crew_by_id[crew_id]
+        shift_start = solver._minutes_to_slot_floor(crew.get('shiftStartMin', 0))
+        shift_end = solver._minutes_to_slot_ceil(crew.get('shiftEndMin', 24 * 60))
+
+        for slot in range(shift_start, shift_end):
+            if slot >= solver.num_slots:
+                break
+            if slot_presence.get((crew_id, slot)):
+                continue
+            if not solver._slot_inside_store_hours(slot):
+                continue
+
+            issues.append({
+                'crew': crew.get('name', crew_id),
+                'slot': slot,
+                'label': _format_slot_label(slot, solver.slot_minutes),
+            })
+
+    if issues:
+        print(f"\n❌ Found {len(issues)} slots with zero available roles. Example entries:")
+        for issue in issues[:10]:
+            print(f"  - {issue['crew']}: slot {issue['slot']} ({issue['label']}) has no role variables")
+        if len(issues) > 10:
+            print(f"  ... {len(issues) - 10} more slots truncated")
+    else:
+        print("\n✅ Every in-shift slot has at least one available role variable")
+
     return issues
 
 def main():
@@ -321,6 +574,9 @@ def main():
     all_issues.extend(check_hourly_requirements())
     all_issues.extend(check_coverage_windows())
     all_issues.extend(check_decision_variables())
+    all_issues.extend(check_role_capacity())
+    all_issues.extend(check_shift_time_budget())
+    all_issues.extend(check_slot_role_variables())
     
     print("\n" + "="*80)
     print("SUMMARY")

@@ -1,0 +1,6202 @@
+{
+  "success": true,
+  "metadata": {
+    "status": "OPTIMAL",
+    "objectiveScore": -8989,
+    "runtimeMs": 196,
+    "mipGap": 0.0,
+    "numCrew": 65,
+    "numSlots": 48,
+    "slotMinutes": 30,
+    "numAssignments": 1031,
+    "violations": []
+  },
+  "assignments": [
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "BRK",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1316503",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1344298",
+      "taskType": "BRK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "SL",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "SL",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1336739",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1351978",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "P_HELM",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1306654",
+      "taskType": "BRK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1348347",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1340639",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1301716",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1286759",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "P_HELM",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "DEMO",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1291188",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "P_HELM",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1291050",
+      "taskType": "BRK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1290575",
+      "taskType": "ART",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 300,
+      "endTime": 330
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 330,
+      "endTime": 360
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1379051",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "BRK",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1369996",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "DEMO",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "DEMO",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1345521",
+      "taskType": "BRK",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "W_DMO",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1356587",
+      "taskType": "W_DMO",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "BRK",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1294250",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1301376",
+      "taskType": "P_HELM",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1304830",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1307265",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "SL",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "SL",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "P_HELM",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "BRK",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1320450",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "P_HELM",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1364668",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "PROD",
+      "startTime": 360,
+      "endTime": 390
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "PROD",
+      "startTime": 390,
+      "endTime": 420
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "PROD",
+      "startTime": 420,
+      "endTime": 450
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "PROD",
+      "startTime": 450,
+      "endTime": 480
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "REG",
+      "startTime": 480,
+      "endTime": 510
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "REG",
+      "startTime": 510,
+      "endTime": 540
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "P_HELM",
+      "startTime": 540,
+      "endTime": 570
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 570,
+      "endTime": 600
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1290542",
+      "taskType": "ART",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "SL",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "SL",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1326561",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "SL",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "SL",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1364026",
+      "taskType": "BRK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "SL",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1307221",
+      "taskType": "SL",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "BRK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1318723",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "BRK",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1285554",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "SL",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "SL",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1311212",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "P_HELM",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1319922",
+      "taskType": "BRK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "SL",
+      "startTime": 600,
+      "endTime": 630
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "SL",
+      "startTime": 630,
+      "endTime": 660
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "P_HELM",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1355504",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "P_HELM",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1366677",
+      "taskType": "BRK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "P_HELM",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1350163",
+      "taskType": "BRK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "P_HELM",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "BRK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1357831",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 660,
+      "endTime": 690
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 690,
+      "endTime": 720
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "DEMO",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "DEMO",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "BRK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "DEMO",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1362952",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "P_HELM",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "BRK",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1332186",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1281826",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "W_DMO",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "W_DMO",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "W_DMO",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "W_DMO",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "P_HELM",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1364634",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "SL",
+      "startTime": 720,
+      "endTime": 750
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "SL",
+      "startTime": 750,
+      "endTime": 780
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "P_HELM",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1369981",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 780,
+      "endTime": 810
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 810,
+      "endTime": 840
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1344744",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1335668",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REG",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REG",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1269090",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1282785",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "SL",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "SL",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1283498",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "P_HELM",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "BRK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1334312",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1353219",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1298998",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "P_HELM",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1371389",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "BRK",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "P_HELM",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1360818",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "P_HELM",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "BRK",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1323506",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1286287",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "P_HELM",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1299878",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1371362",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "SL",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "SL",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "SL",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "SL",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1350023",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "SL",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "SL",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "BRK",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "P_HELM",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1372431",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "P_HELM",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1330422",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "SL",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "SL",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1347636",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "W_DMO",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "W_DMO",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1330611",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1317815",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "REG",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1349887",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "P_HELM",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1299316",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 840,
+      "endTime": 870
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "P_HELM",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1374209",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 870,
+      "endTime": 900
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "REG",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "BRK",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1327993",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "REG",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "REG",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "REG",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "REG",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1340451",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 900,
+      "endTime": 930
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 930,
+      "endTime": 960
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 960,
+      "endTime": 990
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 990,
+      "endTime": 1020
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 1020,
+      "endTime": 1050
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 1050,
+      "endTime": 1080
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 1080,
+      "endTime": 1110
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 1110,
+      "endTime": 1140
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 1140,
+      "endTime": 1170
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "BRK",
+      "startTime": 1170,
+      "endTime": 1200
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 1200,
+      "endTime": 1230
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "REG",
+      "startTime": 1230,
+      "endTime": 1260
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 1260,
+      "endTime": 1290
+    },
+    {
+      "crewId": "1317422",
+      "taskType": "PROD",
+      "startTime": 1290,
+      "endTime": 1320
+    }
+  ]
+}

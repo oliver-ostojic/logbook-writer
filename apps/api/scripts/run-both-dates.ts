@@ -61,7 +61,7 @@ async function runSolver(date: string, inputFile: string) {
 
 async function main() {
   const runs = [
-    { date: '2025-11-22', inputFile: 'solver_input_11_22.json' },
+  { date: '2025-11-25', inputFile: 'solver_input_store768_2025-11-25.json' },
     { date: '2025-11-25', inputFile: 'solver_input_11_25.json' },
   ];
 

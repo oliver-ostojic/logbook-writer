@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { Prisma, PrismaClient, PrefenceTask } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PREFERENCE_CONFIG } from '../config/preferences';
 
 const prisma = new PrismaClient();
@@ -41,11 +41,13 @@ export function registerCrewRoutes(app: FastifyInstance) {
   // Log current config for debugging/tuning
   console.log('Preference validation config:', PREFERENCE_CONFIG);
 
-  const parsePreferenceTask = (value?: string): PrefenceTask | undefined => {
+  type PreferenceTaskCode = typeof PREFERENCE_CONFIG.validTasks[number];
+
+  const parsePreferenceTask = (value?: string): PreferenceTaskCode | undefined => {
     if (!value) return undefined;
     const upper = value.toUpperCase();
     return PREFERENCE_CONFIG.validTasks.includes(upper as any)
-      ? (upper as PrefenceTask)
+      ? (upper as PreferenceTaskCode)
       : undefined;
   };
 
@@ -101,8 +103,9 @@ export function registerCrewRoutes(app: FastifyInstance) {
 
 
   // POST /stores - create a store (explicit id + name; defaults for timezone/regHoursStartMin/regHoursEndMin)
-  app.post<{ Body: { id: number; name: string; timezone?: string; regHoursStartMin?: number; regHoursEndMin?: number; startRegHour?: number; endRegHour?: number } }>('/stores', async (req, reply) => {
-    const { id, name, timezone, regHoursStartMin, regHoursEndMin, startRegHour, endRegHour } = req.body;
+  // Now requires a Company; if not provided, we create a default company automatically.
+  app.post<{ Body: { id: number; name: string; timezone?: string; regHoursStartMin?: number; regHoursEndMin?: number; startRegHour?: number; endRegHour?: number; companyId?: number; companyName?: string } }>('/stores', async (req, reply) => {
+    const { id, name, timezone, regHoursStartMin, regHoursEndMin, startRegHour, endRegHour, companyId, companyName } = req.body;
     if (id === undefined || Number.isNaN(id)) {
       return reply.code(400).send({ error: 'id is required and must be a number' });
     }
@@ -114,10 +117,30 @@ export function registerCrewRoutes(app: FastifyInstance) {
     const endMinutes = regHoursEndMin ?? endRegHour;
 
     try {
+      // Resolve company: prefer provided companyId; else create or connect by name; else create a default.
+      let resolvedCompanyId = companyId;
+      if (!resolvedCompanyId) {
+        const finalCompanyName = companyName?.trim() || 'Default Company';
+        const company = await prisma.company.upsert({
+          where: { id: 1 },
+          update: {},
+          create: { name: finalCompanyName },
+        }).catch(async () => {
+          // If id:1 exists with different shape or constraint, fallback to connectOrCreate by name
+          return prisma.company.upsert({
+            where: { name: finalCompanyName as any },
+            update: {},
+            create: { name: finalCompanyName },
+          } as any);
+        });
+        resolvedCompanyId = company.id;
+      }
+
       const store = await prisma.store.create({
         data: {
           id,
           name,
+          companyId: resolvedCompanyId!,
           ...(timezone !== undefined && { timezone }),
           ...(startMinutes !== undefined && { regHoursStartMin: startMinutes }),
           ...(endMinutes !== undefined && { regHoursEndMin: endMinutes }),

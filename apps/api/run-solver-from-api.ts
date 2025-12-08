@@ -6,9 +6,59 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-const API_URL = 'http://localhost:4000/solver/input/768/2025-11-22';
-const OUTPUT_FILE = path.join(process.cwd(), 'solver_input_11_22.json');
+interface CliOptions {
+  storeId: number;
+  date: string;
+  output: string;
+  apiBaseUrl: string;
+}
+
+const DEFAULT_OPTIONS: CliOptions = {
+  storeId: 768,
+  date: '2025-11-25',
+  output: 'solver_input_store768_2025-11-25.json',
+  apiBaseUrl: process.env.SOLVER_API_BASE_URL || 'http://localhost:4000',
+};
+
+function parseCliOptions(): CliOptions {
+  const args = process.argv.slice(2);
+  const options: CliOptions = { ...DEFAULT_OPTIONS };
+
+  for (const arg of args) {
+    if (arg.startsWith('--store=')) {
+      const value = Number(arg.split('=')[1]);
+      if (!Number.isNaN(value)) {
+        options.storeId = value;
+      }
+    } else if (arg.startsWith('--date=')) {
+      const value = arg.split('=')[1];
+      if (value) {
+        options.date = value;
+      }
+    } else if (arg.startsWith('--output=')) {
+      const value = arg.split('=')[1];
+      if (value) {
+        options.output = value;
+      }
+    } else if (arg.startsWith('--api=')) {
+      const value = arg.split('=')[1];
+      if (value) {
+        options.apiBaseUrl = value;
+      }
+    }
+  }
+
+  if (!options.output) {
+    options.output = `solver_input_store${options.storeId}_${options.date}.json`;
+  }
+
+  return options;
+}
+
+const cliOptions = parseCliOptions();
 const SOLVER_DIR = path.join(process.cwd(), '..', 'solver-python');
+const API_URL = `${cliOptions.apiBaseUrl.replace(/\/$/, '')}/solver/input/${cliOptions.storeId}/${cliOptions.date}`;
+const OUTPUT_FILE = path.join(process.cwd(), cliOptions.output);
 
 async function main() {
   console.log('🔍 Fetching solver input from API...');

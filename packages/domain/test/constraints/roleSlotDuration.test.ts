@@ -23,7 +23,8 @@ describe('Role Slot Duration Validator', () => {
     minSlots: 2,   // 1 hour minimum
     maxSlots: 16,  // 8 hours maximum
     blockSize: 1,  // any slot count allowed
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
+    consecutiveWeight: 1,
     allowOutsideStoreHours: false,
   };
 
@@ -34,7 +35,8 @@ describe('Role Slot Duration Validator', () => {
     minSlots: 2,  // 1 hour minimum
     maxSlots: 4,  // 2 hours maximum
     blockSize: 1, // any slot count allowed
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
+    consecutiveWeight: 1,
     allowOutsideStoreHours: false,
   };
 
@@ -45,7 +47,8 @@ describe('Role Slot Duration Validator', () => {
     minSlots: 8,   // 4 hours minimum
     maxSlots: 16,  // 8 hours maximum
     blockSize: 1,  // any slot count allowed
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
+    consecutiveWeight: 1,
     allowOutsideStoreHours: false,
   };
 
@@ -352,7 +355,8 @@ describe('Role Slot Duration Validator', () => {
       minSlots: 2,   // 1 hour minimum
       maxSlots: 16,  // 8 hours maximum
       blockSize: 2,  // must be in 2-slot (1 hour) increments
-      slotsMustBeConsecutive: true,
+      consecutivePolicy: 'REQUIRED',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     };
 
@@ -461,7 +465,8 @@ describe('Role Slot Duration Validator', () => {
         minSlots: 4,   // 2 hour minimum
         maxSlots: 16,  // 8 hours maximum
         blockSize: 4,  // must be in 4-slot (2 hour) increments
-        slotsMustBeConsecutive: true,
+        consecutivePolicy: 'REQUIRED',
+        consecutiveWeight: 1,
         allowOutsideStoreHours: false,
       };
 

@@ -195,7 +195,7 @@ async function runTest(testDate: string, inputFile: string) {
 
 async function main() {
   // Run both dates
-  await runTest('2025-11-22', 'solver_input_11_22.json');
+  await runTest('2025-11-25', 'solver_input_store768_2025-11-25.json');
   
   console.log('\n\n✅ ALL TESTS COMPLETE!\n');
   console.log('Run comparison: pnpm dlx ts-node scripts/compare-preference-satisfaction.ts\n');

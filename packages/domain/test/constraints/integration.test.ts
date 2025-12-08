@@ -123,7 +123,7 @@ describe('Multi-constraint validation (combining validators)', () => {
     minSlots: 2,
     maxSlots: 16,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
     allowOutsideStoreHours: false,
   };
 
@@ -133,7 +133,7 @@ describe('Multi-constraint validation (combining validators)', () => {
     minSlots: 2,
     maxSlots: 8,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
     allowOutsideStoreHours: true,
   };
 

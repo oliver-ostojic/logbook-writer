@@ -1,0 +1,1158 @@
+{
+  "store": {
+    "id": 768,
+    "timezone": "EST",
+    "baseSlotMinutes": 30,
+    "openMinutesFromMidnight": 480,
+    "closeMinutesFromMidnight": 1260
+  },
+  "roles": [
+    {
+      "id": 29,
+      "code": "P_HELM",
+      "displayName": "Parking Helms",
+      "assignmentModels": [
+        "HOURLY_WINDOW",
+        "HOURLY"
+      ],
+      "minSlots": 0,
+      "maxSlots": 1,
+      "blockSize": 1,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 37,
+      "code": "W_DMO",
+      "displayName": "Wine Demo",
+      "assignmentModels": [
+        "HOURLY_WINDOW"
+      ],
+      "minSlots": 0,
+      "maxSlots": 4,
+      "blockSize": 2,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 38,
+      "code": "DEMO",
+      "displayName": "Food Demo",
+      "assignmentModels": [
+        "HOURLY_WINDOW"
+      ],
+      "minSlots": 0,
+      "maxSlots": 4,
+      "blockSize": 1,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 35,
+      "code": "SL",
+      "displayName": "Section Leader",
+      "assignmentModels": [
+        "DAILY"
+      ],
+      "minSlots": 0,
+      "maxSlots": 6,
+      "blockSize": 1,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "PREFERRED",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 34,
+      "code": "ART",
+      "displayName": "Art",
+      "assignmentModels": [
+        "DAILY"
+      ],
+      "minSlots": 0,
+      "maxSlots": 12,
+      "blockSize": 1,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "PREFERRED",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 30,
+      "code": "REG",
+      "displayName": "Register",
+      "assignmentModels": [
+        "HOURLY"
+      ],
+      "minSlots": 2,
+      "maxSlots": 10,
+      "blockSize": 2,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 33,
+      "code": "PROD",
+      "displayName": "Product",
+      "assignmentModels": [
+        "SOLVER"
+      ],
+      "minSlots": 2,
+      "maxSlots": 12,
+      "blockSize": 1,
+      "allowOutsideStoreHours": true,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 36,
+      "code": "BRK",
+      "displayName": "Break",
+      "assignmentModels": [
+        "SOLVER"
+      ],
+      "minSlots": 0,
+      "maxSlots": 1,
+      "blockSize": 1,
+      "allowOutsideStoreHours": true,
+      "consecutivePolicy": "REQUIRED",
+      "minShiftLengthForRoleAccess": 300,
+      "windowOffsets": {
+        "startOffsetMin": 180,
+        "endOffsetMin": 300
+      }
+    }
+  ],
+  "crew": [
+    {
+      "id": "1316503",
+      "name": "Cheri Reimann",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1344298",
+      "name": "Dan Smith",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1336739",
+      "name": "Denise Madrid",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1351978",
+      "name": "Elder De Leon",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1306654",
+      "name": "Gary Medina",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1348347",
+      "name": "Juan Caceres",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1340639",
+      "name": "Kenny Brooke",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1301716",
+      "name": "Maricel Cabal",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1286759",
+      "name": "Matt Connor",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1291188",
+      "name": "Rachel Haverstock",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1291050",
+      "name": "Savannah Fraijo",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1290575",
+      "name": "Tracy Hopkins",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        34
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1379051",
+      "name": "Xander Faber",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1369996",
+      "name": "Alice De Simoni",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1345521",
+      "name": "Alyssa Jenkins",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1356587",
+      "name": "Carolyn Shephard",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        37
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1294250",
+      "name": "Esteban Espinosa",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1301376",
+      "name": "Justin Bennett",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        37
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1304830",
+      "name": "Marcela Soto",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1307265",
+      "name": "Nigel Pitts",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1320450",
+      "name": "Roger Gomez",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1364668",
+      "name": "Smith Jean Jacques",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1290542",
+      "name": "Thalia Brauner",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        34
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1326561",
+      "name": "Ashley Andrejko",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35,
+        38
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1364026",
+      "name": "Crystal Rosa",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1307221",
+      "name": "Garet Reimann",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1318723",
+      "name": "Kacey Nakasen",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1285554",
+      "name": "Kayla Girouard",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1311212",
+      "name": "Kaylyn Pipitone",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1319922",
+      "name": "Lesley Rosado",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1355504",
+      "name": "Wade Davis",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
+    },
+    {
+      "id": "1366677",
+      "name": "Alexa Adams",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1350163",
+      "name": "Andre Chance",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1357831",
+      "name": "Sharon Garcia",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1362952",
+      "name": "Talye DeMaio",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1332186",
+      "name": "Marcos Reinoso",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
+    },
+    {
+      "id": "1281826",
+      "name": "Nine Payne",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
+    },
+    {
+      "id": "1364634",
+      "name": "Shushan Royer",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        37
+      ],
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
+    },
+    {
+      "id": "1369981",
+      "name": "Taylor Yackulics",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
+    },
+    {
+      "id": "1344744",
+      "name": "Ruth Charles",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 780,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1335668",
+      "name": "Abby Stapleton",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1269090",
+      "name": "Oliver Ostojic",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1282785",
+      "name": "Adam Carey",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1283498",
+      "name": "Adam Levi",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1334312",
+      "name": "Carter Greenwood",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1353219",
+      "name": "Daniel Leon",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1298998",
+      "name": "David Hauser",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1371389",
+      "name": "Emma Boles",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1360818",
+      "name": "Fiona Coffey",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1323506",
+      "name": "Gabby Tejada",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1286287",
+      "name": "Gabriella Cammarata",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1299878",
+      "name": "Kelly Mayo",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1371362",
+      "name": "Kevin Hauser",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1350023",
+      "name": "Luki Ahmad",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1372431",
+      "name": "Matthew Studebaker",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1330422",
+      "name": "Mily Gordon",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1347636",
+      "name": "Ofelia Aguirre",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        35
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1330611",
+      "name": "Randy Guardado",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        37
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1317815",
+      "name": "Stephanie Mitchell",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1349887",
+      "name": "Tati Mayea Ortiz",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1299316",
+      "name": "Tori Borrowdale",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1374209",
+      "name": "Yeffer Arestigueta",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1327993",
+      "name": "Di Cannon",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 870,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1340451",
+      "name": "Jodie Cordato",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36,
+        38
+      ],
+      "shiftStartMin": 900,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1317422",
+      "name": "Stephanie Meyer",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 900,
+      "shiftEndMin": 1320
+    }
+  ],
+  "hourlyRequirements": [
+    {
+      "roleId": 30,
+      "hour": 8,
+      "required": 10
+    },
+    {
+      "roleId": 30,
+      "hour": 9,
+      "required": 8
+    },
+    {
+      "roleId": 30,
+      "hour": 10,
+      "required": 12
+    },
+    {
+      "roleId": 30,
+      "hour": 11,
+      "required": 11
+    },
+    {
+      "roleId": 30,
+      "hour": 12,
+      "required": 7
+    },
+    {
+      "roleId": 30,
+      "hour": 13,
+      "required": 11
+    },
+    {
+      "roleId": 30,
+      "hour": 14,
+      "required": 12
+    },
+    {
+      "roleId": 30,
+      "hour": 15,
+      "required": 11
+    },
+    {
+      "roleId": 30,
+      "hour": 16,
+      "required": 12
+    },
+    {
+      "roleId": 30,
+      "hour": 17,
+      "required": 11
+    },
+    {
+      "roleId": 30,
+      "hour": 18,
+      "required": 10
+    },
+    {
+      "roleId": 30,
+      "hour": 19,
+      "required": 9
+    },
+    {
+      "roleId": 30,
+      "hour": 20,
+      "required": 7
+    }
+  ],
+  "windowRequirements": [
+    {
+      "roleId": 29,
+      "startHour": 9,
+      "endHour": 21,
+      "requiredPerHour": 2
+    },
+    {
+      "roleId": 37,
+      "startHour": 12,
+      "endHour": 16,
+      "requiredPerHour": 1
+    },
+    {
+      "roleId": 38,
+      "startHour": 10,
+      "endHour": 16,
+      "requiredPerHour": 1
+    }
+  ],
+  "dailyRequirements": [
+    {
+      "roleId": 35,
+      "crewId": "1283498",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 34,
+      "crewId": "1290542",
+      "requiredMinutes": 270
+    },
+    {
+      "roleId": 34,
+      "crewId": "1290575",
+      "requiredMinutes": 210
+    },
+    {
+      "roleId": 35,
+      "crewId": "1291050",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1306654",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1307221",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1311212",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1316503",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1320450",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1326561",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1336739",
+      "requiredMinutes": 120
+    },
+    {
+      "roleId": 35,
+      "crewId": "1347636",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1350023",
+      "requiredMinutes": 120
+    },
+    {
+      "roleId": 35,
+      "crewId": "1355504",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1364026",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1369981",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1372431",
+      "requiredMinutes": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1379051",
+      "requiredMinutes": 60
+    }
+  ],
+  "preferences": [
+    {
+      "crewId": "1269090",
+      "roleId": 33,
+      "preferenceType": "FAVORITE",
+      "baseWeight": 1,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "rolePreferenceId": 2
+    },
+    {
+      "crewId": "1269090",
+      "roleId": 29,
+      "preferenceType": "TIMING",
+      "baseWeight": 1,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1,
+      "rolePreferenceId": 6
+    },
+    {
+      "crewId": "1269090",
+      "roleId": 36,
+      "preferenceType": "TIMING",
+      "baseWeight": 1,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "intValue": 1,
+      "rolePreferenceId": 5
+    },
+    {
+      "crewId": "1269090",
+      "roleId": 33,
+      "preferenceType": "CONSECUTIVE",
+      "baseWeight": 1,
+      "crewWeight": 1,
+      "adaptiveBoost": 1,
+      "rolePreferenceId": 8
+    }
+  ]
+}

@@ -22,7 +22,7 @@ describe('Store Hours Validator', () => {
     minSlots: 2,
     maxSlots: 16,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
     allowOutsideStoreHours: false, // MUST stay within store hours
   };
 
@@ -32,7 +32,7 @@ describe('Store Hours Validator', () => {
     minSlots: 2,
     maxSlots: 8,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
     allowOutsideStoreHours: true, // CAN go outside store hours
   };
 

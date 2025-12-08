@@ -46,7 +46,7 @@ const solverOutput: SolverOutput = JSON.parse(
 
 // Get crew input to get names and preferences
 const solverInput = JSON.parse(
-  fs.readFileSync('solver_input_11_22.json', 'utf-8')
+  fs.readFileSync('solver_input_store768_2025-11-25.json', 'utf-8')
 );
 
 const crewNameMap: Record<string, string> = {};

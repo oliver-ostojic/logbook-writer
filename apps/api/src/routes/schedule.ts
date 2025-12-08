@@ -27,10 +27,10 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const regEndMin = (storeAny?.regHoursEndMin ?? 1260) as number;    // 21:00
 
     // Load requirements & coverage from wizard steps
-    const requirements = await prisma.crewRoleRequirement.findMany({ 
+    const requirements = await prisma.dailyRoleConstraint.findMany({ 
       where: { date: day, storeId: store_id }
     });
-    const coverages = await prisma.coverageWindow.findMany({ 
+    const coverages = await prisma.windowRoleConstraint.findMany({ 
       where: { date: day, storeId: store_id }
     });
 
@@ -118,15 +118,396 @@ export function registerScheduleRoutes(app: FastifyInstance) {
   // Fetch logbook + tasks for a day/store
   app.get('/schedule/logbook', async (req, reply) => {
     const { date, store_id } = (req.query as any) ?? {};
-    if (!date || !store_id) return reply.code(400).send({ error: 'date & store_id required' });
+    if (!date || !store_id) {
+      return reply.code(400).send({ error: 'date & store_id required' });
+    }
+
+    const storeId = Number(store_id);
+    if (!Number.isFinite(storeId)) {
+      return reply.code(400).send({ error: 'store_id must be a number' });
+    }
+
     const day = startOfDay(new Date(String(date)));
 
-    const lb = await prisma.logbook.findFirst({
-      where: { date: day, storeId: Number(store_id) },
-      include: { tasks: true },
+    const logbook = await prisma.logbook.findFirst({
+      where: { date: day, storeId },
+      include: {
+        assignments: {
+          include: {
+            crew: { select: { id: true, name: true } },
+            role: { select: { id: true, code: true, displayName: true } },
+          },
+          orderBy: [{ startTime: 'asc' }],
+        },
+        preferenceMetadata: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
-    if (!lb) return reply.code(404).send({ error: 'No logbook for that day/store' });
-    return lb;
+
+    if (!logbook) {
+      return reply.code(404).send({ error: 'No logbook for that day/store' });
+    }
+
+    const [shifts, rolesForStore] = await Promise.all([
+      prisma.shift.findMany({
+        where: { storeId, date: day },
+        orderBy: [{ crewId: 'asc' }, { startMin: 'asc' }],
+      }),
+      prisma.role.findMany({
+        where: { storeId },
+        select: { id: true, code: true, displayName: true },
+      }),
+    ]);
+
+    const crewMap = new Map<string, { id: string; name: string }>();
+    const roleMap = new Map<number, { id: number; code: string; displayName: string }>();
+
+    logbook.assignments.forEach((assignment) => {
+      if (assignment.crew) {
+        crewMap.set(assignment.crew.id, {
+          id: assignment.crew.id,
+          name: assignment.crew.name,
+        });
+      } else {
+        crewMap.set(assignment.crewId, {
+          id: assignment.crewId,
+          name: assignment.crewId,
+        });
+      }
+
+      if (assignment.role) {
+        roleMap.set(assignment.role.id, {
+          id: assignment.role.id,
+          code: assignment.role.code,
+          displayName: assignment.role.displayName,
+        });
+      }
+    });
+
+    const crew = Array.from(crewMap.values());
+    const roles = roleMap.size
+      ? Array.from(roleMap.values())
+      : rolesForStore.map((role) => ({
+          id: role.id,
+          code: role.code,
+          displayName: role.displayName,
+        }));
+
+    const normalizeShiftTime = (minutes: number) => {
+      const shiftDate = new Date(day);
+      shiftDate.setMinutes(minutes);
+      return shiftDate.toISOString();
+    };
+
+    const normalizedShifts = shifts.map((shift) => ({
+      id: shift.id,
+      crewId: shift.crewId,
+      startMinutes: shift.startMin,
+      endMinutes: shift.endMin,
+      startTime: normalizeShiftTime(shift.startMin),
+      endTime: normalizeShiftTime(shift.endMin),
+    }));
+
+    const assignments = logbook.assignments.map((assignment) => ({
+      id: assignment.id,
+      crewId: assignment.crewId,
+      crewName: assignment.crew?.name ?? assignment.crewId,
+      roleId: assignment.roleId,
+      roleCode: assignment.role?.code ?? `ROLE_${assignment.roleId}`,
+      roleName: assignment.role?.displayName ?? assignment.role?.code ?? `Role ${assignment.roleId}`,
+      startTime: assignment.startTime.toISOString(),
+      endTime: assignment.endTime.toISOString(),
+    }));
+
+    return {
+      id: logbook.id,
+      status: logbook.status,
+      date: logbook.date.toISOString(),
+      metadata: logbook.metadata,
+      preferenceMetadata: logbook.preferenceMetadata,
+      assignments,
+      crew,
+      roles,
+      shifts: normalizedShifts,
+    };
   });
+
+  // Fetch logbook by ID
+  app.get('/schedule/logbook/:logbookId', async (req, reply) => {
+    const { logbookId } = req.params as { logbookId: string };
+    
+    if (!logbookId) {
+      return reply.code(400).send({ error: 'logbookId is required' });
+    }
+
+    const logbook = await prisma.logbook.findUnique({
+      where: { id: logbookId },
+      include: {
+        assignments: {
+          include: {
+            crew: { select: { id: true, name: true } },
+            role: { select: { id: true, code: true, displayName: true } },
+          },
+          orderBy: [{ startTime: 'asc' }],
+        },
+        preferenceMetadata: true,
+      },
+    });
+
+    if (!logbook) {
+      return reply.code(404).send({ error: 'Logbook not found' });
+    }
+
+    const [shifts, rolesForStore, crewWithRoles] = await Promise.all([
+      prisma.shift.findMany({
+        where: { storeId: logbook.storeId, date: logbook.date },
+        orderBy: [{ crewId: 'asc' }, { startMin: 'asc' }],
+      }),
+      prisma.role.findMany({
+        where: { storeId: logbook.storeId },
+        select: { id: true, code: true, displayName: true, blockSize: true },
+      }),
+      prisma.crew.findMany({
+        where: { storeId: logbook.storeId },
+        select: {
+          id: true,
+          name: true,
+          crewRoles: { select: { roleId: true } },
+        },
+      }),
+    ]);
+
+    // Build crew eligibility map
+    const crewEligibility = new Map<string, number[]>();
+    crewWithRoles.forEach((c) => {
+      crewEligibility.set(c.id, c.crewRoles.map((cr) => cr.roleId));
+    });
+
+    const crewMap = new Map<string, { id: string; name: string; eligibleRoleIds: number[] }>();
+    const roleMap = new Map<number, { id: number; code: string; displayName: string; blockSize: number }>();
+
+    logbook.assignments.forEach((assignment) => {
+      const eligibleRoleIds = crewEligibility.get(assignment.crewId) ?? [];
+      if (assignment.crew) {
+        crewMap.set(assignment.crew.id, {
+          id: assignment.crew.id,
+          name: assignment.crew.name,
+          eligibleRoleIds,
+        });
+      } else {
+        crewMap.set(assignment.crewId, {
+          id: assignment.crewId,
+          name: assignment.crewId,
+          eligibleRoleIds,
+        });
+      }
+
+      if (assignment.role) {
+        const roleData = rolesForStore.find((r) => r.id === assignment.role!.id);
+        roleMap.set(assignment.role.id, {
+          id: assignment.role.id,
+          code: assignment.role.code,
+          displayName: assignment.role.displayName,
+          blockSize: roleData?.blockSize ?? 1,
+        });
+      }
+    });
+
+    const crew = Array.from(crewMap.values());
+    const roles = roleMap.size
+      ? Array.from(roleMap.values())
+      : rolesForStore.map((role) => ({
+          id: role.id,
+          code: role.code,
+          displayName: role.displayName,
+          blockSize: role.blockSize,
+        }));
+
+    const normalizeShiftTime = (minutes: number) => {
+      const shiftDate = new Date(logbook.date);
+      shiftDate.setMinutes(minutes);
+      return shiftDate.toISOString();
+    };
+
+    const normalizedShifts = shifts.map((shift) => ({
+      id: shift.id,
+      crewId: shift.crewId,
+      startMinutes: shift.startMin,
+      endMinutes: shift.endMin,
+      startTime: normalizeShiftTime(shift.startMin),
+      endTime: normalizeShiftTime(shift.endMin),
+    }));
+
+    const assignments = logbook.assignments.map((assignment) => ({
+      id: assignment.id,
+      crewId: assignment.crewId,
+      crewName: assignment.crew?.name ?? assignment.crewId,
+      roleId: assignment.roleId,
+      roleCode: assignment.role?.code ?? `ROLE_${assignment.roleId}`,
+      roleName: assignment.role?.displayName ?? assignment.role?.code ?? `Role ${assignment.roleId}`,
+      startTime: assignment.startTime.toISOString(),
+      endTime: assignment.endTime.toISOString(),
+    }));
+
+    return {
+      id: logbook.id,
+      status: logbook.status,
+      date: logbook.date.toISOString(),
+      metadata: logbook.metadata,
+      preferenceMetadata: logbook.preferenceMetadata,
+      assignments,
+      crew,
+      roles,
+      shifts: normalizedShifts,
+    };
+  });
+
+  // PATCH /schedule/logbook/:logbookId/assignments - Update assignments (for manual edits)
+  type AssignmentUpdate = {
+    crewId: string;
+    startMinutes: number;
+    endMinutes: number;
+    roleId: number;
+  };
+  
+  type UpdateAssignmentsBody = {
+    updates: AssignmentUpdate[];
+  };
+
+  app.patch<{ Params: { logbookId: string }; Body: UpdateAssignmentsBody }>(
+    '/schedule/logbook/:logbookId/assignments',
+    async (req, reply) => {
+      const { logbookId } = req.params;
+      const { updates } = req.body;
+
+      if (!updates || !Array.isArray(updates) || updates.length === 0) {
+        return reply.status(400).send({ error: 'No updates provided' });
+      }
+
+      // Verify logbook exists
+      const logbook = await prisma.logbook.findUnique({
+        where: { id: logbookId },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      // Process each update - find assignment by crewId + startTime, update roleId
+      const results: { updated: number; errors: string[] } = { updated: 0, errors: [] };
+
+      for (const update of updates) {
+        try {
+          // Convert startMinutes to a DateTime for that logbook's date
+          const startTime = new Date(logbook.date);
+          startTime.setUTCHours(0, 0, 0, 0);
+          startTime.setUTCMinutes(update.startMinutes);
+
+          // Find the assignment by logbookId + crewId + startTime
+          const assignment = await prisma.assignment.findFirst({
+            where: {
+              logbookId,
+              crewId: update.crewId,
+              startTime,
+            },
+          });
+
+          if (assignment) {
+            await prisma.assignment.update({
+              where: { id: assignment.id },
+              data: {
+                roleId: update.roleId,
+                origin: 'MANUAL', // Mark as manually edited
+              },
+            });
+            results.updated++;
+          } else {
+            results.errors.push(`Assignment not found: crew ${update.crewId} at ${update.startMinutes}min`);
+          }
+        } catch (err) {
+          results.errors.push(`Failed to update crew ${update.crewId} at ${update.startMinutes}min: ${err}`);
+        }
+      }
+
+      return {
+        success: results.updated > 0,
+        updated: results.updated,
+        errors: results.errors,
+      };
+    }
+  );
+
+  // POST /schedule/logbook/:logbookId/publish - Publish a logbook (set status to PUBLISHED)
+  app.post<{ Params: { logbookId: string } }>(
+    '/schedule/logbook/:logbookId/publish',
+    async (req, reply) => {
+      const { logbookId } = req.params;
+
+      // Verify logbook exists
+      const logbook = await prisma.logbook.findUnique({
+        where: { id: logbookId },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      // If already published, just return success (no update needed)
+      // Compare as string to handle both enum and string values
+      if (logbook.status === 'PUBLISHED' || logbook.status === LogbookStatus.PUBLISHED) {
+        return {
+          success: true,
+          logbookId: logbook.id,
+          status: logbook.status,
+          message: 'Logbook is already published',
+        };
+      }
+
+      // Update status to PUBLISHED
+      const updated = await prisma.logbook.update({
+        where: { id: logbookId },
+        data: {
+          status: LogbookStatus.PUBLISHED,
+        },
+      });
+
+      return {
+        success: true,
+        logbookId: updated.id,
+        status: updated.status,
+      };
+    }
+  );
+
+  // DELETE /schedule/logbook/:logbookId - Delete a logbook and all related records
+  app.delete<{ Params: { logbookId: string } }>(
+    '/schedule/logbook/:logbookId',
+    async (req, reply) => {
+      const { logbookId } = req.params;
+
+      // Verify logbook exists
+      const logbook = await prisma.logbook.findUnique({
+        where: { id: logbookId },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      // Delete all related records in a transaction
+      await prisma.$transaction(async (tx) => {
+        await tx.assignment.deleteMany({ where: { logbookId } });
+        await tx.preferenceSatisfaction.deleteMany({ where: { logbookId } });
+        await tx.logPreferenceMetadata.deleteMany({ where: { logbookId } });
+        await tx.run.deleteMany({ where: { logbookId } });
+        await tx.logbook.delete({ where: { id: logbookId } });
+      });
+
+      return {
+        success: true,
+        logbookId,
+        message: 'Logbook deleted successfully',
+      };
+    }
+  );
 }

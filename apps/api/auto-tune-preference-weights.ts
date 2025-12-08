@@ -321,7 +321,7 @@ async function runSolverTest(): Promise<TestResult['satisfaction']> {
   console.log('\n🧪 Running solver test...');
   
   // Load test data
-  const inputPath = path.join(process.cwd(), 'solver_input_11_22.json');
+  const inputPath = path.join(process.cwd(), 'solver_input_store768_2025-11-25.json');
   if (!fs.existsSync(inputPath)) {
     throw new Error(`Solver input file not found: ${inputPath}`);
   }

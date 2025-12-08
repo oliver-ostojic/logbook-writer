@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { Prisma, PrismaClient, AssignmentModel } from '@prisma/client';
+import { Prisma, PrismaClient, AssignmentModel, ConsecutivePolicy } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +9,7 @@ type CreateRoleBody = {
   displayName?: string;
   storeId?: number;
   assignmentModel?: AssignmentModel;
-  slotsMustBeConsecutive?: boolean;
+  consecutivePolicy?: ConsecutivePolicy;
   minSlots?: number;
   maxSlots?: number;
   allowOutsideStoreHours?: boolean;
@@ -52,7 +52,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
       displayName,
       storeId,
       assignmentModel,
-      slotsMustBeConsecutive,
+      consecutivePolicy,
       minSlots,
       maxSlots,
       allowOutsideStoreHours,
@@ -72,8 +72,8 @@ export function registerRoleRoutes(app: FastifyInstance) {
           code: resolvedCode,
           displayName: displayName ?? resolvedCode,
           storeId,
-          assignmentModel: (assignmentModel ?? 'HOURLY') as AssignmentModel,
-          slotsMustBeConsecutive: slotsMustBeConsecutive ?? false,
+          assignmentModel: assignmentModel ? [assignmentModel] : [AssignmentModel.HOURLY],
+          consecutivePolicy: (consecutivePolicy ?? 'NONE') as ConsecutivePolicy,
           minSlots: minSlots ?? 1,
           maxSlots: maxSlots ?? 1,
           allowOutsideStoreHours: allowOutsideStoreHours ?? false,

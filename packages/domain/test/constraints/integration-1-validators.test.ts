@@ -35,7 +35,8 @@ describe('Integration #1: Multi-Validator', () => {
     minSlots: 2,
     maxSlots: 16,
     blockSize: 1,
-    slotsMustBeConsecutive: true,
+    consecutivePolicy: 'REQUIRED',
+    consecutiveWeight: 1,
     allowOutsideStoreHours: false,
   };
 
@@ -252,7 +253,8 @@ describe('Integration #1: Multi-Validator', () => {
       minSlots: 2,
       maxSlots: 16,
       blockSize: 1,
-      slotsMustBeConsecutive: true, // Must be consecutive
+      consecutivePolicy: 'REQUIRED',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     };
 
@@ -262,7 +264,8 @@ describe('Integration #1: Multi-Validator', () => {
       minSlots: 2,
       maxSlots: 6,
       blockSize: 1,
-      slotsMustBeConsecutive: false, // Can be split!
+      consecutivePolicy: 'NONE',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     };
 

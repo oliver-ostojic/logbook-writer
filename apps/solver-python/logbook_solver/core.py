@@ -91,10 +91,26 @@ class LogbookSolver:
         # Build HOURLY roles: Check roleMetadata for assignmentModel='HOURLY'
         # These roles are available to everyone, regardless of hourly requirements
         self._hourly_roles = set()
+        self._solver_roles = set()
         for role_meta in self.role_metadata:
             role = role_meta.get('role')
-            if role and role_meta.get('assignmentModel') == 'HOURLY':
+            assignment_model = role_meta.get('assignmentModel')
+            if not role or assignment_model is None:
+                continue
+
+            if isinstance(assignment_model, (list, tuple)):
+                normalized_models = {str(model).upper() for model in assignment_model if model}
+            else:
+                normalized_models = {str(assignment_model).upper()}
+
+            if 'HOURLY' in normalized_models:
                 self._hourly_roles.add(role)
+                self.roles.add(role)
+
+            if 'SOLVER' in normalized_models:
+                # Solver-managed roles: treated like HOURLY for variable creation,
+                # but carry no manager-specified constraints.
+                self._solver_roles.add(role)
                 self.roles.add(role)
         
         # Build DAILY roles: roles with per-crew daily requirements
@@ -156,7 +172,7 @@ class LogbookSolver:
                     # Determine if we should create a variable for this (crew, slot, role)
                     should_create = False
                     
-                    if role in self._hourly_roles:
+                    if role in self._hourly_roles or role in self._solver_roles:
                         # HOURLY: create for all crew (includes BREAK, REGISTER, PRODUCT, PARKING_HELM)
                         should_create = True
                     
@@ -194,6 +210,7 @@ class LogbookSolver:
                     x[(crew_id, slot, role)] = self.model.NewBoolVar(var_name)
         
         self.x = x
+
 
     # ------------------------------------------------------------------
     # Solve & results
@@ -304,6 +321,26 @@ class LogbookSolver:
         slot_start = self._slot_start_minute(slot)
         start_min, end_min = window
         return start_min <= slot_start < end_min
+
+    def _role_consecutive_policy(self, role: str) -> str:
+        meta = self.role_meta_map.get(role, {})
+        policy = meta.get('consecutivePolicy')
+        if isinstance(policy, str):
+            normalized = policy.upper()
+            if normalized in {'REQUIRED', 'PREFERRED', 'NONE'}:
+                return normalized
+        return 'NONE'
+
+    def _role_consecutive_weight(self, role: str) -> float:
+        meta = self.role_meta_map.get(role, {})
+        weight = meta.get('consecutiveWeight')
+        try:
+            value = float(weight)
+        except (TypeError, ValueError):
+            value = 1.0
+        if value < 0:
+            return 0.0
+        return value
 
     def _minutes_to_slot_floor(self, minutes: int) -> int:
         return max(0, minutes // self.slot_minutes)

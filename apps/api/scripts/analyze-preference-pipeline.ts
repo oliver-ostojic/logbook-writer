@@ -14,7 +14,16 @@ async function main() {
     console.error('No store found');
     return;
   }
-  const { breakWindowStart, breakWindowEnd, reqShiftLengthForBreak } = store;
+  const roles = await prisma.role.findMany({ where: { storeId: store.id } });
+
+  const roleWindowMap = new Map<number, { startOffsetMin?: number; endOffsetMin?: number; minShiftLength?: number }>();
+  roles.forEach(role => {
+    roleWindowMap.set(role.id, {
+      startOffsetMin: (role as any).windowStartOffsetMin ?? undefined,
+      endOffsetMin: (role as any).windowEndOffsetMin ?? undefined,
+      minShiftLength: (role as any).minShiftLengthForRoleAccess ?? undefined,
+    });
+  });
 
   // Most recent logbook
   const logbook = await prisma.logbook.findFirst({
@@ -36,13 +45,6 @@ async function main() {
     where: { logbookId: logbook.id },
     include: { rolePreference: true },
   });
-
-  const breakRoleIds = new Set<number>();
-  const breakRoles = await prisma.role.findMany({
-    where: { storeId: store.id, code: { in: ['BREAK', 'MEAL_BREAK'] } },
-    select: { id: true },
-  });
-  breakRoles.forEach(r => breakRoleIds.add(r.id));
 
   const byCrew = new Map<string, typeof assignments>();
   for (const a of assignments) {
@@ -81,23 +83,57 @@ async function main() {
     if (p.met) fhMet++;
   }
 
+  const crewShiftMap = new Map<string, { startMin: number; endMin: number }>();
+  for (const assignment of assignments) {
+    const minuteStart = assignment.startTime.getHours() * 60 + assignment.startTime.getMinutes();
+    const minuteEnd = assignment.endTime.getHours() * 60 + assignment.endTime.getMinutes();
+    const existing = crewShiftMap.get(assignment.crewId);
+    if (!existing) {
+      crewShiftMap.set(assignment.crewId, { startMin: minuteStart, endMin: minuteEnd });
+    } else {
+      existing.startMin = Math.min(existing.startMin, minuteStart);
+      existing.endMin = Math.max(existing.endMin, minuteEnd);
+    }
+  }
+
   let timingMet = 0;
-  let timingNoBreak = 0;
+  let timingNoAssignment = 0;
   let timingTooShort = 0;
   let timingWindowInvalid = 0;
 
   for (const p of timingPrefs) {
     const crewAssign = (byCrew.get(p.crewId) || []).sort((a,b)=>+a.startTime-+b.startTime);
     if (crewAssign.length === 0) continue;
-    const shiftStart = +crewAssign[0].startTime;
-    const shiftEnd = +crewAssign[crewAssign.length-1].endTime;
-    const shiftLenMin = (shiftEnd - shiftStart) / (60*1000);
-    if (shiftLenMin < reqShiftLengthForBreak) timingTooShort++;
-  const breakAssign = crewAssign.find(a => breakRoleIds.has(a.roleId));
-  if (!breakAssign) timingNoBreak++;
-    const eStart = shiftStart + breakWindowStart*60*1000;
-    const lStart = shiftStart + breakWindowEnd*60*1000;
-    if (lStart <= eStart) timingWindowInvalid++;
+    const roleId = p.rolePreference.roleId;
+    if (!roleId) continue;
+
+    const shiftBounds = crewShiftMap.get(p.crewId);
+    if (!shiftBounds) continue;
+
+    const roleWindow = roleWindowMap.get(roleId);
+    const minShiftLength = roleWindow?.minShiftLength ?? 0;
+    const shiftLength = shiftBounds.endMin - shiftBounds.startMin;
+    if (minShiftLength > 0 && shiftLength < minShiftLength) {
+      timingTooShort++;
+      continue;
+    }
+
+    const targetAssignment = crewAssign.find(a => a.roleId === roleId);
+    if (!targetAssignment) {
+      timingNoAssignment++;
+      continue;
+    }
+
+    const earliestStart = shiftBounds.startMin + (roleWindow?.startOffsetMin ?? 0);
+    const latestStart = roleWindow?.endOffsetMin != null
+      ? shiftBounds.startMin + roleWindow.endOffsetMin
+      : shiftBounds.endMin;
+
+    if (latestStart <= earliestStart) {
+      timingWindowInvalid++;
+      continue;
+    }
+
     if (p.met) timingMet++;
   }
 
@@ -106,8 +142,7 @@ async function main() {
   console.log('Preferred hour distribution:', Object.fromEntries(preferredHourDist));
   console.log('First assignment hour distribution:', Object.fromEntries(hourDist));
   console.log('TIMING -> met:', timingMet, '/', timingPrefs.length);
-  console.log('Timing diagnostics:', { timingNoBreak, timingTooShort, timingWindowInvalid });
-  console.log('Store break config:', { breakWindowStart, breakWindowEnd, reqShiftLengthForBreak });
+  console.log('Timing diagnostics:', { timingNoAssignment, timingTooShort, timingWindowInvalid });
 }
 
 main().finally(()=>prisma.$disconnect());

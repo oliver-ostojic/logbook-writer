@@ -130,10 +130,14 @@ def main():
                 for r in c['roles']:
                     role_name = r['role']
                     if role_name not in role_meta_map:
+                        policy = (r.get("consecutivePolicy") or "NONE").upper()
+                        if policy not in {"REQUIRED", "PREFERRED", "NONE"}:
+                            policy = "NONE"
                         role_meta_map[role_name] = {
                             "role": role_name,
                             "assignmentMode": r.get("assignmentMode", "INDIVIDUAL_HOURS"),
-                            "isConsecutive": r.get("isConsecutive", False),
+                            "consecutivePolicy": policy,
+                            "consecutiveWeight": r.get("consecutiveWeight", 1.0),
                             "detail": r.get("detail", "")
                         }
         # Also add any roles from coverage windows (for TEAM_WINDOW roles)
@@ -145,7 +149,8 @@ def main():
                 role_meta_map[role_name] = {
                     "role": role_name,
                     "assignmentMode": "TEAM_WINDOW",
-                    "isConsecutive": False,
+                    "consecutivePolicy": "NONE",
+                    "consecutiveWeight": 1.0,
                     "detail": ""
                 }
         role_metadata = list(role_meta_map.values())

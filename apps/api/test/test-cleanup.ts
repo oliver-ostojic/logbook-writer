@@ -45,21 +45,21 @@ export async function cleanupTestStores() {
     console.log(`🧹 Cleaning up ${testStores.length} test store(s)...`);
     testStores.forEach(s => console.log(`   - ${s.id}: ${s.name}`));
 
-    const storeIds = testStores.map(s => s.id);
+  const storeIds = testStores.map(s => s.id);
 
     // Delete in correct order to respect foreign key constraints
 
-    // 1. Tasks (depend on crew and logbook)
-    const tasksDeleted = await prisma.task.deleteMany({
-      where: { 
+    // 1. Assignments (depend on crew and logbook)
+    const assignmentsDeleted = await prisma.assignment.deleteMany({
+      where: {
         OR: [
           { crew: { storeId: { in: storeIds } } },
           { logbook: { storeId: { in: storeIds } } }
         ]
       }
     });
-    if (tasksDeleted.count > 0) {
-      console.log(`   ✓ Deleted ${tasksDeleted.count} tasks`);
+    if (assignmentsDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${assignmentsDeleted.count} assignments`);
     }
 
     // 2. Runs (depend on logbook)
@@ -80,7 +80,7 @@ export async function cleanupTestStores() {
 
     // 4. Crew role relationships
     const crewRolesDeleted = await prisma.crewRole.deleteMany({
-      where: { Crew: { storeId: { in: storeIds } } }
+      where: { crew: { storeId: { in: storeIds } } }
     });
     if (crewRolesDeleted.count > 0) {
       console.log(`   ✓ Deleted ${crewRolesDeleted.count} crew role assignments`);
@@ -88,7 +88,7 @@ export async function cleanupTestStores() {
 
     // 5. Preference satisfaction records
     const prefSatDeleted = await prisma.preferenceSatisfaction.deleteMany({
-      where: { Crew: { storeId: { in: storeIds } } }
+      where: { crew: { storeId: { in: storeIds } } }
     });
     if (prefSatDeleted.count > 0) {
       console.log(`   ✓ Deleted ${prefSatDeleted.count} preference satisfaction records`);
@@ -102,31 +102,39 @@ export async function cleanupTestStores() {
       console.log(`   ✓ Deleted ${bankedDeleted.count} banked preferences`);
     }
 
-    // 7. Crew role requirements
-    const crewReqsDeleted = await prisma.crewRoleRequirement.deleteMany({
+    // 7. Daily role constraints
+    const dailyReqsDeleted = await prisma.dailyRoleConstraint.deleteMany({
       where: { storeId: { in: storeIds } }
     });
-    if (crewReqsDeleted.count > 0) {
-      console.log(`   ✓ Deleted ${crewReqsDeleted.count} crew role requirements`);
+    if (dailyReqsDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${dailyReqsDeleted.count} daily role constraints`);
     }
 
-    // 8. Hourly requirements
-    const hourlyReqsDeleted = await prisma.hourlyRequirement.deleteMany({
+    // 8. Hourly role constraints
+    const hourlyRoleDeleted = await prisma.hourlyRoleConstraint.deleteMany({
       where: { storeId: { in: storeIds } }
     });
-    if (hourlyReqsDeleted.count > 0) {
-      console.log(`   ✓ Deleted ${hourlyReqsDeleted.count} hourly requirements`);
+    if (hourlyRoleDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${hourlyRoleDeleted.count} hourly role constraints`);
     }
 
-    // 9. Coverage windows
-    const coverageDeleted = await prisma.coverageWindow.deleteMany({
+    // 9. Window role constraints
+    const windowRoleDeleted = await prisma.windowRoleConstraint.deleteMany({
       where: { storeId: { in: storeIds } }
     });
-    if (coverageDeleted.count > 0) {
-      console.log(`   ✓ Deleted ${coverageDeleted.count} coverage windows`);
+    if (windowRoleDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${windowRoleDeleted.count} window role constraints`);
     }
 
-    // 10. Crew members
+    // 10. Shifts
+    const shiftsDeleted = await prisma.shift.deleteMany({
+      where: { storeId: { in: storeIds } }
+    });
+    if (shiftsDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${shiftsDeleted.count} shifts`);
+    }
+
+    // 11. Crew members
     const crewDeleted = await prisma.crew.deleteMany({
       where: { storeId: { in: storeIds } }
     });
@@ -134,7 +142,13 @@ export async function cleanupTestStores() {
       console.log(`   ✓ Deleted ${crewDeleted.count} crew members`);
     }
 
-    // 11. Roles (if they belong to test stores)
+    // 12. Role preferences & roles (if they belong to test stores)
+    const rolePrefsDeleted = await prisma.rolePreference.deleteMany({
+      where: { storeId: { in: storeIds } }
+    });
+    if (rolePrefsDeleted.count > 0) {
+      console.log(`   ✓ Deleted ${rolePrefsDeleted.count} role preferences`);
+    }
     const rolesDeleted = await prisma.role.deleteMany({
       where: { storeId: { in: storeIds } }
     });
@@ -142,11 +156,25 @@ export async function cleanupTestStores() {
       console.log(`   ✓ Deleted ${rolesDeleted.count} roles`);
     }
 
-    // 12. Finally, delete the stores themselves
+    // 13. Finally, delete the stores themselves
     const storesDeleted = await prisma.store.deleteMany({
       where: { id: { in: storeIds } }
     });
     console.log(`   ✓ Deleted ${storesDeleted.count} test stores`);
+
+    // 14. Cleanup orphan test companies (no stores remain)
+    const orphanCompanies = await prisma.company.findMany({
+      where: {
+        name: { contains: 'Test', mode: 'insensitive' },
+        stores: { none: {} },
+      },
+      select: { id: true, name: true }
+    });
+    if (orphanCompanies.length) {
+      const ids = orphanCompanies.map(c => c.id);
+      const companiesDeleted = await prisma.company.deleteMany({ where: { id: { in: ids } } });
+      console.log(`   ✓ Deleted ${companiesDeleted.count} orphan test companies`);
+    }
 
     console.log('✅ Test cleanup complete!\n');
   } catch (error) {
@@ -171,17 +199,32 @@ export async function cleanupTestCrew(prefix?: string) {
 
   // Delete crew role relationships first
   await prisma.crewRole.deleteMany({
-    where: { Crew: where }
+    where: { crew: where }
   });
 
   // Delete preference satisfaction records
   await prisma.preferenceSatisfaction.deleteMany({
-    where: { Crew: where }
+    where: { crew: where }
   });
 
   // Delete banked preferences
   await prisma.bankedPreference.deleteMany({
     where: { Crew: where }
+  });
+
+  // Delete crew preferences
+  await prisma.crewPreference.deleteMany({
+    where: { crew: where }
+  });
+
+  // Delete daily role constraints tied to crew
+  await prisma.dailyRoleConstraint.deleteMany({
+    where: { crew: where }
+  });
+
+  // Delete shifts for these crew
+  await prisma.shift.deleteMany({
+    where: { crew: where }
   });
 
   // Delete crew members

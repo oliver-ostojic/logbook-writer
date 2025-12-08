@@ -1,3 +1,5 @@
+import type { ConstraintAnalysisSummary } from './constraint-analysis';
+
 /**
  * TypeScript DTOs for the MILP Logbook Solver
  * 
@@ -143,6 +145,12 @@ export interface PreferenceConfig {
   /** Role this preference applies to (null = any role for this preference type) */
   role: TaskType | null;
   
+  /** Legacy role code reference (to be deprecated) */
+  roleCode?: string | null;
+  
+  /** Role preference primary key for backreferences */
+  rolePreferenceId?: number;
+  
   /** Type of preference */
   preferenceType: PreferenceType;
   
@@ -172,39 +180,33 @@ export interface StoreConstraints {
   /** Store open/close minutes from midnight */
   openMinutesFromMidnight: number;
   closeMinutesFromMidnight: number;
-
-  /** Register staffing window override */
-  startRegHour: number;
-  endRegHour: number;
-
-  /** Break policy */
-  reqShiftLengthForBreak: number;
-  breakWindowStart: number;
-  breakWindowEnd: number;
 }
 
+export type ConsecutivePolicy = 'REQUIRED' | 'PREFERRED' | 'NONE';
+
 /**
- * Role metadata for solver (assignment mode, consecutive flags)
+ * Role metadata for solver (assignment mode, consecutive policy)
  */
 export interface RoleMetadata {
   /** Role name */
   role: TaskType;
 
   /** Assignment model communicated to solver */
-  assignmentModel: 'HOURLY' | 'HOURLY_WINDOW' | 'DAILY';
+  assignmentModel: 'HOURLY' | 'HOURLY_WINDOW' | 'DAILY' | 'SOLVER';
 
   /** Scheduling knobs */
   allowOutsideStoreHours?: boolean;
-  slotsMustBeConsecutive?: boolean;
   minSlots?: number;
   maxSlots?: number;
   blockSize?: number;  // Assignment increment (1=any, 2=2-slot blocks, 4=4-slot blocks, etc.)
+  consecutivePolicy?: ConsecutivePolicy;
+  /** Minimum shift length (minutes) required before a crew can access this role */
+  minShiftLengthForRoleAccess?: number | null;
 
   /** Behavioral flags */
   isUniversal?: boolean;
   isBreakRole?: boolean;
   isParkingRole?: boolean;
-  isConsecutive?: boolean;
 
   /** Per-crew time bounds for this role */
   minMinutesPerCrew?: number;
@@ -221,8 +223,17 @@ export interface SolverInput {
   /** Date for the schedule (ISO date string) */
   date: string;
   
+  /** Store identifier (legacy compatibility) */
+  storeId?: number;
+  
+  /** Slot size in minutes (legacy compatibility) */
+  baseSlotMinutes?: number;
+  
   /** Store constraints */
-  store: StoreConstraints;
+  store?: StoreConstraints;
+  
+  /** Store metadata (legacy key used by solver) */
+  storeMetadata?: StoreConstraints;
   
   /** List of crew members working this day */
   crew: SolverCrewMember[];
@@ -257,8 +268,8 @@ export interface TaskAssignment {
   /** Crew member ID */
   crewId: string;
   
-  /** Task type */
-  taskType: TaskType;
+  /** Task type - can be a known TaskType or any role code string */
+  taskType: TaskType | string;
   
   /** Start time (ISO datetime or minutes since midnight) */
   startTime: number;
@@ -294,6 +305,9 @@ export interface SolverMetadata {
   
   /** Any constraint violations or warnings */
   violations?: string[];
+
+  /** Detailed constraint analysis for frontend consumption */
+  constraintAnalysis?: ConstraintAnalysisSummary;
 }
 
 /**

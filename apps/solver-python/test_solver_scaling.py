@@ -107,10 +107,14 @@ def build_role_metadata(crew):
             for r in c['roles']:
                 role_name = r['role']
                 if role_name not in role_meta_map:
+                    policy = (r.get('consecutivePolicy') or 'NONE').upper()
+                    if policy not in {'REQUIRED', 'PREFERRED', 'NONE'}:
+                        policy = 'NONE'
                     role_meta_map[role_name] = {
                         'role': role_name,
                         'assignmentMode': r.get('assignmentMode', 'INDIVIDUAL_HOURS'),
-                        'isConsecutive': r.get('isConsecutive', False),
+                        'consecutivePolicy': policy,
+                        'consecutiveWeight': r.get('consecutiveWeight', 1.0),
                         'detail': r.get('detail', '')
                     }
     return list(role_meta_map.values())

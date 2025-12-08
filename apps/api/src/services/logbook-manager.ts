@@ -7,14 +7,50 @@
 
 import crypto from 'crypto';
 import type { PrismaClient, LogbookStatus, RunStatus } from '@prisma/client';
-import type { SolverOutput, SolverInput, SolverStatus, TaskAssignment } from '@logbook-writer/shared-types';
+import type { SolverStatus } from '@logbook-writer/shared-types';
+import type { SolverInputV2 } from '../solver2/types';
+
+/**
+ * V2 assignment format - directly from Python solver
+ * Uses roleId (number) instead of legacy taskType (enum)
+ */
+export interface AssignmentV2 {
+  crewId: string;
+  roleId: number;
+  startMinute: number;
+  endMinute: number;
+}
+
+/**
+ * V2 Solver output with roleId-based assignments
+ */
+export interface SolverOutputV2 {
+  success: boolean;
+  metadata: {
+    status: SolverStatus;
+    objectiveScore?: number;
+    runtimeMs: number;
+    mipGap?: number;
+    numCrew: number;
+    numHours: number;
+    numAssignments: number;
+    violations?: string[];
+    constraintAnalysis?: any;
+    feasibilityViolations?: string[];
+    feasibilityResult?: any;
+  };
+  assignments?: AssignmentV2[];
+  error?: string;
+}
 import {
   calculateAllSatisfaction,
   savePreferenceSatisfaction,
   saveLogPreferenceMetadata,
   type AssignmentRecord,
   type PreferenceRecord,
-  type StoreBreakConfig
+  type CrewShiftWindow,
+  type RoleTimingWindow,
+  type TimingPreferenceContext,
 } from './preference-satisfaction';
 
 export interface LogbookMetadata {
@@ -58,71 +94,54 @@ function solverStatusToRunStatus(status: SolverStatus): RunStatus {
 
 /**
  * Create or update a logbook with solver output and preference satisfaction
+ * 
+ * Accepts V2 solver output with roleId-based assignments (no enum mapping needed)
  */
 export async function saveLogbookWithMetadata(
   prisma: PrismaClient,
   options: {
     storeId: number;
     date: Date;
-    solverOutput: SolverOutput;
-    solverInput: SolverInput;
+    solverOutput: SolverOutputV2;
+    solverInput: SolverInputV2;
     status: LogbookStatus;
   }
 ): Promise<string> {
   const { storeId, date, solverOutput, solverInput, status } = options;
 
-  // Fetch store configuration for preference calculation
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: {
-      breakWindowStart: true,
-      breakWindowEnd: true,
-      reqShiftLengthForBreak: true,
-    }
-  });
-
-  if (!store) {
-    throw new Error(`Store ${storeId} not found`);
+  const crewShiftMap: Map<string, CrewShiftWindow> = new Map();
+  for (const crew of solverInput.crew) {
+    crewShiftMap.set(crew.id, {
+      shiftStartMin: crew.shiftStartMin,
+      shiftEndMin: crew.shiftEndMin,
+    });
   }
 
-  const storeConfig: StoreBreakConfig = {
-    breakWindowStart: store.breakWindowStart,
-    breakWindowEnd: store.breakWindowEnd,
-    reqShiftLengthForBreak: store.reqShiftLengthForBreak,
+  const roleWindowMap: Map<number, RoleTimingWindow> = new Map();
+  for (const role of solverInput.roles) {
+    roleWindowMap.set(role.id, {
+      startOffsetMin: role.windowOffsets?.startOffsetMin,
+      endOffsetMin: role.windowOffsets?.endOffsetMin,
+    });
+  }
+
+  const timingContext: TimingPreferenceContext = {
+    crewShifts: crewShiftMap,
+    roleWindows: roleWindowMap,
   };
-
-  // Get break role IDs
-  const breakRoles = await prisma.role.findMany({
-    where: { storeId, code: { in: ['BREAK', 'MEAL_BREAK'] } },
-    select: { id: true }
-  });
-  const breakRoleIds = breakRoles.map(r => r.id);
-
-  // Get role code to ID mapping
-  const roles = await prisma.role.findMany({
-    where: { storeId },
-    select: { id: true, code: true }
-  });
-  const roleCodeToId = new Map(roles.map(r => [r.code, r.id]));
 
   // Guard: ensure assignments exist
   if (!solverOutput.assignments || solverOutput.assignments.length === 0) {
     throw new Error('Cannot save logbook: solver output has no assignments');
   }
 
-  // Convert solver assignments to AssignmentRecord format
-  const assignmentRecords: AssignmentRecord[] = solverOutput.assignments.map(a => {
-    const roleId = roleCodeToId.get(a.taskType);
-    if (!roleId) {
-      throw new Error(`Unknown role code: ${a.taskType}`);
-    }
-    return {
-      crewId: a.crewId,
-      roleId,
-      startMinutes: a.startTime,
-      endMinutes: a.endTime,
-    };
-  });
+  // V2 format: assignments already have roleId directly (no enum mapping needed!)
+  const assignmentRecords: AssignmentRecord[] = solverOutput.assignments.map(a => ({
+    crewId: a.crewId,
+    roleId: a.roleId,
+    startMinutes: a.startMinute,
+    endMinutes: a.endMinute,
+  }));
 
   // Fetch RolePreferences with CrewPreferences to build PreferenceRecord array
   const rolePreferences = await prisma.rolePreference.findMany({
@@ -153,8 +172,7 @@ export async function saveLogbookWithMetadata(
   const satisfactionResults = await calculateAllSatisfaction(
     assignmentRecords,
     preferenceRecords,
-    breakRoleIds,
-    storeConfig
+    timingContext
   );
 
   // Calculate aggregate preference stats
@@ -188,7 +206,7 @@ export async function saveLogbookWithMetadata(
   // Calculate schedule stats
   const uniqueCrewIds = new Set(assignmentsList.map(a => a.crewId));
   const totalHours = assignmentsList.reduce(
-    (sum, a) => sum + ((a.endTime - a.startTime) / 60),
+    (sum, a) => sum + ((a.endMinute - a.startMinute) / 60),
     0
   );
 
@@ -220,14 +238,14 @@ export async function saveLogbookWithMetadata(
     generatedAt: new Date().toISOString(),
   };
 
-  // Find or create logbook
+  // Find or create logbook - only reuse DRAFT logbooks
   let logbook = await prisma.logbook.findFirst({
-    where: { storeId, date, status },
+    where: { storeId, date },
     orderBy: { createdAt: 'desc' },
   });
 
-  if (logbook) {
-    // Update existing logbook
+  if (logbook && logbook.status === 'DRAFT') {
+    // Only reuse DRAFT logbooks - update metadata but keep same ID
     logbook = await prisma.logbook.update({
       where: { id: logbook.id },
       data: {
@@ -255,25 +273,20 @@ export async function saveLogbookWithMetadata(
   await prisma.preferenceSatisfaction.deleteMany({ where: { logbookId: logbook.id } });
   await prisma.logPreferenceMetadata.deleteMany({ where: { logbookId: logbook.id } });
 
-  // Create assignments (guard against undefined)
+  // Create assignments - V2 format already has roleId directly!
   const assignmentsToSave = solverOutput.assignments || [];
   const assignmentData = assignmentsToSave.map(a => {
-    const roleId = roleCodeToId.get(a.taskType);
-    if (!roleId) {
-      throw new Error(`Unknown role code: ${a.taskType}`);
-    }
-
-    // Convert minutes from midnight to datetime
+    // Convert minutes from midnight to datetime (use UTC for consistency)
     const startDate = new Date(date);
-    startDate.setHours(0, a.startTime, 0, 0);
+    startDate.setUTCHours(0, a.startMinute, 0, 0);
     const endDate = new Date(date);
-    endDate.setHours(0, a.endTime, 0, 0);
+    endDate.setUTCHours(0, a.endMinute, 0, 0);
 
     return {
       id: crypto.randomUUID(),
       logbookId: logbook.id,
       crewId: a.crewId,
-      roleId,
+      roleId: a.roleId,  // Direct from solver - no enum mapping!
       startTime: startDate,
       endTime: endDate,
       origin: 'ENGINE' as const,
@@ -318,7 +331,7 @@ export async function createRunRecord(
     date: Date;
     engine: string;
     seed: number;
-    solverOutput: SolverOutput;
+    solverOutput: SolverOutputV2;
     logbookId?: string;
   }
 ): Promise<string> {

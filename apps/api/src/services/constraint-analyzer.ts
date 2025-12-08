@@ -1,385 +1,667 @@
-/**
- * Constraint Analysis Tool
- * 
- * Analyzes any schedule (manual or automated) to determine which constraints
- * are satisfied or violated. This is the core validation tool.
- */
+import type {
+  ConstraintAnalysisSummary,
+  ConstraintViolation,
+  ConstraintViolationCategory,
+  ConstraintViolationSeverity,
+  PreferenceSatisfactionSummary,
+} from '@logbook-writer/shared-types/src/constraint-analysis';
+import type { PreferenceType } from '@logbook-writer/shared-types/src/solver';
+import type {
+  CrewDescriptor,
+  PreferenceDescriptor,
+  RoleDescriptor,
+  SolverInputV2,
+} from '../solver2/types';
 
-import type { 
-  HistoricalAssignment,
-  HistoricalConstraintAnalysis
-} from '@logbook-writer/shared-types/src/constraint-testing';
-import type { 
-  SolverInput,
-  SolverOutput,
-  TaskAssignment 
-} from '@logbook-writer/shared-types/src/solver';
+export type AssignmentRecord = {
+  crewId: string;
+  roleId: number;
+  startMinute: number;
+  endMinute: number;
+};
 
-/**
- * Convert solver output assignments to historical assignment format
- */
-export function solverToHistoricalAssignments(
-  output: SolverOutput,
-  crewNameMap: Map<string, string>
-): HistoricalAssignment[] {
-  if (!output.assignments) return [];
-  
-  return output.assignments.map(a => ({
-    crewId: a.crewId,
-    crewName: crewNameMap.get(a.crewId) || a.crewId,
-    role: a.taskType,
-    startMinutes: a.startTime,
-    endMinutes: a.endTime
-  }));
+interface CrewRoleBlock {
+  crewId: string;
+  roleId: number;
+  start: number;
+  end: number;
+  slots: number;
+}
+
+interface AnalyzerContext {
+  solverInput: SolverInputV2;
+  assignments: AssignmentRecord[];
+  roleById: Map<number, RoleDescriptor>;
+  crewMinutesByRole: Map<string, Map<number, number>>;
+  crewAssignmentsByRole: Map<string, Map<number, AssignmentRecord[]>>;
+  roleAssignments: Map<number, AssignmentRecord[]>;
 }
 
 /**
- * Analyze a schedule against constraints to produce detailed violation report
+ * Analyze solver output generated via SolverInputV2 + CP-SAT assignments.
  */
-export function analyzeConstraintSatisfaction(
-  assignments: HistoricalAssignment[],
-  solverInput: SolverInput
-): HistoricalConstraintAnalysis {
-  
-  const analysis: HistoricalConstraintAnalysis = {
-    assignmentsOutsideStoreHours: 0,
-    shiftsRequiringBreakWithoutBreak: 0,
-    breaksOutsideWindow: 0,
-    hourlyConstraintsViolated: [],
-    windowConstraintsViolated: [],
-    dailyConstraintsViolated: [],
-    roleNonConsecutiveViolations: [],
-    slotSizeViolations: [],
-    preferencesSatisfied: 0,
-    totalPreferences: 0,
-    satisfactionScore: 0
+export function analyzeSolverResult({
+  solverInput,
+  assignments,
+}: {
+  solverInput: SolverInputV2;
+  assignments: AssignmentRecord[];
+}): ConstraintAnalysisSummary {
+  const roleById = new Map<number, RoleDescriptor>();
+  solverInput.roles.forEach((role) => roleById.set(role.id, role));
+
+  const crewAssignmentsByRole = new Map<string, Map<number, AssignmentRecord[]>>();
+  const crewMinutesByRole = new Map<string, Map<number, number>>();
+  const roleAssignments = new Map<number, AssignmentRecord[]>();
+
+  const normalizedAssignments = assignments.slice().sort((a, b) => {
+    if (a.crewId === b.crewId) {
+      return a.startMinute - b.startMinute;
+    }
+    return a.crewId.localeCompare(b.crewId);
+  });
+
+  for (const assignment of normalizedAssignments) {
+    if (!roleAssignments.has(assignment.roleId)) {
+      roleAssignments.set(assignment.roleId, []);
+    }
+    roleAssignments.get(assignment.roleId)!.push(assignment);
+
+    if (!crewAssignmentsByRole.has(assignment.crewId)) {
+      crewAssignmentsByRole.set(assignment.crewId, new Map());
+    }
+    const crewRoles = crewAssignmentsByRole.get(assignment.crewId)!;
+    if (!crewRoles.has(assignment.roleId)) {
+      crewRoles.set(assignment.roleId, []);
+    }
+    crewRoles.get(assignment.roleId)!.push(assignment);
+
+    if (!crewMinutesByRole.has(assignment.crewId)) {
+      crewMinutesByRole.set(assignment.crewId, new Map());
+    }
+    const crewRoleMinutes = crewMinutesByRole.get(assignment.crewId)!;
+    const minutes = assignment.endMinute - assignment.startMinute;
+    crewRoleMinutes.set(
+      assignment.roleId,
+      (crewRoleMinutes.get(assignment.roleId) ?? 0) + minutes
+    );
+  }
+
+  const context: AnalyzerContext = {
+    solverInput,
+    assignments: normalizedAssignments,
+    roleById,
+    crewMinutesByRole,
+    crewAssignmentsByRole,
+    roleAssignments,
   };
 
-  const { store, crew, hourlyRequirements, coverageWindows, crewRoleRequirements, roleMetadata } = solverInput;
+  const violations: ConstraintViolation[] = [];
 
-  // Check 1: Assignments outside store hours
-  assignments.forEach(assignment => {
-    const role = roleMetadata?.find(r => r.role === assignment.role);
-    const allowOutside = role?.allowOutsideStoreHours || false;
-    
-    if (!allowOutside) {
-      if (assignment.startMinutes < store.openMinutesFromMidnight ||
-          assignment.endMinutes > store.closeMinutesFromMidnight) {
-        analysis.assignmentsOutsideStoreHours++;
-      }
+  violations.push(
+    ...checkAssignmentsAgainstStoreHours(context),
+    ...checkCrewShiftBounds(context),
+    ...checkHourlyRequirements(context),
+    ...checkWindowRequirements(context),
+    ...checkDailyRequirements(context),
+    ...checkRoleBlocks(context),
+    ...checkConsecutivePolicies(context),
+    ...checkRoleAccessGuards(context)
+  );
+
+  let preferenceSummary: PreferenceSatisfactionSummary | undefined;
+  const preferenceAnalysis = analyzePreferences(context);
+  if (preferenceAnalysis) {
+    preferenceSummary = preferenceAnalysis.summary;
+    if (preferenceAnalysis.violations.length) {
+      violations.push(...preferenceAnalysis.violations);
     }
-  });
+  }
 
-  // Check 2: Break policy violations
-  crew.forEach(crewMember => {
-    const shiftLength = crewMember.shiftEndMin - crewMember.shiftStartMin;
-    
-    if (shiftLength >= store.reqShiftLengthForBreak && crewMember.canBreak) {
-      // This crew should have a break
-      const breaks = assignments.filter(a => 
-        a.crewId === crewMember.id && a.role === 'MEAL_BREAK'
-      );
-      
-      if (breaks.length === 0) {
-        analysis.shiftsRequiringBreakWithoutBreak++;
-      } else {
-        // Check if break is in the window
-        const breakStart = breaks[0].startMinutes;
-        const breakOffset = breakStart - crewMember.shiftStartMin;
-        
-        if (breakOffset < store.breakWindowStart || breakOffset > store.breakWindowEnd) {
-          analysis.breaksOutsideWindow++;
-        }
-      }
+  const summaryLines = buildSummary(violations, preferenceSummary);
+
+  return {
+    violations,
+    summaryLines,
+    preferenceSummary,
+  };
+}
+
+function checkAssignmentsAgainstStoreHours(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, assignments, roleById } = context;
+  const store = solverInput.store;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const assignment of assignments) {
+    const role = roleById.get(assignment.roleId);
+    const crew = crewById.get(assignment.crewId);
+
+    if (!role || !crew) {
+      violations.push({
+        severity: 'error',
+        category: 'consistency',
+        message: `Assignment references unknown ${!role ? 'role' : 'crew'} (${!role ? assignment.roleId : assignment.crewId}).`,
+        details: { assignment },
+      });
+      continue;
     }
-  });
 
-  // Check 3: Hourly constraints
-  hourlyRequirements.forEach(req => {
-    const hour = req.hour;
-    const startMin = hour * 60;
-    const endMin = (hour + 1) * 60;
-    
-    // Check REGISTER
-    if (req.requiredRegister > 0) {
-      const actualRegister = countCrewAtHour(assignments, 'REGISTER', startMin, endMin);
-      if (actualRegister !== req.requiredRegister) {
-        analysis.hourlyConstraintsViolated.push({
-          hour,
-          role: 'REGISTER',
-          required: req.requiredRegister,
-          actual: actualRegister
+    if (!role.allowOutsideStoreHours) {
+      if (
+        assignment.startMinute < store.openMinutesFromMidnight ||
+        assignment.endMinute > store.closeMinutesFromMidnight
+      ) {
+        violations.push({
+          severity: 'error',
+          category: 'outside-hours',
+          message: `${crew.name} is scheduled for ${role.displayName} outside store hours (${formatTimeRange(
+            assignment.startMinute,
+            assignment.endMinute
+          )}).`,
+          details: { crewId: crew.id, roleId: role.id },
         });
       }
     }
-    
-    // Check PRODUCT
-    if (req.requiredProduct > 0) {
-      const actualProduct = countCrewAtHour(assignments, 'PRODUCT', startMin, endMin);
-      if (actualProduct !== req.requiredProduct) {
-        analysis.hourlyConstraintsViolated.push({
-          hour,
-          role: 'PRODUCT',
-          required: req.requiredProduct,
-          actual: actualProduct
-        });
-      }
-    }
-    
-    // Check PARKING_HELM
-    if (req.requiredParkingHelm > 0) {
-      const actualParking = countCrewAtHour(assignments, 'PARKING_HELM', startMin, endMin);
-      if (actualParking !== req.requiredParkingHelm) {
-        analysis.hourlyConstraintsViolated.push({
-          hour,
-          role: 'PARKING_HELM',
-          required: req.requiredParkingHelm,
-          actual: actualParking
-        });
-      }
-    }
-  });
 
-  // Check 4: Coverage window constraints
-  coverageWindows.forEach(window => {
+    if (
+      assignment.startMinute < crew.shiftStartMin ||
+      assignment.endMinute > crew.shiftEndMin
+    ) {
+      violations.push({
+        severity: 'error',
+        category: 'shift',
+        message: `${crew.name} has ${role.displayName} work outside their shift (${formatTimeRange(
+          assignment.startMinute,
+          assignment.endMinute
+        )}).`,
+        details: { crewId: crew.id, roleId: role.id },
+      });
+    }
+  }
+
+  return violations;
+}
+
+function checkCrewShiftBounds(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, assignments, roleById } = context;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const assignment of assignments) {
+    const crew = crewById.get(assignment.crewId);
+    const role = roleById.get(assignment.roleId);
+    if (!crew || !role) continue;
+
+    if (
+      assignment.startMinute < crew.shiftStartMin ||
+      assignment.endMinute > crew.shiftEndMin
+    ) {
+      violations.push({
+        severity: 'error',
+        category: 'shift',
+        message: `${crew.name} has ${role.displayName} duties outside their shift window (${formatTimeRange(
+          assignment.startMinute,
+          assignment.endMinute
+        )}).`,
+        details: { crewId: crew.id, roleId: role.id },
+      });
+    }
+  }
+
+  return violations;
+}
+
+function checkHourlyRequirements(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, roleAssignments, roleById } = context;
+  const violations: ConstraintViolation[] = [];
+
+  for (const requirement of solverInput.hourlyRequirements) {
+    const role = roleById.get(requirement.roleId);
+    if (!role) continue;
+
+    const startMin = requirement.hour * 60;
+    const endMin = startMin + 60;
+    const set = new Set<string>();
+    for (const assignment of roleAssignments.get(requirement.roleId) ?? []) {
+      if (assignment.startMinute < endMin && assignment.endMinute > startMin) {
+        set.add(assignment.crewId);
+      }
+    }
+
+    if (set.size < requirement.required) {
+      violations.push({
+        severity: 'error',
+        category: 'hourly',
+        message: `${role.displayName} at ${formatHour(requirement.hour)} requires ${requirement.required} crew but only ${set.size} were scheduled.`,
+        details: { roleId: role.id, hour: requirement.hour, required: requirement.required, actual: set.size },
+      });
+    }
+  }
+
+  return violations;
+}
+
+function checkWindowRequirements(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, roleAssignments, roleById } = context;
+  const violations: ConstraintViolation[] = [];
+
+  for (const window of solverInput.windowRequirements) {
+    const role = roleById.get(window.roleId);
+    if (!role) continue;
+
+    let windowCompliant = true;
     for (let hour = window.startHour; hour < window.endHour; hour++) {
       const startMin = hour * 60;
-      const endMin = (hour + 1) * 60;
-      const actual = countCrewAtHour(assignments, window.role, startMin, endMin);
-      
-      if (actual !== window.requiredPerHour) {
-        analysis.windowConstraintsViolated.push({
-          startHour: window.startHour,
-          endHour: window.endHour,
-          role: window.role,
-          required: window.requiredPerHour,
-          actual
+      const endMin = startMin + 60;
+      const set = new Set<string>();
+      for (const assignment of roleAssignments.get(window.roleId) ?? []) {
+        if (assignment.startMinute < endMin && assignment.endMinute > startMin) {
+          set.add(assignment.crewId);
+        }
+      }
+      if (set.size < window.requiredPerHour) {
+        windowCompliant = false;
+        violations.push({
+          severity: 'error',
+          category: 'window',
+          message: `${role.displayName} window ${formatHour(window.startHour)}–${formatHour(window.endHour)} needs ${window.requiredPerHour} per hour but fell short at ${formatHour(hour)}.`,
+          details: { roleId: role.id, hour, required: window.requiredPerHour, actual: set.size },
         });
-        break; // Only report once per window
+        break;
       }
     }
-  });
 
-  // Check 5: Daily crew role requirements
-  crewRoleRequirements.forEach(req => {
-    const crewAssignments = assignments.filter(a => 
-      a.crewId === req.crewId && a.role === req.role
-    );
-    
-    const actualMinutes = crewAssignments.reduce((sum, a) => 
-      sum + (a.endMinutes - a.startMinutes), 0
-    );
-    const actualHours = actualMinutes / 60;
-    
-    if (Math.abs(actualHours - req.requiredHours) > 0.01) {
-      const crewName = crew.find(c => c.id === req.crewId)?.name || req.crewId;
-      analysis.dailyConstraintsViolated.push({
-        crewId: req.crewId,
-        crewName,
-        role: req.role,
-        requiredHours: req.requiredHours,
-        actualHours
+    if (windowCompliant === false) {
+      continue;
+    }
+  }
+
+  return violations;
+}
+
+function checkDailyRequirements(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewMinutesByRole, roleById } = context;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const requirement of solverInput.dailyRequirements) {
+    const crew = crewById.get(requirement.crewId);
+    const role = roleById.get(requirement.roleId);
+    if (!crew || !role) continue;
+
+    const actualMinutes = crewMinutesByRole.get(crew.id)?.get(role.id) ?? 0;
+
+    if (actualMinutes < requirement.requiredMinutes) {
+      violations.push({
+        severity: 'error',
+        category: 'daily',
+        message: `${crew.name} needs ${requirement.requiredMinutes / 60}h on ${role.displayName} but only received ${(actualMinutes / 60).toFixed(1)}h.`,
+        details: { crewId: crew.id, roleId: role.id, requiredMinutes: requirement.requiredMinutes, actualMinutes },
       });
     }
-  });
+  }
 
-  // Check 6: Consecutive role violations
-  roleMetadata?.forEach(meta => {
-    if (meta.slotsMustBeConsecutive) {
-      crew.forEach(crewMember => {
-        const roleAssignments = assignments
-          .filter(a => a.crewId === crewMember.id && a.role === meta.role)
-          .sort((a, b) => a.startMinutes - b.startMinutes);
-        
-        if (roleAssignments.length > 1) {
-          // Check if all assignments form one continuous block
-          let fragments = 1;
-          for (let i = 1; i < roleAssignments.length; i++) {
-            if (roleAssignments[i].startMinutes !== roleAssignments[i-1].endMinutes) {
-              fragments++;
-            }
-          }
-          
-          if (fragments > 1) {
-            analysis.roleNonConsecutiveViolations.push({
-              crewId: crewMember.id,
-              crewName: crewMember.name,
-              role: meta.role,
-              fragmentCount: fragments
-            });
-          }
-        }
-      });
-    }
-  });
+  return violations;
+}
 
-  // Check 7: Min/max slot size violations
-  roleMetadata?.forEach(meta => {
-    if (meta.minSlots || meta.maxSlots) {
-      crew.forEach(crewMember => {
-        const roleAssignments = assignments
-          .filter(a => a.crewId === crewMember.id && a.role === meta.role)
-          .sort((a, b) => a.startMinutes - b.startMinutes);
-        
-        // Find continuous blocks
-        const blocks: Array<{start: number, end: number, slots: number}> = [];
-        let currentBlock: {start: number, end: number} | null = null;
-        
-        roleAssignments.forEach(a => {
-          if (!currentBlock) {
-            currentBlock = { start: a.startMinutes, end: a.endMinutes };
-          } else if (a.startMinutes === currentBlock.end) {
-            currentBlock.end = a.endMinutes;
-          } else {
-            if (currentBlock) {
-              blocks.push({
-                start: currentBlock.start,
-                end: currentBlock.end,
-                slots: (currentBlock.end - currentBlock.start) / store.baseSlotMinutes
-              });
-            }
-            currentBlock = { start: a.startMinutes, end: a.endMinutes };
-          }
+function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewAssignmentsByRole, roleById } = context;
+  const store = solverInput.store;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const [crewId, roleAssignments] of crewAssignmentsByRole.entries()) {
+    const crew = crewById.get(crewId);
+    if (!crew) continue;
+
+    for (const [roleId, assignments] of roleAssignments.entries()) {
+      const role = roleById.get(roleId);
+      if (!role) continue;
+
+      const blocks = buildBlocks(assignments, store.baseSlotMinutes, crewId, roleId);
+      const blockSize = role.blockSize ?? 1;
+
+      // Calculate total blocks for min/max check (across all contiguous blocks)
+      const totalSlots = blocks.reduce((sum, b) => sum + b.slots, 0);
+      const totalBlocks = Math.floor(totalSlots / blockSize);
+
+      // Check min/max on TOTAL blocks for this crew-role, not per contiguous block
+      if (role.minSlots && totalBlocks < role.minSlots) {
+        violations.push({
+          severity: 'warning',
+          category: 'slot-block',
+          message: `${crew.name}'s total ${role.displayName} is ${totalBlocks} blocks but needs at least ${role.minSlots}.`,
+          details: { crewId, roleId, totalBlocks, minRequired: role.minSlots },
         });
-        
-        if (currentBlock) {
-          blocks.push({
-            start: currentBlock.start,
-            end: currentBlock.end,
-            slots: (currentBlock.end - currentBlock.start) / store.baseSlotMinutes
+      }
+      if (role.maxSlots && totalBlocks > role.maxSlots) {
+        violations.push({
+          severity: 'warning',
+          category: 'slot-block',
+          message: `${crew.name}'s total ${role.displayName} is ${totalBlocks} blocks but max is ${role.maxSlots}.`,
+          details: { crewId, roleId, totalBlocks, maxAllowed: role.maxSlots },
+        });
+      }
+
+      // Check block alignment per contiguous block (only for blockSize > 1)
+      for (const block of blocks) {
+        if (blockSize > 1 && block.slots % blockSize !== 0) {
+          violations.push({
+            severity: 'warning',
+            category: 'slot-block',
+            message: `${role.displayName} blocks must align to ${blockSize} slots but ${crew.name} has a ${block.slots}-slot block.`,
+            details: { crewId, roleId, block, requiredBlockSize: blockSize },
           });
         }
-        
-        // Check each block
-        blocks.forEach(block => {
-          if ((meta.minSlots && block.slots < meta.minSlots) ||
-              (meta.maxSlots && block.slots > meta.maxSlots)) {
-            analysis.slotSizeViolations.push({
-              crewId: crewMember.id,
-              crewName: crewMember.name,
-              role: meta.role,
-              blockSlots: block.slots,
-              minSlots: meta.minSlots || 0,
-              maxSlots: meta.maxSlots || 999
+
+        if (role.windowOffsets) {
+          const crewShiftStart = crew.shiftStartMin;
+          const windowStart = crewShiftStart + role.windowOffsets.startOffsetMin;
+          const windowEnd = crewShiftStart + role.windowOffsets.endOffsetMin;
+          if (block.start < windowStart || block.end > windowEnd) {
+            violations.push({
+              severity: 'warning',
+              category: 'slot-block',
+              message: `${role.displayName} for ${crew.name} must land between ${formatTime(windowStart)} and ${formatTime(windowEnd)}, but block spans ${formatTimeRange(block.start, block.end)}.`,
+              details: { crewId, roleId, block, windowStart, windowEnd },
             });
           }
+        }
+      }
+    }
+  }
+
+  return violations;
+}
+
+function checkConsecutivePolicies(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewAssignmentsByRole, roleById } = context;
+  const store = solverInput.store;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const role of solverInput.roles) {
+    const crewRoleAssignments = new Map<string, AssignmentRecord[]>(
+      solverInput.crew.map((crew) => [crew.id, crewAssignmentsByRole.get(crew.id)?.get(role.id) ?? []])
+    );
+
+    for (const [crewId, assignments] of crewRoleAssignments.entries()) {
+      if (assignments.length === 0) continue;
+      const crew = crewById.get(crewId);
+      if (!crew) continue;
+
+      const blocks = buildBlocks(assignments, store.baseSlotMinutes, crewId, role.id);
+      if (role.consecutivePolicy === 'REQUIRED' && blocks.length > 1) {
+        violations.push({
+          severity: 'error',
+          category: 'consecutive',
+          message: `${role.displayName} must be consecutive but ${crew.name} has ${blocks.length} fragments.`,
+          details: { crewId, roleId: role.id, fragments: blocks.length },
         });
-      });
-    }
-  });
-
-  // TODO: Preference satisfaction analysis
-  // This requires crew preferences which are in the database, not in solverInput
-  // Will need to be passed separately or queried
-
-  return analysis;
-}
-
-/**
- * Helper: Count how many crew are assigned to a role during a time period
- */
-function countCrewAtHour(
-  assignments: HistoricalAssignment[],
-  role: string,
-  startMin: number,
-  endMin: number
-): number {
-  const crewSet = new Set<string>();
-  
-  assignments.forEach(a => {
-    if (a.role === role) {
-      // Check if assignment overlaps with the hour
-      if (a.startMinutes < endMin && a.endMinutes > startMin) {
-        crewSet.add(a.crewId);
+      }
+      if (role.consecutivePolicy === 'PREFERRED' && blocks.length > 1) {
+        violations.push({
+          severity: 'warning',
+          category: 'consecutive',
+          message: `${role.displayName} is preferred consecutive yet ${crew.name} has ${blocks.length} fragments.`,
+          details: { crewId, roleId: role.id, fragments: blocks.length },
+        });
       }
     }
-  });
-  
-  return crewSet.size;
+  }
+
+  return violations;
 }
 
-/**
- * Generate a human-readable summary of constraint violations
- */
-export function summarizeAnalysis(analysis: HistoricalConstraintAnalysis): string {
+function checkRoleAccessGuards(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewAssignmentsByRole, roleById } = context;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  for (const [crewId, roleMap] of crewAssignmentsByRole.entries()) {
+    const crew = crewById.get(crewId);
+    if (!crew) continue;
+    const shiftLength = crew.shiftEndMin - crew.shiftStartMin;
+
+    for (const [roleId, assignments] of roleMap.entries()) {
+      const role = roleById.get(roleId);
+      if (!role) continue;
+
+      if (
+        role.minShiftLengthForRoleAccess &&
+        shiftLength < role.minShiftLengthForRoleAccess &&
+        assignments.length > 0
+      ) {
+        violations.push({
+          severity: 'warning',
+          category: 'shift',
+          message: `${crew.name} worked ${role.displayName} but shift (${shiftLength}m) is below the ${role.minShiftLengthForRoleAccess}m minimum for that role.`,
+          details: { crewId, roleId, shiftLength },
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+function buildBlocks(
+  assignments: AssignmentRecord[],
+  baseSlotMinutes: number,
+  crewId: string,
+  roleId: number
+): CrewRoleBlock[] {
+  const sorted = assignments.slice().sort((a, b) => a.startMinute - b.startMinute);
+  const blocks: CrewRoleBlock[] = [];
+  let currentStart: number | null = null;
+  let currentEnd: number | null = null;
+
+  for (const assignment of sorted) {
+    if (currentStart === null || currentEnd === null) {
+      currentStart = assignment.startMinute;
+      currentEnd = assignment.endMinute;
+      continue;
+    }
+
+    if (assignment.startMinute === currentEnd) {
+      currentEnd = assignment.endMinute;
+    } else {
+      blocks.push({
+        crewId,
+        roleId,
+        start: currentStart,
+        end: currentEnd,
+        slots: (currentEnd - currentStart) / baseSlotMinutes,
+      });
+      currentStart = assignment.startMinute;
+      currentEnd = assignment.endMinute;
+    }
+  }
+
+  if (currentStart !== null && currentEnd !== null) {
+    blocks.push({
+      crewId,
+      roleId,
+      start: currentStart,
+      end: currentEnd,
+      slots: (currentEnd - currentStart) / baseSlotMinutes,
+    });
+  }
+
+  return blocks;
+}
+
+interface PreferenceAnalysisResult {
+  summary: PreferenceSatisfactionSummary;
+  violations: ConstraintViolation[];
+}
+
+function analyzePreferences(context: AnalyzerContext): PreferenceAnalysisResult | undefined {
+  const preferences = context.solverInput.preferences ?? [];
+  if (!preferences.length) {
+    return undefined;
+  }
+
+  const crewAssignments = context.crewAssignmentsByRole;
+  const roleById = context.roleById;
+  const crewById = new Map(context.solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const store = context.solverInput.store;
+
+  let totalPreferences = 0;
+  let satisfied = 0;
+  let weightedScore = 0;
+  const violations: ConstraintViolation[] = [];
+
+  for (const preference of preferences) {
+    if (!preference.roleId) {
+      continue;
+    }
+
+    const crew = crewById.get(preference.crewId);
+    const role = roleById.get(preference.roleId);
+    if (!crew || !role) {
+      continue;
+    }
+
+    const assignments = crewAssignments.get(crew.id)?.get(role.id) ?? [];
+    const blocks = buildBlocks(assignments, store.baseSlotMinutes, crew.id, role.id);
+
+    const weight =
+      preference.baseWeight *
+      preference.crewWeight *
+      preference.adaptiveBoost *
+      (preference.bankedWeightBoost ?? 1);
+
+    totalPreferences += 1;
+    const isSatisfied = evaluatePreference(preference, crew, role, assignments, blocks);
+
+    if (isSatisfied) {
+      satisfied += 1;
+      weightedScore += weight;
+    } else {
+      violations.push({
+        severity: 'info',
+        category: 'preference',
+        message: `${crew.name}'s ${formatPreferenceName(preference.preferenceType)} preference for ${role.displayName} wasn't satisfied.`,
+        details: { crewId: crew.id, roleId: role.id, preferenceType: preference.preferenceType },
+      });
+    }
+  }
+
+  if (totalPreferences === 0) {
+    return undefined;
+  }
+
+  return {
+    summary: {
+      totalPreferences,
+      satisfiedPreferences: satisfied,
+      weightedScore,
+    },
+    violations,
+  };
+}
+
+function evaluatePreference(
+  preference: PreferenceDescriptor,
+  crew: CrewDescriptor,
+  role: RoleDescriptor,
+  assignments: AssignmentRecord[],
+  blocks: CrewRoleBlock[]
+): boolean {
+  if (!assignments.length) {
+    return false;
+  }
+
+  switch (preference.preferenceType as PreferenceType) {
+    case 'FAVORITE':
+      return assignments.length > 0;
+    case 'FIRST_HOUR': {
+      const earliestAssignment = assignments.slice().sort((a, b) => a.startMinute - b.startMinute)[0];
+      return earliestAssignment?.roleId === role.id && earliestAssignment.startMinute <= crew.shiftStartMin + 60;
+    }
+    case 'CONSECUTIVE':
+      return blocks.length <= 1;
+    case 'TIMING': {
+      const intValue = preference.intValue ?? 0;
+      const earliestBlock = blocks[0];
+      if (!earliestBlock) return false;
+      const offset = earliestBlock.start - crew.shiftStartMin;
+      if (intValue <= 0) {
+        return offset <= 60; // prefers early
+      }
+      return offset >= 180; // prefers later
+    }
+    default:
+      return false;
+  }
+}
+
+function buildSummary(
+  violations: ConstraintViolation[],
+  preferenceSummary?: PreferenceSatisfactionSummary
+): string[] {
+  const totalErrors = violations.filter((v) => v.severity === 'error').length;
+  const totalWarnings = violations.filter((v) => v.severity === 'warning').length;
+  const totalInfo = violations.filter((v) => v.severity === 'info').length;
+
   const lines: string[] = [];
-  
-  lines.push('CONSTRAINT ANALYSIS SUMMARY');
-  lines.push('═'.repeat(60));
-  
-  const totalViolations = 
-    analysis.assignmentsOutsideStoreHours +
-    analysis.shiftsRequiringBreakWithoutBreak +
-    analysis.breaksOutsideWindow +
-    analysis.hourlyConstraintsViolated.length +
-    analysis.windowConstraintsViolated.length +
-    analysis.dailyConstraintsViolated.length +
-    analysis.roleNonConsecutiveViolations.length +
-    analysis.slotSizeViolations.length;
-  
-  if (totalViolations === 0) {
-    lines.push('✓ All constraints satisfied!');
+  lines.push('Constraint analysis summary');
+  if (totalErrors === 0 && totalWarnings === 0) {
+    lines.push('✓ All hard constraints satisfied');
   } else {
-    lines.push(`✗ Found ${totalViolations} constraint violations:\n`);
-    
-    if (analysis.assignmentsOutsideStoreHours > 0) {
-      lines.push(`  • ${analysis.assignmentsOutsideStoreHours} assignments outside store hours`);
+    if (totalErrors > 0) {
+      lines.push(`✗ ${totalErrors} error${totalErrors === 1 ? '' : 's'} detected`);
     }
-    
-    if (analysis.shiftsRequiringBreakWithoutBreak > 0) {
-      lines.push(`  • ${analysis.shiftsRequiringBreakWithoutBreak} shifts missing required breaks`);
-    }
-    
-    if (analysis.breaksOutsideWindow > 0) {
-      lines.push(`  • ${analysis.breaksOutsideWindow} breaks outside allowed window`);
-    }
-    
-    if (analysis.hourlyConstraintsViolated.length > 0) {
-      lines.push(`  • ${analysis.hourlyConstraintsViolated.length} hourly staffing violations`);
-      analysis.hourlyConstraintsViolated.slice(0, 3).forEach(v => {
-        lines.push(`    - Hour ${v.hour} ${v.role}: need ${v.required}, have ${v.actual}`);
-      });
-      if (analysis.hourlyConstraintsViolated.length > 3) {
-        lines.push(`    ... and ${analysis.hourlyConstraintsViolated.length - 3} more`);
-      }
-    }
-    
-    if (analysis.windowConstraintsViolated.length > 0) {
-      lines.push(`  • ${analysis.windowConstraintsViolated.length} coverage window violations`);
-      analysis.windowConstraintsViolated.slice(0, 3).forEach(v => {
-        lines.push(`    - ${v.role} ${v.startHour}-${v.endHour}: need ${v.required}, have ${v.actual}`);
-      });
-    }
-    
-    if (analysis.dailyConstraintsViolated.length > 0) {
-      lines.push(`  • ${analysis.dailyConstraintsViolated.length} daily role hour violations`);
-      analysis.dailyConstraintsViolated.slice(0, 3).forEach(v => {
-        lines.push(`    - ${v.crewName} ${v.role}: need ${v.requiredHours}h, have ${v.actualHours.toFixed(1)}h`);
-      });
-    }
-    
-    if (analysis.roleNonConsecutiveViolations.length > 0) {
-      lines.push(`  • ${analysis.roleNonConsecutiveViolations.length} consecutive role violations`);
-      analysis.roleNonConsecutiveViolations.slice(0, 3).forEach(v => {
-        lines.push(`    - ${v.crewName} ${v.role}: fragmented into ${v.fragmentCount} blocks`);
-      });
-    }
-    
-    if (analysis.slotSizeViolations.length > 0) {
-      lines.push(`  • ${analysis.slotSizeViolations.length} slot size violations`);
-      analysis.slotSizeViolations.slice(0, 3).forEach(v => {
-        lines.push(`    - ${v.crewName} ${v.role}: ${v.blockSlots} slots (need ${v.minSlots}-${v.maxSlots})`);
-      });
+    if (totalWarnings > 0) {
+      lines.push(`• ${totalWarnings} warning${totalWarnings === 1 ? '' : 's'} detected`);
     }
   }
-  
-  lines.push('═'.repeat(60));
-  
-  if (analysis.totalPreferences > 0) {
-    const satPct = (analysis.preferencesSatisfied / analysis.totalPreferences * 100).toFixed(1);
-    lines.push(`Preferences: ${analysis.preferencesSatisfied}/${analysis.totalPreferences} satisfied (${satPct}%)`);
-    lines.push(`Satisfaction score: ${analysis.satisfactionScore.toFixed(2)}`);
+
+  if (totalInfo > 0) {
+    lines.push(`ℹ️ ${totalInfo} informational note${totalInfo === 1 ? '' : 's'}`);
   }
-  
-  return lines.join('\n');
+
+  if (preferenceSummary) {
+    const percent = preferenceSummary.totalPreferences
+      ? ((preferenceSummary.satisfiedPreferences / preferenceSummary.totalPreferences) * 100).toFixed(1)
+      : '0.0';
+    lines.push(`Preferences satisfied: ${preferenceSummary.satisfiedPreferences}/${preferenceSummary.totalPreferences} (${percent}%)`);
+  }
+
+  return lines;
+}
+
+function formatTime(minutes: number): string {
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = ((hour + 11) % 12) + 1;
+  return `${displayHour}:${minute.toString().padStart(2, '0')} ${suffix}`;
+}
+
+function formatTimeRange(start: number, end: number): string {
+  return `${formatTime(start)} – ${formatTime(end)}`;
+}
+
+function formatHour(hour: number): string {
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = ((hour + 11) % 12) + 1;
+  return `${displayHour}:00 ${suffix}`;
+}
+
+function formatPreferenceName(type: PreferenceType): string {
+  switch (type) {
+    case 'FAVORITE':
+      return 'favorite role';
+    case 'FIRST_HOUR':
+      return 'first-hour';
+    case 'CONSECUTIVE':
+      return 'consecutive';
+    case 'TIMING':
+      return 'timing';
+    default:
+      return type.toLowerCase();
+  }
 }

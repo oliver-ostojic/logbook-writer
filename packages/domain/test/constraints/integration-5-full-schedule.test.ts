@@ -54,7 +54,8 @@ describe('Integration #5: Full Schedule', () => {
       minSlots: 2,
       maxSlots: 16,
       blockSize: 1,
-      slotsMustBeConsecutive: true,
+      consecutivePolicy: 'REQUIRED',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     },
     {
@@ -63,7 +64,8 @@ describe('Integration #5: Full Schedule', () => {
       minSlots: 2,
       maxSlots: 16,
       blockSize: 1,
-      slotsMustBeConsecutive: true,
+      consecutivePolicy: 'REQUIRED',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     },
     {
@@ -72,7 +74,8 @@ describe('Integration #5: Full Schedule', () => {
       minSlots: 2,
       maxSlots: 12,
       blockSize: 1,
-      slotsMustBeConsecutive: true,
+      consecutivePolicy: 'REQUIRED',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     },
     {
@@ -81,7 +84,8 @@ describe('Integration #5: Full Schedule', () => {
       minSlots: 1,
       maxSlots: 2,
       blockSize: 1,
-      slotsMustBeConsecutive: false,
+      consecutivePolicy: 'NONE',
+      consecutiveWeight: 1,
       allowOutsideStoreHours: false,
     },
   ];

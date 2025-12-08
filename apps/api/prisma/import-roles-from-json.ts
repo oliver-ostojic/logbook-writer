@@ -1,4 +1,4 @@
-import { PrismaClient, AssignmentModel } from '@prisma/client';
+import { PrismaClient, AssignmentModel, ConsecutivePolicy } from '@prisma/client';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,11 +47,27 @@ async function loadRoleRecords(jsonPath: string): Promise<RoleJsonRecord[]> {
 }
 
 function toAssignmentModel(value?: string): AssignmentModel {
-  const key = (value || 'UNIVERSAL').toUpperCase();
-  if (Object.values(AssignmentModel).includes(key as AssignmentModel)) {
-    return key as AssignmentModel;
+  switch ((value || '').toUpperCase()) {
+    case 'UNIVERSAL':
+      return AssignmentModel.HOURLY;
+    case 'COVERAGE_WINDOW':
+      return AssignmentModel.HOURLY_WINDOW;
+    case 'CREW_SPECIFIC':
+      return AssignmentModel.DAILY;
+      default:
+        return AssignmentModel.SOLVER;
   }
-  return AssignmentModel.UNIVERSAL;
+}
+
+function toAssignmentModelArray(value?: string): AssignmentModel[] {
+  return [toAssignmentModel(value)];
+}
+
+function toConsecutivePolicy(role: RoleJsonRecord): ConsecutivePolicy {
+  if (role.isConsecutive) {
+    return ConsecutivePolicy.REQUIRED;
+  }
+  return ConsecutivePolicy.NONE;
 }
 
 async function ensureStoresExist(storeIds: number[]): Promise<void> {
@@ -81,7 +97,9 @@ async function main() {
   for (const role of roleRecords) {
     const minSlots = role.minContinuousSlots ?? 1;
     const maxSlots = role.maxContinuousSlots ?? minSlots;
-    const assignmentModel = toAssignmentModel(role.assignmentStrategy);
+  const assignmentModel = toAssignmentModelArray(role.assignmentStrategy);
+  const consecutivePolicy = toConsecutivePolicy(role);
+  const consecutiveWeight = 1;
     try {
       await prisma.role.upsert({
         where: { code: role.code },
@@ -89,7 +107,8 @@ async function main() {
           displayName: role.displayName,
           storeId: role.storeId,
           assignmentModel,
-          slotsMustBeConsecutive: !!role.isConsecutive,
+          consecutivePolicy,
+          consecutiveWeight,
           minSlots,
           maxSlots,
         },
@@ -99,7 +118,8 @@ async function main() {
           code: role.code,
           storeId: role.storeId,
           assignmentModel,
-          slotsMustBeConsecutive: !!role.isConsecutive,
+          consecutivePolicy,
+          consecutiveWeight,
           minSlots,
           maxSlots,
         },

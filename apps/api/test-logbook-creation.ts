@@ -9,14 +9,14 @@ import {
   saveLogbookWithMetadata,
   createRunRecord,
   getLogbookWithDetails,
-  type SolverOutput,
-  type SolverInput
 } from './src/services/logbook-manager';
+import type { SolverOutput } from '@logbook-writer/shared-types';
+import type { SolverInputV2 } from './src/solver2/types';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const testDate = new Date('2025-11-22');
+  const testDate = new Date('2025-11-25');
   const storeId = 768;
 
   console.log('\n🔍 Testing Complete Logbook Workflow\n');
@@ -24,8 +24,8 @@ async function main() {
   console.log(`Date: ${testDate.toISOString().split('T')[0]}\n`);
 
   // Load solver output from file
-  const outputPath = path.join(process.cwd(), 'solver_output_11_22_clean.json');
-  const inputPath = path.join(process.cwd(), 'solver_input_11_22.json');
+  const outputPath = path.join(process.cwd(), 'solver_output_store768_2025-11-25.json');
+  const inputPath = path.join(process.cwd(), 'solver_input_store768_2025-11-25.json');
 
   if (!fs.existsSync(outputPath)) {
     throw new Error(`Solver output file not found: ${outputPath}`);
@@ -50,7 +50,7 @@ async function main() {
   }
 
   const solverOutput: SolverOutput = JSON.parse(cleanOutput);
-  const solverInput: SolverInput = JSON.parse(rawInput);
+  const solverInput: SolverInputV2 = JSON.parse(rawInput);
 
   console.log('✅ Files loaded:');
   console.log(`   Status: ${solverOutput.metadata.status}`);

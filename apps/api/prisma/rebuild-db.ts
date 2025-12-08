@@ -4,7 +4,7 @@
  * Run in order: Store → Roles → Crew → Shifts → Constraints
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AssignmentModel } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -19,6 +19,7 @@ async function main() {
     create: {
       id: 768,
       name: 'Dr. Phillips',
+      company: { create: { name: 'Default Company' } },
       timezone: 'America/New_York',
       baseSlotMinutes: 30,
       openMinutesFromMidnight: 480,  // 8am
@@ -33,21 +34,24 @@ async function main() {
   // 2. Create Roles with new assignment models
   console.log('2. Creating roles...');
   const roles = [
-    { code: 'REGISTER', displayName: 'Register', assignmentModel: 'HOURLY' as const, minSlots: 4, maxSlots: 8, blockSize: 2 },
-    { code: 'PRODUCT', displayName: 'Product', assignmentModel: 'HOURLY' as const, minSlots: 4, maxSlots: 8, blockSize: 1, allowOutsideStoreHours: true },
-    { code: 'PARKING_HELM', displayName: 'Parking Helms', assignmentModel: 'HOURLY' as const, minSlots: 1, maxSlots: 1, blockSize: 1 },
-    { code: 'BREAK', displayName: 'Break', assignmentModel: 'HOURLY' as const, minSlots: 1, maxSlots: 1, blockSize: 1, slotsMustBeConsecutive: true },
-    { code: 'DEMO', displayName: 'Demo', assignmentModel: 'HOURLY_WINDOW' as const, minSlots: 0, maxSlots: 4, blockSize: 2 },
-    { code: 'WINE_DEMO', displayName: 'Wine Demo', assignmentModel: 'HOURLY_WINDOW' as const, minSlots: 0, maxSlots: 4, blockSize: 2 },
-    { code: 'ORDER_WRITER', displayName: 'Order Writer', assignmentModel: 'DAILY' as const, minSlots: 0, maxSlots: 4, blockSize: 1, slotsMustBeConsecutive: true },
-    { code: 'ART', displayName: 'Art', assignmentModel: 'DAILY' as const, minSlots: 0, maxSlots: 8, blockSize: 1, slotsMustBeConsecutive: true },
+    { code: 'REGISTER', displayName: 'Register', assignmentModel: 'HOURLY' as const, minSlots: 4, maxSlots: 8, blockSize: 2, consecutivePolicy: 'NONE' as const, consecutiveWeight: 1 },
+    { code: 'PRODUCT', displayName: 'Product', assignmentModel: 'HOURLY' as const, minSlots: 4, maxSlots: 8, blockSize: 1, allowOutsideStoreHours: true, consecutivePolicy: 'NONE' as const, consecutiveWeight: 1 },
+    { code: 'PARKING_HELM', displayName: 'Parking Helms', assignmentModel: 'HOURLY' as const, minSlots: 1, maxSlots: 1, blockSize: 1, consecutivePolicy: 'NONE' as const, consecutiveWeight: 1 },
+    { code: 'BREAK', displayName: 'Break', assignmentModel: 'HOURLY' as const, minSlots: 1, maxSlots: 1, blockSize: 1, consecutivePolicy: 'REQUIRED' as const, consecutiveWeight: 1 },
+    { code: 'DEMO', displayName: 'Demo', assignmentModel: 'HOURLY_WINDOW' as const, minSlots: 0, maxSlots: 4, blockSize: 2, consecutivePolicy: 'NONE' as const, consecutiveWeight: 1 },
+    { code: 'WINE_DEMO', displayName: 'Wine Demo', assignmentModel: 'HOURLY_WINDOW' as const, minSlots: 0, maxSlots: 4, blockSize: 2, consecutivePolicy: 'NONE' as const, consecutiveWeight: 1 },
+    { code: 'ORDER_WRITER', displayName: 'Order Writer', assignmentModel: 'DAILY' as const, minSlots: 0, maxSlots: 4, blockSize: 1, consecutivePolicy: 'REQUIRED' as const, consecutiveWeight: 1 },
+    { code: 'ART', displayName: 'Art', assignmentModel: 'DAILY' as const, minSlots: 0, maxSlots: 8, blockSize: 1, consecutivePolicy: 'REQUIRED' as const, consecutiveWeight: 1 },
   ];
 
   for (const roleData of roles) {
+    const assignmentModelArray: AssignmentModel[] = Array.isArray(roleData.assignmentModel)
+      ? roleData.assignmentModel
+      : [roleData.assignmentModel] as AssignmentModel[];
     const role = await prisma.role.upsert({
       where: { code: roleData.code },
-      update: roleData,
-      create: { ...roleData, storeId: 768 },
+      update: { ...roleData, assignmentModel: assignmentModelArray },
+      create: { ...roleData, assignmentModel: assignmentModelArray, storeId: 768 },
     });
     console.log(`   ✓ ${role.code.padEnd(15)} ${role.assignmentModel}`);
   }

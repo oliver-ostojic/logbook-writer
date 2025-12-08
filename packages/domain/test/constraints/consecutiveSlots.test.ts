@@ -21,7 +21,7 @@ const roleRequiringConsecutive: RoleConfig = {
   minSlots: 2,
   maxSlots: 16,
   blockSize: 1,
-  slotsMustBeConsecutive: true,
+  consecutivePolicy: 'REQUIRED',
   allowOutsideStoreHours: false,
 };
 
@@ -31,7 +31,7 @@ const roleAllowingSplit: RoleConfig = {
   minSlots: 2,
   maxSlots: 4,
   blockSize: 1,
-  slotsMustBeConsecutive: false,
+  consecutivePolicy: 'NONE',
   allowOutsideStoreHours: false,
 };
 
@@ -64,7 +64,7 @@ describe('validateConsecutiveSlots', () => {
 });
 
 describe('validateConsecutiveSlotsForCrewRole', () => {
-  describe('when slotsMustBeConsecutive is false', () => {
+  describe('when policy allows non-consecutive blocks', () => {
     it('should allow single assignment', () => {
       const assignments: SolverAssignment[] = [
         {
@@ -102,7 +102,7 @@ describe('validateConsecutiveSlotsForCrewRole', () => {
     });
   });
 
-  describe('when slotsMustBeConsecutive is true', () => {
+  describe('when policy requires consecutive slots', () => {
     it('should allow empty assignments array', () => {
       const result = validateConsecutiveSlotsForCrewRole([], mockStore, roleRequiringConsecutive);
       expect(result.valid).toBe(true);

@@ -6,8 +6,11 @@ import { registerRoleRoutes } from './routes/roles';
 import { registerWizardRoutes } from './routes/wizard';
 import { registerScheduleRoutes } from './routes/schedule';
 import { registerSolverRoutes } from './routes/solver';
+import { registerSolverV2Routes } from './routes/solver2';
 import { registerTuningRoutes } from './routes/tuning';
 import { solverInputRoutes } from './routes/solver-input';
+import { registerShiftRoutes } from './routes/shifts';
+import { registerConstraintRoutes } from './routes/constraints';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
@@ -20,8 +23,11 @@ export async function buildServer() {
   registerWizardRoutes(app);
   registerScheduleRoutes(app);
   registerSolverRoutes(app);
+  registerSolverV2Routes(app);
   registerTuningRoutes(app);
   await app.register(solverInputRoutes);
+  registerShiftRoutes(app);
+  registerConstraintRoutes(app);
 
   return app;
 }

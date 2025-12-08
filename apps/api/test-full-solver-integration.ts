@@ -73,7 +73,7 @@ async function main() {
   console.log(`✅ Found ${roles.length} roles:`);
   roles.forEach((role) => {
     console.log(`   - ${role.displayName} (${role.code})`);
-    console.log(`     Model: ${role.assignmentModel}, Consecutive: ${role.slotsMustBeConsecutive}`);
+    console.log(`     Model: ${role.assignmentModel}, Consecutive Policy: ${role.consecutivePolicy} (weight ${role.consecutiveWeight})`);
     console.log(`     Slots: ${role.minSlots}-${role.maxSlots}, BlockSize: ${role.blockSize}`);
   });
 
@@ -275,20 +275,25 @@ async function main() {
       endHour: c.endHour,
       requiredPerHour: c.requiredPerHour,
     })),
-    roleMetadata: roles.map((r) => ({
-      role: roleCodeMap[r.code] || r.code as TaskType,
-      assignmentModel: r.assignmentModel as any,
-      allowOutsideStoreHours: r.allowOutsideStoreHours,
-      slotsMustBeConsecutive: r.slotsMustBeConsecutive,
-      minSlots: r.minSlots,
-      maxSlots: r.maxSlots,
-      blockSize: r.blockSize,
-      isConsecutive: r.slotsMustBeConsecutive,
-      isUniversal: r.assignmentModel === 'UNIVERSAL',
-      isBreakRole: r.code === 'MEAL_BREAK',
-      isParkingRole: r.code === 'PARKING_HELM',
-      detail: r.displayName,
-    })),
+    roleMetadata: roles.map((r) => {
+      const normalizedAssignmentModel = Array.isArray(r.assignmentModel)
+        ? r.assignmentModel[0]
+        : r.assignmentModel;
+      return {
+        role: roleCodeMap[r.code] || r.code as TaskType,
+  assignmentModel: normalizedAssignmentModel as any,
+        allowOutsideStoreHours: r.allowOutsideStoreHours,
+        consecutivePolicy: r.consecutivePolicy,
+        consecutiveWeight: r.consecutiveWeight,
+        minSlots: r.minSlots,
+        maxSlots: r.maxSlots,
+        blockSize: r.blockSize,
+  isUniversal: String(normalizedAssignmentModel) === 'UNIVERSAL',
+        isBreakRole: r.code === 'MEAL_BREAK',
+        isParkingRole: r.code === 'PARKING_HELM',
+        detail: r.displayName,
+      };
+    }),
   };
 
   // Build preferences array

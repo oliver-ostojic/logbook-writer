@@ -2,7 +2,7 @@ import type { SolverAssignment, StoreConfig, RoleConfig, ValidationResult } from
 import { minutesToSlotIndex } from './slotAlignment';
 
 /**
- * Validates that when role.slotsMustBeConsecutive is true,
+ * Validates that when role.consecutivePolicy === 'REQUIRED',
  * all slots in the assignment form a continuous block with no gaps.
  * 
  * Example:
@@ -14,8 +14,10 @@ export function validateConsecutiveSlots(
   store: StoreConfig,
   role: RoleConfig
 ): ValidationResult {
+  const requiresConsecutive = role.consecutivePolicy === 'REQUIRED';
+
   // If role doesn't require consecutive slots, this constraint doesn't apply
-  if (!role.slotsMustBeConsecutive) {
+  if (!requiresConsecutive) {
     return {
       valid: true,
       violations: [],
@@ -44,19 +46,21 @@ export function validateConsecutiveSlots(
 
 /**
  * Validates multiple assignments for the same crew/role combination
- * to ensure they don't create gaps when slotsMustBeConsecutive is true.
+ * to ensure they don't create gaps when the consecutive policy requires it.
  * 
  * This is the key validator for splitting behavior:
- * - When slotsMustBeConsecutive=true: All assignments for crew+role must form ONE continuous block
- * - When slotsMustBeConsecutive=false: Assignments can be split with gaps
+ * - When policy=REQUIRED: All assignments for crew+role must form ONE continuous block
+ * - When policy=NONE/PREFERRED: Assignments can be split with gaps
  */
 export function validateConsecutiveSlotsForCrewRole(
   assignments: SolverAssignment[],
   store: StoreConfig,
   role: RoleConfig
 ): ValidationResult {
+  const requiresConsecutive = role.consecutivePolicy === 'REQUIRED';
+
   // If role doesn't require consecutive slots, splitting is allowed
-  if (!role.slotsMustBeConsecutive) {
+  if (!requiresConsecutive) {
     return {
       valid: true,
       violations: [],

@@ -49,7 +49,14 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
           className="overflow-hidden rounded-md lg:flex lg:rounded-none lg:border-r lg:border-l lg:border-gray-200"
         >
           {steps.map((step, stepIdx) => (
-            <li key={step.id} className="relative overflow-hidden lg:flex-1">
+            <li
+              key={step.id}
+              className={classNames(
+                // On small screens, hide all but the current step. On lg+, show all steps horizontally
+                step.status !== 'current' ? 'hidden lg:block' : 'block',
+                'relative overflow-hidden lg:flex-1'
+              )}
+            >
               <div
                 className={classNames(
                   stepIdx === 0 ? 'rounded-t-md border-b-0' : '',
@@ -99,7 +106,8 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
                       </span>
                       <span className="mt-0.5 ml-4 flex min-w-0 flex-col">
                         <span className={classNames('text-base font-medium', 'text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]')} style={{ fontFamily: 'var(--font-heading)' }}>{step.name}</span>
-                        <span className="text-sm font-normal text-gray-500" style={{ fontFamily: 'var(--font-sans)' }}>{step.description}</span>
+                        {/* Hide description on very small screens to reduce height */}
+                        <span className="hidden sm:block text-sm font-normal text-gray-500" style={{ fontFamily: 'var(--font-sans)' }}>{step.description}</span>
                       </span>
                     </span>
                   </div>

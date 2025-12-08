@@ -16,3 +16,6 @@ export * from './solver';
 
 // Export constraint testing types
 export * from './constraint-testing';
+
+// Export constraint analysis types
+export * from './constraint-analysis';
