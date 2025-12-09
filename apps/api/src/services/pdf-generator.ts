@@ -298,8 +298,8 @@ export async function generateLogbookPdf(
     
     // Alternating row color for shift cells
     const shiftRowBg = currentRowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
-    // Empty cells get light grey background
-    const emptyBg = '#f3f4f6';
+    // Empty cells get white background
+    const emptyBg = '#ffffff';
     
     // Check if name fits on one line
     const nameWidth = nameColumnWidth - 30;
@@ -365,7 +365,7 @@ export async function generateLogbookPdf(
         doc.rect(x, rowY, slotWidth, rowHeight)
           .fill(`rgb(${tintedColor[0]}, ${tintedColor[1]}, ${tintedColor[2]})`);
       } else {
-        // Empty cell - grey background
+        // Empty cell - white background
         doc.rect(x, rowY, slotWidth, rowHeight)
           .fill(emptyBg);
       }
