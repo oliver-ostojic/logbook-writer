@@ -15,7 +15,7 @@ from .constraints import ModelEnvelope
 from .time_grid import TimeGrid
 from .variables import AssignmentVariable, VariableBundle
 
-SLOT_BASED_ASSIGNMENT_MODELS = {"HOURLY", "HOURLY_WINDOW", "SOLVER"}
+SLOT_BASED_ASSIGNMENT_MODELS = {"HOURLY", "HOURLY_OR_WINDOW", "SOLVER"}
 
 
 def _parse_positive_float(value: Optional[str], fallback: float) -> float:

@@ -3,10 +3,10 @@ import type {
   SolverInputV2,
   StoreDescriptor,
   RoleDescriptor,
+  RoleFamilyDescriptor,
   CrewDescriptor,
-  HourlyRequirementDescriptor,
-  WindowRequirementDescriptor,
-  DailyRequirementDescriptor,
+  CoverageWindowDescriptor,
+  CrewQuotaDescriptor,
   PreferenceDescriptor,
   AssignmentModelValue,
   BankedPreferenceDescriptor,
@@ -14,7 +14,7 @@ import type {
   CrewRoleFairnessHistoryDescriptor,
 } from './types';
 import type { PreferenceType } from '@logbook-writer/shared-types';
-import { resolvePreferenceAssignmentModels } from './preference-assignment-models';
+import { resolvePreferenceAssignmentModel } from './preference-assignment-models';
 
 const prisma = new PrismaClient();
 
@@ -51,7 +51,7 @@ type CrewPreferenceRecordWithRole = {
   crewId: string;
   crewWeight: number;
   intValue: number | null;
-  rolePreference: {
+  RolePreference: {
     id: number;
     roleId: number | null;
     preferenceType: PreferenceType;
@@ -98,38 +98,48 @@ export async function buildSolverInputV2(
     select: {
       id: true,
       timezone: true,
-      baseSlotMinutes: true,
       openMinutesFromMidnight: true,
       closeMinutesFromMidnight: true,
     },
   });
   const rolesPromise = prisma.role.findMany({
     where: { storeId },
+    include: {
+      RoleFamily: true,
+    },
+  });
+  const roleFamiliesPromise = prisma.roleFamily.findMany({
+    where: {
+      Role: {
+        some: { storeId },
+      },
+    },
+    include: {
+      Role: {
+        where: { storeId },
+        select: { id: true },
+      },
+    },
   });
   const crewPromise = prisma.crew.findMany({
     where: { storeId },
     include: {
-      crewRoles: { select: { roleId: true } },
-      shifts: {
+      CrewRole: { select: { roleId: true } },
+      Shift: {
         where: { date: targetDate },
         select: { startMin: true, endMin: true },
       },
     },
   });
-  const hourlyConstraintsPromise = prisma.hourlyRoleConstraint.findMany({
+  const coverageWindowsPromise = prisma.roleCoverageWindow.findMany({
     where: { storeId, date: targetDate },
-    select: { roleId: true, hour: true, requiredPerHour: true },
-    orderBy: [{ hour: 'asc' }, { roleId: 'asc' }],
+    select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+    orderBy: [{ startMin: 'asc' }, { roleId: 'asc' }],
   });
-  const windowConstraintsPromise = prisma.windowRoleConstraint.findMany({
+  const crewQuotasPromise = prisma.crewRoleQuota.findMany({
     where: { storeId, date: targetDate },
-    select: { roleId: true, startHour: true, endHour: true, requiredPerHour: true },
-    orderBy: [{ roleId: 'asc' }],
-  });
-  const dailyConstraintsPromise = prisma.dailyRoleConstraint.findMany({
-    where: { storeId, date: targetDate },
-    select: { roleId: true, crewId: true, requiredHours: true },
-    orderBy: [{ crewId: 'asc' }],
+    select: { roleId: true, crewId: true, startMin: true, endMin: true, requiredMin: true },
+    orderBy: [{ crewId: 'asc' }, { roleId: 'asc' }],
   });
   const fairnessTrackersPromise = prisma.roleFairnessTracker.findMany({
     where: { storeId },
@@ -149,32 +159,35 @@ export async function buildSolverInputV2(
 
   type FairnessTrackerRecord = Awaited<typeof fairnessTrackersPromise>[number];
   type FairnessHistoryRecord = Awaited<typeof fairnessHistoryPromise>[number];
+  type RoleFamilyRecord = Awaited<typeof roleFamiliesPromise>[number];
+  type CoverageWindowRecord = Awaited<typeof coverageWindowsPromise>[number];
+  type CrewQuotaRecord = Awaited<typeof crewQuotasPromise>[number];
 
   const [
     storeRecord,
     roleRecords,
+    roleFamilyRecords,
     crewRecords,
-    hourlyConstraints,
-    windowConstraints,
-    dailyConstraints,
+    coverageWindowRecords,
+    crewQuotaRecords,
     fairnessTrackerRecords,
     fairnessHistoryRecords,
   ] = (await Promise.all([
     storePromise,
     rolesPromise,
+    roleFamiliesPromise,
     crewPromise,
-    hourlyConstraintsPromise,
-    windowConstraintsPromise,
-    dailyConstraintsPromise,
+    coverageWindowsPromise,
+    crewQuotasPromise,
     fairnessTrackersPromise,
     fairnessHistoryPromise,
   ])) as [
     Awaited<typeof storePromise>,
     Awaited<typeof rolesPromise>,
+    Awaited<typeof roleFamiliesPromise>,
     Awaited<typeof crewPromise>,
-    Awaited<typeof hourlyConstraintsPromise>,
-    Awaited<typeof windowConstraintsPromise>,
-    Awaited<typeof dailyConstraintsPromise>,
+    Awaited<typeof coverageWindowsPromise>,
+    Awaited<typeof crewQuotasPromise>,
     Awaited<typeof fairnessTrackersPromise>,
     Awaited<typeof fairnessHistoryPromise>,
   ];
@@ -214,24 +227,27 @@ export async function buildSolverInputV2(
   const store: StoreDescriptor = {
     id: storeRecord.id,
     timezone: storeRecord.timezone,
-    baseSlotMinutes: storeRecord.baseSlotMinutes,
     openMinutesFromMidnight: storeRecord.openMinutesFromMidnight,
     closeMinutesFromMidnight: storeRecord.closeMinutesFromMidnight,
   };
 
-  const roles: RoleDescriptor[] = roleRecords.map((role) => {
-    const assignmentModels: AssignmentModelValue[] = (role.assignmentModel?.length
-      ? role.assignmentModel
-      : ['HOURLY']) as AssignmentModelValue[];
+  // Build role families
+  const roleFamilies: RoleFamilyDescriptor[] = roleFamilyRecords.map((family: RoleFamilyRecord) => ({
+    id: family.id,
+    name: family.name,
+    minMinutes: family.minMinutes,
+    maxMinutes: family.maxMinutes,
+    roleIds: family.Role.map((r: { id: number }) => r.id),
+  }));
 
-  const windowStartOffsetMin = (role as any).windowStartOffsetMin ?? null;
-  const windowEndOffsetMin = (role as any).windowEndOffsetMin ?? null;
-  const minShiftLengthForRoleAccess = (role as any).minShiftLengthForRoleAccess ?? null;
+  const roles: RoleDescriptor[] = roleRecords.map((role) => {
+    const assignmentModel: AssignmentModelValue = role.assignmentModel ?? 'WINDOW';
+
     const windowOffsets =
-      windowStartOffsetMin !== null && windowEndOffsetMin !== null
+      role.windowStartOffsetMin !== null && role.windowEndOffsetMin !== null
         ? {
-            startOffsetMin: windowStartOffsetMin,
-            endOffsetMin: windowEndOffsetMin,
+            startOffsetMin: role.windowStartOffsetMin,
+            endOffsetMin: role.windowEndOffsetMin,
           }
         : undefined;
 
@@ -241,13 +257,13 @@ export async function buildSolverInputV2(
       id: role.id,
       code: role.code,
       displayName: role.displayName,
-      assignmentModels,
-      minSlots: role.minSlots,
-      maxSlots: role.maxSlots,
-      blockSize: role.blockSize,
+      assignmentModel,
+      taskLength: role.taskLength,
+      canSplitForGaps: role.canSplitForGaps,
+      familyId: role.familyId,
       allowOutsideStoreHours: role.allowOutsideStoreHours,
-  consecutivePolicy: role.consecutivePolicy,
-      minShiftLengthForRoleAccess,
+      consecutivePolicy: role.consecutivePolicy ?? 'NONE',
+      minShiftLengthForRoleAccess: role.minShiftLengthForRoleAccess,
       windowOffsets,
       ...(fairnessConfig
         ? {
@@ -266,7 +282,7 @@ export async function buildSolverInputV2(
   }
 
   const crew: CrewDescriptor[] = crewRecords
-    .filter((crew) => crew.shifts.length > 0 || shiftOverrideMap.has(crew.id))
+    .filter((crew) => crew.Shift.length > 0 || shiftOverrideMap.has(crew.id))
     .map((crew) => {
       const override = shiftOverrideMap.get(crew.id);
       let shiftStartMin: number | null = null;
@@ -275,8 +291,8 @@ export async function buildSolverInputV2(
       if (override) {
         shiftStartMin = override.shiftStartMin;
         shiftEndMin = override.shiftEndMin;
-      } else if (crew.shifts.length > 0) {
-        const shift = crew.shifts.reduce((earliest, current) =>
+      } else if (crew.Shift.length > 0) {
+        const shift = crew.Shift.reduce((earliest, current) =>
           current.startMin < earliest.startMin ? current : earliest
         );
         shiftStartMin = shift.startMin;
@@ -290,29 +306,27 @@ export async function buildSolverInputV2(
       return {
         id: crew.id,
         name: crew.name,
-        roleIds: crew.crewRoles.map((cr) => cr.roleId),
+        roleIds: crew.CrewRole.map((cr) => cr.roleId),
         shiftStartMin,
         shiftEndMin,
       } satisfies CrewDescriptor;
     });
 
-  const hourlyRequirements: HourlyRequirementDescriptor[] = hourlyConstraints.map((constraint) => ({
-    roleId: constraint.roleId,
-    hour: constraint.hour,
-    required: constraint.requiredPerHour,
+  // Build coverage windows (replaces hourly + window constraints)
+  const coverageWindows: CoverageWindowDescriptor[] = coverageWindowRecords.map((record: CoverageWindowRecord) => ({
+    roleId: record.roleId,
+    startMin: record.startMin,
+    endMin: record.endMin,
+    crewPerTaskLength: record.crewPerTaskLength,
   }));
 
-  const windowRequirements: WindowRequirementDescriptor[] = windowConstraints.map((constraint) => ({
-    roleId: constraint.roleId,
-    startHour: constraint.startHour,
-    endHour: constraint.endHour,
-    requiredPerHour: constraint.requiredPerHour,
-  }));
-
-  const dailyRequirements: DailyRequirementDescriptor[] = dailyConstraints.map((constraint) => ({
-    roleId: constraint.roleId,
-    crewId: constraint.crewId,
-    requiredMinutes: Math.round(constraint.requiredHours * 60),
+  // Build crew quotas (replaces daily constraints)
+  const crewQuotas: CrewQuotaDescriptor[] = crewQuotaRecords.map((record: CrewQuotaRecord) => ({
+    roleId: record.roleId,
+    crewId: record.crewId,
+    startMin: record.startMin,
+    endMin: record.endMin,
+    requiredMin: record.requiredMin,
   }));
 
   const crewIds = crew.map((c) => c.id);
@@ -326,7 +340,7 @@ export async function buildSolverInputV2(
           enabled: true,
         },
         include: {
-          rolePreference: {
+          RolePreference: {
             select: {
               id: true,
               roleId: true,
@@ -361,30 +375,34 @@ export async function buildSolverInputV2(
     preferenceRecords.map(async (record) => {
       const adaptiveBoost = await calculateAdaptiveBoost(
         record.crewId,
-        record.rolePreference.id,
+        record.RolePreference.id,
         lookbackDays,
         targetDate
       );
 
-      const assignmentModels = resolvePreferenceAssignmentModels(
-        record.rolePreference.roleId,
+      const assignmentModel = resolvePreferenceAssignmentModel(
+        record.RolePreference.roleId,
         roleLookup
       );
 
+      if (assignmentModel === null) {
+        throw new Error(`Role ${record.RolePreference.roleId} not found for preference`);
+      }
+
       const credit = bankedPreferenceLookup.get(
-        preferenceMapKey(record.crewId, record.rolePreference.id)
+        preferenceMapKey(record.crewId, record.RolePreference.id)
       );
 
       const descriptor: PreferenceDescriptor = {
         crewId: record.crewId,
-        roleId: record.rolePreference.roleId,
-        preferenceType: record.rolePreference.preferenceType as PreferenceType,
-        baseWeight: record.rolePreference.baseWeight,
+        roleId: record.RolePreference.roleId,
+        preferenceType: record.RolePreference.preferenceType as PreferenceType,
+        baseWeight: record.RolePreference.baseWeight,
         crewWeight: record.crewWeight,
         adaptiveBoost,
         intValue: record.intValue ?? undefined,
-        rolePreferenceId: record.rolePreference.id,
-        assignmentModels,
+        rolePreferenceId: record.RolePreference.id,
+        assignmentModel,
       } satisfies PreferenceDescriptor;
 
       if (credit) {
@@ -405,11 +423,11 @@ export async function buildSolverInputV2(
 
   return {
     store,
+    roleFamilies,
     roles,
     crew,
-    hourlyRequirements,
-    windowRequirements,
-    dailyRequirements,
+    coverageWindows,
+    crewQuotas,
     preferences,
     bankedPreferences,
     fairnessTrackers,

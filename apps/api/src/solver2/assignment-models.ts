@@ -1,26 +1,24 @@
 import type { AssignmentModelValue, RoleDescriptor } from './types';
 
-export function getRoleAssignmentModels(role: RoleDescriptor | undefined): AssignmentModelValue[] {
+export function getRoleAssignmentModel(role: RoleDescriptor | undefined): AssignmentModelValue | null {
   if (!role) {
-    return [];
+    return null;
   }
-  return role.assignmentModels && role.assignmentModels.length > 0
-    ? role.assignmentModels
-    : (['HOURLY'] as AssignmentModelValue[]);
+  return role.assignmentModel ?? null;
 }
 
 export function roleSupportsAssignmentModel(
   role: RoleDescriptor | undefined,
   assignmentModel: AssignmentModelValue
 ): boolean {
-  const models = getRoleAssignmentModels(role);
-  return models.includes(assignmentModel);
+  const model = getRoleAssignmentModel(role);
+  return model !== null && model === assignmentModel;
 }
 
 export function roleSupportsAnyAssignmentModel(
   role: RoleDescriptor | undefined,
   assignmentModels: AssignmentModelValue[]
 ): boolean {
-  const models = getRoleAssignmentModels(role);
-  return assignmentModels.some((model) => models.includes(model));
+  const model = getRoleAssignmentModel(role);
+  return model !== null && assignmentModels.includes(model);
 }

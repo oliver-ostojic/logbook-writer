@@ -68,9 +68,8 @@ export interface LogbookMetadata {
     totalHours: number;
   };
   constraints: {
-    hourlyConstraints: number;
-    windowConstraints: number;
-    dailyConstraints: number;
+    coverageWindows: number;
+    crewQuotas: number;
   };
   preferences: {
     total: number;
@@ -78,6 +77,7 @@ export interface LogbookMetadata {
     averageSatisfaction: number;
   };
   generatedAt: string;
+  inputHash?: string; // Hash of shifts + constraints for change detection
 }
 
 // Map SolverStatus to RunStatus
@@ -147,7 +147,7 @@ export async function saveLogbookWithMetadata(
   const rolePreferences = await prisma.rolePreference.findMany({
     where: { storeId },
     include: {
-      crewPreferences: {
+      CrewPreference: {
         where: { enabled: true }
       }
     }
@@ -155,7 +155,7 @@ export async function saveLogbookWithMetadata(
 
   const preferenceRecords: PreferenceRecord[] = [];
   for (const rp of rolePreferences) {
-    for (const cp of rp.crewPreferences) {
+    for (const cp of rp.CrewPreference) {
       preferenceRecords.push({
         id: rp.id,
         crewId: cp.crewId,
@@ -189,16 +189,38 @@ export async function saveLogbookWithMetadata(
     ? totalWeightedSatisfaction / totalWeightApplied 
     : 0;
 
-  // Count constraints
-  const hourlyConstraintCount = await prisma.hourlyRoleConstraint.count({
+  // Count constraints (using new schema)
+  const coverageWindowCount = await prisma.roleCoverageWindow.count({
     where: { storeId, date }
   });
-  const windowConstraintCount = await prisma.windowRoleConstraint.count({
+  const crewQuotaCount = await prisma.crewRoleQuota.count({
     where: { storeId, date }
   });
-  const dailyConstraintCount = await prisma.dailyRoleConstraint.count({
-    where: { storeId, date }
+
+  // Compute input hash for change detection
+  const [shiftsForHash, coverageWindowsForHash, crewQuotasForHash] = await Promise.all([
+    prisma.shift.findMany({
+      where: { storeId, date },
+      select: { crewId: true, startMin: true, endMin: true },
+      orderBy: [{ crewId: 'asc' }, { startMin: 'asc' }],
+    }),
+    prisma.roleCoverageWindow.findMany({
+      where: { storeId, date },
+      select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+      orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
+    }),
+    prisma.crewRoleQuota.findMany({
+      where: { storeId, date },
+      select: { roleId: true, crewId: true, startMin: true, endMin: true, requiredMin: true },
+      orderBy: [{ roleId: 'asc' }, { crewId: 'asc' }],
+    }),
+  ]);
+  const inputData = JSON.stringify({ 
+    shifts: shiftsForHash, 
+    coverageWindows: coverageWindowsForHash, 
+    crewQuotas: crewQuotasForHash 
   });
+  const inputHash = crypto.createHash('sha256').update(inputData).digest('hex').substring(0, 16);
 
   // Guard: ensure assignments exist
   const assignmentsList = solverOutput.assignments || [];
@@ -226,9 +248,8 @@ export async function saveLogbookWithMetadata(
       totalHours: Math.round(totalHours * 10) / 10,
     },
     constraints: {
-      hourlyConstraints: hourlyConstraintCount,
-      windowConstraints: windowConstraintCount,
-      dailyConstraints: dailyConstraintCount,
+      coverageWindows: coverageWindowCount,
+      crewQuotas: crewQuotaCount,
     },
     preferences: {
       total: satisfactionResults.length,
@@ -236,6 +257,7 @@ export async function saveLogbookWithMetadata(
       averageSatisfaction: Math.round(averageSatisfaction * 1000) / 1000,
     },
     generatedAt: new Date().toISOString(),
+    inputHash, // Hash of shifts + constraints for change detection
   };
 
   // Find or create logbook - only reuse DRAFT logbooks
@@ -366,24 +388,24 @@ export async function getLogbookWithDetails(
   return await prisma.logbook.findUnique({
     where: { id: logbookId },
     include: {
-      assignments: {
+      Assignment: {
         include: {
-          role: true,
-          crew: true,
+          Role: true,
+          Crew: true,
         }
       },
-      preferenceSatisfactions: {
+      PreferenceSatisfaction: {
         include: {
-          rolePreference: {
+          RolePreference: {
             include: {
-              role: true,
+              Role: true,
             }
           },
-          crew: true,
+          Crew: true,
         }
       },
-      preferenceMetadata: true,
-      runs: true,
+      LogPreferenceMetadata: true,
+      Run: true,
     }
   });
 }

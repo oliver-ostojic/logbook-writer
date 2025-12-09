@@ -1,26 +1,23 @@
 /**
  * Pre-solve feasibility analyzer.
  * 
- * This analyzer checks if the solver input constraints are satisfiable BEFORE
- * running the solver. If we can detect infeasibility upfront, we can provide
- * specific, actionable error messages instead of a generic "INFEASIBLE" result.
+ * Validates solver input before running the solver to catch common issues.
+ * Uses the NEW schema (crewQuotas, coverageWindows, taskLength, roleFamilies).
  * 
  * Categories of checks:
- * 1. DAILY REQUIREMENTS - Can crew members fulfill their daily role requirements?
- * 2. HOURLY REQUIREMENTS - Are there enough eligible crew per hour?
- * 3. WINDOW REQUIREMENTS - Are there enough eligible crew during each window?
- * 4. ROLE MIN/MAX - Can role min/max constraints be satisfied given shift lengths?
- * 5. CREW AVAILABILITY - Do crew have roles they can perform?
- * 6. SHIFT LENGTH CONSTRAINTS - Is the shift long enough for all required roles?
+ * 1. CREW ROLES - Do crew have roles they can perform?
+ * 2. CREW QUOTAS - Can crew satisfy their quota + family constraints?
+ * 3. COVERAGE WINDOWS - Are there enough eligible crew during each window?
+ * 5. ROLE FAMILIES - Can family min requirements be satisfied?
+ * 8. SHIFT CAPACITY - Can crew's shifts be filled with eligible roles?
  */
 
 import type {
   SolverInputV2,
   RoleDescriptor,
   CrewDescriptor,
-  DailyRequirementDescriptor,
-  HourlyRequirementDescriptor,
-  WindowRequirementDescriptor,
+  RoleFamilyDescriptor,
+  CrewQuotaDescriptor,
 } from '../solver2/types';
 
 export interface FeasibilityViolation {
@@ -51,6 +48,7 @@ export interface FeasibilityAnalysisResult {
 interface FeasibilityContext {
   input: SolverInputV2;
   roleById: Map<number, RoleDescriptor>;
+  familyById: Map<number, RoleFamilyDescriptor>;
   crewById: Map<string, CrewDescriptor>;
   // Crew available at each hour (hour -> crewIds)
   crewByHour: Map<number, Set<string>>;
@@ -58,37 +56,61 @@ interface FeasibilityContext {
   crewByRole: Map<number, Set<string>>;
   // Crew qualified for role AND available at hour (roleId -> hour -> crewIds)
   eligibleCrewByRoleAndHour: Map<number, Map<number, Set<string>>>;
+  // Family IDs that each crew is qualified for (crewId -> familyIds)
+  crewFamilyIds: Map<string, Set<number>>;
 }
 
 /**
  * Main entry point: analyze solver input for feasibility issues
+ * 
+ * Checks:
+ * 1. checkCrewHaveRoles - Do all crew have at least one role?
+ * 2. checkCrewQuotasFeasible - Can crew satisfy their quota + family constraints?
+ * 3. checkCoverageWindowsFeasible - Are there enough eligible crew during coverage windows?
+ * 5. checkRoleFamilyMinMaxFeasible - Can crew satisfy family min requirements?
+ * 8. checkCrewShiftCanBeFilled - Can crew's shift be filled with their eligible roles?
  */
 export function analyzeFeasibility(input: SolverInputV2): FeasibilityAnalysisResult {
-  const context = buildContext(input);
-  const violations: FeasibilityViolation[] = [];
-
-  // Run all checks
-  violations.push(
-    ...checkCrewHaveRoles(context),
-    ...checkDailyRequirementsFeasible(context),
-    ...checkHourlyRequirementsFeasible(context),
-    ...checkWindowRequirementsFeasible(context),
-    ...checkRoleMinMaxFeasible(context),
-    ...checkShiftLengthAccommodatesRequirements(context),
-    ...checkConflictingDailyRequirements(context),
-    ...checkCrewShiftCanBeFilled(context),
-  );
-
-  const feasible = violations.filter(v => v.severity === 'error').length === 0;
-  const summary = buildSummary(violations, feasible);
-
-  return { feasible, violations, summary };
+  const ctx = buildContext(input);
+  
+  const violations: FeasibilityViolation[] = [
+    ...checkCrewHaveRoles(ctx),
+    ...checkCrewQuotasFeasible(ctx),
+    ...checkCoverageWindowsFeasible(ctx),
+    ...checkRoleFamilyMinMaxFeasible(ctx),
+    ...checkCrewShiftCanBeFilled(ctx),
+  ];
+  
+  const errors = violations.filter(v => v.severity === 'error');
+  const warnings = violations.filter(v => v.severity === 'warning');
+  
+  const summary: string[] = [];
+  if (errors.length > 0) {
+    summary.push(`${errors.length} error(s) found - schedule may be infeasible`);
+  }
+  if (warnings.length > 0) {
+    summary.push(`${warnings.length} warning(s) found - schedule may have issues`);
+  }
+  if (violations.length === 0) {
+    summary.push('No feasibility issues detected');
+  }
+  
+  return {
+    feasible: errors.length === 0,
+    violations,
+    summary,
+  };
 }
 
 function buildContext(input: SolverInputV2): FeasibilityContext {
   const roleById = new Map<number, RoleDescriptor>();
   for (const role of input.roles) {
     roleById.set(role.id, role);
+  }
+
+  const familyById = new Map<number, RoleFamilyDescriptor>();
+  for (const family of input.roleFamilies) {
+    familyById.set(family.id, family);
   }
 
   const crewById = new Map<string, CrewDescriptor>();
@@ -152,13 +174,28 @@ function buildContext(input: SolverInputV2): FeasibilityContext {
     eligibleCrewByRoleAndHour.set(role.id, hourMap);
   }
 
+  // Build family IDs that each crew is qualified for
+  const crewFamilyIds = new Map<string, Set<number>>();
+  for (const crew of input.crew) {
+    const familyIds = new Set<number>();
+    for (const roleId of crew.roleIds) {
+      const role = roleById.get(roleId);
+      if (role) {
+        familyIds.add(role.familyId);
+      }
+    }
+    crewFamilyIds.set(crew.id, familyIds);
+  }
+
   return {
     input,
     roleById,
+    familyById,
     crewById,
     crewByHour,
     crewByRole,
     eligibleCrewByRoleAndHour,
+    crewFamilyIds,
   };
 }
 
@@ -183,143 +220,120 @@ function checkCrewHaveRoles(ctx: FeasibilityContext): FeasibilityViolation[] {
 }
 
 // =============================================================================
-// CHECK 2: Can daily requirements be satisfied given shift length?
+// CHECK 2: Can crew quotas be satisfied given shift length and family constraints?
+// - Verify quota requiredMin doesn't exceed its role family's maxMinutes
+// - Verify quota + other family minimums fit within crew's shift
 // =============================================================================
-function checkDailyRequirementsFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
+function checkCrewQuotasFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
 
-  for (const req of ctx.input.dailyRequirements) {
-    const crew = ctx.crewById.get(req.crewId);
-    const role = ctx.roleById.get(req.roleId);
+  for (const quota of ctx.input.crewQuotas) {
+    const crew = ctx.crewById.get(quota.crewId);
+    const role = ctx.roleById.get(quota.roleId);
     
     // Check if role exists
     if (!role) {
       violations.push({
         severity: 'error',
         category: 'daily-requirement',
-        message: `Daily requirement references unknown role ID ${req.roleId}.`,
-        details: { crewId: req.crewId, roleId: req.roleId, requiredMinutes: req.requiredMinutes },
+        message: `Crew quota references unknown role ID ${quota.roleId}.`,
+        details: { crewId: quota.crewId, roleId: quota.roleId, requiredMin: quota.requiredMin },
+      });
+      continue;
+    }
+
+    const family = ctx.familyById.get(role.familyId);
+    if (!family) {
+      violations.push({
+        severity: 'error',
+        category: 'daily-requirement',
+        message: `Role ${role.displayName} references unknown family ID ${role.familyId}.`,
+        details: { roleId: quota.roleId, familyId: role.familyId },
       });
       continue;
     }
 
     // Check if crew exists (has a shift today)
     if (!crew) {
-      const requiredHours = req.requiredMinutes / 60;
+      const requiredHours = quota.requiredMin / 60;
       violations.push({
         severity: 'error',
         category: 'daily-requirement',
-        message: `Daily constraint requires ${requiredHours}h of ${role.displayName}, but the crew member (ID: ${req.crewId}) doesn't have a shift today.`,
-        details: { crewId: req.crewId, roleId: req.roleId, requiredMinutes: req.requiredMinutes },
+        message: `Crew quota requires ${requiredHours.toFixed(1)}h of ${role.displayName}, but the crew member (ID: ${quota.crewId}) doesn't have a shift today.`,
+        details: { crewId: quota.crewId, roleId: quota.roleId, requiredMin: quota.requiredMin },
       });
       continue;
     }
 
-    const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    const requiredHours = req.requiredMinutes / 60;
-    const blockMinutes = role.blockSize * ctx.input.store.baseSlotMinutes;
-
     // Check if crew is qualified for this role
-    if (!crew.roleIds.includes(req.roleId)) {
+    if (!crew.roleIds.includes(quota.roleId)) {
+      const requiredHours = quota.requiredMin / 60;
       violations.push({
         severity: 'error',
         category: 'role-qualification',
-        message: `${crew.name} is required to work ${requiredHours}h on ${role.displayName}, but they don't have that role qualification.`,
-        details: { crewId: crew.id, roleId: role.id, requiredMinutes: req.requiredMinutes },
+        message: `${crew.name} is required to work ${requiredHours.toFixed(1)}h on ${role.displayName}, but they don't have that role qualification.`,
+        details: { crewId: crew.id, roleId: role.id, requiredMin: quota.requiredMin },
       });
       continue;
     }
 
-    // Check if daily requirement exceeds role's max slots
-    if (role.maxSlots) {
-      const roleMaxMinutes = role.maxSlots * blockMinutes;
-      if (req.requiredMinutes > roleMaxMinutes) {
-        violations.push({
-          severity: 'error',
-          category: 'daily-requirement',
-          message: `${crew.name}'s daily ${role.displayName} constraint of ${requiredHours}h exceeds the role's maximum of ${(roleMaxMinutes / 60).toFixed(1)}h. Try lowering the required hours to ${(roleMaxMinutes / 60).toFixed(1)}h or less.`,
-          details: { 
-            crewId: crew.id, 
-            roleId: role.id, 
-            requiredMinutes: req.requiredMinutes,
-            roleMaxMinutes,
-            roleMaxSlots: role.maxSlots,
-          },
-        });
-      }
-    }
-
-    // Check if shift is long enough for the daily requirement alone
-    if (req.requiredMinutes > shiftMinutes) {
+    // CHECK 2a: Quota requiredMin must not exceed its role family's maxMinutes
+    if (quota.requiredMin > family.maxMinutes) {
       violations.push({
         severity: 'error',
         category: 'daily-requirement',
-        message: `${crew.name}'s daily ${role.displayName} constraint of ${requiredHours}h exceeds their ${(shiftMinutes / 60).toFixed(1)}h shift. Try lowering the required hours.`,
-        details: { 
-          crewId: crew.id, 
-          roleId: role.id, 
-          requiredMinutes: req.requiredMinutes,
-          shiftMinutes,
+        message: `${crew.name}'s ${role.displayName} quota of ${(quota.requiredMin / 60).toFixed(1)}h exceeds the ${family.name} family maximum of ${(family.maxMinutes / 60).toFixed(1)}h.`,
+        details: {
+          crewId: crew.id,
+          roleId: role.id,
+          requiredMin: quota.requiredMin,
+          familyId: family.id,
+          familyName: family.name,
+          familyMaxMinutes: family.maxMinutes,
         },
       });
     }
-  }
 
-  // Check COMBINED daily requirements + mandatory role minimums per crew member
-  // Group daily requirements by crew
-  const dailyReqsByCrewId = new Map<string, typeof ctx.input.dailyRequirements>();
-  for (const req of ctx.input.dailyRequirements) {
-    if (!dailyReqsByCrewId.has(req.crewId)) {
-      dailyReqsByCrewId.set(req.crewId, []);
-    }
-    dailyReqsByCrewId.get(req.crewId)!.push(req);
-  }
-
-  // Check each crew member
-  for (const crew of ctx.input.crew) {
+    // CHECK 2b: Quota + other family minimums must fit within crew's shift
     const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    const dailyReqs = dailyReqsByCrewId.get(crew.id) ?? [];
-    const dailyRoleIds = new Set(dailyReqs.map(r => r.roleId));
+    const quotaFamilyId = role.familyId;
+
+    // For the quota's own family: use max(requiredMin, family.minMinutes)
+    // If requiredMin < family.min, crew still needs to work family.min total
+    // If requiredMin >= family.min, the quota itself is what they need
+    const quotaFamilyContribution = Math.max(quota.requiredMin, family.minMinutes);
+
+    // Sum up minimums from OTHER families the crew is qualified for
+    let otherFamilyMinsTotal = 0;
+    const otherFamilyBreakdown: { family: RoleFamilyDescriptor; minMinutes: number }[] = [];
     
-    // Sum up daily constraint requirements
-    const dailyReqMinutes = dailyReqs.reduce((sum, r) => sum + r.requiredMinutes, 0);
-    
-    // Sum up mandatory minimums from roles with minSlots > 0 that DON'T have daily constraints
-    // (roles with daily constraints are already accounted for)
-    let mandatoryMinMinutes = 0;
-    const mandatoryMins: { role: RoleDescriptor; minMinutes: number }[] = [];
-    
-    for (const roleId of crew.roleIds) {
-      const role = ctx.roleById.get(roleId);
-      if (!role) continue;
+    const crewFamilyIds = ctx.crewFamilyIds.get(crew.id) ?? new Set();
+    for (const familyId of crewFamilyIds) {
+      if (familyId === quotaFamilyId) continue; // Skip the quota's own family
       
-      // Skip if this role already has a daily constraint
-      if (dailyRoleIds.has(roleId)) continue;
-      
-      // Only count roles with mandatory minimums (minSlots > 0)
-      if (role.minSlots && role.minSlots > 0) {
-        const blockMinutes = role.blockSize * ctx.input.store.baseSlotMinutes;
-        const minMinutes = role.minSlots * blockMinutes;
-        mandatoryMinMinutes += minMinutes;
-        mandatoryMins.push({ role, minMinutes });
+      const otherFamily = ctx.familyById.get(familyId);
+      if (otherFamily && otherFamily.minMinutes > 0) {
+        otherFamilyMinsTotal += otherFamily.minMinutes;
+        otherFamilyBreakdown.push({ family: otherFamily, minMinutes: otherFamily.minMinutes });
       }
     }
-    
-    const totalRequiredMinutes = dailyReqMinutes + mandatoryMinMinutes;
+
+    const totalRequiredMinutes = quotaFamilyContribution + otherFamilyMinsTotal;
 
     if (totalRequiredMinutes > shiftMinutes) {
-      // Build breakdown
+      // Build breakdown string
       const parts: string[] = [];
       
-      // Add daily constraints
-      for (const req of dailyReqs) {
-        const role = ctx.roleById.get(req.roleId);
-        parts.push(`${(req.requiredMinutes / 60).toFixed(1)}h ${role?.displayName ?? 'Unknown'}`);
+      // Add the quota's family contribution
+      if (quota.requiredMin >= family.minMinutes) {
+        parts.push(`${(quota.requiredMin / 60).toFixed(1)}h ${role.displayName} (quota)`);
+      } else {
+        parts.push(`${(family.minMinutes / 60).toFixed(1)}h ${family.name} (family min, quota only ${(quota.requiredMin / 60).toFixed(1)}h)`);
       }
       
-      // Add mandatory minimums
-      for (const { role, minMinutes } of mandatoryMins) {
-        parts.push(`${(minMinutes / 60).toFixed(1)}h ${role.displayName} (min)`);
+      // Add other family minimums
+      for (const { family: f, minMinutes } of otherFamilyBreakdown) {
+        parts.push(`${(minMinutes / 60).toFixed(1)}h ${f.name} (min)`);
       }
       
       const breakdown = parts.join(' + ');
@@ -327,23 +341,20 @@ function checkDailyRequirementsFeasible(ctx: FeasibilityContext): FeasibilityVio
       violations.push({
         severity: 'error',
         category: 'daily-requirement',
-        message: `${crew.name}'s required time (${breakdown} = ${(totalRequiredMinutes / 60).toFixed(1)}h) exceeds their ${(shiftMinutes / 60).toFixed(1)}h shift. Try lowering the daily constraint hours.`,
+        message: `${crew.name}'s required time (${breakdown} = ${(totalRequiredMinutes / 60).toFixed(1)}h) exceeds their ${(shiftMinutes / 60).toFixed(1)}h shift.`,
         details: {
           crewId: crew.id,
           crewName: crew.name,
           shiftMinutes,
-          dailyReqMinutes,
-          mandatoryMinMinutes,
+          quotaRequiredMin: quota.requiredMin,
+          quotaFamilyMinMinutes: family.minMinutes,
+          quotaFamilyContribution,
+          otherFamilyMinsTotal,
           totalRequiredMinutes,
-          dailyRequirements: dailyReqs.map(r => ({
-            roleId: r.roleId,
-            roleName: ctx.roleById.get(r.roleId)?.displayName,
-            requiredMinutes: r.requiredMinutes,
-          })),
-          mandatoryMins: mandatoryMins.map(m => ({
-            roleId: m.role.id,
-            roleName: m.role.displayName,
-            minMinutes: m.minMinutes,
+          otherFamilies: otherFamilyBreakdown.map(f => ({
+            familyId: f.family.id,
+            familyName: f.family.name,
+            minMinutes: f.minMinutes,
           })),
         },
       });
@@ -354,67 +365,71 @@ function checkDailyRequirementsFeasible(ctx: FeasibilityContext): FeasibilityVio
 }
 
 // =============================================================================
-// CHECK 3: Are there enough qualified crew at each hour for hourly requirements?
+// CHECK 3: Are there enough qualified crew for each coverage window?
+// For each RoleCoverageWindow, check if we have enough eligible crew
+// covering the window [startMin, endMin) to satisfy crewPerTaskLength.
 // =============================================================================
-function checkHourlyRequirementsFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
+function checkCoverageWindowsFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
 
-  for (const req of ctx.input.hourlyRequirements) {
-    const role = ctx.roleById.get(req.roleId);
-    if (!role) continue;
-
-    const eligibleAtHour = ctx.eligibleCrewByRoleAndHour.get(req.roleId)?.get(req.hour);
-    const availableCount = eligibleAtHour?.size ?? 0;
-
-    if (availableCount < req.required) {
+  for (const window of ctx.input.coverageWindows) {
+    const role = ctx.roleById.get(window.roleId);
+    if (!role) {
       violations.push({
         severity: 'error',
-        category: 'hourly-requirement',
-        message: `${role.displayName} requires ${req.required} crew at ${formatHour(req.hour)}, but only ${availableCount} qualified crew ${availableCount === 1 ? 'is' : 'are'} available.`,
-        details: { 
-          roleId: role.id, 
-          hour: req.hour, 
-          required: req.required, 
-          available: availableCount,
-          eligibleCrewIds: eligibleAtHour ? Array.from(eligibleAtHour) : [],
-        },
+        category: 'window-requirement',
+        message: `Coverage window references unknown role ID ${window.roleId}.`,
+        details: { roleId: window.roleId, startMin: window.startMin, endMin: window.endMin },
       });
+      continue;
     }
-  }
 
-  return violations;
-}
+    const requiredCrew = window.crewPerTaskLength;
+    if (requiredCrew <= 0) continue;
 
-// =============================================================================
-// CHECK 4: Are there enough qualified crew during each window?
-// =============================================================================
-function checkWindowRequirementsFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
-  const violations: FeasibilityViolation[] = [];
+    const taskLength = role.taskLength;
+    
+    // Check each taskLength-sized position within the window
+    for (let positionStart = window.startMin; positionStart + taskLength <= window.endMin; positionStart += taskLength) {
+      const positionEnd = positionStart + taskLength;
+      
+      // Count how many qualified crew have shifts that fully cover this position
+      let availableCount = 0;
+      const availableCrewIds: string[] = [];
+      
+      for (const crew of ctx.input.crew) {
+        // Crew must be qualified for this role
+        if (!crew.roleIds.includes(window.roleId)) continue;
+        
+        // Crew's shift must fully cover this position
+        if (crew.shiftStartMin <= positionStart && crew.shiftEndMin >= positionEnd) {
+          availableCount++;
+          availableCrewIds.push(crew.id);
+        }
+      }
 
-  for (const window of ctx.input.windowRequirements) {
-    const role = ctx.roleById.get(window.roleId);
-    if (!role) continue;
-
-    // Check each hour in the window
-    for (let hour = window.startHour; hour < window.endHour; hour++) {
-      const eligibleAtHour = ctx.eligibleCrewByRoleAndHour.get(window.roleId)?.get(hour);
-      const availableCount = eligibleAtHour?.size ?? 0;
-
-      if (availableCount < window.requiredPerHour) {
+      if (availableCount < requiredCrew) {
+        const startTime = formatMinutes(positionStart);
+        const endTime = formatMinutes(positionEnd);
+        const windowStartTime = formatMinutes(window.startMin);
+        const windowEndTime = formatMinutes(window.endMin);
+        
         violations.push({
           severity: 'error',
           category: 'window-requirement',
-          message: `${role.displayName} window (${formatHour(window.startHour)}–${formatHour(window.endHour)}) needs ${window.requiredPerHour} crew per hour, but only ${availableCount} qualified crew ${availableCount === 1 ? 'is' : 'are'} available at ${formatHour(hour)}.`,
+          message: `${role.displayName} requires ${requiredCrew} crew at ${startTime}–${endTime} (within ${windowStartTime}–${windowEndTime} window), but only ${availableCount} qualified crew ${availableCount === 1 ? 'is' : 'are'} available.`,
           details: { 
             roleId: role.id, 
-            windowStart: window.startHour,
-            windowEnd: window.endHour,
-            problemHour: hour,
-            required: window.requiredPerHour, 
+            windowStartMin: window.startMin,
+            windowEndMin: window.endMin,
+            positionStartMin: positionStart,
+            positionEndMin: positionEnd,
+            required: requiredCrew, 
             available: availableCount,
+            availableCrewIds,
           },
         });
-        // Only report the first problematic hour in the window
+        // Report first problematic position only
         break;
       }
     }
@@ -423,291 +438,160 @@ function checkWindowRequirementsFeasible(ctx: FeasibilityContext): FeasibilityVi
   return violations;
 }
 
-// =============================================================================
-// CHECK 5: Can role min/max constraints be satisfied?
-// =============================================================================
-function checkRoleMinMaxFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
-  const violations: FeasibilityViolation[] = [];
-
-  for (const role of ctx.input.roles) {
-    if (!role.minSlots && !role.maxSlots) continue;
-
-    const blockMinutes = role.blockSize * ctx.input.store.baseSlotMinutes;
-    const minMinutes = (role.minSlots ?? 0) * blockMinutes;
-    const maxMinutes = (role.maxSlots ?? Infinity) * blockMinutes;
-
-    // Check each crew that has this role
-    const qualifiedCrew = ctx.crewByRole.get(role.id) ?? new Set();
-    
-    for (const crewId of qualifiedCrew) {
-      const crew = ctx.crewById.get(crewId);
-      if (!crew) continue;
-
-      const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-
-      // Check if minimum can be achieved
-      if (minMinutes > 0 && minMinutes > shiftMinutes) {
-        // Only a warning - crew might not be assigned this role at all
-        violations.push({
-          severity: 'warning',
-          category: 'role-min-max',
-          message: `${crew.name}'s ${(shiftMinutes / 60).toFixed(1)}h shift is too short for ${role.displayName}'s minimum of ${(minMinutes / 60).toFixed(1)}h. If assigned, they cannot meet the minimum.`,
-          details: { 
-            crewId: crew.id, 
-            roleId: role.id, 
-            minMinutes,
-            shiftMinutes,
-          },
-        });
-      }
-    }
-  }
-
-  return violations;
+// Helper to format minutes as HH:MM
+function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}:${mins.toString().padStart(2, '0')}`;
 }
 
 // =============================================================================
-// CHECK 6: Is the shift long enough for all mandatory role minimums combined?
+// CHECK 4: (MERGED INTO CHECK 3)
+// The old windowRequirements and hourlyRequirements are now unified as
+// coverageWindows. This check is kept as a placeholder for backwards compat.
 // =============================================================================
-function checkShiftLengthAccommodatesRequirements(ctx: FeasibilityContext): FeasibilityViolation[] {
-  const violations: FeasibilityViolation[] = [];
-
-  // Group daily requirements by crew
-  const dailyReqsByCrew = new Map<string, DailyRequirementDescriptor[]>();
-  for (const req of ctx.input.dailyRequirements) {
-    if (!dailyReqsByCrew.has(req.crewId)) {
-      dailyReqsByCrew.set(req.crewId, []);
-    }
-    dailyReqsByCrew.get(req.crewId)!.push(req);
-  }
-
-  for (const [crewId, reqs] of dailyReqsByCrew.entries()) {
-    const crew = ctx.crewById.get(crewId);
-    if (!crew) continue;
-
-    const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    const totalRequiredMinutes = reqs.reduce((sum, r) => sum + r.requiredMinutes, 0);
-
-    if (totalRequiredMinutes > shiftMinutes) {
-      const roleNames = reqs
-        .map(r => {
-          const role = ctx.roleById.get(r.roleId);
-          return role ? `${(r.requiredMinutes / 60).toFixed(1)}h ${role.displayName}` : '';
-        })
-        .filter(Boolean)
-        .join(', ');
-
-      violations.push({
-        severity: 'error',
-        category: 'shift-length',
-        message: `${crew.name}'s daily requirements total ${(totalRequiredMinutes / 60).toFixed(1)}h (${roleNames}), but their shift is only ${(shiftMinutes / 60).toFixed(1)}h.`,
-        details: { 
-          crewId: crew.id, 
-          totalRequiredMinutes,
-          shiftMinutes,
-          requirements: reqs.map(r => ({
-            roleId: r.roleId,
-            roleName: ctx.roleById.get(r.roleId)?.displayName,
-            requiredMinutes: r.requiredMinutes,
-          })),
-        },
-      });
-    }
-  }
-
-  return violations;
+function checkWindowRequirementsFeasible(_ctx: FeasibilityContext): FeasibilityViolation[] {
+  // Merged into checkCoverageWindowsFeasible (Check 3)
+  return [];
 }
 
 // =============================================================================
-// CHECK 7: Check for conflicting daily requirements (same crew, overlapping time needs)
+// CHECK 5: Can crew satisfy role family min/max constraints?
+// For each crew, check if they're qualified for a family with minMinutes > 0
+// and whether their shift is long enough to potentially satisfy it.
 // =============================================================================
-function checkConflictingDailyRequirements(ctx: FeasibilityContext): FeasibilityViolation[] {
-  const violations: FeasibilityViolation[] = [];
-
-  // Group daily requirements by crew
-  const dailyReqsByCrew = new Map<string, DailyRequirementDescriptor[]>();
-  for (const req of ctx.input.dailyRequirements) {
-    if (!dailyReqsByCrew.has(req.crewId)) {
-      dailyReqsByCrew.set(req.crewId, []);
-    }
-    dailyReqsByCrew.get(req.crewId)!.push(req);
-  }
-
-  // Also consider role minimums for roles the crew is qualified for
-  for (const [crewId, dailyReqs] of dailyReqsByCrew.entries()) {
-    const crew = ctx.crewById.get(crewId);
-    if (!crew) continue;
-
-    const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    let totalMinimumMinutes = 0;
-
-    // Add explicit daily requirements
-    for (const req of dailyReqs) {
-      totalMinimumMinutes += req.requiredMinutes;
-    }
-
-    // Add role minimums for qualified roles (only if they have minSlots)
-    const rolesWithMinimums: { role: RoleDescriptor; minMinutes: number }[] = [];
-    for (const roleId of crew.roleIds) {
-      const role = ctx.roleById.get(roleId);
-      if (!role || !role.minSlots) continue;
-      
-      // Skip if there's already a daily requirement for this role
-      const hasDailyReq = dailyReqs.some(r => r.roleId === roleId);
-      if (hasDailyReq) continue;
-
-      const blockMinutes = role.blockSize * ctx.input.store.baseSlotMinutes;
-      const minMinutes = role.minSlots * blockMinutes;
-      rolesWithMinimums.push({ role, minMinutes });
-    }
-
-    // If there are roles with minimums AND daily requirements, check if they fit
-    if (rolesWithMinimums.length > 0 && dailyReqs.length > 0) {
-      const dailyReqMinutes = dailyReqs.reduce((sum, r) => sum + r.requiredMinutes, 0);
-      const roleMinMinutes = rolesWithMinimums.reduce((sum, r) => sum + r.minMinutes, 0);
-      const combinedMinimum = dailyReqMinutes + roleMinMinutes;
-
-      if (combinedMinimum > shiftMinutes) {
-        const dailyRoleNames = dailyReqs
-          .map(r => {
-            const role = ctx.roleById.get(r.roleId);
-            return role ? `${(r.requiredMinutes / 60).toFixed(1)}h ${role.displayName}` : '';
-          })
-          .filter(Boolean)
-          .join(', ');
-
-        const minRoleNames = rolesWithMinimums
-          .map(r => `${(r.minMinutes / 60).toFixed(1)}h ${r.role.displayName} (minimum)`)
-          .join(', ');
-
-        violations.push({
-          severity: 'warning',
-          category: 'conflicting-constraints',
-          message: `${crew.name} may not be able to fulfill all role requirements. Daily assignments (${dailyRoleNames}) plus role minimums (${minRoleNames}) total ${(combinedMinimum / 60).toFixed(1)}h, but shift is only ${(shiftMinutes / 60).toFixed(1)}h.`,
-          details: { 
-            crewId: crew.id, 
-            shiftMinutes,
-            dailyRequirements: dailyReqs,
-            roleMinimums: rolesWithMinimums.map(r => ({
-              roleId: r.role.id,
-              roleName: r.role.displayName,
-              minMinutes: r.minMinutes,
-            })),
-          },
-        });
-      }
-    }
-  }
-
-  return violations;
-}
-
-// =============================================================================
-// CHECK 8: Can crew's shift be fully filled with their eligible roles?
-// =============================================================================
-function checkCrewShiftCanBeFilled(ctx: FeasibilityContext): FeasibilityViolation[] {
+function checkRoleFamilyMinMaxFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
 
   for (const crew of ctx.input.crew) {
     const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    
-    // Get daily requirements for this crew (these are FIXED assignments - must be exactly this much)
-    const dailyReqs = ctx.input.dailyRequirements.filter(r => r.crewId === crew.id);
-    const dailyRoleIds = new Set(dailyReqs.map(r => r.roleId));
-    
-    // Calculate GUARANTEED minutes from roles that MUST be assigned
-    // Only count:
-    // 1. Daily constraints (fixed hours)
-    // 2. Roles with minSlots > 0 (guaranteed minimum)
-    // 
-    // Do NOT count:
-    // - Roles with minSlots = 0 (like Parking Helms, Demo, Wine Demo, Order Writer)
-    //   because they might get 0 hours
-    
-    let guaranteedMinutes = 0;
-    const roleBreakdown: { role: RoleDescriptor; maxMinutes: number; source: string }[] = [];
-    
-    for (const roleId of crew.roleIds) {
-      const role = ctx.roleById.get(roleId);
-      if (!role) continue;
-      
-      const blockMinutes = role.blockSize * ctx.input.store.baseSlotMinutes;
-      const hasDailyReq = dailyRoleIds.has(roleId);
-      
-      let roleMaxMinutes = 0;
-      let source = '';
-      
-      if (hasDailyReq) {
-        // Daily requirement - this is a fixed amount that MUST be assigned
-        const req = dailyReqs.find(r => r.roleId === roleId);
-        roleMaxMinutes = req?.requiredMinutes ?? 0;
-        source = 'daily-constraint';
-      } else if (role.minSlots && role.minSlots > 0) {
-        // Role has a guaranteed minimum - they WILL get at least minSlots
-        // But they could get up to maxSlots (or entire shift if no max)
-        if (role.maxSlots) {
-          roleMaxMinutes = role.maxSlots * blockMinutes;
-        } else {
-          // No max slots defined - could theoretically fill entire shift
-          roleMaxMinutes = shiftMinutes;
-        }
-        source = 'guaranteed-role (min > 0)';
-      } else {
-        // Role has minSlots = 0 or undefined - NOT guaranteed any time
-        // Skip this role - can't count on it
-        continue;
-      }
-      
-      if (roleMaxMinutes > 0) {
-        roleBreakdown.push({ role, maxMinutes: roleMaxMinutes, source });
-        guaranteedMinutes += roleMaxMinutes;
+    const crewFamilyIds = ctx.crewFamilyIds.get(crew.id) ?? new Set();
+
+    for (const familyId of crewFamilyIds) {
+      const family = ctx.familyById.get(familyId);
+      if (!family) continue;
+
+      // Check if shift is long enough to satisfy family minimum
+      if (family.minMinutes > 0 && family.minMinutes > shiftMinutes) {
+        violations.push({
+          severity: 'warning',
+          category: 'role-min-max',
+          message: `${crew.name}'s ${(shiftMinutes / 60).toFixed(1)}h shift is shorter than the ${family.name} family minimum of ${(family.minMinutes / 60).toFixed(1)}h. They may not be able to satisfy family requirements.`,
+          details: { 
+            crewId: crew.id, 
+            crewName: crew.name,
+            familyId: family.id,
+            familyName: family.name,
+            familyMinMinutes: family.minMinutes,
+            shiftMinutes,
+          },
+        });
       }
     }
+  }
+
+  return violations;
+}
+
+// =============================================================================
+// CHECK 6: (MERGED INTO CHECK 2)
+// The old dailyRequirements shift length check is now handled by
+// checkCrewQuotasFeasible which validates crewQuotas + family constraints.
+// =============================================================================
+function checkShiftLengthAccommodatesRequirements(_ctx: FeasibilityContext): FeasibilityViolation[] {
+  // Merged into checkCrewQuotasFeasible (Check 2)
+  return [];
+}
+
+// =============================================================================
+// CHECK 7: (MERGED INTO CHECK 2)
+// The old conflicting requirements check (dailyRequirements + role minimums)
+// is now handled by checkCrewQuotasFeasible which validates quota + all
+// family minimums fit within the shift.
+// =============================================================================
+function checkConflictingDailyRequirements(_ctx: FeasibilityContext): FeasibilityViolation[] {
+  // Merged into checkCrewQuotasFeasible (Check 2)
+  return [];
+}
+
+// =============================================================================
+// CHECK 8: Can crew's shift be fully filled with their eligible roles?
+// For each crew, verify they have at least one eligible role that can cover
+// every slot of their shift (considering coverage windows and role availability).
+// =============================================================================
+function checkCrewShiftCanBeFilled(ctx: FeasibilityContext): FeasibilityViolation[] {
+  const violations: FeasibilityViolation[] = [];
+
+  // Build a map of role -> coverage windows (to know when roles are "active")
+  const roleWindowsByRole = new Map<number, { startMin: number; endMin: number }[]>();
+  for (const window of ctx.input.coverageWindows) {
+    if (!roleWindowsByRole.has(window.roleId)) {
+      roleWindowsByRole.set(window.roleId, []);
+    }
+    roleWindowsByRole.get(window.roleId)!.push({
+      startMin: window.startMin,
+      endMin: window.endMin,
+    });
+  }
+
+  for (const crew of ctx.input.crew) {
+    const shiftStart = crew.shiftStartMin;
+    const shiftEnd = crew.shiftEndMin;
+
+    // For each minute of their shift, check if ANY eligible role can cover it
+    // We'll check in 30-minute increments for efficiency
+    const uncoverableSlots: number[] = [];
     
-    // If guaranteed minutes from bankable roles is less than shift, that's an error
-    if (guaranteedMinutes < shiftMinutes) {
-      const shortfall = shiftMinutes - guaranteedMinutes;
+    for (let minute = shiftStart; minute < shiftEnd; minute += 30) {
+      let canBeCovered = false;
       
-      // Build the breakdown string for roles that ARE counted
-      const roleBreakdownStr = roleBreakdown
-        .filter(r => r.maxMinutes > 0)
-        .map(r => `${(r.maxMinutes / 60).toFixed(1)}h ${r.role.displayName}`)
-        .join(', ') || 'none';
-      
-      // Find roles that were skipped (minSlots = 0)
-      const skippedRoles: string[] = [];
       for (const roleId of crew.roleIds) {
         const role = ctx.roleById.get(roleId);
         if (!role) continue;
-        const hasDailyReq = dailyRoleIds.has(roleId);
-        if (!hasDailyReq && (!role.minSlots || role.minSlots === 0)) {
-          skippedRoles.push(role.displayName);
+
+        const windows = roleWindowsByRole.get(roleId);
+        
+        // If role has no coverage windows, it can be assigned anytime (e.g., BRK)
+        if (!windows || windows.length === 0) {
+          canBeCovered = true;
+          break;
         }
+        
+        // Check if this minute falls within any of the role's coverage windows
+        for (const window of windows) {
+          if (minute >= window.startMin && minute < window.endMin) {
+            canBeCovered = true;
+            break;
+          }
+        }
+        
+        if (canBeCovered) break;
       }
       
-      // Build note about skipped roles
-      let skippedNote = '';
-      if (skippedRoles.length > 0) {
-        skippedNote = ` (Note: ${skippedRoles.join(', ')} not counted - minSlots is 0, so not guaranteed)`;
+      if (!canBeCovered) {
+        uncoverableSlots.push(minute);
       }
+    }
+
+    if (uncoverableSlots.length > 0) {
+      // Group consecutive slots for cleaner reporting
+      const firstUncoverable = uncoverableSlots[0];
+      const lastUncoverable = uncoverableSlots[uncoverableSlots.length - 1];
+      
+      const firstTime = formatMinutes(firstUncoverable);
+      const lastTime = formatMinutes(lastUncoverable + 30);
       
       violations.push({
         severity: 'error',
         category: 'insufficient-constraints',
-        message: `${crew.name}'s ${(shiftMinutes / 60).toFixed(1)}h shift cannot be filled. Guaranteed roles (${roleBreakdownStr}) only allow ${(guaranteedMinutes / 60).toFixed(1)}h maximum, leaving ${(shortfall / 60).toFixed(1)}h that cannot be assigned.${skippedNote}`,
+        message: `${crew.name}'s shift has ${uncoverableSlots.length * 30} minutes (${firstTime}–${lastTime}) that cannot be filled. None of their qualified roles have coverage windows during this time.`,
         details: {
           crewId: crew.id,
           crewName: crew.name,
-          shiftMinutes,
-          guaranteedMinutes,
-          shortfallMinutes: shortfall,
-          roleBreakdown: roleBreakdown.map(r => ({
-            roleId: r.role.id,
-            roleName: r.role.displayName,
-            maxMinutes: r.maxMinutes,
-            source: r.source,
-          })),
-          skippedRoles,
+          shiftStartMin: shiftStart,
+          shiftEndMin: shiftEnd,
+          uncoverableSlots,
+          crewRoleIds: crew.roleIds,
         },
       });
     }
@@ -771,13 +655,15 @@ function formatHour(hour: number): string {
 
 /**
  * Generate a catch-all message when solver is infeasible but no specific violation was detected
+ * TODO: Refactor to use new schema (RoleCoverageWindow, CrewRoleQuota)
  */
 export function generateUnknownInfeasibilityMessage(input: SolverInputV2): string {
   const crewCount = input.crew.length;
   const roleCount = input.roles.length;
-  const dailyReqCount = input.dailyRequirements.length;
-  const hourlyReqCount = input.hourlyRequirements.length;
-  const windowReqCount = input.windowRequirements.length;
+  // Cast to any since new schema uses coverageWindows and crewQuotas instead of old fields
+  const inp = input as any;
+  const coverageWindowCount = inp.coverageWindows?.length ?? 0;
+  const crewQuotaCount = inp.crewQuotas?.length ?? 0;
 
-  return `The schedule could not be generated. The combination of constraints (${dailyReqCount} daily assignments, ${hourlyReqCount} hourly requirements, ${windowReqCount} coverage windows) cannot be satisfied with the available ${crewCount} crew members and ${roleCount} roles. Try reducing coverage requirements or adding more crew shifts.`;
+  return `The schedule could not be generated. The combination of constraints (${coverageWindowCount} coverage windows, ${crewQuotaCount} crew quotas) cannot be satisfied with the available ${crewCount} crew members and ${roleCount} roles. Try reducing coverage requirements or adding more crew shifts.`;
 }

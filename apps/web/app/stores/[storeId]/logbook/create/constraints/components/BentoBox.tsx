@@ -208,44 +208,74 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
           const hourlyDrafts: Record<string, HourlyConstraintDraft> = {};
           const hourlyPrefill: HourlyConstraintPrefill = {};
 
-          (constraintData?.windowConstraints ?? []).forEach((entry: any) => {
+          // NEW: Parse coverageWindows from API (minutes-based)
+          // For Step 1 (window roles): find windows that span multiple hours with same crewPerTaskLength
+          // For Step 3 (hourly roles): find windows that are exactly 1 hour (60 min)
+          const coverageWindows = constraintData?.coverageWindows ?? [];
+          
+          // Group coverage windows by roleId to detect window vs hourly constraints
+          const windowsByRole: Record<number, Array<{ startMin: number; endMin: number; crewPerTaskLength: number }>> = {};
+          coverageWindows.forEach((entry: any) => {
             if (typeof entry?.roleId !== 'number') return;
-            windowDrafts[entry.roleId] = {
-              roleId: entry.roleId,
-              startHour: entry.startHour,
-              endHour: entry.endHour,
-              requiredPerHour: entry.requiredPerHour ?? 0,
-            };
-            windowPrefill[entry.roleId] = {
-              time: `${String(entry.startHour).padStart(2, '0')}:00`,
-              duration: String(Math.max(1, entry.endHour - entry.startHour) * 60),
-              crewPerHour: entry.requiredPerHour ?? 0,
-            };
+            if (!windowsByRole[entry.roleId]) windowsByRole[entry.roleId] = [];
+            windowsByRole[entry.roleId].push({
+              startMin: entry.startMin,
+              endMin: entry.endMin,
+              crewPerTaskLength: entry.crewPerTaskLength ?? 0,
+            });
           });
 
-          (constraintData?.dailyRoleConstraints ?? []).forEach((entry: any) => {
+          // Process each role's windows
+          Object.entries(windowsByRole).forEach(([roleIdStr, windows]) => {
+            const roleId = Number(roleIdStr);
+            
+            // Check if this looks like a single window constraint (one entry spanning multiple hours)
+            // or hourly constraints (multiple 60-min entries)
+            const isSingleWindow = windows.length === 1 && (windows[0].endMin - windows[0].startMin) > 60;
+            
+            if (isSingleWindow) {
+              // Step 1: Window constraint
+              const w = windows[0];
+              const startHour = Math.floor(w.startMin / 60);
+              const endHour = Math.ceil(w.endMin / 60);
+              windowDrafts[roleId] = {
+                roleId,
+                startHour,
+                endHour,
+                requiredPerHour: w.crewPerTaskLength,
+              };
+              windowPrefill[roleId] = {
+                time: `${String(startHour).padStart(2, '0')}:00`,
+                duration: String((endHour - startHour) * 60),
+                crewPerHour: w.crewPerTaskLength,
+              };
+            } else {
+              // Step 3: Hourly constraints (multiple 60-min windows or single 60-min window)
+              windows.forEach((w) => {
+                const hour = Math.floor(w.startMin / 60);
+                const key = `${roleId}-${hour}`;
+                hourlyDrafts[key] = {
+                  roleId,
+                  hour,
+                  requiredPerHour: w.crewPerTaskLength,
+                };
+                if (!hourlyPrefill[roleId]) hourlyPrefill[roleId] = {};
+                hourlyPrefill[roleId][hour] = w.crewPerTaskLength;
+              });
+            }
+          });
+
+          // NEW: Parse crewQuotas from API (minutes-based) → convert to hours for UI
+          (constraintData?.crewQuotas ?? []).forEach((entry: any) => {
             if (typeof entry?.roleId !== 'number' || typeof entry?.crewId !== 'string') return;
             const key = `${entry.roleId}-${entry.crewId}`;
+            const requiredHours = (entry.requiredMin ?? 60) / 60; // Convert minutes to hours
             dailyDrafts[key] = {
               roleId: entry.roleId,
               crewId: entry.crewId,
-              requiredHours: entry.requiredHours ?? 1,
+              requiredHours,
             };
-            dailyPrefill[key] = entry.requiredHours ?? 1;
-          });
-
-          (constraintData?.hourlyRoleConstraints ?? []).forEach((entry: any) => {
-            if (typeof entry?.roleId !== 'number' || typeof entry?.hour !== 'number') return;
-            const key = `${entry.roleId}-${entry.hour}`;
-            hourlyDrafts[key] = {
-              roleId: entry.roleId,
-              hour: entry.hour,
-              requiredPerHour: entry.requiredPerHour ?? 0,
-            };
-            if (!hourlyPrefill[entry.roleId]) {
-              hourlyPrefill[entry.roleId] = {};
-            }
-            hourlyPrefill[entry.roleId][entry.hour] = entry.requiredPerHour ?? 0;
+            dailyPrefill[key] = requiredHours;
           });
 
           setWindowConstraintDrafts(windowDrafts);
@@ -368,66 +398,11 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
       return;
     }
 
-    const windowConstraints = Object.values(windowConstraintDrafts);
-    const dailyRoleConstraints = Object.values(dailyConstraintDrafts).map((entry) => {
-      const rounded = Math.round(Number(entry.requiredHours) * 2) / 2;
-      return {
-        roleId: entry.roleId,
-        crewId: entry.crewId,
-        requiredHours: Math.max(0.5, rounded),
-      };
-    });
-    const hourlyRoleConstraints = Object.values(hourlyConstraintDrafts);
-
     setSaving(true);
     setErrors([]);
 
     try {
-      const response = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date,
-          windowConstraints,
-          dailyRoleConstraints,
-          hourlyRoleConstraints,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to save constraints');
-      }
-
-      let logbookId: string | undefined;
-      
-      // Check if a logbook already exists for this store/date
-      const logbookResponse = await fetch(
-        `${API_URL}/schedule/logbook?store_id=${encodeURIComponent(storeId)}&date=${encodeURIComponent(date)}`
-      );
-
-      if (logbookResponse.ok) {
-        // Logbook exists - delete it so we can regenerate with updated constraints
-        const existingLogbook = await logbookResponse.json();
-        const deleteResponse = await fetch(
-          `${API_URL}/schedule/logbook/${encodeURIComponent(existingLogbook.id)}`,
-          { method: 'DELETE' }
-        );
-        if (!deleteResponse.ok && deleteResponse.status !== 404) {
-          console.warn('Failed to delete existing logbook, will try to create new one anyway');
-        }
-      } else if (logbookResponse.status !== 404) {
-        // Unexpected error from logbook check
-        const errorText = await logbookResponse.text();
-        throw new Error(errorText || 'Failed to verify logbook status.');
-      }
-
-      // Create a new logbook via solver with updated constraints
-      const numericStoreId = Number(storeId);
-      if (!Number.isFinite(numericStoreId)) {
-        throw new Error('Invalid store identifier.');
-      }
-
+      // Fetch shifts FIRST so we can use crew shift times for crewQuotas
       const shiftsResponse = await fetch(
         `${API_URL}/stores/${encodeURIComponent(storeId)}/shifts?date=${encodeURIComponent(date)}`
       );
@@ -441,6 +416,143 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
       if (!Array.isArray(shiftsData) || shiftsData.length === 0) {
         throw new Error('Add at least one shift for this date before generating a logbook.');
       }
+
+      // Build a map of crewId -> shift times (in minutes from midnight)
+      const shiftsByCrewId = new Map<string, { startMin: number; endMin: number }>();
+      for (const shift of shiftsData) {
+        // Parse shift times (format: "HH:MM" or ISO string)
+        const parseTimeToMinutes = (timeStr: string): number => {
+          if (timeStr.includes('T')) {
+            // ISO format - extract time part
+            const timePart = timeStr.split('T')[1]?.substring(0, 5) || '00:00';
+            const [hours, minutes] = timePart.split(':').map(Number);
+            return hours * 60 + minutes;
+          } else {
+            // HH:MM format
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+          }
+        };
+        shiftsByCrewId.set(shift.crewId, {
+          startMin: parseTimeToMinutes(shift.start),
+          endMin: parseTimeToMinutes(shift.end),
+        });
+      }
+
+      // Convert window constraints (Step 1) to coverageWindows format (minutes)
+      const windowCoverageWindows = Object.values(windowConstraintDrafts).map((entry) => ({
+        roleId: entry.roleId,
+        startMin: entry.startHour * 60,
+        endMin: entry.endHour * 60,
+        crewPerTaskLength: entry.requiredPerHour,
+      }));
+
+      // Convert hourly constraints (Step 3) to coverageWindows format (each hour = 60 min window)
+      const hourlyCoverageWindows = Object.values(hourlyConstraintDrafts).map((entry) => ({
+        roleId: entry.roleId,
+        startMin: entry.hour * 60,
+        endMin: (entry.hour + 1) * 60,
+        crewPerTaskLength: entry.requiredPerHour,
+      }));
+
+      // Combine all coverage windows
+      const coverageWindows = [...windowCoverageWindows, ...hourlyCoverageWindows];
+
+      // Convert daily constraints (Step 2) to crewQuotas format (minutes)
+      // Use crew's actual shift times instead of full day
+      const crewQuotas = Object.values(dailyConstraintDrafts).map((entry) => {
+        const rounded = Math.round(Number(entry.requiredHours) * 2) / 2;
+        const requiredMin = Math.max(30, rounded * 60); // Convert hours to minutes, min 30 min
+        
+        // Get crew's shift times, fallback to full day if not found
+        const shiftTimes = shiftsByCrewId.get(entry.crewId);
+        const startMin = shiftTimes?.startMin ?? 0;
+        const endMin = shiftTimes?.endMin ?? 1440;
+        
+        return {
+          roleId: entry.roleId,
+          crewId: entry.crewId,
+          startMin,
+          endMin,
+          requiredMin,
+        };
+      });
+
+      const response = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date,
+          coverageWindows,
+          crewQuotas,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to save constraints');
+      }
+
+      let logbookId: string | undefined;
+      
+      // Check if shifts/constraints have changed since last generation
+      const checkChangesResponse = await fetch(
+        `${API_URL}/schedule/logbook/check-changes?store_id=${encodeURIComponent(storeId)}&date=${encodeURIComponent(date)}`
+      );
+      
+      if (checkChangesResponse.ok) {
+        const changeResult = await checkChangesResponse.json();
+        
+        // If no changes and we have an existing logbook, skip regeneration
+        if (!changeResult.needsRegeneration && changeResult.existingLogbookId) {
+          console.log('No changes detected, skipping regeneration');
+          setSaving(false);
+          router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${encodeURIComponent(changeResult.existingLogbookId)}`);
+          return;
+        }
+        
+        // If there's an existing logbook but we need to regenerate, delete it
+        if (changeResult.existingLogbookId && changeResult.needsRegeneration) {
+          const deleteResponse = await fetch(
+            `${API_URL}/schedule/logbook/${encodeURIComponent(changeResult.existingLogbookId)}`,
+            { method: 'DELETE' }
+          );
+          if (!deleteResponse.ok && deleteResponse.status !== 404) {
+            console.warn('Failed to delete existing logbook, will try to create new one anyway');
+          }
+        }
+      } else {
+        // Fallback: if check-changes endpoint fails, use old logic
+        const logbookResponse = await fetch(
+          `${API_URL}/schedule/logbook?store_id=${encodeURIComponent(storeId)}&date=${encodeURIComponent(date)}`
+        );
+
+        if (logbookResponse.ok) {
+          // Logbook exists - delete it so we can regenerate with updated constraints
+          const existingLogbook = await logbookResponse.json();
+          if (existingLogbook && existingLogbook.id) {
+            const deleteResponse = await fetch(
+              `${API_URL}/schedule/logbook/${encodeURIComponent(existingLogbook.id)}`,
+              { method: 'DELETE' }
+            );
+            if (!deleteResponse.ok && deleteResponse.status !== 404) {
+              console.warn('Failed to delete existing logbook, will try to create new one anyway');
+            }
+          }
+        } else if (logbookResponse.status !== 404) {
+          // Unexpected error from logbook check
+          const errorText = await logbookResponse.text();
+          throw new Error(errorText || 'Failed to verify logbook status.');
+        }
+      }
+
+      // Create a new logbook via solver with updated constraints
+      const numericStoreId = Number(storeId);
+      if (!Number.isFinite(numericStoreId)) {
+        throw new Error('Invalid store identifier.');
+      }
+
+      // shiftsData already fetched above for crewQuotas
 
       const solverResponse = await fetch(`${API_URL}/solve-logbook`, {
         method: 'POST',

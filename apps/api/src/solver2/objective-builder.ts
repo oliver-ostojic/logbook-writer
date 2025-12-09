@@ -177,7 +177,7 @@ const FAIRNESS_MIN_STD_DEV = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
 })();
 
-const SLOT_BASED_ASSIGNMENT_MODELS: AssignmentModelValue[] = ['HOURLY', 'HOURLY_WINDOW', 'SOLVER'];
+const SLOT_BASED_ASSIGNMENT_MODELS: AssignmentModelValue[] = ['HOURLY', 'HOURLY_OR_WINDOW', 'SOLVER'];
 
 interface BuildFairnessObjectiveTermParams {
   modelResult: BuildModelResult;
@@ -328,12 +328,10 @@ function computeEffectiveWeight(preference: PreferenceDescriptor): number {
 }
 
 function preferenceSupportsSlotAssignments(preference: PreferenceDescriptor): boolean {
-  if (!preference.assignmentModels?.length) {
+  if (!preference.assignmentModel) {
     return false;
   }
-  return preference.assignmentModels.some((model) =>
-    SLOT_BASED_ASSIGNMENT_MODELS.includes(model)
-  );
+  return SLOT_BASED_ASSIGNMENT_MODELS.includes(preference.assignmentModel);
 }
 
 function handleFirstHourPreference({

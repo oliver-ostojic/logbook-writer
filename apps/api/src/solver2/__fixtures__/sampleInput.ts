@@ -16,7 +16,7 @@ const sampleInput: SolverInputV2 = {
       id: 1,
       code: 'REG',
       displayName: 'Register',
-  assignmentModels: asAssignments(['HOURLY', 'HOURLY_WINDOW', 'DAILY']),
+  assignmentModels: asAssignments(['HOURLY', 'HOURLY_OR_WINDOW', 'DAILY']),
       minSlots: 2,
       maxSlots: 10,
       blockSize: 2,
