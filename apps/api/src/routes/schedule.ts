@@ -26,11 +26,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const regStartMin = (storeAny?.regHoursStartMin ?? 480) as number; // 08:00
     const regEndMin = (storeAny?.regHoursEndMin ?? 1260) as number;    // 21:00
 
-    // Load requirements & coverage from wizard steps
-    const requirements = await prisma.dailyRoleConstraint.findMany({ 
+    // Load requirements & coverage from wizard steps (new schema)
+    const crewQuotas = await prisma.crewRoleQuota.findMany({ 
       where: { date: day, storeId: store_id }
     });
-    const coverages = await prisma.windowRoleConstraint.findMany({ 
+    const coverageWindows = await prisma.roleCoverageWindow.findMany({ 
       where: { date: day, storeId: store_id }
     });
 
@@ -93,14 +93,14 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       }
     });
 
-    // TODO: replace with real assignments using segmentedShifts/requirements/coverages
+    // TODO: replace with real assignments using segmentedShifts/crewQuotas/coverageWindows
     // For now return stub metrics + segmentation summary for debugging
     const totalProductMin = segmentedShifts.reduce((a, s) => a + s.productMinutes, 0);
     const totalFlexMin = segmentedShifts.reduce((a, s) => a + s.flexMinutes, 0);
     const metrics = { 
       tasks: 0, 
-      coverage_hours: coverages.length,
-      required_fulfilled: requirements.length,
+      coverage_hours: coverageWindows.length,
+      required_fulfilled: crewQuotas.length,
       total_product_hours: totalProductMin / 60,
       total_flex_hours: totalFlexMin / 60,
     };
@@ -132,14 +132,14 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const logbook = await prisma.logbook.findFirst({
       where: { date: day, storeId },
       include: {
-        assignments: {
+        Assignment: {
           include: {
-            crew: { select: { id: true, name: true } },
-            role: { select: { id: true, code: true, displayName: true } },
+            Crew: { select: { id: true, name: true } },
+            Role: { select: { id: true, code: true, displayName: true } },
           },
           orderBy: [{ startTime: 'asc' }],
         },
-        preferenceMetadata: true,
+        LogPreferenceMetadata: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -162,11 +162,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const crewMap = new Map<string, { id: string; name: string }>();
     const roleMap = new Map<number, { id: number; code: string; displayName: string }>();
 
-    logbook.assignments.forEach((assignment) => {
-      if (assignment.crew) {
-        crewMap.set(assignment.crew.id, {
-          id: assignment.crew.id,
-          name: assignment.crew.name,
+    logbook.Assignment.forEach((assignment) => {
+      if (assignment.Crew) {
+        crewMap.set(assignment.Crew.id, {
+          id: assignment.Crew.id,
+          name: assignment.Crew.name,
         });
       } else {
         crewMap.set(assignment.crewId, {
@@ -175,11 +175,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         });
       }
 
-      if (assignment.role) {
-        roleMap.set(assignment.role.id, {
-          id: assignment.role.id,
-          code: assignment.role.code,
-          displayName: assignment.role.displayName,
+      if (assignment.Role) {
+        roleMap.set(assignment.Role.id, {
+          id: assignment.Role.id,
+          code: assignment.Role.code,
+          displayName: assignment.Role.displayName,
         });
       }
     });
@@ -208,13 +208,13 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       endTime: normalizeShiftTime(shift.endMin),
     }));
 
-    const assignments = logbook.assignments.map((assignment) => ({
+    const assignments = logbook.Assignment.map((assignment) => ({
       id: assignment.id,
       crewId: assignment.crewId,
-      crewName: assignment.crew?.name ?? assignment.crewId,
+      crewName: assignment.Crew?.name ?? assignment.crewId,
       roleId: assignment.roleId,
-      roleCode: assignment.role?.code ?? `ROLE_${assignment.roleId}`,
-      roleName: assignment.role?.displayName ?? assignment.role?.code ?? `Role ${assignment.roleId}`,
+      roleCode: assignment.Role?.code ?? `ROLE_${assignment.roleId}`,
+      roleName: assignment.Role?.displayName ?? assignment.Role?.code ?? `Role ${assignment.roleId}`,
       startTime: assignment.startTime.toISOString(),
       endTime: assignment.endTime.toISOString(),
     }));
@@ -224,7 +224,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       status: logbook.status,
       date: logbook.date.toISOString(),
       metadata: logbook.metadata,
-      preferenceMetadata: logbook.preferenceMetadata,
+      preferenceMetadata: logbook.LogPreferenceMetadata,
       assignments,
       crew,
       roles,
@@ -243,14 +243,14 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     const logbook = await prisma.logbook.findUnique({
       where: { id: logbookId },
       include: {
-        assignments: {
+        Assignment: {
           include: {
-            crew: { select: { id: true, name: true } },
-            role: { select: { id: true, code: true, displayName: true } },
+            Crew: { select: { id: true, name: true } },
+            Role: { select: { id: true, code: true, displayName: true } },
           },
           orderBy: [{ startTime: 'asc' }],
         },
-        preferenceMetadata: true,
+        LogPreferenceMetadata: true,
       },
     });
 
@@ -265,14 +265,14 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       }),
       prisma.role.findMany({
         where: { storeId: logbook.storeId },
-        select: { id: true, code: true, displayName: true, blockSize: true },
+        select: { id: true, code: true, displayName: true, taskLength: true },
       }),
       prisma.crew.findMany({
         where: { storeId: logbook.storeId },
         select: {
           id: true,
           name: true,
-          crewRoles: { select: { roleId: true } },
+          CrewRole: { select: { roleId: true } },
         },
       }),
     ]);
@@ -280,18 +280,18 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     // Build crew eligibility map
     const crewEligibility = new Map<string, number[]>();
     crewWithRoles.forEach((c) => {
-      crewEligibility.set(c.id, c.crewRoles.map((cr) => cr.roleId));
+      crewEligibility.set(c.id, c.CrewRole.map((cr) => cr.roleId));
     });
 
     const crewMap = new Map<string, { id: string; name: string; eligibleRoleIds: number[] }>();
-    const roleMap = new Map<number, { id: number; code: string; displayName: string; blockSize: number }>();
+    const roleMap = new Map<number, { id: number; code: string; displayName: string; taskLength: number }>();
 
-    logbook.assignments.forEach((assignment) => {
+    logbook.Assignment.forEach((assignment) => {
       const eligibleRoleIds = crewEligibility.get(assignment.crewId) ?? [];
-      if (assignment.crew) {
-        crewMap.set(assignment.crew.id, {
-          id: assignment.crew.id,
-          name: assignment.crew.name,
+      if (assignment.Crew) {
+        crewMap.set(assignment.Crew.id, {
+          id: assignment.Crew.id,
+          name: assignment.Crew.name,
           eligibleRoleIds,
         });
       } else {
@@ -302,13 +302,13 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         });
       }
 
-      if (assignment.role) {
-        const roleData = rolesForStore.find((r) => r.id === assignment.role!.id);
-        roleMap.set(assignment.role.id, {
-          id: assignment.role.id,
-          code: assignment.role.code,
-          displayName: assignment.role.displayName,
-          blockSize: roleData?.blockSize ?? 1,
+      if (assignment.Role) {
+        const roleData = rolesForStore.find((r) => r.id === assignment.Role!.id);
+        roleMap.set(assignment.Role.id, {
+          id: assignment.Role.id,
+          code: assignment.Role.code,
+          displayName: assignment.Role.displayName,
+          taskLength: roleData?.taskLength ?? 30,
         });
       }
     });
@@ -320,7 +320,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
           id: role.id,
           code: role.code,
           displayName: role.displayName,
-          blockSize: role.blockSize,
+          taskLength: role.taskLength,
         }));
 
     const normalizeShiftTime = (minutes: number) => {
@@ -338,13 +338,13 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       endTime: normalizeShiftTime(shift.endMin),
     }));
 
-    const assignments = logbook.assignments.map((assignment) => ({
+    const assignments = logbook.Assignment.map((assignment) => ({
       id: assignment.id,
       crewId: assignment.crewId,
-      crewName: assignment.crew?.name ?? assignment.crewId,
+      crewName: assignment.Crew?.name ?? assignment.crewId,
       roleId: assignment.roleId,
-      roleCode: assignment.role?.code ?? `ROLE_${assignment.roleId}`,
-      roleName: assignment.role?.displayName ?? assignment.role?.code ?? `Role ${assignment.roleId}`,
+      roleCode: assignment.Role?.code ?? `ROLE_${assignment.roleId}`,
+      roleName: assignment.Role?.displayName ?? assignment.Role?.code ?? `Role ${assignment.roleId}`,
       startTime: assignment.startTime.toISOString(),
       endTime: assignment.endTime.toISOString(),
     }));
@@ -353,8 +353,9 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       id: logbook.id,
       status: logbook.status,
       date: logbook.date.toISOString(),
+      storedFilePath: logbook.storedFilePath,
       metadata: logbook.metadata,
-      preferenceMetadata: logbook.preferenceMetadata,
+      preferenceMetadata: logbook.LogPreferenceMetadata,
       assignments,
       crew,
       roles,
@@ -438,6 +439,8 @@ export function registerScheduleRoutes(app: FastifyInstance) {
   );
 
   // POST /schedule/logbook/:logbookId/publish - Publish a logbook (set status to PUBLISHED)
+  // If another logbook is already published for the same date/store, delete it first
+  // Also generates a PDF of the logbook and stores the file path
   app.post<{ Params: { logbookId: string } }>(
     '/schedule/logbook/:logbookId/publish',
     async (req, reply) => {
@@ -459,22 +462,67 @@ export function registerScheduleRoutes(app: FastifyInstance) {
           success: true,
           logbookId: logbook.id,
           status: logbook.status,
+          pdfPath: logbook.storedFilePath,
           message: 'Logbook is already published',
         };
       }
 
-      // Update status to PUBLISHED
-      const updated = await prisma.logbook.update({
-        where: { id: logbookId },
-        data: {
+      // Check for any existing published logbook for the same date and store
+      const existingPublished = await prisma.logbook.findFirst({
+        where: {
+          storeId: logbook.storeId,
+          date: logbook.date,
           status: LogbookStatus.PUBLISHED,
+          id: { not: logbookId }, // Exclude current logbook
         },
+      });
+
+      // Generate PDF before publishing
+      let pdfPath: string | null = null;
+      try {
+        const pdfModule = await import('../services/pdf-generator') as any;
+        // Handle ESM/CJS interop - exports may be nested under default
+        const { generateLogbookPdf, deletePdf } = pdfModule.default ?? pdfModule;
+        
+        // Delete old PDF if replacing an existing published logbook
+        if (existingPublished?.storedFilePath) {
+          deletePdf(existingPublished.storedFilePath);
+        }
+        
+        pdfPath = await generateLogbookPdf(logbookId, logbook.storeId, logbook.date);
+        console.log(`[publish] Generated PDF: ${pdfPath}`);
+      } catch (err) {
+        console.error('[publish] Failed to generate PDF:', err);
+        // Continue with publishing even if PDF generation fails
+      }
+
+      // Use a transaction to delete old published logbook and publish the new one
+      const updated = await prisma.$transaction(async (tx) => {
+        // If there's an existing published logbook, delete it and all related records
+        if (existingPublished) {
+          await tx.assignment.deleteMany({ where: { logbookId: existingPublished.id } });
+          await tx.preferenceSatisfaction.deleteMany({ where: { logbookId: existingPublished.id } });
+          await tx.logPreferenceMetadata.deleteMany({ where: { logbookId: existingPublished.id } });
+          await tx.run.deleteMany({ where: { logbookId: existingPublished.id } });
+          await tx.logbook.delete({ where: { id: existingPublished.id } });
+        }
+
+        // Update status to PUBLISHED and store PDF path
+        return tx.logbook.update({
+          where: { id: logbookId },
+          data: {
+            status: LogbookStatus.PUBLISHED,
+            storedFilePath: pdfPath,
+          },
+        });
       });
 
       return {
         success: true,
         logbookId: updated.id,
         status: updated.status,
+        pdfPath: updated.storedFilePath,
+        replacedLogbookId: existingPublished?.id ?? null,
       };
     }
   );
@@ -503,10 +551,196 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         await tx.logbook.delete({ where: { id: logbookId } });
       });
 
+      // Delete PDF file if it exists
+      if (logbook.storedFilePath) {
+        const pdfModule = await import('../services/pdf-generator') as any;
+        const { deletePdf } = pdfModule.default ?? pdfModule;
+        deletePdf(logbook.storedFilePath);
+      }
+
       return {
         success: true,
         logbookId,
         message: 'Logbook deleted successfully',
+      };
+    }
+  );
+
+  // GET /schedule/logbook/:logbookId/pdf - Download the PDF for a logbook
+  app.get<{ Params: { logbookId: string } }>(
+    '/schedule/logbook/:logbookId/pdf',
+    async (req, reply) => {
+      const { logbookId } = req.params;
+
+      const logbook = await prisma.logbook.findUnique({
+        where: { id: logbookId },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      if (!logbook.storedFilePath) {
+        return reply.status(404).send({ error: 'No PDF available for this logbook' });
+      }
+
+      const fs = await import('fs');
+      const path = await import('path');
+
+      if (!fs.existsSync(logbook.storedFilePath)) {
+        return reply.status(404).send({ error: 'PDF file not found on disk' });
+      }
+
+      const filename = path.basename(logbook.storedFilePath);
+      const stream = fs.createReadStream(logbook.storedFilePath);
+
+      return reply
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .send(stream);
+    }
+  );
+
+  // GET /schedule/logbook/:logbookId/pdf/preview - Generate and preview PDF without saving (for development)
+  app.get<{ Params: { logbookId: string } }>(
+    '/schedule/logbook/:logbookId/pdf/preview',
+    async (req, reply) => {
+      const { logbookId } = req.params;
+
+      const logbook = await prisma.logbook.findUnique({
+        where: { id: logbookId },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      try {
+        const pdfModule = await import('../services/pdf-generator') as any;
+        const { generateLogbookPdf } = pdfModule.default ?? pdfModule;
+        
+        // Generate fresh PDF
+        const pdfPath = await generateLogbookPdf(logbookId, logbook.storeId, logbook.date);
+        
+        const fs = await import('fs');
+        const path = await import('path');
+        
+        const filename = path.basename(pdfPath);
+        const stream = fs.createReadStream(pdfPath);
+
+        // Clean up after sending (don't store for preview)
+        stream.on('end', () => {
+          fs.unlink(pdfPath, () => {}); // Silent cleanup
+        });
+
+        return reply
+          .header('Content-Type', 'application/pdf')
+          .header('Content-Disposition', `inline; filename="${filename}"`) // inline for browser preview
+          .header('Cache-Control', 'no-cache, no-store, must-revalidate')
+          .send(stream);
+      } catch (err: any) {
+        console.error('[pdf/preview] Failed to generate PDF:', err);
+        return reply.status(500).send({ error: 'Failed to generate PDF', details: err.message });
+      }
+    }
+  );
+
+  // GET /schedule/logbook/check-changes - Check if shifts/constraints have changed since last logbook generation
+  // Returns whether regeneration is needed and existing logbook ID if available
+  app.get<{ Querystring: { store_id: string; date: string } }>(
+    '/schedule/logbook/check-changes',
+    async (req, reply) => {
+      const { store_id, date } = req.query;
+
+      if (!store_id || !date) {
+        return reply.status(400).send({ error: 'store_id and date query params are required' });
+      }
+
+      const storeId = Number(store_id);
+      if (!Number.isFinite(storeId)) {
+        return reply.status(400).send({ error: 'store_id must be a number' });
+      }
+
+      // Pass string directly to startOfDay to use UTC parsing
+      const day = startOfDay(date);
+      console.log('[check-changes] Parsed date:', date, '-> day:', day.toISOString());
+
+      // Get existing logbook for this store/date
+      const existingLogbook = await prisma.logbook.findFirst({
+        where: { storeId, date: day },
+        orderBy: { createdAt: 'desc' },
+      });
+      console.log('[check-changes] Found logbook:', existingLogbook ? existingLogbook.id : 'NONE');
+
+      if (!existingLogbook) {
+        // Debug: check what logbooks exist for this store
+        const allLogbooks = await prisma.logbook.findMany({
+          where: { storeId },
+          select: { id: true, date: true, status: true },
+          orderBy: { date: 'desc' },
+          take: 5,
+        });
+        console.log('[check-changes] Recent logbooks for store:', allLogbooks.map(l => ({ id: l.id, date: l.date.toISOString(), status: l.status })));
+        
+        return {
+          needsRegeneration: true,
+          reason: 'no_logbook',
+          existingLogbookId: null,
+        };
+      }
+
+      // Compute current input hash from shifts + constraints
+      const [shifts, coverageWindows, crewQuotas] = await Promise.all([
+        prisma.shift.findMany({
+          where: { storeId, date: day },
+          select: { crewId: true, startMin: true, endMin: true },
+          orderBy: [{ crewId: 'asc' }, { startMin: 'asc' }],
+        }),
+        prisma.roleCoverageWindow.findMany({
+          where: { storeId, date: day },
+          select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+          orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
+        }),
+        prisma.crewRoleQuota.findMany({
+          where: { storeId, date: day },
+          select: { roleId: true, crewId: true, startMin: true, endMin: true, requiredMin: true },
+          orderBy: [{ roleId: 'asc' }, { crewId: 'asc' }],
+        }),
+      ]);
+
+      // Create a deterministic hash of the input data
+      const inputData = JSON.stringify({ shifts, coverageWindows, crewQuotas });
+      const currentHash = require('crypto').createHash('sha256').update(inputData).digest('hex').substring(0, 16);
+
+      // Get stored hash from logbook metadata
+      const metadata = existingLogbook.metadata as { inputHash?: string } | null;
+      const storedHash = metadata?.inputHash;
+
+      if (!storedHash) {
+        // No hash stored - logbook was generated before this feature, regenerate
+        return {
+          needsRegeneration: true,
+          reason: 'no_hash_stored',
+          existingLogbookId: existingLogbook.id,
+          existingStatus: existingLogbook.status,
+        };
+      }
+
+      if (storedHash !== currentHash) {
+        return {
+          needsRegeneration: true,
+          reason: 'inputs_changed',
+          existingLogbookId: existingLogbook.id,
+          existingStatus: existingLogbook.status,
+        };
+      }
+
+      // Hashes match - no regeneration needed
+      return {
+        needsRegeneration: false,
+        reason: 'no_changes',
+        existingLogbookId: existingLogbook.id,
+        existingStatus: existingLogbook.status,
       };
     }
   );

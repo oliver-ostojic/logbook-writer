@@ -7,230 +7,273 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//
-// ENUMS
-//
-
-enum RunStatus {
-  QUEUED
-  RUNNING
-  FEASIBLE
-  OPTIMAL
-  TIME_LIMIT
-  INFEASIBLE
-  FAILED
-  CANCELED
-}
-
-enum LogbookStatus {
-  DRAFT
-  PUBLISHED
-  SUPERSEDED
-}
-
-enum AssignmentOrigin {
-  ENGINE
-  MANUAL
-}
-
-enum PreferenceType {
-  FIRST_HOUR
-  FAVORITE
-  TIMING
-  CONSECUTIVE
-}
-
-enum BankingStatus {
-  ACTIVE
-  USED
-  EXPIRED
-  CANCELED
-}
-
-enum AssignmentModel {
-  HOURLY        // Hourly staffing: "N crew per hour" (e.g., REGISTER, PRODUCT, PARKING_HELM)
-  HOURLY_WINDOW // Hourly staffing in time window: "N crew per hour between A–B" (e.g., DEMO, WINE_DEMO)
-  DAILY         // Per-crew daily hours: "this crew must do Xh on this role" (e.g., ORDER_WRITER, ART)
-  SOLVER        // Solver-managed roles: variables for every crew+slot with no manager constraints (e.g., BREAK)
-}
-
-enum ConsecutivePolicy {
-  REQUIRED    // Hard constraint: slots MUST be consecutive (e.g., BREAK)
-  PREFERRED   // Soft penalty: encourage clumping but allow splits (e.g., ART)
-  NONE        // No preference for consecutiveness
-}
-
-//
-// CORE ENTITIES
-//
-
-model Company {
-  id        Int       @id @default(autoincrement())
-  name      String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  // Relations
-  stores    Store[]
-}
-
-model Store {
-  id      Int    @id
-  name    String
-  timezone String @default("EST")
-
-  // Company this store belongs to
-  companyId Int
-  company   Company @relation(fields: [companyId], references: [id])
-
-  // Solver time grid + store hours
-  baseSlotMinutes         Int @default(30)   // size of one slot in minutes
-  openMinutesFromMidnight Int @default(480)  // 8:00 = 8*60
-  closeMinutesFromMidnight Int @default(1260) // 21:00 = 21*60
-
-  roles                  Role[]
-  crew                   Crew[]
-  shifts                 Shift[]
-  windowRoleConstraints  WindowRoleConstraint[]
-  hourlyRoleConstraints  HourlyRoleConstraint[]
-  dailyRoleConstraints   DailyRoleConstraint[]
-  logbooks               Logbook[]
-  runs                   Run[]
-  rolePreferences        RolePreference[]
-  bankedPreferences      BankedPreference[]
-  roleFairnessTrackers   RoleFairnessTracker[]
-  crewRoleFairnessHistory CrewRoleFairnessHistory[]
-
-  @@index([companyId])
-}
-
-model Role {
-  id        Int    @id @default(autoincrement())
-  storeId   Int
-  code      String @unique
-  displayName String
-
-  // How this role is assigned in the solver
-  assignmentModel AssignmentModel[]
-
-  // Role behavior flags
-  consecutivePolicy ConsecutivePolicy @default(NONE)
-
-  // Block / segment sizing (solver uses this with baseSlotMinutes)
-  // If Store.baseSlotMinutes == 30: Register.minSlots == 2, Register.maxSlots == 10.
-  minSlots      Int @default(1)
-  maxSlots      Int @default(1)
-  blockSize     Int @default(1)  // assignments must be multiples of this many slots
-
-  // Add timing window fields for roles (e.g., BREAK should be 3-4.5hrs into shift)
-  windowStartOffsetMin Int? // offset in minutes from shift start
-  windowEndOffsetMin   Int? // offset in minutes from shift start
-
-  // If true, this role may be assigned outside store open/close
-  allowOutsideStoreHours Boolean @default(false)
-
-  // Minimum shift length (in minutes) required for crew to access this role
-  minShiftLengthForRoleAccess Int?
-
-  // Relations
-  store                  Store                 @relation(fields: [storeId], references: [id])
-  crewRoles              CrewRole[]
-  windowRoleConstraints  WindowRoleConstraint[]
-  hourlyRoleConstraints  HourlyRoleConstraint[]
-  dailyRoleConstraints   DailyRoleConstraint[]
-  rolePreferences        RolePreference[]
-  assignments            Assignment[]
-  fairnessTracker        RoleFairnessTracker? @relation("RoleFairnessTrackerRole")
-  crewRoleFairnessHistory CrewRoleFairnessHistory[]
-}
-
-model Crew {
-  id            String   @id @db.Char(7)
-  name          String
-  storeId       Int
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  store              Store              @relation(fields: [storeId], references: [id])
-  crewRoles          CrewRole[]
-  dailyRoleConstraints DailyRoleConstraint[]
-  assignments              Assignment[]
-  preferenceSatisfactions PreferenceSatisfaction[]
-  bankedPreferences  BankedPreference[]
-  crewPreferences    CrewPreference[]
-  shifts             Shift[]
-  crewRoleFairnessHistory CrewRoleFairnessHistory[]
-}
-
-//
-// SHIFT DATA (imported from DayForce)
-//
-
-model Shift {
-  id          Int      @id @default(autoincrement())
-  date        DateTime
-  crewId      String   @db.Char(7)
-  storeId     Int
-
-  // Shift bounds in minutes from midnight
-  startMin    Int
-  endMin      Int
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  crew  Crew  @relation(fields: [crewId], references: [id])
-  store Store @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, crewId])
-  @@index([storeId, date])
-}
-
-//
-// LOGBOOK + ASSIGNMENTS + RUNS
-//
-
-model Logbook {
-  id             String        @id @db.Uuid
-  date           DateTime
-  storeId        Int
-  status         LogbookStatus
-  generatedAt    DateTime
-  storedFilePath String?
-  metadata       Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  store          Store         @relation(fields: [storeId], references: [id])
-  runs           Run[]
-  assignments          Assignment[]
-  preferenceSatisfactions PreferenceSatisfaction[]
-  preferenceMetadata      LogPreferenceMetadata?
-
-  @@unique([storeId, date, status], name: "uniq_store_date_status")
-}
-
 model Assignment {
-  id        String     @id @db.Uuid
-  logbookId String     @db.Uuid
-  crewId    String     @db.Char(7)
+  id        String           @id @db.Uuid
+  logbookId String           @db.Uuid
+  crewId    String           @db.Char(7)
   roleId    Int
-
-  role      Role       @relation(fields: [roleId], references: [id])
   startTime DateTime
   endTime   DateTime
   origin    AssignmentOrigin @default(ENGINE)
-  locked    Boolean    @default(false)
-
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  crew    Crew    @relation(fields: [crewId], references: [id])
-  logbook Logbook @relation(fields: [logbookId], references: [id])
+  locked    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  Crew      Crew             @relation(fields: [crewId], references: [id])
+  Logbook   Logbook          @relation(fields: [logbookId], references: [id])
+  Role      Role             @relation(fields: [roleId], references: [id])
 
   @@index([crewId, startTime])
+}
+
+model BankedPreference {
+  id               Int            @id @default(autoincrement())
+  crewId           String         @db.Char(7)
+  preferenceType   PreferenceType
+  preferenceValue  String
+  weight           Int
+  originalDate     DateTime
+  expiresAt        DateTime
+  usedDate         DateTime?
+  status           BankingStatus  @default(ACTIVE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  storeId          Int
+  rolePreferenceId Int
+  Crew             Crew           @relation(fields: [crewId], references: [id])
+  RolePreference   RolePreference @relation(fields: [rolePreferenceId], references: [id])
+  Store            Store          @relation(fields: [storeId], references: [id])
+
+  @@unique([crewId, rolePreferenceId, status])
+  @@index([crewId, expiresAt])
+  @@index([crewId, status])
+}
+
+model Company {
+  id         Int          @id @default(autoincrement())
+  name       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  RoleFamily RoleFamily[]
+  Store      Store[]
+}
+
+model Crew {
+  id                      String                    @id @db.Char(7)
+  name                    String
+  storeId                 Int
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  Assignment              Assignment[]
+  BankedPreference        BankedPreference[]
+  Store                   Store                     @relation(fields: [storeId], references: [id])
+  CrewPreference          CrewPreference[]
+  CrewRole                CrewRole[]
+  CrewRoleFairnessHistory CrewRoleFairnessHistory[]
+  CrewRoleQuota           CrewRoleQuota[]
+  PreferenceSatisfaction  PreferenceSatisfaction[]
+  Shift                   Shift[]
+}
+
+model CrewPreference {
+  id               Int            @id @default(autoincrement())
+  crewId           String         @db.Char(7)
+  rolePreferenceId Int
+  crewWeight       Int            @default(1)
+  intValue         Int?
+  enabled          Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  Crew             Crew           @relation(fields: [crewId], references: [id])
+  RolePreference   RolePreference @relation(fields: [rolePreferenceId], references: [id])
+
+  @@index([crewId, rolePreferenceId])
+}
+
+model CrewRole {
+  crewName       String
+  roleName       String
+  assignedAt     DateTime @default(now())
+  crewId         String   @db.Char(7)
+  roleId         Int
+  specialization String?
+  Crew           Crew     @relation(fields: [crewId], references: [id])
+  Role           Role     @relation(fields: [roleId], references: [id])
+
+  @@id([crewId, roleId])
+}
+
+model CrewRoleFairnessHistory {
+  id              Int      @id @default(autoincrement())
+  storeId         Int
+  roleId          Int
+  crewId          String   @db.Char(7)
+  windowStart     DateTime
+  windowEnd       DateTime
+  minutesAssigned Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  Crew            Crew     @relation(fields: [crewId], references: [id])
+  Role            Role     @relation(fields: [roleId], references: [id])
+  Store           Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId, roleId, crewId, windowEnd])
+}
+
+model CrewRoleQuota {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  startMin    Int
+  endMin      Int
+  requiredMin Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  storeId     Int
+  crewId      String   @db.Char(7)
+  roleId      Int
+  Crew        Crew     @relation(fields: [crewId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Role        Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Store       Store    @relation(fields: [storeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([storeId, date, crewId, roleId])
+  @@index([storeId, date])
+}
+
+model LogPreferenceMetadata {
+  id                  String   @id @db.Uuid
+  logbookId           String   @unique @db.Uuid
+  totalPreferences    Int      @default(0)
+  preferencesMet      Int      @default(0)
+  averageSatisfaction Float    @default(0)
+  totalWeightApplied  Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  fairnessIndex       Float    @default(0)
+  Logbook             Logbook  @relation(fields: [logbookId], references: [id])
+}
+
+model Logbook {
+  id                     String                   @id @db.Uuid
+  date                   DateTime
+  storeId                Int
+  status                 LogbookStatus
+  generatedAt            DateTime
+  storedFilePath         String?
+  metadata               Json?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  Assignment             Assignment[]
+  LogPreferenceMetadata  LogPreferenceMetadata?
+  Store                  Store                    @relation(fields: [storeId], references: [id])
+  PreferenceSatisfaction PreferenceSatisfaction[]
+  Run                    Run[]
+
+  @@unique([storeId, date, status])
+}
+
+model PreferenceSatisfaction {
+  id                 Int            @id @default(autoincrement())
+  crewId             String         @db.Char(7)
+  date               DateTime
+  logbookId          String         @db.Uuid
+  adaptiveBoost      Float          @default(1.0)
+  fairnessAdjustment Float          @default(0)
+  createdAt          DateTime       @default(now())
+  met                Boolean        @default(false)
+  rolePreferenceId   Int
+  satisfaction       Float          @default(0)
+  weightApplied      Float          @default(0)
+  Crew               Crew           @relation(fields: [crewId], references: [id])
+  Logbook            Logbook        @relation(fields: [logbookId], references: [id])
+  RolePreference     RolePreference @relation(fields: [rolePreferenceId], references: [id])
+
+  @@unique([logbookId, crewId, rolePreferenceId])
+  @@index([crewId, date])
+  @@index([logbookId])
+}
+
+model Role {
+  id                          Int                       @id @default(autoincrement())
+  storeId                     Int
+  code                        String                    @unique
+  displayName                 String
+  allowOutsideStoreHours      Boolean                   @default(false)
+  consecutivePolicy           ConsecutivePolicy?        @default(NONE)
+  windowStartOffsetMin        Int?
+  windowEndOffsetMin          Int?
+  minShiftLengthForRoleAccess Int?
+  taskLength                  Int
+  canSplitForGaps             Boolean                   @default(false)
+  familyId                    Int
+  assignmentModel             AssignmentModel
+  Assignment                  Assignment[]
+  CrewRole                    CrewRole[]
+  CrewRoleFairnessHistory     CrewRoleFairnessHistory[]
+  CrewRoleQuota               CrewRoleQuota[]
+  RoleFamily                  RoleFamily                @relation(fields: [familyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Store                       Store                     @relation(fields: [storeId], references: [id])
+  RoleCoverageWindow          RoleCoverageWindow[]
+  RoleFairnessTracker         RoleFairnessTracker?
+  RolePreference              RolePreference[]
+}
+
+model RoleCoverageWindow {
+  id                Int      @id @default(autoincrement())
+  date              DateTime
+  startMin          Int
+  endMin            Int
+  crewPerTaskLength Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+  storeId           Int
+  roleId            Int
+  Role              Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Store             Store    @relation(fields: [storeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([storeId, roleId, date, startMin, endMin])
+  @@index([storeId, date])
+}
+
+model RoleFairnessTracker {
+  id           Int      @id @default(autoincrement())
+  storeId      Int
+  roleId       Int      @unique
+  lookbackDays Int      @default(14)
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  Role         Role     @relation(fields: [roleId], references: [id])
+  Store        Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+}
+
+model RoleFamily {
+  id         Int     @id @default(autoincrement())
+  name       String  @unique
+  minMinutes Int
+  maxMinutes Int
+  companyId  Int
+  Role       Role[]
+  Company    Company @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model RolePreference {
+  id                     Int                      @id @default(autoincrement())
+  storeId                Int
+  roleId                 Int?
+  preferenceType         PreferenceType
+  baseWeight             Int                      @default(1)
+  allowBanking           Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  BankedPreference       BankedPreference[]
+  CrewPreference         CrewPreference[]
+  PreferenceSatisfaction PreferenceSatisfaction[]
+  Role                   Role?                    @relation(fields: [roleId], references: [id])
+  Store                  Store                    @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, roleId, preferenceType])
+  @@index([storeId, preferenceType])
 }
 
 model Run {
@@ -245,244 +288,99 @@ model Run {
   objectiveScore Int?
   mipGap         Float?
   logbookId      String?   @db.Uuid
-
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-
-  store    Store    @relation(fields: [storeId], references: [id])
-  logbook  Logbook? @relation(fields: [logbookId], references: [id])
+  Logbook        Logbook?  @relation(fields: [logbookId], references: [id])
+  Store          Store     @relation(fields: [storeId], references: [id])
 
   @@index([storeId, date])
 }
 
-//
-// ASSIGNMENT MODELS (HOURLY / HOURLY_WINDOW / DAILY)
-//
+model Shift {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  crewId    String   @db.Char(7)
+  storeId   Int
+  startMin  Int
+  endMin    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Crew      Crew     @relation(fields: [crewId], references: [id])
+  Store     Store    @relation(fields: [storeId], references: [id])
 
-/// HOURLY: "N crew per hour on this role" (e.g., REGISTER, PRODUCT, PARKING_HELM)
-model HourlyRoleConstraint {
-  id              Int      @id @default(autoincrement())
-  date            DateTime
-  hour            Int      // 0–23
-  requiredPerHour Int      @default(0)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  storeId         Int
-  roleId          Int
-  role   Role   @relation(fields: [roleId], references: [id])
-  store  Store  @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, hour, roleId])
-  @@index([storeId, date, hour])
-}
-
-/// HOURLY_WINDOW: "N crew per hour between startHour–endHour" (e.g., DEMO, WINE_DEMO)
-model WindowRoleConstraint {
-  id              Int      @id @default(autoincrement())
-  date            DateTime
-  startHour       Int
-  endHour         Int
-  requiredPerHour Int      @default(1)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  // Relations
-  storeId         Int
-  roleId          Int
-  role   Role   @relation(fields: [roleId], references: [id])
-  store  Store  @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, roleId])
+  @@unique([storeId, date, crewId])
   @@index([storeId, date])
 }
 
-/// DAILY: "this crew must do Xhr(s) on this role" (e.g., ORDER_WRITER, ART)
-model DailyRoleConstraint {
-  id            Int      @id @default(autoincrement())
-  storeId       Int
-  date          DateTime
-  crewId        String   @db.Char(7)
-  roleId        Int
-  requiredHours Float
+model Store {
+  id                       Int                       @id
+  name                     String
+  timezone                 String                    @default("EST")
+  openMinutesFromMidnight  Int                       @default(480)
+  closeMinutesFromMidnight Int                       @default(1260)
+  companyId                Int
+  BankedPreference         BankedPreference[]
+  Crew                     Crew[]
+  CrewRoleFairnessHistory  CrewRoleFairnessHistory[]
+  CrewRoleQuota            CrewRoleQuota[]
+  Logbook                  Logbook[]
+  Role                     Role[]
+  RoleCoverageWindow       RoleCoverageWindow[]
+  RoleFairnessTracker      RoleFairnessTracker[]
+  RolePreference           RolePreference[]
+  Run                      Run[]
+  Shift                    Shift[]
+  Company                  Company                   @relation(fields: [companyId], references: [id])
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  crew   Crew   @relation(fields: [crewId], references: [id])
-  role   Role   @relation(fields: [roleId], references: [id])
-  store  Store  @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, date, crewId, roleId])
-  @@index([storeId, date])
+  @@index([companyId])
 }
 
-//
-// CREW↔ROLE MAPPING
-//
-
-model CrewRole {
-  specialization String?
-  crewName           String
-  roleName           String
-  assignedAt         DateTime @default(now())
-
-  // Relations
-  crewId             String   @db.Char(7)
-  roleId             Int
-  crew               Crew     @relation(fields: [crewId], references: [id])
-  role               Role     @relation(fields: [roleId], references: [id])
-
-  @@id([crewId, roleId])
+enum AssignmentModel {
+  HOURLY
+  HOURLY_OR_WINDOW
+  DAILY
+  SOLVER
+  WINDOW
 }
 
-//
-// PREFERENCES + FAIRNESS
-//
-
-/// Store + role level “template” for a preference
-model RolePreference {
-  id             Int            @id @default(autoincrement())
-  storeId        Int
-  roleId         Int?           // null = generic (e.g. BREAK_TIMING)
-  preferenceType PreferenceType
-  baseWeight     Int            @default(1)   // tuned at store level
-  allowBanking   Boolean        @default(true)
-
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  role  Role?  @relation(fields: [roleId], references: [id])
-  store Store  @relation(fields: [storeId], references: [id])
-
-  crewPreferences        CrewPreference[]
-  preferenceSatisfactions PreferenceSatisfaction[]
-  bankedPreferences      BankedPreference[]
-
-  @@unique([storeId, roleId, preferenceType])
-  @@index([storeId, preferenceType])
+enum AssignmentOrigin {
+  ENGINE
+  MANUAL
 }
 
-/// Per-crew opt-in to a RolePreference
-model CrewPreference {
-  id               Int            @id @default(autoincrement())
-  crewId           String         @db.Char(7)
-  rolePreferenceId Int
-
-  crewWeight       Int            @default(1)   // crew-specific strength
-  intValue         Int?           // e.g. -1 / +1 for BREAK_TIMING earlier/later
-  enabled          Boolean        @default(true)
-
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-
-  crew          Crew          @relation(fields: [crewId], references: [id])
-  rolePreference RolePreference @relation(fields: [rolePreferenceId], references: [id])
-
-  @@index([crewId, rolePreferenceId])
+enum BankingStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELED
 }
 
-/// Snapshot of how well the schedule satisfied prefs for that day/logbook
-model PreferenceSatisfaction {
-  id                Int      @id @default(autoincrement())
-  logbookId         String   @db.Uuid
-  crewId            String   @db.Char(7)
-  rolePreferenceId  Int
-  date              DateTime
-
-  satisfaction      Float    @default(0)
-  met               Boolean  @default(false)
-  weightApplied     Float    @default(0)
-  adaptiveBoost     Float    @default(1.0)
-  fairnessAdjustment Float    @default(0)
-
-  createdAt         DateTime @default(now())
-
-  logbook       Logbook        @relation(fields: [logbookId], references: [id])
-  crew          Crew           @relation(fields: [crewId], references: [id])
-  rolePreference RolePreference @relation(fields: [rolePreferenceId], references: [id])
-
-  @@unique([logbookId, crewId, rolePreferenceId])
-  @@index([crewId, date])
-  @@index([logbookId])
+enum ConsecutivePolicy {
+  REQUIRED
+  PREFERRED
+  NONE
 }
 
-model LogPreferenceMetadata {
-  id                   String  @id @db.Uuid
-  logbookId            String  @db.Uuid @unique
-  totalPreferences     Int     @default(0)
-  preferencesMet       Int     @default(0)
-  averageSatisfaction  Float   @default(0)
-  totalWeightApplied   Float   @default(0)
-  fairnessIndex        Float   @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  logbook Logbook @relation(fields: [logbookId], references: [id])
+enum LogbookStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
 }
 
-/// “Banked” preferences over time (reward system)
-model BankedPreference {
-  id              Int            @id @default(autoincrement())
-  crewId          String         @db.Char(7)
-  rolePreferenceId Int
-  preferenceType  PreferenceType
-  preferenceValue String
-  weight          Int
-  originalDate    DateTime
-  expiresAt       DateTime
-  usedDate        DateTime?
-  status          BankingStatus  @default(ACTIVE)
-
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  Crew            Crew           @relation(fields: [crewId], references: [id])
-  rolePreference  RolePreference @relation(fields: [rolePreferenceId], references: [id])
-  storeId Int
-  store Store @relation(fields: [storeId], references: [id])
-
-  @@unique([crewId, rolePreferenceId, status])
-  @@index([crewId, status])
-  @@index([crewId, expiresAt])
+enum PreferenceType {
+  FIRST_HOUR
+  FAVORITE
+  TIMING
+  CONSECUTIVE
 }
 
-//
-// Track assignment distribution for unliked tasks
-//
-
-model RoleFairnessTracker {
-  id           Int      @id @default(autoincrement())
-  storeId      Int
-  roleId       Int
-  lookbackDays Int      @default(14)
-  enabled      Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  role  Role  @relation("RoleFairnessTrackerRole", fields: [roleId], references: [id])
-  store Store @relation(fields: [storeId], references: [id])
-
-  @@unique([roleId])
-  @@index([storeId])
-}
-
-model CrewRoleFairnessHistory {
-  id              Int      @id @default(autoincrement())
-  storeId         Int
-  roleId          Int
-  crewId          String   @db.Char(7)
-  windowStart     DateTime
-  windowEnd       DateTime
-  minutesAssigned Int      @default(0)
-  updatedAt       DateTime @updatedAt
-  createdAt       DateTime @default(now())
-
-  store Store @relation(fields: [storeId], references: [id])
-  role  Role  @relation(fields: [roleId], references: [id])
-  crew  Crew  @relation(fields: [crewId], references: [id])
-
-  @@index([storeId, roleId, crewId, windowEnd])
+enum RunStatus {
+  QUEUED
+  RUNNING
+  FEASIBLE
+  OPTIMAL
+  TIME_LIMIT
+  INFEASIBLE
+  FAILED
+  CANCELED
 }

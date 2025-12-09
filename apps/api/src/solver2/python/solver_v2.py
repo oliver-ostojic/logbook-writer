@@ -22,6 +22,106 @@ class SolverResult:
     metadata: Dict[str, Any]
 
 
+def _test_incremental_feasibility(solver_input: Dict[str, Any], grid, variable_bundle) -> Dict[str, str]:
+    """Test constraints incrementally to find which type causes infeasibility.
+    
+    This creates separate models with different subsets of constraints to isolate
+    the problematic constraint type.
+    """
+    import sys
+    results = {}
+    
+    print("\n" + "="*80, file=sys.stderr)
+    print("INCREMENTAL FEASIBILITY TEST", file=sys.stderr)
+    print("="*80, file=sys.stderr)
+    
+    # Test 1: Just guardrail constraints
+    print("\n[TEST 1] Guardrail only...", file=sys.stderr)
+    cp1 = cp_model.CpModel()
+    vb1 = variables.build_assignment_variables(cp1, solver_input, grid)
+    model1 = constraints.build_constraint_system_partial(solver_input, grid, vb1, 
+        include_guardrail=True, include_hourly=False, include_window=False, 
+        include_daily=False, include_role_min=False, include_role_max=False)
+    solver1 = cp_model.CpSolver()
+    solver1.parameters.max_time_in_seconds = 5.0
+    status1 = solver1.Solve(model1.cp_model)
+    results["guardrail_only"] = "✓ FEASIBLE" if status1 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['guardrail_only']}", file=sys.stderr)
+    
+    # Test 2: Guardrail + Hourly
+    print("\n[TEST 2] Guardrail + Hourly...", file=sys.stderr)
+    cp2 = cp_model.CpModel()
+    vb2 = variables.build_assignment_variables(cp2, solver_input, grid)
+    model2 = constraints.build_constraint_system_partial(solver_input, grid, vb2,
+        include_guardrail=True, include_hourly=True, include_window=False,
+        include_daily=False, include_role_min=False, include_role_max=False)
+    solver2 = cp_model.CpSolver()
+    solver2.parameters.max_time_in_seconds = 5.0
+    status2 = solver2.Solve(model2.cp_model)
+    results["guardrail_hourly"] = "✓ FEASIBLE" if status2 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['guardrail_hourly']}", file=sys.stderr)
+    
+    # Test 3: Guardrail + Hourly + Window
+    print("\n[TEST 3] Guardrail + Hourly + Window...", file=sys.stderr)
+    cp3 = cp_model.CpModel()
+    vb3 = variables.build_assignment_variables(cp3, solver_input, grid)
+    model3 = constraints.build_constraint_system_partial(solver_input, grid, vb3,
+        include_guardrail=True, include_hourly=True, include_window=True,
+        include_daily=False, include_role_min=False, include_role_max=False)
+    solver3 = cp_model.CpSolver()
+    solver3.parameters.max_time_in_seconds = 5.0
+    status3 = solver3.Solve(model3.cp_model)
+    results["guardrail_hourly_window"] = "✓ FEASIBLE" if status3 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['guardrail_hourly_window']}", file=sys.stderr)
+    
+    # Test 4: Guardrail + Hourly + Window + Daily
+    print("\n[TEST 4] Guardrail + Hourly + Window + Daily...", file=sys.stderr)
+    cp4 = cp_model.CpModel()
+    vb4 = variables.build_assignment_variables(cp4, solver_input, grid)
+    model4 = constraints.build_constraint_system_partial(solver_input, grid, vb4,
+        include_guardrail=True, include_hourly=True, include_window=True,
+        include_daily=True, include_role_min=False, include_role_max=False)
+    solver4 = cp_model.CpSolver()
+    solver4.parameters.max_time_in_seconds = 5.0
+    status4 = solver4.Solve(model4.cp_model)
+    results["guardrail_hourly_window_daily"] = "✓ FEASIBLE" if status4 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['guardrail_hourly_window_daily']}", file=sys.stderr)
+    
+    # Test 5: Guardrail + Hourly + Window + Daily + Role Min
+    print("\n[TEST 5] Guardrail + Hourly + Window + Daily + RoleMin...", file=sys.stderr)
+    cp5 = cp_model.CpModel()
+    vb5 = variables.build_assignment_variables(cp5, solver_input, grid)
+    model5 = constraints.build_constraint_system_partial(solver_input, grid, vb5,
+        include_guardrail=True, include_hourly=True, include_window=True,
+        include_daily=True, include_role_min=True, include_role_max=False)
+    solver5 = cp_model.CpSolver()
+    solver5.parameters.max_time_in_seconds = 5.0
+    status5 = solver5.Solve(model5.cp_model)
+    results["guardrail_hourly_window_daily_rolemin"] = "✓ FEASIBLE" if status5 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['guardrail_hourly_window_daily_rolemin']}", file=sys.stderr)
+    
+    # Test 6: All constraints
+    print("\n[TEST 6] ALL constraints...", file=sys.stderr)
+    cp6 = cp_model.CpModel()
+    vb6 = variables.build_assignment_variables(cp6, solver_input, grid)
+    model6 = constraints.build_constraint_system_partial(solver_input, grid, vb6,
+        include_guardrail=True, include_hourly=True, include_window=True,
+        include_daily=True, include_role_min=True, include_role_max=True)
+    solver6 = cp_model.CpSolver()
+    solver6.parameters.max_time_in_seconds = 5.0
+    status6 = solver6.Solve(model6.cp_model)
+    results["all_constraints"] = "✓ FEASIBLE" if status6 in (cp_model.OPTIMAL, cp_model.FEASIBLE) else "✗ INFEASIBLE"
+    print(f"  {results['all_constraints']}", file=sys.stderr)
+    
+    print("\n" + "="*80, file=sys.stderr)
+    print("INCREMENTAL TEST RESULTS SUMMARY:", file=sys.stderr)
+    for test_name, result in results.items():
+        print(f"  {test_name}: {result}", file=sys.stderr)
+    print("="*80 + "\n", file=sys.stderr)
+    
+    return results
+
+
 class SolverV2Engine:
     """Facade for the end-to-end solver pipeline.
 
@@ -69,12 +169,14 @@ class SolverV2Engine:
         print(f"[SOLVER_V2 DEBUG] status_code={status_code}, success={success}", file=sys.stderr)
         print(f"[SOLVER_V2 DEBUG] infeasibility_warnings={model.infeasibility_warnings}", file=sys.stderr)
         
-        # If infeasible, try to get more info
+        # If infeasible, run incremental test to find the culprit
         if status_code == cp_model.INFEASIBLE:
-            print("[SOLVER_V2 DEBUG] Model is INFEASIBLE. Checking sufficient assumptions...", file=sys.stderr)
-            # Print model statistics
+            print("[SOLVER_V2 DEBUG] Model is INFEASIBLE. Running incremental feasibility test...", file=sys.stderr)
             print(f"[SOLVER_V2 DEBUG] Model has {model.cp_model.Proto().variables.__len__()} variables", file=sys.stderr)
             print(f"[SOLVER_V2 DEBUG] Model has {model.cp_model.Proto().constraints.__len__()} constraints", file=sys.stderr)
+            
+            # Run incremental test to isolate the problem
+            incremental_results = _test_incremental_feasibility(solver_input, grid, variable_bundle)
         
         assignments: List[Dict[str, Any]] = []
 

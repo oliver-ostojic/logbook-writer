@@ -384,6 +384,48 @@ def build_constraint_system(
     return model
 
 
+def build_constraint_system_partial(
+    solver_input: Dict[str, Any],
+    grid: TimeGrid,
+    variable_bundle: VariableBundle,
+    *,
+    include_guardrail: bool = True,
+    include_hourly: bool = True,
+    include_window: bool = True,
+    include_daily: bool = True,
+    include_role_min: bool = True,
+    include_role_max: bool = True,
+) -> ModelEnvelope:
+    """Build constraint system with optional constraint types for incremental testing."""
+    model = ModelEnvelope(variable_bundle=variable_bundle)
+    role_lookup = {role["id"]: role for role in solver_input.get("roles", [])}
+    crew_lookup = {str(c["id"]): c for c in solver_input.get("crew", [])}
+    
+    model.role_lookup = role_lookup
+    model.crew_lookup = crew_lookup
+
+    crew_slot_map = _index_variables_by_crew_and_slot(variable_bundle)
+    role_hour_map = _index_variables_by_role_and_hour(variable_bundle)
+    role_slot_map = _index_variables_by_role_and_slot(variable_bundle)
+    role_crew_map = _index_variables_by_role_and_crew(variable_bundle)
+
+    if include_guardrail:
+        _build_guardrail_constraints(model, solver_input, crew_slot_map, grid)
+    if include_hourly:
+        _build_hourly_constraints(model, solver_input, role_lookup, role_hour_map, grid)
+    if include_window:
+        _build_window_constraints(model, solver_input, role_lookup, role_slot_map, grid)
+    if include_daily:
+        _build_daily_constraints(model, solver_input, role_lookup, role_crew_map, grid)
+    
+    # Role bounds with optional skip
+    _build_role_bounds(model, role_lookup, role_crew_map, grid, 
+                       skip_min=not include_role_min, 
+                       skip_max=not include_role_max)
+
+    return model
+
+
 def _intense_debug(
     model: ModelEnvelope,
     solver_input: Dict[str, Any],
@@ -526,6 +568,197 @@ def _intense_debug(
     print("\n" + "="*80, file=sys.stderr)
     print("END INTENSE DEBUG", file=sys.stderr)
     print("="*80 + "\n", file=sys.stderr)
+    
+    # DEEP DIVE: Hours 8 and 9
+    _debug_hours_8_and_9(model, solver_input, role_lookup, crew_lookup, grid, variable_bundle, role_hour_map, role_crew_map)
+
+
+def _debug_hours_8_and_9(
+    model: ModelEnvelope,
+    solver_input: Dict[str, Any],
+    role_lookup: Dict[int, Dict[str, Any]],
+    crew_lookup: Dict[str, Dict[str, Any]],
+    grid: TimeGrid,
+    variable_bundle,
+    role_hour_map: Dict[int, Dict[int, List[str]]],
+    role_crew_map: Dict[int, Dict[str, List[str]]],
+) -> None:
+    """DEEP DIVE DEBUG: Analyze hours 8 and 9 in extreme detail."""
+    from collections import defaultdict
+    
+    print("\n" + "#"*80, file=sys.stderr)
+    print("DEEP DIVE: HOURS 8 AND 9 ANALYSIS", file=sys.stderr)
+    print("#"*80, file=sys.stderr)
+    
+    TARGET_HOURS = [8, 9]
+    
+    # 1. Get all crew working at hours 8 and 9
+    crew_at_hour: Dict[int, set] = defaultdict(set)
+    for crew in solver_input.get("crew", []):
+        crew_id = crew["id"]
+        window = grid.crew_windows.get(crew_id)
+        if not window:
+            continue
+        for slot_index in window.slot_indexes:
+            slot = grid.slots[slot_index] if slot_index < len(grid.slots) else None
+            if slot:
+                hour = slot.start_minute // 60
+                if hour in TARGET_HOURS:
+                    crew_at_hour[hour].add(crew_id)
+    
+    for hour in TARGET_HOURS:
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"HOUR {hour}:00 - {hour+1}:00", file=sys.stderr)
+        print(f"{'='*60}", file=sys.stderr)
+        
+        crew_ids = sorted(crew_at_hour.get(hour, set()))
+        print(f"\n  CREW WORKING: {len(crew_ids)} people", file=sys.stderr)
+        
+        # 2. For each crew, show what roles they're eligible for at this hour
+        print(f"\n  CREW -> ELIGIBLE ROLES AT HOUR {hour}:", file=sys.stderr)
+        crew_role_options: Dict[str, List[str]] = {}
+        
+        for crew_id in crew_ids:
+            crew = crew_lookup.get(str(crew_id), {})
+            crew_name = crew.get("name", f"Crew {crew_id}")
+            
+            # Find all variables for this crew at this hour
+            eligible_roles = []
+            for var_key, var in variable_bundle.slot_variables.items():
+                if var.crew_id == crew_id:
+                    var_hour = var.start_minute // 60
+                    if var_hour == hour:
+                        role = role_lookup.get(var.role_id, {})
+                        role_name = role.get("displayName", f"Role {var.role_id}")
+                        role_code = role.get("code", "?")
+                        eligible_roles.append(f"{role_code}")
+            
+            crew_role_options[crew_id] = eligible_roles
+            role_summary = ", ".join(sorted(set(eligible_roles))) if eligible_roles else "NONE!"
+            print(f"    {crew_name}: {role_summary}", file=sys.stderr)
+        
+        # 3. Requirements at this hour
+        print(f"\n  REQUIREMENTS AT HOUR {hour}:", file=sys.stderr)
+        total_required = 0
+        
+        # Hourly requirements
+        for req in solver_input.get("hourlyRequirements", []):
+            if req["hour"] == hour:
+                role_id = req["roleId"]
+                required = req["required"]
+                role = role_lookup.get(role_id, {})
+                role_name = role.get("displayName", f"Role {role_id}")
+                role_code = role.get("code", "?")
+                
+                # Count how many crew have this role as an option
+                crew_with_role = sum(1 for cid in crew_ids if role_code in crew_role_options.get(cid, []))
+                
+                status = "✓" if crew_with_role >= required else f"✗ ONLY {crew_with_role} AVAILABLE"
+                print(f"    HOURLY: {role_name} ({role_code}): need {required}, {crew_with_role} can do it {status}", file=sys.stderr)
+                total_required += required
+        
+        # Window requirements
+        for req in solver_input.get("windowRequirements", []):
+            start_h = req["startHour"]
+            end_h = req["endHour"]
+            if start_h <= hour < end_h:
+                role_id = req["roleId"]
+                required = req["requiredPerHour"]
+                role = role_lookup.get(role_id, {})
+                role_name = role.get("displayName", f"Role {role_id}")
+                role_code = role.get("code", "?")
+                
+                crew_with_role = sum(1 for cid in crew_ids if role_code in crew_role_options.get(cid, []))
+                
+                status = "✓" if crew_with_role >= required else f"✗ ONLY {crew_with_role} AVAILABLE"
+                print(f"    WINDOW: {role_name} ({role_code}): need {required}, {crew_with_role} can do it {status}", file=sys.stderr)
+                total_required += required
+        
+        print(f"\n  TOTAL REQUIRED: {total_required}, CREW AVAILABLE: {len(crew_ids)}", file=sys.stderr)
+        if total_required > len(crew_ids):
+            print(f"  ⚠️ IMPOSSIBLE: Need {total_required} but only {len(crew_ids)} crew!", file=sys.stderr)
+        
+        # 4. Check role_min constraints for crew at this hour
+        print(f"\n  ROLE_MIN CONSTRAINTS FOR CREW AT HOUR {hour}:", file=sys.stderr)
+        for crew_id in crew_ids:
+            crew = crew_lookup.get(str(crew_id), {})
+            crew_name = crew.get("name", f"Crew {crew_id}")
+            
+            # Find role_min constraints for this crew
+            mins = []
+            for constraint in model.constraints.get("role_min", []):
+                if constraint.get("crewId") == crew_id:
+                    role_id = constraint.get("roleId")
+                    min_slots = constraint.get("minSlots")
+                    role = role_lookup.get(role_id, {})
+                    role_code = role.get("code", "?")
+                    mins.append(f"{role_code}≥{min_slots}")
+            
+            if mins:
+                print(f"    {crew_name}: {', '.join(mins)}", file=sys.stderr)
+        
+        # 5. Show the actual constraint model implications
+        print(f"\n  CONSTRAINT INTERACTION ANALYSIS:", file=sys.stderr)
+        
+        # For each crew at this hour, compute: how many slots do their role_mins consume?
+        total_min_slots_needed = 0
+        for crew_id in crew_ids:
+            crew_min_total = 0
+            for constraint in model.constraints.get("role_min", []):
+                if constraint.get("crewId") == crew_id:
+                    crew_min_total += constraint.get("minSlots", 0)
+            total_min_slots_needed += crew_min_total
+        
+        # How many slot-assignments are available at this hour?
+        # Each crew has 2 slots per hour (30 min each)
+        total_slots_at_hour = len(crew_ids) * 2
+        
+        print(f"    Total crew: {len(crew_ids)}", file=sys.stderr)
+        print(f"    Total slots at hour (crew * 2): {total_slots_at_hour}", file=sys.stderr)
+        print(f"    Total required for all roles: {total_required}", file=sys.stderr)
+    
+    # 6. MATHEMATICAL FEASIBILITY CHECK
+    print(f"\n{'='*60}", file=sys.stderr)
+    print("MATHEMATICAL FEASIBILITY CHECK", file=sys.stderr)
+    print("="*60, file=sys.stderr)
+    
+    print("\n  The solver must satisfy ALL of these simultaneously:", file=sys.stderr)
+    print("  1. Guardrail: Each crew has exactly 1 role per slot", file=sys.stderr)
+    print("  2. Hourly: Sum of role assignments == required per hour", file=sys.stderr)
+    print("  3. Role_min: Each crew gets at least minSlots of each role", file=sys.stderr)
+    print("  4. Role_max: Each crew gets at most maxSlots of each role", file=sys.stderr)
+    
+    # Check: do role_mins for SOLVER roles (like BREAK) consume too much capacity?
+    print("\n  ROLE_MIN CAPACITY ANALYSIS:", file=sys.stderr)
+    
+    # For each role with role_min, compute total crew * min
+    role_min_totals: Dict[int, Dict] = {}
+    for role_id, role in role_lookup.items():
+        min_slots = role.get("minSlots", 0)
+        if min_slots > 0:
+            assignment_models = role.get("assignmentModels", [])
+            # Count crew with this role
+            crew_with_role = len(role_crew_map.get(role_id, {}))
+            total_min_needed = crew_with_role * min_slots
+            role_min_totals[role_id] = {
+                "name": role.get("displayName", f"Role {role_id}"),
+                "code": role.get("code", "?"),
+                "minSlots": min_slots,
+                "crewCount": crew_with_role,
+                "totalMinNeeded": total_min_needed,
+                "assignmentModels": assignment_models,
+                "blockSize": role.get("blockSize", 1),
+            }
+    
+    for role_id, info in role_min_totals.items():
+        block_minutes = info["blockSize"] * 30
+        total_minutes = info["totalMinNeeded"] * block_minutes
+        print(f"    {info['name']}: minSlots={info['minSlots']} × {info['crewCount']} crew = "
+              f"{info['totalMinNeeded']} total blocks ({total_minutes} min)", file=sys.stderr)
+    
+    print("\n" + "#"*80, file=sys.stderr)
+    print("END DEEP DIVE", file=sys.stderr)
+    print("#"*80 + "\n", file=sys.stderr)
 
 
 def _check_aggregate_hourly_capacity(
@@ -838,7 +1071,6 @@ def _build_role_bounds(
         if not role:
             continue
         
-        # Skip role_min for HOURLY roles - hourly constraints handle the requirements
         assignment_models = set(role.get("assignmentModels", []))
         is_hourly_role = "HOURLY" in assignment_models
         

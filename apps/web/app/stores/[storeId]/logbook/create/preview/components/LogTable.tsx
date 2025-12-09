@@ -132,18 +132,22 @@ const ROLE_THEME_BLUE_SOFT =
   'bg-blue-200/80 text-blue-900 group-hover:bg-blue-200/90 group-hover:text-blue-950';
 const ROLE_THEME_GREEN_SOFT =
   'bg-green-200/80 text-green-900 group-hover:bg-green-200/90 group-hover:text-green-950';
+const ROLE_THEME_GREEN_MEDIUM =
+  'bg-green-300/80 text-green-900 group-hover:bg-green-300/90 group-hover:text-green-950';
 const ROLE_THEME_STONE_SOFT =
   'bg-stone-200/80 text-stone-900 group-hover:bg-stone-200/90 group-hover:text-stone-950';
 const ROLE_THEME_INDIGO_SOFT =
   'bg-indigo-200/80 text-indigo-900 group-hover:bg-indigo-200/90 group-hover:text-indigo-950';
 const ROLE_THEME_SLATE_DARK =
   'bg-slate-900 text-white group-hover:bg-slate-900/90 group-hover:text-white';
+const ROLE_THEME_ROSE_MEDIUM =
+  'bg-rose-300/80 text-rose-900 group-hover:bg-rose-300/90 group-hover:text-rose-950';
 
 const ROLE_ASSIGNMENT_THEMES: Record<number, string> = {
   30: ROLE_THEME_RED_BOLD,    // Bold red with white text
-  35: ROLE_THEME_RED_SOFT,    // Same red as PROD
+  35: ROLE_THEME_ROSE_MEDIUM, // SL - darker rose to differentiate from product red
   33: ROLE_THEME_RED_SOFT,    // PROD - red
-  37: ROLE_THEME_GREEN_SOFT,
+  37: ROLE_THEME_GREEN_MEDIUM, // Slightly darker green
   38: ROLE_THEME_GREEN_SOFT,
   29: ROLE_THEME_BLUE_SOFT,   // P_HELM - blue
   34: ROLE_THEME_INDIGO_SOFT,
@@ -300,11 +304,77 @@ export default function LogbookSchedule({
     return grouped;
   }, [timelineAssignments]);
 
+  // First explode all assignments into 30-min slots
+  const explodedAssignmentsByCrew = React.useMemo(() => {
+    const exploded: Record<string, AssignmentForTimeline[]> = {};
+    
+    for (const [crewId, crewAssignments] of Object.entries(assignmentsByCrew)) {
+      const slots: AssignmentForTimeline[] = [];
+      
+      for (const assignment of crewAssignments) {
+        // Split this assignment into 30-min (slotMinutes) chunks
+        let currentStart = assignment.startMinutes;
+        let slotIndex = 0;
+        
+        while (currentStart < assignment.endMinutes) {
+          const slotEnd = Math.min(currentStart + slotMinutes, assignment.endMinutes);
+          slots.push({
+            id: `${assignment.id}_slot${slotIndex}`,
+            crewId: assignment.crewId,
+            roleId: assignment.roleId,
+            roleCode: assignment.roleCode,
+            startMinutes: currentStart,
+            endMinutes: slotEnd,
+          });
+          currentStart = slotEnd;
+          slotIndex++;
+        }
+      }
+      
+      // Sort by start time
+      slots.sort((a, b) => a.startMinutes - b.startMinutes);
+      exploded[crewId] = slots;
+    }
+    
+    return exploded;
+  }, [assignmentsByCrew, slotMinutes]);
+
+  // Apply pending edits to exploded assignments
+  // This ensures visual consistency when exiting edit mode before parent updates
+  const assignmentsWithPendingEdits = React.useMemo(() => {
+    const result: Record<string, AssignmentForTimeline[]> = {};
+    
+    for (const [crewId, crewAssignments] of Object.entries(explodedAssignmentsByCrew)) {
+      const crewPendingEdits = pendingEdits.get(crewId);
+      
+      if (!crewPendingEdits || crewPendingEdits.size === 0) {
+        // No pending edits for this crew, use original
+        result[crewId] = crewAssignments;
+        continue;
+      }
+      
+      // Apply pending edits to each 30-min slot
+      result[crewId] = crewAssignments.map((assignment) => {
+        const pendingEdit = crewPendingEdits.get(assignment.startMinutes);
+        if (pendingEdit) {
+          return {
+            ...assignment,
+            roleId: pendingEdit.roleId,
+            roleCode: pendingEdit.roleCode,
+          };
+        }
+        return assignment;
+      });
+    }
+    
+    return result;
+  }, [explodedAssignmentsByCrew, pendingEdits]);
+
   // merge contiguous assignments with same role, but only within the same hour
   const mergedAssignmentsByCrew = React.useMemo(() => {
     const merged: Record<string, AssignmentForTimeline[]> = {};
     
-    for (const [crewId, crewAssignments] of Object.entries(assignmentsByCrew)) {
+    for (const [crewId, crewAssignments] of Object.entries(assignmentsWithPendingEdits)) {
       // Sort by start time
       const sorted = [...crewAssignments].sort((a, b) => a.startMinutes - b.startMinutes);
       
@@ -340,42 +410,7 @@ export default function LogbookSchedule({
     }
     
     return merged;
-  }, [assignmentsByCrew]);
-
-  // Explode ALL assignments into individual 30-min slots for edit mode
-  const explodedAssignmentsByCrew = React.useMemo(() => {
-    const exploded: Record<string, AssignmentForTimeline[]> = {};
-    
-    for (const [crewId, crewAssignments] of Object.entries(assignmentsByCrew)) {
-      const slots: AssignmentForTimeline[] = [];
-      
-      for (const assignment of crewAssignments) {
-        // Split this assignment into 30-min (slotMinutes) chunks
-        let currentStart = assignment.startMinutes;
-        let slotIndex = 0;
-        
-        while (currentStart < assignment.endMinutes) {
-          const slotEnd = Math.min(currentStart + slotMinutes, assignment.endMinutes);
-          slots.push({
-            id: `${assignment.id}_slot${slotIndex}`,
-            crewId: assignment.crewId,
-            roleId: assignment.roleId,
-            roleCode: assignment.roleCode,
-            startMinutes: currentStart,
-            endMinutes: slotEnd,
-          });
-          currentStart = slotEnd;
-          slotIndex++;
-        }
-      }
-      
-      // Sort by start time
-      slots.sort((a, b) => a.startMinutes - b.startMinutes);
-      exploded[crewId] = slots;
-    }
-    
-    return exploded;
-  }, [assignmentsByCrew, slotMinutes]);
+  }, [assignmentsWithPendingEdits]);
 
   const earliestStartByCrew = React.useMemo(() => {
     const map = new Map<string, number>();

@@ -67,7 +67,7 @@ describe('coverage constraint assembly', () => {
       role.id === 1
         ? ({
             ...role,
-            assignmentModels: ['HOURLY', 'HOURLY_WINDOW', 'DAILY'] as AssignmentModelValue[],
+            assignmentModels: ['HOURLY', 'HOURLY_OR_WINDOW', 'DAILY'] as AssignmentModelValue[],
           })
         : ({ ...role })
     );

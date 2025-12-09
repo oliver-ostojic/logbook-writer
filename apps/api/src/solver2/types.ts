@@ -6,19 +6,27 @@ export type AssignmentModelValue = AssignmentModel | 'SOLVER';
 export interface StoreDescriptor {
   id: number;
   timezone: string;
-  baseSlotMinutes: number;
   openMinutesFromMidnight: number;
   closeMinutesFromMidnight: number;
+}
+
+// NEW: Role family for aggregate time constraints
+export interface RoleFamilyDescriptor {
+  id: number;
+  name: string;
+  minMinutes: number;
+  maxMinutes: number;
+  roleIds: number[]; // roles in this family
 }
 
 export interface RoleDescriptor {
   id: number;
   code: string;
   displayName: string;
-  assignmentModels: AssignmentModelValue[];
-  minSlots: number;
-  maxSlots: number;
-  blockSize: number;
+  assignmentModel: AssignmentModelValue; // single value - for UI display only, solver ignores this
+  taskLength: number; // assignment duration in minutes
+  canSplitForGaps: boolean; // can be split into smaller chunks to fill gaps
+  familyId: number; // link to RoleFamily
   allowOutsideStoreHours: boolean;
   consecutivePolicy: ConsecutivePolicy;
   minShiftLengthForRoleAccess?: number | null;
@@ -40,23 +48,21 @@ export interface CrewDescriptor {
   shiftEndMin: number;
 }
 
-export interface HourlyRequirementDescriptor {
+// NEW: Replaces HourlyRequirementDescriptor + WindowRequirementDescriptor
+export interface CoverageWindowDescriptor {
   roleId: number;
-  hour: number;
-  required: number;
+  startMin: number; // minutes from midnight
+  endMin: number; // minutes from midnight
+  crewPerTaskLength: number;
 }
 
-export interface WindowRequirementDescriptor {
-  roleId: number;
-  startHour: number;
-  endHour: number;
-  requiredPerHour: number;
-}
-
-export interface DailyRequirementDescriptor {
+// NEW: Replaces DailyRequirementDescriptor
+export interface CrewQuotaDescriptor {
   roleId: number;
   crewId: string;
-  requiredMinutes: number;
+  startMin: number; // time window start
+  endMin: number; // time window end
+  requiredMin: number; // minutes required
 }
 
 export interface PreferenceDescriptor {
@@ -68,7 +74,7 @@ export interface PreferenceDescriptor {
   adaptiveBoost: number;
   intValue?: number;
   rolePreferenceId: number;
-  assignmentModels: AssignmentModelValue[];
+  assignmentModel: AssignmentModelValue; // changed from assignmentModels[]
   bankedWeightBoost?: number;
   bankingMetadata?: PreferenceBankingMetadata;
 }
@@ -116,11 +122,11 @@ export interface CrewRoleFairnessHistoryDescriptor {
 
 export interface SolverInputV2 {
   store: StoreDescriptor;
+  roleFamilies: RoleFamilyDescriptor[];
   roles: RoleDescriptor[];
   crew: CrewDescriptor[];
-  hourlyRequirements: HourlyRequirementDescriptor[];
-  windowRequirements: WindowRequirementDescriptor[];
-  dailyRequirements: DailyRequirementDescriptor[];
+  coverageWindows: CoverageWindowDescriptor[];
+  crewQuotas: CrewQuotaDescriptor[];
   preferences: PreferenceDescriptor[];
   bankedPreferences: BankedPreferenceDescriptor[];
   fairnessTrackers: RoleFairnessTrackerDescriptor[];

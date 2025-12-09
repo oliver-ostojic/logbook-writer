@@ -9,7 +9,7 @@ from ortools.sat.python import cp_model
 
 from .time_grid import CrewShiftWindow, TimeGrid
 
-ASSIGNMENT_MODELS = ("HOURLY", "HOURLY_WINDOW", "DAILY", "SOLVER")
+ASSIGNMENT_MODELS = ("HOURLY", "HOURLY_OR_WINDOW", "DAILY", "SOLVER")
 
 
 @dataclass
@@ -80,7 +80,7 @@ class VariableBundle:
     def summary(self) -> Dict[str, int]:
         return {
             "hourly": len(self.model_index["HOURLY"]),
-            "window": len(self.model_index["HOURLY_WINDOW"]),
+            "window": len(self.model_index["HOURLY_OR_WINDOW"]),
             "daily": len(self.model_index["DAILY"]),
             "solver_managed": len(self.model_index["SOLVER"]),
             "slot_variables": len(self.slot_variables),
@@ -136,10 +136,10 @@ def build_assignment_variables(
         min_shift_length = role.get("minShiftLengthForRoleAccess") or 0
         allowed_crews = _eligible_crews_for_role(role, crews, grid, min_shift_length)
         is_daily_role = "DAILY" in assignment_models
-        is_window_role = "HOURLY_WINDOW" in assignment_models
+        is_window_role = "HOURLY_OR_WINDOW" in assignment_models
         is_hourly_role = "HOURLY" in assignment_models
         
-        # For HOURLY_WINDOW roles, skip if there's no window constraint
+        # For HOURLY_OR_WINDOW roles, skip if there's no window constraint
         if is_window_role and role["id"] not in window_bounds_lookup:
             continue
         

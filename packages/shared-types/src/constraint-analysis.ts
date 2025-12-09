@@ -1,6 +1,8 @@
 export type ConstraintViolationSeverity = 'error' | 'warning' | 'info';
 
 export type ConstraintViolationCategory =
+  | 'coverage'
+  | 'quota'
   | 'hourly'
   | 'window'
   | 'daily'

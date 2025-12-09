@@ -18,9 +18,9 @@ ROLE_ALIASES = {
 ASSIGNMENT_MODEL_MAP = {
     'UNIVERSAL': 'HOURLY',
     'CREW_SPECIFIC': 'DAILY',
-    'COVERAGE_WINDOW': 'HOURLY_WINDOW',
+    'COVERAGE_WINDOW': 'HOURLY_OR_WINDOW',
     'HOURLY': 'HOURLY',
-    'HOURLY_WINDOW': 'HOURLY_WINDOW',
+    'HOURLY_OR_WINDOW': 'HOURLY_OR_WINDOW',
     'DAILY': 'DAILY',
     'SOLVER': 'SOLVER',
 }
@@ -28,11 +28,22 @@ ASSIGNMENT_MODEL_MAP = {
 
 def normalize_payload(raw_payload: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize legacy SolverInput payloads into SolverInputV2 shape."""
-
+    import sys
+    
+    print(f"\n[NORMALIZER DEBUG] raw_payload keys: {list(raw_payload.keys())}", file=sys.stderr)
+    
     payload = _extract_inner_payload(raw_payload)
-
+    
+    print(f"[NORMALIZER DEBUG] after extract, payload keys: {list(payload.keys())}", file=sys.stderr)
+    
     if 'store' in payload and 'roles' in payload:
         # Already conforms to SolverInputV2
+        print(f"[NORMALIZER DEBUG] Payload already V2 format, passing through", file=sys.stderr)
+        print(f"[NORMALIZER DEBUG] crew count: {len(payload.get('crew', []))}", file=sys.stderr)
+        if payload.get('crew'):
+            crew0 = payload['crew'][0]
+            print(f"[NORMALIZER DEBUG] crew[0] keys: {list(crew0.keys())}", file=sys.stderr)
+            print(f"[NORMALIZER DEBUG] crew[0] roleIds: {crew0.get('roleIds', 'MISSING!')}", file=sys.stderr)
         return payload
 
     store_metadata = payload.get('storeMetadata') or payload.get('store')
@@ -85,6 +96,10 @@ def normalize_payload(raw_payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _extract_inner_payload(raw: Dict[str, Any]) -> Dict[str, Any]:
+    # Node.js sends { solverInput, timeLimitSeconds }
+    if 'solverInput' in raw and isinstance(raw['solverInput'], dict):
+        return raw['solverInput']
+    # Also check 'data' for backward compatibility
     if 'data' in raw and isinstance(raw['data'], dict):
         return raw['data']
     return raw
