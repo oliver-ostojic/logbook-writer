@@ -2,120 +2,61 @@
   "store": {
     "id": 768,
     "timezone": "EST",
-    "baseSlotMinutes": 30,
     "openMinutesFromMidnight": 480,
     "closeMinutesFromMidnight": 1260
   },
+  "roleFamilies": [
+    {
+      "id": 11,
+      "name": "BREAK",
+      "minMinutes": 30,
+      "maxMinutes": 30,
+      "roleIds": [
+        36
+      ]
+    },
+    {
+      "id": 10,
+      "name": "PRODUCT",
+      "minMinutes": 60,
+      "maxMinutes": 420,
+      "roleIds": [
+        37,
+        38,
+        35,
+        58,
+        33,
+        34
+      ]
+    },
+    {
+      "id": 9,
+      "name": "CUSTOMER_EXPERIENCE",
+      "minMinutes": 60,
+      "maxMinutes": 420,
+      "roleIds": [
+        30
+      ]
+    },
+    {
+      "id": 12,
+      "name": "PARKING_HELMS",
+      "minMinutes": 0,
+      "maxMinutes": 30,
+      "roleIds": [
+        29
+      ]
+    }
+  ],
   "roles": [
-    {
-      "id": 29,
-      "code": "P_HELM",
-      "displayName": "Parking Helms",
-      "assignmentModels": [
-        "HOURLY_WINDOW",
-        "HOURLY"
-      ],
-      "minSlots": 0,
-      "maxSlots": 1,
-      "blockSize": 1,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "NONE",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 37,
-      "code": "W_DMO",
-      "displayName": "Wine Demo",
-      "assignmentModels": [
-        "HOURLY_WINDOW"
-      ],
-      "minSlots": 0,
-      "maxSlots": 4,
-      "blockSize": 2,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "NONE",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 38,
-      "code": "DEMO",
-      "displayName": "Food Demo",
-      "assignmentModels": [
-        "HOURLY_WINDOW"
-      ],
-      "minSlots": 0,
-      "maxSlots": 4,
-      "blockSize": 1,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "NONE",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 35,
-      "code": "SL",
-      "displayName": "Section Leader",
-      "assignmentModels": [
-        "DAILY"
-      ],
-      "minSlots": 0,
-      "maxSlots": 6,
-      "blockSize": 1,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "PREFERRED",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 34,
-      "code": "ART",
-      "displayName": "Art",
-      "assignmentModels": [
-        "DAILY"
-      ],
-      "minSlots": 0,
-      "maxSlots": 12,
-      "blockSize": 1,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "PREFERRED",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 30,
-      "code": "REG",
-      "displayName": "Register",
-      "assignmentModels": [
-        "HOURLY"
-      ],
-      "minSlots": 2,
-      "maxSlots": 10,
-      "blockSize": 2,
-      "allowOutsideStoreHours": false,
-      "consecutivePolicy": "NONE",
-      "minShiftLengthForRoleAccess": null
-    },
-    {
-      "id": 33,
-      "code": "PROD",
-      "displayName": "Product",
-      "assignmentModels": [
-        "SOLVER"
-      ],
-      "minSlots": 2,
-      "maxSlots": 12,
-      "blockSize": 1,
-      "allowOutsideStoreHours": true,
-      "consecutivePolicy": "NONE",
-      "minShiftLengthForRoleAccess": null
-    },
     {
       "id": 36,
       "code": "BRK",
       "displayName": "Break",
-      "assignmentModels": [
-        "SOLVER"
-      ],
-      "minSlots": 0,
-      "maxSlots": 1,
-      "blockSize": 1,
+      "assignmentModel": "SOLVER",
+      "taskLength": 30,
+      "canSplitForGaps": false,
+      "familyId": 11,
       "allowOutsideStoreHours": true,
       "consecutivePolicy": "REQUIRED",
       "minShiftLengthForRoleAccess": 300,
@@ -123,6 +64,118 @@
         "startOffsetMin": 180,
         "endOffsetMin": 300
       }
+    },
+    {
+      "id": 30,
+      "code": "REG",
+      "displayName": "Register",
+      "assignmentModel": "HOURLY",
+      "taskLength": 60,
+      "canSplitForGaps": false,
+      "familyId": 9,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 29,
+      "code": "P_HELM",
+      "displayName": "Parking Helms",
+      "assignmentModel": "HOURLY_OR_WINDOW",
+      "taskLength": 30,
+      "canSplitForGaps": false,
+      "familyId": 12,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null,
+      "fairnessTracking": {
+        "lookbackDays": 14,
+        "enabled": true
+      }
+    },
+    {
+      "id": 37,
+      "code": "W_DMO",
+      "displayName": "Wine Demo",
+      "assignmentModel": "WINDOW",
+      "taskLength": 60,
+      "canSplitForGaps": false,
+      "familyId": 10,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null,
+      "fairnessTracking": {
+        "lookbackDays": 14,
+        "enabled": true
+      }
+    },
+    {
+      "id": 38,
+      "code": "DEMO",
+      "displayName": "Food Demo",
+      "assignmentModel": "WINDOW",
+      "taskLength": 60,
+      "canSplitForGaps": false,
+      "familyId": 10,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null,
+      "fairnessTracking": {
+        "lookbackDays": 14,
+        "enabled": true
+      }
+    },
+    {
+      "id": 35,
+      "code": "SL",
+      "displayName": "Section Leader",
+      "assignmentModel": "DAILY",
+      "taskLength": 60,
+      "canSplitForGaps": true,
+      "familyId": 10,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "PREFERRED",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 58,
+      "code": "TST",
+      "displayName": "Test",
+      "assignmentModel": "DAILY",
+      "taskLength": 60,
+      "canSplitForGaps": true,
+      "familyId": 10,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "PREFERRED",
+      "minShiftLengthForRoleAccess": null,
+      "windowOffsets": {
+        "startOffsetMin": 0,
+        "endOffsetMin": 120
+      }
+    },
+    {
+      "id": 33,
+      "code": "PROD",
+      "displayName": "Product",
+      "assignmentModel": "SOLVER",
+      "taskLength": 60,
+      "canSplitForGaps": true,
+      "familyId": 10,
+      "allowOutsideStoreHours": true,
+      "consecutivePolicy": "NONE",
+      "minShiftLengthForRoleAccess": null
+    },
+    {
+      "id": 34,
+      "code": "ART",
+      "displayName": "Art",
+      "assignmentModel": "DAILY",
+      "taskLength": 60,
+      "canSplitForGaps": true,
+      "familyId": 10,
+      "allowOutsideStoreHours": false,
+      "consecutivePolicy": "PREFERRED",
+      "minShiftLengthForRoleAccess": null
     }
   ],
   "crew": [
@@ -648,7 +701,8 @@
         29,
         30,
         33,
-        36
+        36,
+        58
       ],
       "shiftStartMin": 840,
       "shiftEndMin": 1320
@@ -936,183 +990,237 @@
       "shiftEndMin": 1320
     }
   ],
-  "hourlyRequirements": [
+  "coverageWindows": [
     {
       "roleId": 30,
-      "hour": 8,
-      "required": 10
+      "startMin": 480,
+      "endMin": 540,
+      "crewPerTaskLength": 10
     },
-    {
-      "roleId": 30,
-      "hour": 9,
-      "required": 8
-    },
-    {
-      "roleId": 30,
-      "hour": 10,
-      "required": 12
-    },
-    {
-      "roleId": 30,
-      "hour": 11,
-      "required": 11
-    },
-    {
-      "roleId": 30,
-      "hour": 12,
-      "required": 7
-    },
-    {
-      "roleId": 30,
-      "hour": 13,
-      "required": 11
-    },
-    {
-      "roleId": 30,
-      "hour": 14,
-      "required": 12
-    },
-    {
-      "roleId": 30,
-      "hour": 15,
-      "required": 11
-    },
-    {
-      "roleId": 30,
-      "hour": 16,
-      "required": 12
-    },
-    {
-      "roleId": 30,
-      "hour": 17,
-      "required": 11
-    },
-    {
-      "roleId": 30,
-      "hour": 18,
-      "required": 10
-    },
-    {
-      "roleId": 30,
-      "hour": 19,
-      "required": 9
-    },
-    {
-      "roleId": 30,
-      "hour": 20,
-      "required": 7
-    }
-  ],
-  "windowRequirements": [
     {
       "roleId": 29,
-      "startHour": 9,
-      "endHour": 21,
-      "requiredPerHour": 2
+      "startMin": 540,
+      "endMin": 1260,
+      "crewPerTaskLength": 1
     },
     {
-      "roleId": 37,
-      "startHour": 12,
-      "endHour": 16,
-      "requiredPerHour": 1
+      "roleId": 30,
+      "startMin": 540,
+      "endMin": 600,
+      "crewPerTaskLength": 8
+    },
+    {
+      "roleId": 30,
+      "startMin": 600,
+      "endMin": 660,
+      "crewPerTaskLength": 12
     },
     {
       "roleId": 38,
-      "startHour": 10,
-      "endHour": 16,
-      "requiredPerHour": 1
+      "startMin": 600,
+      "endMin": 960,
+      "crewPerTaskLength": 1
+    },
+    {
+      "roleId": 30,
+      "startMin": 660,
+      "endMin": 720,
+      "crewPerTaskLength": 11
+    },
+    {
+      "roleId": 30,
+      "startMin": 720,
+      "endMin": 780,
+      "crewPerTaskLength": 7
+    },
+    {
+      "roleId": 37,
+      "startMin": 720,
+      "endMin": 960,
+      "crewPerTaskLength": 1
+    },
+    {
+      "roleId": 30,
+      "startMin": 780,
+      "endMin": 840,
+      "crewPerTaskLength": 11
+    },
+    {
+      "roleId": 30,
+      "startMin": 840,
+      "endMin": 900,
+      "crewPerTaskLength": 12
+    },
+    {
+      "roleId": 30,
+      "startMin": 900,
+      "endMin": 960,
+      "crewPerTaskLength": 11
+    },
+    {
+      "roleId": 30,
+      "startMin": 960,
+      "endMin": 1020,
+      "crewPerTaskLength": 12
+    },
+    {
+      "roleId": 30,
+      "startMin": 1020,
+      "endMin": 1080,
+      "crewPerTaskLength": 11
+    },
+    {
+      "roleId": 30,
+      "startMin": 1080,
+      "endMin": 1140,
+      "crewPerTaskLength": 10
+    },
+    {
+      "roleId": 30,
+      "startMin": 1140,
+      "endMin": 1200,
+      "crewPerTaskLength": 9
+    },
+    {
+      "roleId": 30,
+      "startMin": 1200,
+      "endMin": 1260,
+      "crewPerTaskLength": 7
     }
   ],
-  "dailyRequirements": [
+  "crewQuotas": [
+    {
+      "roleId": 58,
+      "crewId": "1269090",
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
+    },
     {
       "roleId": 35,
       "crewId": "1283498",
-      "requiredMinutes": 60
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
     },
     {
       "roleId": 34,
       "crewId": "1290542",
-      "requiredMinutes": 270
+      "startMin": 360,
+      "endMin": 840,
+      "requiredMin": 270
     },
     {
       "roleId": 34,
       "crewId": "1290575",
-      "requiredMinutes": 210
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 210
     },
     {
       "roleId": 35,
       "crewId": "1291050",
-      "requiredMinutes": 60
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1306654",
-      "requiredMinutes": 60
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1307221",
-      "requiredMinutes": 60
+      "startMin": 600,
+      "endMin": 1080,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1311212",
-      "requiredMinutes": 60
+      "startMin": 600,
+      "endMin": 1080,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1316503",
-      "requiredMinutes": 60
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1320450",
-      "requiredMinutes": 60
+      "startMin": 360,
+      "endMin": 840,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1326561",
-      "requiredMinutes": 60
+      "startMin": 600,
+      "endMin": 1080,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1336739",
-      "requiredMinutes": 120
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 120
     },
     {
       "roleId": 35,
       "crewId": "1347636",
-      "requiredMinutes": 60
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1350023",
-      "requiredMinutes": 120
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1355504",
-      "requiredMinutes": 60
+      "startMin": 600,
+      "endMin": 1080,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1364026",
-      "requiredMinutes": 60
+      "startMin": 600,
+      "endMin": 1080,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1369981",
-      "requiredMinutes": 60
+      "startMin": 720,
+      "endMin": 1200,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1372431",
-      "requiredMinutes": 60
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1379051",
-      "requiredMinutes": 60
+      "startMin": 300,
+      "endMin": 780,
+      "requiredMin": 60
     }
   ],
   "preferences": [
@@ -1123,7 +1231,8 @@
       "baseWeight": 1,
       "crewWeight": 1,
       "adaptiveBoost": 1,
-      "rolePreferenceId": 2
+      "rolePreferenceId": 2,
+      "assignmentModel": "SOLVER"
     },
     {
       "crewId": "1269090",
@@ -1133,7 +1242,8 @@
       "crewWeight": 1,
       "adaptiveBoost": 1,
       "intValue": 1,
-      "rolePreferenceId": 6
+      "rolePreferenceId": 6,
+      "assignmentModel": "HOURLY_OR_WINDOW"
     },
     {
       "crewId": "1269090",
@@ -1143,7 +1253,8 @@
       "crewWeight": 1,
       "adaptiveBoost": 1,
       "intValue": 1,
-      "rolePreferenceId": 5
+      "rolePreferenceId": 5,
+      "assignmentModel": "SOLVER"
     },
     {
       "crewId": "1269090",
@@ -1152,7 +1263,30 @@
       "baseWeight": 1,
       "crewWeight": 1,
       "adaptiveBoost": 1,
-      "rolePreferenceId": 8
+      "rolePreferenceId": 8,
+      "assignmentModel": "SOLVER"
     }
-  ]
+  ],
+  "bankedPreferences": [],
+  "fairnessTrackers": [
+    {
+      "roleId": 29,
+      "storeId": 768,
+      "lookbackDays": 14,
+      "enabled": true
+    },
+    {
+      "roleId": 38,
+      "storeId": 768,
+      "lookbackDays": 14,
+      "enabled": true
+    },
+    {
+      "roleId": 37,
+      "storeId": 768,
+      "lookbackDays": 14,
+      "enabled": true
+    }
+  ],
+  "fairnessHistory": []
 }

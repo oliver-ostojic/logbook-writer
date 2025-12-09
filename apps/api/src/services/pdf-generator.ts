@@ -292,10 +292,21 @@ export async function generateLogbookPdf(
       rowY = tableTop;
     }
 
+<<<<<<< HEAD
     // Crew name cell
     const rowBg = currentRowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
     doc.rect(tableLeft, rowY, nameColumnWidth, rowHeight)
       .fillAndStroke(rowBg, '#d1d5db');
+=======
+    // Crew name cell - solid white background
+    doc.rect(tableLeft, rowY, nameColumnWidth, rowHeight)
+      .fillAndStroke('#ffffff', '#d1d5db');
+    
+    // Alternating row color for shift cells
+    const shiftRowBg = currentRowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
+    // Empty cells get light grey background
+    const emptyBg = '#f3f4f6';
+>>>>>>> copilot/vscode1765252983699
     
     // Check if name fits on one line
     const nameWidth = nameColumnWidth - 30;
@@ -361,9 +372,15 @@ export async function generateLogbookPdf(
         doc.rect(x, rowY, slotWidth, rowHeight)
           .fill(`rgb(${tintedColor[0]}, ${tintedColor[1]}, ${tintedColor[2]})`);
       } else {
+<<<<<<< HEAD
         // Empty cell - use alternating row background
         doc.rect(x, rowY, slotWidth, rowHeight)
           .fill(rowBg);
+=======
+        // Empty cell - grey background
+        doc.rect(x, rowY, slotWidth, rowHeight)
+          .fill(emptyBg);
+>>>>>>> copilot/vscode1765252983699
       }
     });
 
