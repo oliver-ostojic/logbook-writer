@@ -226,13 +226,23 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
   const [isPublishing, setIsPublishing] = React.useState(false);
 
   // Build a map of original assignments for comparison (to detect "undo" edits)
+  // Explode to 30-min slots to match edit granularity
   const originalAssignmentsByKey = React.useMemo(() => {
+    const SLOT_MINUTES = 30;
     const map = new Map<string, { roleId: number; roleCode: string }>();
-    assignments.forEach((a) => {
+    
+    for (const a of assignments) {
       const startMinutes = a.startTime.getUTCHours() * 60 + a.startTime.getUTCMinutes();
-      const key = `${a.crewId}-${startMinutes}`;
-      map.set(key, { roleId: a.roleId, roleCode: a.roleCode });
-    });
+      const endMinutes = a.endTime.getUTCHours() * 60 + a.endTime.getUTCMinutes();
+      
+      // Create a key for each 30-min slot within this assignment
+      let currentStart = startMinutes;
+      while (currentStart < endMinutes) {
+        const key = `${a.crewId}-${currentStart}`;
+        map.set(key, { roleId: a.roleId, roleCode: a.roleCode });
+        currentStart += SLOT_MINUTES;
+      }
+    }
     return map;
   }, [assignments]);
 
@@ -312,12 +322,48 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
     }
   }, [logbookId, localEdits, router, storeId]);
 
-  // Apply local edits to assignments
+  // Explode assignments into 30-min slots and apply local edits
+  // This is necessary because assignments can be 60min blocks, but edits are at 30min granularity
   const editedAssignments = React.useMemo(() => {
-    if (localEdits.size === 0) return assignments;
+    const SLOT_MINUTES = 30;
+    const explodedSlots: typeof assignments = [];
     
-    return assignments.map((a) => {
-      // Convert assignment startTime to minutes from midnight (UTC)
+    // First, explode all assignments into 30-min slots
+    for (const a of assignments) {
+      const startMinutes = a.startTime.getUTCHours() * 60 + a.startTime.getUTCMinutes();
+      const endMinutes = a.endTime.getUTCHours() * 60 + a.endTime.getUTCMinutes();
+      const baseDate = new Date(a.startTime);
+      baseDate.setUTCHours(0, 0, 0, 0);
+      
+      let currentStart = startMinutes;
+      let slotIndex = 0;
+      
+      while (currentStart < endMinutes) {
+        const slotEnd = Math.min(currentStart + SLOT_MINUTES, endMinutes);
+        
+        // Create start/end times for this slot
+        const slotStartTime = new Date(baseDate.getTime() + currentStart * 60 * 1000);
+        const slotEndTime = new Date(baseDate.getTime() + slotEnd * 60 * 1000);
+        
+        explodedSlots.push({
+          id: `${a.id}_slot${slotIndex}`,
+          crewId: a.crewId,
+          roleId: a.roleId,
+          roleCode: a.roleCode,
+          startTime: slotStartTime,
+          endTime: slotEndTime,
+        });
+        
+        currentStart = slotEnd;
+        slotIndex++;
+      }
+    }
+    
+    // If no edits, return exploded slots as-is
+    if (localEdits.size === 0) return explodedSlots;
+    
+    // Apply edits to the exploded slots
+    return explodedSlots.map((a) => {
       const startMinutes = a.startTime.getUTCHours() * 60 + a.startTime.getUTCMinutes();
       const key = `${a.crewId}-${startMinutes}`;
       const edit = localEdits.get(key);

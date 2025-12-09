@@ -12,8 +12,9 @@ import type { ConstraintViolation } from '@logbook-writer/shared-types/src/const
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const API_SRC_DIR = path.resolve(CURRENT_DIR, '..');
 const PROJECT_ROOT = path.resolve(API_SRC_DIR, '../../..');
-const PYTHON_MODULE = 'solver2.python.cli';
-const PYTHON_SOURCE_DIR = API_SRC_DIR;
+// Use the refactored solver in apps/solver-python/
+const PYTHON_MODULE = 'logbook_solver_v2.cli';
+const PYTHON_SOURCE_DIR = path.join(PROJECT_ROOT, 'apps', 'solver-python');
 const DEFAULT_PYTHON_BIN = path.join(PROJECT_ROOT, '.venv', 'bin', 'python');
 const PYTHON_FALLBACK_BIN = 'python3';
 const VIOLATION_METADATA_LIMIT = 100;
@@ -107,7 +108,8 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         lookbackDays,
       });
 
-      const pythonResult = await runPythonSolverV2(solverInput, body.timeLimitSeconds);
+      const timeLimitSeconds = body.timeLimitSeconds ?? 120; // Default to 120 seconds
+      const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
       const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(

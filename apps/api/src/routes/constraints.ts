@@ -4,10 +4,30 @@ import { startOfDay } from '../utils';
 
 const prisma = new PrismaClient();
 
+/**
+ * New schema uses:
+ * - RoleCoverageWindow: replaces HourlyRoleConstraint + WindowRoleConstraint
+ * - CrewRoleQuota: replaces DailyRoleConstraint
+ */
+
+type CoverageWindowInput = {
+  roleId: number;
+  startMin: number;
+  endMin: number;
+  crewPerTaskLength: number;
+};
+
+type CrewQuotaInput = {
+  roleId: number;
+  crewId: string;
+  startMin: number;
+  endMin: number;
+  requiredMin: number;
+};
+
 type ConstraintPayload = {
-  windowConstraints?: Array<{ roleId: number; startHour: number; endHour: number; requiredPerHour: number }>;
-  dailyRoleConstraints?: Array<{ roleId: number; crewId: string; requiredHours: number }>;
-  hourlyRoleConstraints?: Array<{ roleId: number; hour: number; requiredPerHour: number }>;
+  coverageWindows?: CoverageWindowInput[];
+  crewQuotas?: CrewQuotaInput[];
   date?: string;
 };
 
@@ -21,6 +41,7 @@ function parseDate(date: string | undefined) {
 }
 
 export function registerConstraintRoutes(app: FastifyInstance) {
+  // GET constraints for a store/date
   app.get('/stores/:storeId/constraints', async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
     const { date } = (req.query as { date?: string }) || {};
@@ -39,30 +60,26 @@ export function registerConstraintRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid date format; expected YYYY-MM-DD' });
     }
 
-    const [windowConstraints, dailyRoleConstraints, hourlyRoleConstraints] = await Promise.all([
-      prisma.windowRoleConstraint.findMany({
+    const [coverageWindows, crewQuotas] = await Promise.all([
+      prisma.roleCoverageWindow.findMany({
         where: { storeId: sid, date: day },
-        select: { roleId: true, startHour: true, endHour: true, requiredPerHour: true },
-        orderBy: [{ roleId: 'asc' }],
+        select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+        orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
       }),
-      prisma.dailyRoleConstraint.findMany({
+      prisma.crewRoleQuota.findMany({
         where: { storeId: sid, date: day },
-        select: { roleId: true, crewId: true, requiredHours: true },
+        select: { roleId: true, crewId: true, startMin: true, endMin: true, requiredMin: true },
         orderBy: [{ roleId: 'asc' }, { crewId: 'asc' }],
-      }),
-      prisma.hourlyRoleConstraint.findMany({
-        where: { storeId: sid, date: day },
-        select: { roleId: true, hour: true, requiredPerHour: true },
-        orderBy: [{ roleId: 'asc' }, { hour: 'asc' }],
       }),
     ]);
 
-    return { windowConstraints, dailyRoleConstraints, hourlyRoleConstraints };
+    return { coverageWindows, crewQuotas };
   });
 
+  // PUT (replace) constraints for a store/date
   app.put('/stores/:storeId/constraints', async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
-    const { date, windowConstraints, dailyRoleConstraints, hourlyRoleConstraints } = (req.body || {}) as ConstraintPayload;
+    const { date, coverageWindows, crewQuotas } = (req.body || {}) as ConstraintPayload;
 
     if (!storeId || !date) {
       return reply.code(400).send({ error: 'storeId path param and body.date are required' });
@@ -78,62 +95,54 @@ export function registerConstraintRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid date format; expected YYYY-MM-DD' });
     }
 
-    const normalizedWindows = (Array.isArray(windowConstraints) ? windowConstraints : [])
-        .map((entry) => ({
-          roleId: Number(entry.roleId),
-          startHour: Number(entry.startHour),
-          endHour: Number(entry.endHour),
-          requiredPerHour: Math.round(Number(entry.requiredPerHour)),
-        }))
-      .filter((entry) =>
-        Number.isInteger(entry.roleId) &&
-        entry.roleId > 0 &&
-        Number.isInteger(entry.startHour) &&
-        Number.isInteger(entry.endHour) &&
-        entry.startHour >= 0 &&
-        entry.endHour <= 24 &&
-        entry.endHour > entry.startHour &&
-        Number.isFinite(entry.requiredPerHour) &&
-        entry.requiredPerHour >= 0
-      );
-
-    const normalizedDaily = (Array.isArray(dailyRoleConstraints) ? dailyRoleConstraints : [])
-      .map((entry) => {
-        const roleId = Number(entry.roleId);
-        const crewId = typeof entry.crewId === 'string' ? entry.crewId : '';
-        const rawRequiredHours = Number(entry.requiredHours);
-        const requiredHours = Number.isFinite(rawRequiredHours) ? Math.round(rawRequiredHours * 2) / 2 : NaN;
-        return { roleId, crewId, requiredHours };
-      })
-      .filter((entry) =>
-        Number.isInteger(entry.roleId) &&
-        entry.roleId > 0 &&
-        entry.crewId.length > 0 &&
-        Number.isFinite(entry.requiredHours) &&
-        entry.requiredHours >= 0.5
-      );
-
-    const normalizedHourly = (Array.isArray(hourlyRoleConstraints) ? hourlyRoleConstraints : [])
+    // Normalize and validate coverage windows
+    const normalizedCoverageWindows = (Array.isArray(coverageWindows) ? coverageWindows : [])
       .map((entry) => ({
         roleId: Number(entry.roleId),
-        hour: Number(entry.hour),
-          requiredPerHour: Math.round(Number(entry.requiredPerHour)),
+        startMin: Number(entry.startMin),
+        endMin: Number(entry.endMin),
+        crewPerTaskLength: Math.round(Number(entry.crewPerTaskLength)),
       }))
       .filter((entry) =>
         Number.isInteger(entry.roleId) &&
         entry.roleId > 0 &&
-        Number.isInteger(entry.hour) &&
-        entry.hour >= 0 &&
-        entry.hour <= 23 &&
-        Number.isFinite(entry.requiredPerHour) &&
-        entry.requiredPerHour >= 0
+        Number.isInteger(entry.startMin) &&
+        Number.isInteger(entry.endMin) &&
+        entry.startMin >= 0 &&
+        entry.endMin <= 1440 && // 24 * 60
+        entry.endMin > entry.startMin &&
+        Number.isInteger(entry.crewPerTaskLength) &&
+        entry.crewPerTaskLength >= 0
+      );
+
+    // Normalize and validate crew quotas
+    const normalizedCrewQuotas = (Array.isArray(crewQuotas) ? crewQuotas : [])
+      .map((entry) => ({
+        roleId: Number(entry.roleId),
+        crewId: typeof entry.crewId === 'string' ? entry.crewId : '',
+        startMin: Number(entry.startMin),
+        endMin: Number(entry.endMin),
+        requiredMin: Math.round(Number(entry.requiredMin)),
+      }))
+      .filter((entry) =>
+        Number.isInteger(entry.roleId) &&
+        entry.roleId > 0 &&
+        entry.crewId.length > 0 &&
+        Number.isInteger(entry.startMin) &&
+        Number.isInteger(entry.endMin) &&
+        entry.startMin >= 0 &&
+        entry.endMin <= 1440 &&
+        entry.endMin > entry.startMin &&
+        Number.isInteger(entry.requiredMin) &&
+        entry.requiredMin > 0
       );
 
     await prisma.$transaction(async (tx) => {
-      await tx.windowRoleConstraint.deleteMany({ where: { storeId: sid, date: day } });
-      if (normalizedWindows.length) {
-        await tx.windowRoleConstraint.createMany({
-          data: normalizedWindows.map((entry) => ({
+      // Replace coverage windows
+      await tx.roleCoverageWindow.deleteMany({ where: { storeId: sid, date: day } });
+      if (normalizedCoverageWindows.length) {
+        await tx.roleCoverageWindow.createMany({
+          data: normalizedCoverageWindows.map((entry) => ({
             ...entry,
             storeId: sid,
             date: day,
@@ -141,35 +150,24 @@ export function registerConstraintRoutes(app: FastifyInstance) {
         });
       }
 
-      await tx.dailyRoleConstraint.deleteMany({ where: { storeId: sid, date: day } });
-      if (normalizedDaily.length) {
-        await tx.dailyRoleConstraint.createMany({
-          data: normalizedDaily.map((entry) => ({
+      // Replace crew quotas
+      await tx.crewRoleQuota.deleteMany({ where: { storeId: sid, date: day } });
+      if (normalizedCrewQuotas.length) {
+        await tx.crewRoleQuota.createMany({
+          data: normalizedCrewQuotas.map((entry) => ({
             ...entry,
             storeId: sid,
             date: day,
           })),
         });
-      }
-
-      await tx.hourlyRoleConstraint.deleteMany({ where: { storeId: sid, date: day } });
-      if (normalizedHourly.length) {
-            await tx.hourlyRoleConstraint.createMany({
-              data: normalizedHourly.map((entry) => ({
-                ...entry,
-                storeId: sid,
-                date: day,
-              })),
-            });
       }
     });
 
     return {
       ok: true,
       counts: {
-        windowConstraints: normalizedWindows.length,
-        dailyRoleConstraints: normalizedDaily.length,
-        hourlyRoleConstraints: normalizedHourly.length,
+        coverageWindows: normalizedCoverageWindows.length,
+        crewQuotas: normalizedCrewQuotas.length,
       },
     };
   });

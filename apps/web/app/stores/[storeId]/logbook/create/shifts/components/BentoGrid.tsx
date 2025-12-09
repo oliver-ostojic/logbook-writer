@@ -10,6 +10,7 @@ import DateBadge from "./DateBadge";
 import dayjs from "dayjs";
 import CrewShiftTable from "./CrewShiftTable";
 import CrewCounter from './CrewCounter';
+import ShiftValidationBox from './ShiftValidationBox';
 
 type CrewMember = {
   id: number; // local numeric id for UI
@@ -119,6 +120,39 @@ export default function BentoGrid() {
     return () => { cancelled = true; };
   }, [API_URL, storeId, selectedDate, allPeople]);
 
+  // Validate shift times: start must be before end
+  const shiftValidationErrors = useMemo(() => {
+    const errors: string[] = [];
+    
+    // Helper to convert HH:MM to minutes from midnight
+    const toMinutes = (time: string): number => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    // Helper to format HH:MM to AM/PM
+    const formatAmPm = (time: string): string => {
+      const [hours, minutes] = time.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const hour12 = hours % 12 || 12;
+      return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    };
+    
+    for (const crew of selectedCrew) {
+      const times = shiftTimes[crew.id];
+      if (!times) continue;
+      
+      const startMinutes = toMinutes(times.start);
+      const endMinutes = toMinutes(times.end);
+      
+      if (startMinutes >= endMinutes) {
+        errors.push(`${crew.name}'s shift start time (${formatAmPm(times.start)}) must be before end time (${formatAmPm(times.end)})`);
+      }
+    }
+    
+    return errors;
+  }, [selectedCrew, shiftTimes]);
+
   return (
     <div className="bg-gray-50 pt-10 pb-24 sm:pt-16 sm:pb-32">
       <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
@@ -128,7 +162,15 @@ export default function BentoGrid() {
         <p className="text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
           Start by searching for crew members, add them, and record their shift times
         </p>
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16 lg:grid-cols-6 lg:auto-rows-auto">
+        
+        {/* Shift validation errors */}
+        {shiftValidationErrors.length > 0 && (
+          <div className="mt-8 mb-5 sm:mb-8">
+            <ShiftValidationBox errors={shiftValidationErrors} />
+          </div>
+        )}
+        
+        <div className="mt-5 sm:mt-8 grid grid-cols-1 gap-4 lg:grid-cols-6 lg:auto-rows-auto">
           {/* Left tile - spans full height */}
           <div className="relative lg:col-span-4 lg:row-span-2">
             <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-t-[2rem] lg:rounded-l-[3rem]" />
@@ -191,6 +233,7 @@ export default function BentoGrid() {
                   selectedDate={selectedDate}
                   selectedCrew={selectedCrew}
                   shiftTimes={shiftTimes}
+                  hasValidationErrors={shiftValidationErrors.length > 0}
                   onNavigate={(path) => router.push(path)}
                 />
               </div>
@@ -208,12 +251,14 @@ function SaveAndNext({
   selectedDate,
   selectedCrew,
   shiftTimes,
+  hasValidationErrors,
   onNavigate,
 }: {
   storeId: string;
   selectedDate: string;
   selectedCrew: CrewMember[];
   shiftTimes: Record<number, { start: string; end: string }>;
+  hasValidationErrors: boolean;
   onNavigate: (path: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
@@ -254,8 +299,8 @@ function SaveAndNext({
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving}
-          className="rounded-full bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-[hsl(var(--brand-h)_var(--brand-s)_55%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] font-sans disabled:opacity-60"
+          disabled={saving || hasValidationErrors}
+          className="rounded-full bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-[hsl(var(--brand-h)_var(--brand-s)_55%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] font-sans disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Continue to constraints'}
         </button>
@@ -263,4 +308,3 @@ function SaveAndNext({
     </div>
   );
 }
-

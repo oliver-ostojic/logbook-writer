@@ -1,14 +1,14 @@
 import type { AssignmentModelValue, RoleDescriptor } from './types';
-import { getRoleAssignmentModels } from './assignment-models';
+import { getRoleAssignmentModel } from './assignment-models';
 
-export function resolvePreferenceAssignmentModels(
+export function resolvePreferenceAssignmentModel(
   roleId: number | null,
   roleLookup: Map<number, RoleDescriptor>
-): AssignmentModelValue[] {
+): AssignmentModelValue | null {
   if (roleId === null) {
-    return [];
+    return null;
   }
 
   const role = roleLookup.get(roleId);
-  return getRoleAssignmentModels(role);
+  return getRoleAssignmentModel(role);
 }

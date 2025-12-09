@@ -9,7 +9,7 @@ export interface RoleSlotVariable {
   crewId: string;
   roleId: number;
   slotIndex: number;
-  assignmentModels: AssignmentModelValue[];
+  assignmentModel: AssignmentModelValue;
 }
 
 // Generate role-slot variables for every eligible (crew, role) pairing. Any
@@ -34,10 +34,7 @@ export function buildRoleSlotVariables(
         throw new Error(`Role ${roleId} referenced by crew ${crewMember.id} not found`);
       }
 
-      const assignmentModels: AssignmentModelValue[] =
-        role.assignmentModels && role.assignmentModels.length > 0
-          ? role.assignmentModels
-          : (['HOURLY'] as AssignmentModelValue[]);
+      const assignmentModel: AssignmentModelValue = role.assignmentModel;
 
       const window = buildCrewRoleSlotWindow(crewMember, role, grid);
       if (!window) {
@@ -50,7 +47,7 @@ export function buildRoleSlotVariables(
           crewId: crewMember.id,
           roleId: role.id,
           slotIndex: slot,
-          assignmentModels,
+          assignmentModel,
         });
       }
     }

@@ -101,9 +101,8 @@ export function analyzeSolverResult({
   violations.push(
     ...checkAssignmentsAgainstStoreHours(context),
     ...checkCrewShiftBounds(context),
-    ...checkHourlyRequirements(context),
-    ...checkWindowRequirements(context),
-    ...checkDailyRequirements(context),
+    ...checkCoverageWindows(context),
+    ...checkCrewQuotas(context),
     ...checkRoleBlocks(context),
     ...checkConsecutivePolicies(context),
     ...checkRoleAccessGuards(context)
@@ -212,92 +211,99 @@ function checkCrewShiftBounds(context: AnalyzerContext): ConstraintViolation[] {
   return violations;
 }
 
-function checkHourlyRequirements(context: AnalyzerContext): ConstraintViolation[] {
+/**
+ * Check coverage windows - ensure each window has required crew coverage.
+ * CoverageWindowDescriptor: {roleId, startMin, endMin, crewPerTaskLength}
+ * For each task-length-sized chunk within the window, check we have enough crew assigned.
+ */
+function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, roleAssignments, roleById } = context;
   const violations: ConstraintViolation[] = [];
 
-  for (const requirement of solverInput.hourlyRequirements) {
-    const role = roleById.get(requirement.roleId);
-    if (!role) continue;
-
-    const startMin = requirement.hour * 60;
-    const endMin = startMin + 60;
-    const set = new Set<string>();
-    for (const assignment of roleAssignments.get(requirement.roleId) ?? []) {
-      if (assignment.startMinute < endMin && assignment.endMinute > startMin) {
-        set.add(assignment.crewId);
-      }
-    }
-
-    if (set.size < requirement.required) {
-      violations.push({
-        severity: 'error',
-        category: 'hourly',
-        message: `${role.displayName} at ${formatHour(requirement.hour)} requires ${requirement.required} crew but only ${set.size} were scheduled.`,
-        details: { roleId: role.id, hour: requirement.hour, required: requirement.required, actual: set.size },
-      });
-    }
-  }
-
-  return violations;
-}
-
-function checkWindowRequirements(context: AnalyzerContext): ConstraintViolation[] {
-  const { solverInput, roleAssignments, roleById } = context;
-  const violations: ConstraintViolation[] = [];
-
-  for (const window of solverInput.windowRequirements) {
+  for (const window of solverInput.coverageWindows) {
     const role = roleById.get(window.roleId);
     if (!role) continue;
 
-    let windowCompliant = true;
-    for (let hour = window.startHour; hour < window.endHour; hour++) {
-      const startMin = hour * 60;
-      const endMin = startMin + 60;
-      const set = new Set<string>();
+    const taskLength = role.taskLength;
+    if (taskLength <= 0) continue;
+
+    // Check each task-length-sized slot within the window
+    for (let slotStart = window.startMin; slotStart < window.endMin; slotStart += taskLength) {
+      const slotEnd = Math.min(slotStart + taskLength, window.endMin);
+      
+      // Count unique crew covering this slot
+      const crewInSlot = new Set<string>();
       for (const assignment of roleAssignments.get(window.roleId) ?? []) {
-        if (assignment.startMinute < endMin && assignment.endMinute > startMin) {
-          set.add(assignment.crewId);
+        // Assignment overlaps slot if it starts before slot ends and ends after slot starts
+        if (assignment.startMinute < slotEnd && assignment.endMinute > slotStart) {
+          crewInSlot.add(assignment.crewId);
         }
       }
-      if (set.size < window.requiredPerHour) {
-        windowCompliant = false;
+
+      if (crewInSlot.size < window.crewPerTaskLength) {
         violations.push({
           severity: 'error',
-          category: 'window',
-          message: `${role.displayName} window ${formatHour(window.startHour)}–${formatHour(window.endHour)} needs ${window.requiredPerHour} per hour but fell short at ${formatHour(hour)}.`,
-          details: { roleId: role.id, hour, required: window.requiredPerHour, actual: set.size },
+          category: 'coverage',
+          message: `${role.displayName} coverage window (${formatTime(window.startMin)}–${formatTime(window.endMin)}) requires ${window.crewPerTaskLength} crew but only ${crewInSlot.size} at ${formatTime(slotStart)}.`,
+          details: { 
+            roleId: role.id, 
+            windowStart: window.startMin,
+            windowEnd: window.endMin,
+            slotStart,
+            required: window.crewPerTaskLength, 
+            actual: crewInSlot.size 
+          },
         });
+        // Only report first violation per window to avoid spam
         break;
       }
-    }
-
-    if (windowCompliant === false) {
-      continue;
     }
   }
 
   return violations;
 }
 
-function checkDailyRequirements(context: AnalyzerContext): ConstraintViolation[] {
-  const { solverInput, crewMinutesByRole, roleById } = context;
+/**
+ * Check crew quotas - ensure crew got required minutes within time windows.
+ * CrewQuotaDescriptor: {crewId, roleId, startMin, endMin, requiredMin}
+ */
+function checkCrewQuotas(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewAssignmentsByRole, roleById } = context;
   const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
   const violations: ConstraintViolation[] = [];
 
-  for (const requirement of solverInput.dailyRequirements) {
-    const crew = crewById.get(requirement.crewId);
-    const role = roleById.get(requirement.roleId);
+  for (const quota of solverInput.crewQuotas) {
+    const crew = crewById.get(quota.crewId);
+    const role = roleById.get(quota.roleId);
     if (!crew || !role) continue;
 
-    const actualMinutes = crewMinutesByRole.get(crew.id)?.get(role.id) ?? 0;
+    // Get assignments for this crew-role within the quota time window
+    const assignments = crewAssignmentsByRole.get(crew.id)?.get(role.id) ?? [];
+    
+    // Sum minutes within the quota's time window
+    let minutesInWindow = 0;
+    for (const assignment of assignments) {
+      // Calculate overlap between assignment and quota window
+      const overlapStart = Math.max(assignment.startMinute, quota.startMin);
+      const overlapEnd = Math.min(assignment.endMinute, quota.endMin);
+      if (overlapEnd > overlapStart) {
+        minutesInWindow += overlapEnd - overlapStart;
+      }
+    }
 
-    if (actualMinutes < requirement.requiredMinutes) {
+    if (minutesInWindow < quota.requiredMin) {
       violations.push({
         severity: 'error',
-        category: 'daily',
-        message: `${crew.name} needs ${requirement.requiredMinutes / 60}h on ${role.displayName} but only received ${(actualMinutes / 60).toFixed(1)}h.`,
-        details: { crewId: crew.id, roleId: role.id, requiredMinutes: requirement.requiredMinutes, actualMinutes },
+        category: 'quota',
+        message: `${crew.name} needs ${quota.requiredMin / 60}h of ${role.displayName} (${formatTime(quota.startMin)}–${formatTime(quota.endMin)}) but only got ${(minutesInWindow / 60).toFixed(1)}h.`,
+        details: { 
+          crewId: crew.id, 
+          roleId: role.id, 
+          windowStart: quota.startMin,
+          windowEnd: quota.endMin,
+          requiredMinutes: quota.requiredMin, 
+          actualMinutes: minutesInWindow 
+        },
       });
     }
   }
@@ -305,9 +311,13 @@ function checkDailyRequirements(context: AnalyzerContext): ConstraintViolation[]
   return violations;
 }
 
+/**
+ * Check role blocks - validate task length alignment and window offsets.
+ * NEW: Uses role.taskLength (minutes) instead of blockSize/minSlots/maxSlots.
+ * Min/max constraints are now handled by crewQuotas.
+ */
 function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, crewAssignmentsByRole, roleById } = context;
-  const store = solverInput.store;
   const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
   const violations: ConstraintViolation[] = [];
 
@@ -319,42 +329,24 @@ function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
       const role = roleById.get(roleId);
       if (!role) continue;
 
-      const blocks = buildBlocks(assignments, store.baseSlotMinutes, crewId, roleId);
-      const blockSize = role.blockSize ?? 1;
+      const taskLength = role.taskLength;
+      const blocks = buildBlocks(assignments, taskLength, crewId, roleId);
 
-      // Calculate total blocks for min/max check (across all contiguous blocks)
-      const totalSlots = blocks.reduce((sum, b) => sum + b.slots, 0);
-      const totalBlocks = Math.floor(totalSlots / blockSize);
-
-      // Check min/max on TOTAL blocks for this crew-role, not per contiguous block
-      if (role.minSlots && totalBlocks < role.minSlots) {
-        violations.push({
-          severity: 'warning',
-          category: 'slot-block',
-          message: `${crew.name}'s total ${role.displayName} is ${totalBlocks} blocks but needs at least ${role.minSlots}.`,
-          details: { crewId, roleId, totalBlocks, minRequired: role.minSlots },
-        });
-      }
-      if (role.maxSlots && totalBlocks > role.maxSlots) {
-        violations.push({
-          severity: 'warning',
-          category: 'slot-block',
-          message: `${crew.name}'s total ${role.displayName} is ${totalBlocks} blocks but max is ${role.maxSlots}.`,
-          details: { crewId, roleId, totalBlocks, maxAllowed: role.maxSlots },
-        });
-      }
-
-      // Check block alignment per contiguous block (only for blockSize > 1)
+      // Check task length alignment per contiguous block (only for taskLength > 0)
       for (const block of blocks) {
-        if (blockSize > 1 && block.slots % blockSize !== 0) {
+        const blockMinutes = block.end - block.start;
+        
+        // Check if block is aligned to taskLength
+        if (taskLength > 0 && blockMinutes % taskLength !== 0) {
           violations.push({
             severity: 'warning',
             category: 'slot-block',
-            message: `${role.displayName} blocks must align to ${blockSize} slots but ${crew.name} has a ${block.slots}-slot block.`,
-            details: { crewId, roleId, block, requiredBlockSize: blockSize },
+            message: `${role.displayName} tasks must be ${taskLength} minutes but ${crew.name} has a ${blockMinutes}-minute block.`,
+            details: { crewId, roleId, block, taskLength },
           });
         }
 
+        // Check window offsets constraint
         if (role.windowOffsets) {
           const crewShiftStart = crew.shiftStartMin;
           const windowStart = crewShiftStart + role.windowOffsets.startOffsetMin;
@@ -377,7 +369,6 @@ function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
 
 function checkConsecutivePolicies(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, crewAssignmentsByRole, roleById } = context;
-  const store = solverInput.store;
   const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
   const violations: ConstraintViolation[] = [];
 
@@ -391,7 +382,8 @@ function checkConsecutivePolicies(context: AnalyzerContext): ConstraintViolation
       const crew = crewById.get(crewId);
       if (!crew) continue;
 
-      const blocks = buildBlocks(assignments, store.baseSlotMinutes, crewId, role.id);
+      // Use taskLength for block detection
+      const blocks = buildBlocks(assignments, role.taskLength, crewId, role.id);
       if (role.consecutivePolicy === 'REQUIRED' && blocks.length > 1) {
         violations.push({
           severity: 'error',
@@ -446,9 +438,13 @@ function checkRoleAccessGuards(context: AnalyzerContext): ConstraintViolation[] 
   return violations;
 }
 
+/**
+ * Build contiguous blocks from sorted assignments.
+ * taskLength is used to calculate how many tasks fit in each block.
+ */
 function buildBlocks(
   assignments: AssignmentRecord[],
-  baseSlotMinutes: number,
+  taskLength: number,
   crewId: string,
   roleId: number
 ): CrewRoleBlock[] {
@@ -467,12 +463,13 @@ function buildBlocks(
     if (assignment.startMinute === currentEnd) {
       currentEnd = assignment.endMinute;
     } else {
+      const duration = currentEnd - currentStart;
       blocks.push({
         crewId,
         roleId,
         start: currentStart,
         end: currentEnd,
-        slots: (currentEnd - currentStart) / baseSlotMinutes,
+        slots: taskLength > 0 ? Math.floor(duration / taskLength) : 1,
       });
       currentStart = assignment.startMinute;
       currentEnd = assignment.endMinute;
@@ -480,12 +477,13 @@ function buildBlocks(
   }
 
   if (currentStart !== null && currentEnd !== null) {
+    const duration = currentEnd - currentStart;
     blocks.push({
       crewId,
       roleId,
       start: currentStart,
       end: currentEnd,
-      slots: (currentEnd - currentStart) / baseSlotMinutes,
+      slots: taskLength > 0 ? Math.floor(duration / taskLength) : 1,
     });
   }
 
@@ -525,7 +523,7 @@ function analyzePreferences(context: AnalyzerContext): PreferenceAnalysisResult 
     }
 
     const assignments = crewAssignments.get(crew.id)?.get(role.id) ?? [];
-    const blocks = buildBlocks(assignments, store.baseSlotMinutes, crew.id, role.id);
+    const blocks = buildBlocks(assignments, role.taskLength, crew.id, role.id);
 
     const weight =
       preference.baseWeight *

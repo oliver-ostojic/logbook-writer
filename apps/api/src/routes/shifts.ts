@@ -127,7 +127,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
     const crewRoles = await prisma.crewRole.findMany({
       where: { crewId: { in: crewIds } },
       include: {
-        role: {
+        Role: {
           select: {
             id: true,
             code: true,
@@ -138,12 +138,14 @@ export function registerShiftRoutes(app: FastifyInstance) {
       }
     });
 
-    // Group by role and count unique crew, filtering for HOURLY_WINDOW assignment type
-    const roleMap = new Map<number, { roleId: number; roleCode: string; roleName: string; crewIds: Set<string> }>();
+    // Group by role and count unique crew
+    // Step 1 shows roles with WINDOW or HOURLY_OR_WINDOW assignmentModel
+    const roleMap = new Map<number, { roleId: number; roleCode: string; roleName: string; assignmentModel: string; crewIds: Set<string> }>();
     
     for (const cr of crewRoles) {
-      // Only include roles that have HOURLY_WINDOW in their assignmentModel array
-      if (!cr.role.assignmentModel || !cr.role.assignmentModel.includes('HOURLY_WINDOW')) {
+      // Only include roles that have WINDOW or HOURLY_OR_WINDOW assignmentModel
+      const model = cr.Role.assignmentModel;
+      if (model !== 'WINDOW' && model !== 'HOURLY_OR_WINDOW') {
         continue;
       }
       
@@ -151,8 +153,9 @@ export function registerShiftRoutes(app: FastifyInstance) {
       if (!roleMap.has(roleId)) {
         roleMap.set(roleId, {
           roleId,
-          roleCode: cr.role.code,
-          roleName: cr.role.displayName,
+          roleCode: cr.Role.code,
+          roleName: cr.Role.displayName,
+          assignmentModel: model,
           crewIds: new Set(),
         });
       }
@@ -165,7 +168,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
       roleCode: r.roleCode,
       roleName: r.roleName,
       crewCount: r.crewIds.size,
-      assignmentModel: crewRoles.find(cr => cr.roleId === r.roleId)?.role.assignmentModel || [],
+      assignmentModel: r.assignmentModel,
     }));
 
     return result;
@@ -204,7 +207,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
     const crewRoles = await prisma.crewRole.findMany({
       where: { crewId: { in: crewIds } },
       include: {
-        role: {
+        Role: {
           select: {
             id: true,
             code: true,
@@ -212,7 +215,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
             assignmentModel: true,
           }
         },
-        crew: {
+        Crew: {
           select: {
             id: true,
             name: true,
@@ -225,8 +228,8 @@ export function registerShiftRoutes(app: FastifyInstance) {
   const roleMap = new Map<number, { roleId: number; roleCode: string; roleName: string; crew: Array<{ crewId: string; crewName: string; specialization?: string | null }> }>();
     
     for (const cr of crewRoles) {
-      // Only include roles that have DAILY in their assignmentModel array
-      if (!cr.role.assignmentModel || !cr.role.assignmentModel.includes('DAILY')) {
+      // Only include roles that have DAILY assignmentModel
+      if (cr.Role.assignmentModel !== 'DAILY') {
         continue;
       }
       
@@ -234,14 +237,14 @@ export function registerShiftRoutes(app: FastifyInstance) {
       if (!roleMap.has(roleId)) {
         roleMap.set(roleId, {
           roleId,
-          roleCode: cr.role.code,
-          roleName: cr.role.displayName,
+          roleCode: cr.Role.code,
+          roleName: cr.Role.displayName,
           crew: [],
         });
       }
       roleMap.get(roleId)!.crew.push({
         crewId: cr.crewId,
-        crewName: cr.crew.name,
+        crewName: cr.Crew.name,
         specialization: cr.specialization ?? null,
       });
     }
@@ -322,6 +325,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
   });
 
   // List HOURLY assignment roles (Register, Product, Parking Helms, etc.) for configuring hourly staffing
+  // Step 3 shows roles with HOURLY or HOURLY_OR_WINDOW assignmentModel
   app.get('/stores/:storeId/hourly-roles', async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
 
@@ -338,7 +342,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
       where: {
         storeId: sid,
         assignmentModel: {
-          has: 'HOURLY',
+          in: ['HOURLY', 'HOURLY_OR_WINDOW'],
         },
       },
       select: {
@@ -382,7 +386,6 @@ export function registerShiftRoutes(app: FastifyInstance) {
         timezone: true,
         openMinutesFromMidnight: true,
         closeMinutesFromMidnight: true,
-        baseSlotMinutes: true,
       },
     });
 
@@ -390,7 +393,8 @@ export function registerShiftRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: 'Store not found' });
     }
 
-    return store;
+    // baseSlotMinutes is now fixed at 30 (roles have their own taskLength)
+    return { ...store, baseSlotMinutes: 30 };
   });
 }
 

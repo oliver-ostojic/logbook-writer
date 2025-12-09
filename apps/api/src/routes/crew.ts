@@ -66,9 +66,9 @@ export function registerCrewRoutes(app: FastifyInstance) {
   };
 
   const crewInclude = {
-    crewRoles: {
+    CrewRole: {
       include: {
-        role: true,
+        Role: true,
       },
     },
   } as const;
@@ -76,7 +76,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   type CrewWithRoles = Prisma.CrewGetPayload<{ include: typeof crewInclude }>;
 
   const formatCrew = (crew: any) => {
-    const { crewRoles, ...rest } = crew;
+    const { CrewRole: crewRoles, ...rest } = crew;
     return {
       ...rest,
       roles: (crewRoles || []).map((cr: any) => ({
@@ -84,7 +84,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
         roleId: cr.roleId,
         assignedAt: cr.assignedAt,
         specialization: cr.specialization ?? cr.specializationType ?? null,
-        role: cr.role,
+        role: cr.Role,
       })),
     };
   };
@@ -228,9 +228,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
           id,
           name,
           storeId: resolvedStoreId,
-          ...(shiftStartMin !== undefined && { shiftStartMin }),
-          ...(shiftEndMin !== undefined && { shiftEndMin }),
-          crewRoles: roleData.length > 0 ? {
+          CrewRole: roleData.length > 0 ? {
             create: roleData.map(role => ({ 
               roleId: role.id,
               roleName: role.displayName,
@@ -352,9 +350,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
       where: { id: crewId },
       data: {
         ...(name && { name }),
-        ...(shiftStartMin !== undefined && { shiftStartMin }),
-        ...(shiftEndMin !== undefined && { shiftEndMin }),
-        ...(roleUpdate && { crewRoles: roleUpdate }),
+        ...(roleUpdate && { CrewRole: roleUpdate }),
       },
       include: crewInclude,
     });

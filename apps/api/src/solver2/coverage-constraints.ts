@@ -98,7 +98,7 @@ export function buildCoverageConstraints({
 
   for (const range of windowRanges) {
     const role = roleLookup.get(range.roleId);
-    if (!roleSupportsAssignmentModel(role, 'HOURLY_WINDOW')) {
+    if (!roleSupportsAssignmentModel(role, 'HOURLY_OR_WINDOW')) {
       continue;
     }
     const slotMap = indexedVariables.get(range.roleId) ?? new Map();

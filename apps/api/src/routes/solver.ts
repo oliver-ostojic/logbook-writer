@@ -246,11 +246,26 @@ async function runSolverV2ForLogbook(options: {
   timeLimitSeconds?: number;
   shiftOverrides?: ShiftOverrideDescriptor[];
 }) {
+  console.log(`[SOLVER DEBUG] runSolverV2ForLogbook called with:`, {
+    storeId: options.storeId,
+    date: options.date,
+    lookbackDays: options.lookbackDays,
+    hasShiftOverrides: !!options.shiftOverrides,
+    shiftOverridesLength: options.shiftOverrides?.length,
+  });
+  
   const solverInput = await buildSolverInputV2({
     storeId: options.storeId,
     date: options.date,
     lookbackDays: options.lookbackDays,
     shiftOverrides: options.shiftOverrides,
+  });
+
+  console.log(`[SOLVER DEBUG] buildSolverInputV2 returned:`, {
+    crewCount: solverInput.crew.length,
+    rolesCount: solverInput.roles.length,
+    coverageWindowsCount: solverInput.coverageWindows.length,
+    roleFamiliesCount: solverInput.roleFamilies.length,
   });
 
   // Run pre-solve feasibility check
@@ -279,7 +294,8 @@ async function runSolverV2ForLogbook(options: {
   }
 
   console.log(`[SOLVER DEBUG] Feasibility passed, running Python solver...`);
-  const pythonResult = await runPythonSolverV2(solverInput, options.timeLimitSeconds);
+  const timeLimitSeconds = options.timeLimitSeconds ?? 120; // Default to 120 seconds
+  const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
   console.log(`[SOLVER DEBUG] Python solver returned: success=${pythonResult.success}, status=${pythonResult.status}`);
   const constraintCounts = pythonResult.metadata?.constraintCounts as Record<string, unknown> | undefined;
   const infeasibilityWarnings = constraintCounts?.infeasibility_warnings as string[] | undefined;
