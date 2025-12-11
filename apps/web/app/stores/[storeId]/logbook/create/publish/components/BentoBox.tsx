@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Footer from '../../../../../../../components/Footer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -73,14 +74,14 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
   };
 
   return (
-    <div className="relative isolate bg-white pb-32 pt-16 sm:pt-24">
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 transform-gpu overflow-hidden opacity-30 blur-3xl"
-      >
+      <div className="relative isolate bg-white pb-16 pt-16 sm:pt-24">
         <div
-          style={{
-            clipPath:
+          aria-hidden="true"
+          className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 transform-gpu overflow-hidden opacity-30 blur-3xl"
+        >
+          <div
+            style={{
+              clipPath:
               'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
           }}
           className="ml-[max(50%,38rem)] aspect-[1313/771] w-[82.0625rem] bg-gradient-to-tr from-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] to-[#9089fc]"
@@ -132,6 +133,7 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
             </button>
           </figure>
         </div>
+        <Footer />
       </div>
     </div>
   )

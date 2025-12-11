@@ -364,6 +364,10 @@ export function registerScheduleRoutes(app: FastifyInstance) {
   });
 
   // PATCH /schedule/logbook/:logbookId/assignments - Update assignments (for manual edits)
+  // NOTE: Edits are stored visually on the frontend until publish.
+  // This endpoint is kept for backward compatibility but the real work happens at publish time.
+  // The frontend explodes 60-min assignments into 30-min slots for editing, 
+  // and the publish endpoint handles splitting/creating the actual DB records.
   type AssignmentUpdate = {
     crewId: string;
     startMinutes: number;
@@ -394,36 +398,115 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: 'Logbook not found' });
       }
 
-      // Process each update - find assignment by crewId + startTime, update roleId
-      const results: { updated: number; errors: string[] } = { updated: 0, errors: [] };
+      // Helper to convert minutes to Date
+      const minutesToDate = (minutes: number): Date => {
+        const d = new Date(logbook.date);
+        d.setUTCHours(0, 0, 0, 0);
+        d.setUTCMinutes(minutes);
+        return d;
+      };
+
+      // Helper to convert Date to minutes
+      const dateToMinutes = (date: Date): number => {
+        return date.getUTCHours() * 60 + date.getUTCMinutes();
+      };
+
+      // Process each update - this now handles splitting assignments
+      const results: { updated: number; created: number; deleted: number; errors: string[] } = { 
+        updated: 0, created: 0, deleted: 0, errors: [] 
+      };
 
       for (const update of updates) {
         try {
-          // Convert startMinutes to a DateTime for that logbook's date
-          const startTime = new Date(logbook.date);
-          startTime.setUTCHours(0, 0, 0, 0);
-          startTime.setUTCMinutes(update.startMinutes);
+          const editStart = update.startMinutes;
+          const editEnd = update.endMinutes;
 
-          // Find the assignment by logbookId + crewId + startTime
+          // Find the assignment that CONTAINS this time slot
           const assignment = await prisma.assignment.findFirst({
             where: {
               logbookId,
               crewId: update.crewId,
-              startTime,
+              startTime: { lte: minutesToDate(editStart) },
+              endTime: { gt: minutesToDate(editStart) },
             },
           });
 
-          if (assignment) {
+          if (!assignment) {
+            results.errors.push(`Assignment not found: crew ${update.crewId} at ${update.startMinutes}min`);
+            continue;
+          }
+
+          const assignmentStart = dateToMinutes(assignment.startTime);
+          const assignmentEnd = dateToMinutes(assignment.endTime);
+
+          // Check if we need to split the assignment
+          const needsSplitBefore = editStart > assignmentStart;
+          const needsSplitAfter = editEnd < assignmentEnd;
+
+          if (!needsSplitBefore && !needsSplitAfter) {
+            // Simple case: edit covers the entire assignment, just update roleId
             await prisma.assignment.update({
               where: { id: assignment.id },
               data: {
                 roleId: update.roleId,
-                origin: 'MANUAL', // Mark as manually edited
+                origin: 'MANUAL',
               },
             });
             results.updated++;
           } else {
-            results.errors.push(`Assignment not found: crew ${update.crewId} at ${update.startMinutes}min`);
+            // Need to split: delete original and create new segments
+            await prisma.$transaction(async (tx) => {
+              // Delete the original assignment
+              await tx.assignment.delete({ where: { id: assignment.id } });
+              results.deleted++;
+
+              // Create segment BEFORE the edit (if needed)
+              if (needsSplitBefore) {
+                await tx.assignment.create({
+                  data: {
+                    id: crypto.randomUUID(),
+                    logbookId,
+                    crewId: update.crewId,
+                    roleId: assignment.roleId,
+                    startTime: assignment.startTime,
+                    endTime: minutesToDate(editStart),
+                    origin: assignment.origin,
+                  },
+                });
+                results.created++;
+              }
+
+              // Create the EDITED segment
+              await tx.assignment.create({
+                data: {
+                  id: crypto.randomUUID(),
+                  logbookId,
+                  crewId: update.crewId,
+                  roleId: update.roleId,
+                  startTime: minutesToDate(editStart),
+                  endTime: minutesToDate(editEnd),
+                  origin: 'MANUAL',
+                },
+              });
+              results.created++;
+
+              // Create segment AFTER the edit (if needed)
+              if (needsSplitAfter) {
+                await tx.assignment.create({
+                  data: {
+                    id: crypto.randomUUID(),
+                    logbookId,
+                    crewId: update.crewId,
+                    roleId: assignment.roleId,
+                    startTime: minutesToDate(editEnd),
+                    endTime: assignment.endTime,
+                    origin: assignment.origin,
+                  },
+                });
+                results.created++;
+              }
+            });
+            results.updated++;
           }
         } catch (err) {
           results.errors.push(`Failed to update crew ${update.crewId} at ${update.startMinutes}min: ${err}`);
@@ -431,8 +514,10 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       }
 
       return {
-        success: results.updated > 0,
+        success: results.updated > 0 || results.created > 0,
         updated: results.updated,
+        created: results.created,
+        deleted: results.deleted,
         errors: results.errors,
       };
     }
@@ -455,19 +540,9 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: 'Logbook not found' });
       }
 
-      // If already published, just return success (no update needed)
-      // Compare as string to handle both enum and string values
-      if (logbook.status === 'PUBLISHED' || logbook.status === LogbookStatus.PUBLISHED) {
-        return {
-          success: true,
-          logbookId: logbook.id,
-          status: logbook.status,
-          pdfPath: logbook.storedFilePath,
-          message: 'Logbook is already published',
-        };
-      }
+      const wasAlreadyPublished = logbook.status === 'PUBLISHED' || logbook.status === LogbookStatus.PUBLISHED;
 
-      // Check for any existing published logbook for the same date and store
+      // Check for any existing published logbook for the same date and store (different logbook)
       const existingPublished = await prisma.logbook.findFirst({
         where: {
           storeId: logbook.storeId,
@@ -477,7 +552,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         },
       });
 
-      // Generate PDF before publishing
+      // Generate PDF (always regenerate, even if already published - assignments may have changed)
       let pdfPath: string | null = null;
       try {
         const pdfModule = await import('../services/pdf-generator') as any;
@@ -487,6 +562,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         // Delete old PDF if replacing an existing published logbook
         if (existingPublished?.storedFilePath) {
           deletePdf(existingPublished.storedFilePath);
+        }
+        
+        // Delete old PDF for this logbook if it exists (regenerating)
+        if (logbook.storedFilePath) {
+          deletePdf(logbook.storedFilePath);
         }
         
         pdfPath = await generateLogbookPdf(logbookId, logbook.storeId, logbook.date);
@@ -523,6 +603,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         status: updated.status,
         pdfPath: updated.storedFilePath,
         replacedLogbookId: existingPublished?.id ?? null,
+        wasRepublish: wasAlreadyPublished,
       };
     }
   );
@@ -744,4 +825,101 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       };
     }
   );
+
+  // GET /schedule/stats/baselines - Get historical baselines for stats badges
+  app.get<{ Querystring: { storeId: string; days?: string } }>(
+    '/schedule/stats/baselines',
+    async (req, reply) => {
+      const { storeId, days } = req.query;
+      
+      if (!storeId) {
+        return reply.status(400).send({ error: 'storeId is required' });
+      }
+
+      const storeIdNum = Number(storeId);
+      if (!Number.isFinite(storeIdNum)) {
+        return reply.status(400).send({ error: 'storeId must be a number' });
+      }
+
+      const lookbackDays = Number(days) || 14; // Default to 2 weeks
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - lookbackDays);
+
+      // Fetch historical preference metadata from the last N days
+      const historicalData = await prisma.logPreferenceMetadata.findMany({
+        where: {
+          Logbook: {
+            storeId: storeIdNum,
+            date: { gte: cutoffDate },
+            status: 'PUBLISHED', // Only use published logbooks for baselines
+          },
+        },
+        select: {
+          totalPreferences: true,
+          preferencesMet: true,
+          averageSatisfaction: true,
+          fairnessIndex: true,
+        },
+      });
+
+      if (historicalData.length === 0) {
+        // No historical data - return null to signal using defaults
+        return {
+          hasHistoricalData: false,
+          sampleSize: 0,
+          baselines: null,
+        };
+      }
+
+      // Calculate averages from historical data
+      const totalRecords = historicalData.length;
+      
+      // Overall preferences met percentage
+      const totalPrefsSum = historicalData.reduce((sum, d) => sum + d.totalPreferences, 0);
+      const metPrefsSum = historicalData.reduce((sum, d) => sum + d.preferencesMet, 0);
+      const overallPrefsMetPct = totalPrefsSum > 0 ? (metPrefsSum / totalPrefsSum) * 100 : 50;
+
+      // Average satisfaction (per-crew avg) - stored as 0-1, convert to percentage
+      const avgSatisfactionSum = historicalData.reduce((sum, d) => sum + (d.averageSatisfaction ?? 0), 0);
+      const avgSatisfactionPct = (avgSatisfactionSum / totalRecords) * 100;
+
+      // Fairness - already stored as 0-100
+      const fairnessSum = historicalData.reduce((sum, d) => sum + (d.fairnessIndex ?? 0), 0);
+      const avgFairness = fairnessSum / totalRecords;
+
+      // Calculate standard deviation for tolerance (use half of std dev as tolerance)
+      const overallPctValues = historicalData.map(d => 
+        d.totalPreferences > 0 ? (d.preferencesMet / d.totalPreferences) * 100 : 0
+      );
+      const overallStdDev = calculateStdDev(overallPctValues, overallPrefsMetPct);
+      
+      const satisfactionValues = historicalData.map(d => (d.averageSatisfaction ?? 0) * 100);
+      const satisfactionStdDev = calculateStdDev(satisfactionValues, avgSatisfactionPct);
+
+      const fairnessValues = historicalData.map(d => d.fairnessIndex ?? 0);
+      const fairnessStdDev = calculateStdDev(fairnessValues, avgFairness);
+
+      return {
+        hasHistoricalData: true,
+        sampleSize: totalRecords,
+        lookbackDays,
+        baselines: {
+          preferencesOverallPct: Math.round(overallPrefsMetPct * 10) / 10,
+          preferencesOverallTolerance: Math.max(3, Math.round(overallStdDev / 2)),
+          perCrewAvgPct: Math.round(avgSatisfactionPct * 10) / 10,
+          perCrewAvgTolerance: Math.max(3, Math.round(satisfactionStdDev / 2)),
+          fairnessPct: Math.round(avgFairness * 10) / 10,
+          fairnessTolerance: Math.max(3, Math.round(fairnessStdDev / 2)),
+        },
+      };
+    }
+  );
+}
+
+// Helper function to calculate standard deviation
+function calculateStdDev(values: number[], mean: number): number {
+  if (values.length < 2) return 5; // Default tolerance if not enough data
+  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+  const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
+  return Math.sqrt(avgSquaredDiff);
 }

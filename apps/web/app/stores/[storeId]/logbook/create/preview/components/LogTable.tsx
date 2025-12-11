@@ -668,8 +668,8 @@ export default function LogbookSchedule({
 
   const renderSchedule = () => (
     <div className="isolate flex h-full flex-col bg-white">
-      {/* Scrollable container for both horizontal and vertical */}
-      <div className="max-h-[70vh] overflow-auto">
+      {/* Scrollable container - horizontal only, vertical scrolling handled by page */}
+      <div className="overflow-x-auto overflow-y-visible">
         <div className="flex flex-col" style={{ minWidth: `${slots.length * columnWidth + 160}px` }}>
           {/* Sticky top header with time labels */}
           <div className="sticky top-0 z-30 flex-none bg-white">
@@ -831,9 +831,9 @@ export default function LogbookSchedule({
                               ref={dropdownRef}
                               className="absolute inset-x-1 top-full z-50 mt-1 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5"
                             >
-                              <div className="max-h-60 overflow-y-auto py-1 text-sm text-gray-700">
+                              <div className="max-h-60 overflow-y-auto py-1 text-xs text-gray-700">
                                 {roleOptions.length === 0 ? (
-                                  <div className="px-4 py-2 text-gray-400">No eligible roles</div>
+                                  <div className="px-3 py-1.5 text-gray-400">No eligible roles</div>
                                 ) : (
                                   roleOptions.map((option, idx) => (
                                     <button
@@ -846,7 +846,7 @@ export default function LogbookSchedule({
                                           handleRoleSelect(option);
                                         }
                                       }}
-                                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                                      className="block w-full px-3 py-1.5 text-left hover:bg-gray-100"
                                     >
                                       {option.label}
                                     </button>

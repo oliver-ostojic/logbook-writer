@@ -6,20 +6,21 @@ import RadioGroup from './WindowRoleRadioGroup';
 import DailyAssignmentGrid from './DailyAssignmentGrid';
 import HourlyRoleRow from './HourlyRoleRows';
 import ErrorMessageBox from './ErrorMessageBox';
+import Footer from '../../../../../../../components/Footer';
 
 type RoleWithCrew = {
   roleId: number;
   roleCode: string;
   roleName: string;
   crewCount: number;
-  assignmentModel: string[];
+  assignmentModel: string;
 };
 
 type HourlyRoleMeta = {
   roleId: number;
   roleCode: string;
   roleName: string;
-  assignmentModel: string[];
+  assignmentModel: string;
   allowOutsideStoreHours: boolean;
   crewCount: number;
 };
@@ -612,15 +613,15 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
   }, [saving, storeId, date, windowConstraintDrafts, dailyConstraintDrafts, hourlyConstraintDrafts, API_URL, router, setErrors]);
 
   return (
-    <div className="bg-gray-50 pt-10 pb-12 sm:pt-16 sm:pb-16">
-      <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
-        <p className="text-xl font-medium tracking-tight pb-2 text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Define role constraints
-        </p>
-        <p className="text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
-            Decide how each role should be staffed—set hourly targets, total daily hours, and any windows that must stay covered        </p>
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16">
-          {/* Error message box */}
+      <div className="bg-gray-50 pt-10 pb-6 sm:pt-16 sm:pb-8">
+        <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
+          <p className="text-xl font-medium tracking-tight pb-2 text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-heading)' }}>
+            Define role constraints
+          </p>
+          <p className="text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
+              Decide how each role should be staffed—set hourly targets, total daily hours, and any windows that must stay covered        </p>
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16">
+            {/* Error message box */}
           {errors.length > 0 && (
             <div className="rounded-xl overflow-hidden">
               <ErrorMessageBox errors={errors} />
@@ -779,6 +780,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
             <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 rounded-b-[3rem]" />
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   )

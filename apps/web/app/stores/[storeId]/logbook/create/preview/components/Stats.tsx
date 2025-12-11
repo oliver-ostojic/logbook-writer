@@ -1,6 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import type { LogbookMetadata, PreferenceMetadata } from './LogbookView';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 type RunStatus = 'QUEUED' | 'RUNNING' | 'FEASIBLE' | 'OPTIMAL' | 'TIME_LIMIT' | 'INFEASIBLE' | 'FAILED' | 'CANCELED' | 'DRAFT' | 'PUBLISHED';
 
@@ -15,12 +19,22 @@ interface Badge {
   color: 'green' | 'blue' | 'amber' | 'red' | 'gray';
 }
 
-// Default values for when no data is available
-const defaultInputs = {
-  constraintsMetPct: 0,
-  preferencesBaselinePct: 50,
-  tolerancePct: 5,
-  fairnessBaseline: 85,
+interface HistoricalBaselines {
+  preferencesOverallPct: number;
+  preferencesOverallTolerance: number;
+  perCrewAvgPct: number;
+  perCrewAvgTolerance: number;
+  fairnessPct: number;
+  fairnessTolerance: number;
+}
+
+// Default values for when no historical data is available
+const defaultBaselines: HistoricalBaselines = {
+  preferencesOverallPct: 50,
+  preferencesOverallTolerance: 5,
+  perCrewAvgPct: 50,
+  perCrewAvgTolerance: 5,
+  fairnessPct: 85,
   fairnessTolerance: 5,
 };
 
@@ -29,16 +43,6 @@ function classNames(...classes: string[]) {
 }
 
 // Badge computation functions
-function getConstraintsBadge(constraintsMetPct: number, runStatus: RunStatus): Badge {
-  if (runStatus === 'INFEASIBLE' || runStatus === 'FAILED' || constraintsMetPct === 0) {
-    return { label: 'Failed', color: 'red' };
-  }
-  if (constraintsMetPct === 100) {
-    return { label: 'Success', color: 'green' };
-  }
-  return { label: 'Partial', color: 'amber' };
-}
-
 function getPreferencesBadge(
   preferencesMetPct: number,
   preferencesBaselinePct: number,
@@ -120,6 +124,39 @@ function getBadgeColorClasses(color: Badge['color']): string {
 }
 
 export default function Stats({ metadata, preferenceMetadata, loading }: StatsProps) {
+  const params = useParams();
+  const storeId = params?.storeId as string | undefined;
+  const [baselines, setBaselines] = useState<HistoricalBaselines>(defaultBaselines);
+
+  // Fetch historical baselines for this store
+  useEffect(() => {
+    if (!storeId) return;
+
+    const fetchBaselines = async () => {
+      try {
+        const res = await fetch(`${API_URL}/schedule/stats/baselines?storeId=${storeId}&days=14`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.useDefaults) {
+            setBaselines({
+              preferencesOverallPct: data.preferencesOverallPct,
+              preferencesOverallTolerance: data.preferencesOverallTolerance,
+              perCrewAvgPct: data.perCrewAvgPct,
+              perCrewAvgTolerance: data.perCrewAvgTolerance,
+              fairnessPct: data.fairnessPct,
+              fairnessTolerance: data.fairnessTolerance,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch baselines:', err);
+        // Keep defaults on error
+      }
+    };
+
+    fetchBaselines();
+  }, [storeId]);
+
   // Derive stats from metadata
   const solverStatus = (metadata?.solver?.status ?? 'DRAFT') as RunStatus;
   const runtimeMs = metadata?.solver?.runtimeMs ?? 0;
@@ -132,44 +169,51 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
   
   // Fairness from preferenceMetadata - already stored as 0-100
   const fairnessScore = preferenceMetadata?.fairnessIndex ?? 0;
-  
-  // For constraints, we assume 100% if solver succeeded (OPTIMAL/FEASIBLE)
-  const constraintsMetPct = 
-    solverStatus === 'OPTIMAL' || solverStatus === 'FEASIBLE' ? 100 : 
-    solverStatus === 'INFEASIBLE' ? 0 : 
-    100;
 
-  // Compute badges based on inputs
-  const constraintsBadge = getConstraintsBadge(constraintsMetPct, solverStatus);
+  // Average satisfaction from preferenceMetadata or metadata.preferences
+  const avgSatisfaction = preferenceMetadata?.averageSatisfaction ?? metadata?.preferences?.averageSatisfaction ?? 0;
+  // Convert to percentage (0-100) if it's stored as 0-1
+  const avgSatisfactionPct = avgSatisfaction > 1 ? avgSatisfaction : avgSatisfaction * 100;
+
+  // Compute badges based on historical baselines
+  const avgSatisfactionBadge = getPreferencesBadge(
+    avgSatisfactionPct,
+    baselines.perCrewAvgPct,
+    baselines.perCrewAvgTolerance,
+  );
   const preferencesBadge = getPreferencesBadge(
     preferencesMetPct,
-    defaultInputs.preferencesBaselinePct,
-    defaultInputs.tolerancePct,
+    baselines.preferencesOverallPct,
+    baselines.preferencesOverallTolerance,
   );
   const solverBadge = getSolverBadge(solverStatus);
   const fairnessBadge = getFairnessBadge(
     fairnessScore,
-    defaultInputs.fairnessBaseline,
-    defaultInputs.fairnessTolerance,
+    baselines.fairnessPct,
+    baselines.fairnessTolerance,
   );
 
   const stats = [
     {
-      name: 'Constraints met',
-      value: loading ? '—' : formatPercent(constraintsMetPct),
-      badge: constraintsBadge,
+      label: 'Preferences met',
+      name: 'Per-Crew Avg.',
+      value: loading ? '—' : formatPercent(avgSatisfactionPct),
+      badge: avgSatisfactionBadge,
     },
     {
-      name: 'Preferences met',
+      label: 'Preferences met',
+      name: 'Overall',
       value: loading ? '—' : formatPercent(preferencesMetPct),
       badge: preferencesBadge,
     },
     {
-      name: 'Solver runtime',
+      label: 'Solver',
+      name: 'Runtime',
       value: loading ? '—' : formatRuntime(runtimeSeconds),
       badge: solverBadge,
     },
     {
+      label: 'Preferences met',
       name: 'Fairness',
       value: loading ? '—' : formatPercent(fairnessScore),
       badge: fairnessBadge,
@@ -188,7 +232,12 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
                 'flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:px-6 lg:border-t-0 xl:px-8',
               )}
             >
-              <dt className="text-sm/6 font-medium text-gray-500">{stat.name}</dt>
+              <dt className="text-sm/6 font-medium text-gray-500">
+                {'label' in stat && stat.label && (
+                  <span className="block text-xs text-gray-400 mb-0.5">{stat.label}</span>
+                )}
+                {stat.name}
+              </dt>
               <dd
                 className={classNames(
                   getBadgeColorClasses(stat.badge.color),

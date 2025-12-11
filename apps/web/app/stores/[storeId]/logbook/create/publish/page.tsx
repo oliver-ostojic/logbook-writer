@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import Header from '../../../../../../components/Header';
 import ProgressBar from '../../../components/ProgressBar';
 import BentoBox from './components/BentoBox';
 
@@ -10,6 +11,7 @@ export default function PublishPage() {
 
   return (
     <main>
+      <Header />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <ProgressBar currentStep={4} />

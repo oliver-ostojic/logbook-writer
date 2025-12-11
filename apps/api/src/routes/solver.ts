@@ -190,7 +190,7 @@ const convertPythonResultToLegacyOutput = (
   pythonResult: PythonSolverResult,
   solverInput: SolverInputV2
 ): SolverOutput => {
-  const status = mapSolverStatus(pythonResult.status);
+  const status = mapSolverStatus((pythonResult.metadata?.status as string) ?? pythonResult.status);
   const assignments = convertAssignmentsFromPython(pythonResult.assignments, solverInput.roles);
   const metadata = buildSolverMetadata(status, pythonResult, assignments);
 
@@ -208,7 +208,7 @@ const convertPythonResultToLegacyOutput = (
 const convertPythonResultToV2Output = (
   pythonResult: PythonSolverResult,
 ): SolverOutputV2 => {
-  const status = mapSolverStatus(pythonResult.status);
+  const status = mapSolverStatus((pythonResult.metadata?.status as string) ?? pythonResult.status);
   const assignments: AssignmentV2[] = (pythonResult.assignments ?? []).map(a => ({
     crewId: a.crewId,
     roleId: a.roleId,

@@ -12,7 +12,7 @@ type RoleWithCrew = {
   roleCode: string;
   roleName: string;
   crewCount: number;
-  assignmentModel: string[];
+  assignmentModel: string;
   allowOutsideStoreHours: boolean;
 };
 
@@ -54,7 +54,8 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
     };
 
     roles.forEach((role) => {
-      if (!role.assignmentModel.includes('HOURLY')) return;
+      // Roles with HOURLY or HOURLY_OR_WINDOW assignment model can be configured in Step 3
+      if (role.assignmentModel !== 'HOURLY' && role.assignmentModel !== 'HOURLY_OR_WINDOW') return;
       for (let hour = 0; hour < 24; hour++) {
         if (!role.allowOutsideStoreHours && !withinStoreHours(hour)) {
           continue;
@@ -92,9 +93,10 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
   const registerRole = roles.find(r => r.roleCode === 'REGISTER' || r.roleName.toLowerCase().includes('register'));
   const parkingHelmsRole = roles.find(r => r.roleCode === 'PARKING_HELM' || r.roleName.toLowerCase().includes('parking helm'));
   
+  // HOURLY_OR_WINDOW roles need mutual exclusion - can only be configured in one step
   const needsMutualExclusion = (role: RoleWithCrew | undefined) => {
     if (!role) return false;
-    return role.assignmentModel.includes('HOURLY') && role.assignmentModel.includes('HOURLY_WINDOW');
+    return role.assignmentModel === 'HOURLY_OR_WINDOW';
   };
 
   const isRegisterLocked = registerRole && lockedRoleIds.has(registerRole.roleId) && needsMutualExclusion(registerRole);

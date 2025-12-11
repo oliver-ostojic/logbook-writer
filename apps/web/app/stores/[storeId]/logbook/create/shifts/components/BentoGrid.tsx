@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import CrewShiftTable from "./CrewShiftTable";
 import CrewCounter from './CrewCounter';
 import ShiftValidationBox from './ShiftValidationBox';
+import Footer from '../../../../../../../components/Footer';
 
 type CrewMember = {
   id: number; // local numeric id for UI
@@ -154,8 +155,8 @@ export default function BentoGrid() {
   }, [selectedCrew, shiftTimes]);
 
   return (
-    <div className="bg-gray-50 pt-10 pb-24 sm:pt-16 sm:pb-32">
-      <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
+      <div className="bg-gray-50 pt-10 pb-12 sm:pt-16 sm:pb-16">
+        <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
         <p className="text-xl font-medium tracking-tight pb-2 text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-heading)' }}>
           Crew selection
         </p>
@@ -241,6 +242,7 @@ export default function BentoGrid() {
             <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-b-[2rem] lg:rounded-br-[3rem]" />
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   )

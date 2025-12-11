@@ -117,7 +117,7 @@ export async function generateLogbookPdf(
   // Fetch role info for this store
   const roles = await prisma.role.findMany({
     where: { storeId },
-    select: { id: true, code: true, displayName: true },
+    select: { id: true, code: true, codePDF: true, displayName: true },
   });
   const roleMap = new Map(roles.map(r => [r.id, r]));
 
@@ -154,7 +154,7 @@ export async function generateLogbookPdf(
   const stream = fs.createWriteStream(filePath);
   doc.pipe(stream);
 
-  // Title
+  // Title row: date left-aligned, store ID right-aligned
   const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -163,13 +163,15 @@ export async function generateLogbookPdf(
     timeZone: 'UTC',
   });
   
-  doc.fontSize(18).font('OpenSans-Bold').text(`Logbook - ${formattedDate}`, { align: 'center' });
-  doc.moveDown(0.5);
-  doc.fontSize(10).font('OpenSans').text(`Store ${storeId}`, { align: 'center' });
-  doc.moveDown(1);
+  doc.moveDown(0.3);
+  const titleY = doc.y;
+  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  
+  doc.fontSize(14).font('OpenSans-Bold').fillColor('#000000').text(formattedDate, doc.page.margins.left, titleY, { align: 'left' });
+  doc.fontSize(14).font('OpenSans').fillColor('#6b7280').text(`Store ${storeId}`, doc.page.margins.left, titleY, { width: pageWidth, align: 'right' });
+  doc.moveDown(0.8);
 
   // Table dimensions
-  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const nameColumnWidth = 100;
   const tableWidth = pageWidth;
   const slotWidth = (tableWidth - nameColumnWidth) / timeSlots.length;
@@ -199,7 +201,7 @@ export async function generateLogbookPdf(
 
   // Draw header row with hourly time labels only
   doc.rect(tableLeft, tableTop, nameColumnWidth, headerHeight)
-    .fillAndStroke('#f3f4f6', '#d1d5db');
+    .fillAndStroke('#f3f4f6', '#9ca3af');
   
   const headerFontSize = 9;
   doc.fillColor('#374151')
@@ -210,7 +212,7 @@ export async function generateLogbookPdf(
   // Draw the timeline header area (single background)
   const timelineWidth = tableWidth - nameColumnWidth;
   doc.rect(tableLeft + nameColumnWidth, tableTop, timelineWidth, headerHeight)
-    .fillAndStroke('#f3f4f6', '#d1d5db');
+    .fillAndStroke('#f3f4f6', '#9ca3af');
 
   // Draw hourly labels and vertical lines
   const timeFontSize = 8;
@@ -220,7 +222,7 @@ export async function generateLogbookPdf(
     
     if (isFullHour) {
       // Draw vertical line at hour mark
-      doc.strokeColor('#d1d5db')
+      doc.strokeColor('#9ca3af')
         .moveTo(x, tableTop)
         .lineTo(x, tableTop + headerHeight)
         .stroke();
@@ -256,7 +258,7 @@ export async function generateLogbookPdf(
       
       // Redraw header on new page
       doc.rect(tableLeft, tableTop, nameColumnWidth, headerHeight)
-        .fillAndStroke('#f3f4f6', '#d1d5db');
+        .fillAndStroke('#f3f4f6', '#9ca3af');
       doc.fillColor('#374151')
         .fontSize(headerFontSize)
         .font('OpenSans-SemiBold')
@@ -264,7 +266,7 @@ export async function generateLogbookPdf(
       
       // Draw the timeline header area (single background)
       doc.rect(tableLeft + nameColumnWidth, tableTop, timelineWidth, headerHeight)
-        .fillAndStroke('#f3f4f6', '#d1d5db');
+        .fillAndStroke('#f3f4f6', '#9ca3af');
 
       // Draw hourly labels and vertical lines
       timeSlots.forEach((min, i) => {
@@ -272,7 +274,7 @@ export async function generateLogbookPdf(
         const isFullHour = min % 60 === 0;
         
         if (isFullHour) {
-          doc.strokeColor('#d1d5db')
+          doc.strokeColor('#9ca3af')
             .moveTo(x, tableTop)
             .lineTo(x, tableTop + headerHeight)
             .stroke();
@@ -292,21 +294,10 @@ export async function generateLogbookPdf(
       rowY = tableTop;
     }
 
-<<<<<<< HEAD
     // Crew name cell
     const rowBg = currentRowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
     doc.rect(tableLeft, rowY, nameColumnWidth, rowHeight)
-      .fillAndStroke(rowBg, '#d1d5db');
-=======
-    // Crew name cell - solid white background
-    doc.rect(tableLeft, rowY, nameColumnWidth, rowHeight)
-      .fillAndStroke('#ffffff', '#d1d5db');
-    
-    // Alternating row color for shift cells
-    const shiftRowBg = currentRowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
-    // Empty cells get light grey background
-    const emptyBg = '#f3f4f6';
->>>>>>> copilot/vscode1765252983699
+      .fillAndStroke(rowBg, '#9ca3af');
     
     // Check if name fits on one line
     const nameWidth = nameColumnWidth - 30;
@@ -346,83 +337,83 @@ export async function generateLogbookPdf(
         });
     }
 
-    // Draw time slot cells - first pass: fill all backgrounds
+    // Build merged cell groups - merge only within each hour (every 2 slots)
+    type CellGroup = {
+      startIndex: number;
+      endIndex: number; // exclusive
+      roleId: number | null;
+      rolePDF: string | null;
+    };
+    
+    const cellGroups: CellGroup[] = [];
+    let currentGroup: CellGroup | null = null;
+    
     timeSlots.forEach((slotStart, i) => {
-      const x = tableLeft + nameColumnWidth + (i * slotWidth);
-      
-      // Find assignment that covers this slot
       const assignment = crewAssignments.find(a => 
         a.startMinute <= slotStart && a.endMinute > slotStart
       );
       
-      if (assignment) {
-        const role = roleMap.get(assignment.roleId);
-        const roleCode = role?.code?.toUpperCase() || 'UNKNOWN';
-        const color = ROLE_COLORS[roleCode] || DEFAULT_COLOR;
-        
-        // Apply alternating row tint to role color
-        const tintFactor = currentRowIndex % 2 === 0 ? 1 : 0.92;
-        const tintedColor = [
-          Math.round(color[0] * tintFactor),
-          Math.round(color[1] * tintFactor),
-          Math.round(color[2] * tintFactor)
-        ];
-        
-        // Fill with role color (with alternating tint)
-        doc.rect(x, rowY, slotWidth, rowHeight)
-          .fill(`rgb(${tintedColor[0]}, ${tintedColor[1]}, ${tintedColor[2]})`);
+      const roleId = assignment?.roleId ?? null;
+      const role = roleId ? roleMap.get(roleId) : null;
+      const rolePDF = role ? (role.codePDF || role.code?.toUpperCase() || 'UNKNOWN') : null;
+      
+      // Check if we're at an hour boundary (every 2 slots = 60 min)
+      const isHourBoundary = i % 2 === 0;
+      
+      if (currentGroup && currentGroup.roleId === roleId && !isHourBoundary) {
+        // Extend current group (only within same hour)
+        currentGroup.endIndex = i + 1;
       } else {
-<<<<<<< HEAD
-        // Empty cell - use alternating row background
-        doc.rect(x, rowY, slotWidth, rowHeight)
-          .fill(rowBg);
-=======
-        // Empty cell - grey background
-        doc.rect(x, rowY, slotWidth, rowHeight)
-          .fill(emptyBg);
->>>>>>> copilot/vscode1765252983699
+        // Start new group (new hour or different role)
+        if (currentGroup) {
+          cellGroups.push(currentGroup);
+        }
+        currentGroup = {
+          startIndex: i,
+          endIndex: i + 1,
+          roleId,
+          rolePDF,
+        };
       }
     });
+    if (currentGroup) {
+      cellGroups.push(currentGroup);
+    }
 
-    // Second pass: draw borders for all cells (same color)
-    const borderColor = '#d1d5db';
-    timeSlots.forEach((slotStart, i) => {
-      const x = tableLeft + nameColumnWidth + (i * slotWidth);
-      doc.rect(x, rowY, slotWidth, rowHeight)
+    // Draw merged cells
+    const borderColor = '#9ca3af';
+    
+    cellGroups.forEach(group => {
+      const x = tableLeft + nameColumnWidth + (group.startIndex * slotWidth);
+      const cellWidth = (group.endIndex - group.startIndex) * slotWidth;
+      
+      if (group.roleId !== null) {
+        // Assignment cell - RG gets light gray, others get white
+        const isRegister = group.rolePDF === 'RG';
+        const cellBg = isRegister ? '#eef0f2' : '#ffffff';
+        doc.rect(x, rowY, cellWidth, rowHeight)
+          .fill(cellBg);
+        
+        // Draw assignment text centered in merged cell (RG is semi-bold)
+        const fontSize = 8;
+        const fontName = isRegister ? 'OpenSans-SemiBold' : 'OpenSans';
+        doc.font(fontName).fontSize(fontSize).fillColor('#111827');
+        const textHeight = doc.heightOfString(group.rolePDF!, { width: cellWidth });
+        const textY = rowY + (rowHeight - textHeight) / 2;
+        doc.text(group.rolePDF!, x, textY, { width: cellWidth, align: 'center' });
+      } else {
+        // Empty cell (non-shift) - fill with light gray
+        doc.rect(x, rowY, cellWidth, rowHeight)
+          .fill('#d1d5db');
+      }
+      
+      // Draw border around the merged cell
+      doc.rect(x, rowY, cellWidth, rowHeight)
         .strokeColor(borderColor)
         .stroke();
     });
     
     currentRowIndex++;
-  }
-
-  // Add legend at the bottom
-  const legendY = tableTop + (currentRowIndex * rowHeight) + 20;
-  
-  if (legendY < doc.page.height - doc.page.margins.bottom - 60) {
-    doc.moveDown(2);
-    doc.fontSize(10).font('OpenSans-Bold').fillColor('#374151').text('Legend:', tableLeft);
-    doc.moveDown(0.3);
-    
-    let legendX = tableLeft;
-    const legendSpacing = 100;
-    
-    Object.entries(ROLE_COLORS).forEach(([name, color]) => {
-      if (legendX + legendSpacing > pageWidth + tableLeft) {
-        doc.moveDown(0.5);
-        legendX = tableLeft;
-      }
-      
-      doc.rect(legendX, doc.y, 12, 12)
-        .fill(`rgb(${color[0]}, ${color[1]}, ${color[2]})`);
-      
-      doc.fillColor('#374151')
-        .fontSize(8)
-        .font('OpenSans')
-        .text(name, legendX + 16, doc.y + 2);
-      
-      legendX += legendSpacing;
-    });
   }
 
   // Footer with generation timestamp

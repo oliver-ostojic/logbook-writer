@@ -8,7 +8,7 @@ const stepDefinitions = [
   { id: '01', name: 'Crew', description: "Choose who's working.", path: 'shifts' },
   { id: '02', name: 'Constraints', description: 'Define rules and limits.', path: 'constraints' },
   { id: '03', name: 'Preview', description: 'Inspect drafted schedules.', path: 'preview' },
-  { id: '04', name: 'Publish', description: 'Finalize and share logbook.', path: 'publish' },
+  { id: '04', name: 'Publish', description: 'Download logbook.', path: 'publish' },
 ]
 
 function classNames(...classes: Array<string | false | null | undefined>) {

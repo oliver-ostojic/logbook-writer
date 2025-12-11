@@ -6,7 +6,7 @@ type RoleWithCrew = {
   roleCode: string;
   roleName: string;
   crewCount: number;
-  assignmentModel: string[];
+  assignmentModel: string;
 };
 
 type WindowConstraintValue = {
@@ -43,9 +43,10 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
     setConfig(hydratedConfig);
   }, [initialConstraints]);
 
-  // Helper to check if role has both HOURLY and HOURLY_WINDOW (needs mutual exclusion)
+  // Helper to check if role can be configured in both Window (Step 1) and Hourly (Step 3)
+  // HOURLY_OR_WINDOW roles need mutual exclusion - can only be configured in one step
   const needsMutualExclusion = (role: RoleWithCrew) => {
-    return role.assignmentModel.includes('HOURLY') && role.assignmentModel.includes('HOURLY_WINDOW');
+    return role.assignmentModel === 'HOURLY_OR_WINDOW';
   };
 
   const isRoleComplete = useCallback((roleId: number) => {
