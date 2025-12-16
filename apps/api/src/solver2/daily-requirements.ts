@@ -1,6 +1,6 @@
 // Normalizes per-crew daily requirement rows into slot-aware metadata that can be
 // consumed directly by constraint builders (e.g., daily totals, SOLVER roles).
-import type { DailyRequirementDescriptor, RoleDescriptor } from './types';
+import type { RoleDescriptor } from './types';
 import type { CrewShiftSlots } from './crew-shifts';
 import type { TimeGrid } from './time-grid';
 import { roleSupportsAnyAssignmentModel } from './assignment-models';
@@ -20,7 +20,7 @@ export interface DailyRequirementAssignment {
 // Convert daily rows to per-crew assignments, ensuring we respect the shift bounds
 // already cached in `CrewShiftSlots`. Throws if a crew requirement lacks shift data.
 export function buildDailyRequirementAssignments(
-  requirements: DailyRequirementDescriptor[],
+  requirements: any[],
   crewShifts: Map<string, CrewShiftSlots>,
   grid: TimeGrid,
   roles: RoleDescriptor[]

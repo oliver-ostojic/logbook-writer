@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Compatibility wrapper for the refactored logbook solver package."""
+"""Wrapper for the v2 logbook solver - the v1 solver has been removed."""
 
-from logbook_solver import LogbookSolver  # re-export for legacy imports
-from logbook_solver.main import main
+from logbook_solver_v2 import solve, SolverV2
+from logbook_solver_v2.cli import main
 
-__all__ = ["LogbookSolver", "main"]
+__all__ = ["solve", "SolverV2", "main"]
 
 
 if __name__ == '__main__':

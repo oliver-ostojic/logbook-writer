@@ -1,6 +1,6 @@
 // Normalizes hourly requirement rows into slot-aligned coverage windows so the
 // solver can reason about headcount using the shared time grid.
-import type { HourlyRequirementDescriptor } from './types';
+// (Retired) HourlyRequirementDescriptor was removed from SolverInputV2.
 import type { TimeGrid } from './time-grid';
 import { minutesToSlotIndex } from './time-grid';
 
@@ -22,7 +22,7 @@ const MINUTES_PER_HOUR = 60;
 // resulting object captures both headcount (raw) and the equivalent slot count
 // based on the grid's slot duration.
 export function buildHourlyRequirementWindow(
-  requirement: HourlyRequirementDescriptor,
+  requirement: any,
   grid: TimeGrid
 ): HourlyRequirementWindow {
   const hourStartMinute = requirement.hour * MINUTES_PER_HOUR;
@@ -55,7 +55,7 @@ export function buildHourlyRequirementWindow(
 // Convenience helper that maps an entire requirement list into slot windows in
 // ascending hour order, allowing downstream logic to iterate deterministically.
 export function buildHourlyRequirementWindows(
-  requirements: HourlyRequirementDescriptor[],
+  requirements: any[],
   grid: TimeGrid
 ): HourlyRequirementWindow[] {
   return requirements.map((req) => buildHourlyRequirementWindow(req, grid));

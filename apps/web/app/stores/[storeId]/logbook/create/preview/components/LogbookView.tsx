@@ -69,11 +69,26 @@ export type LogbookMetadata = {
 export type PreferenceMetadata = {
   id: string;
   logbookId: string;
-  totalPreferences: number;
+  // Core Preference Metrics
+  eligiblePreferences: number;
   preferencesMet: number;
-  averageSatisfaction: number;
-  totalWeightApplied: number;
+  percentMet: number;
+  avgSatisfaction: number;
+  // Crew Metrics
+  eligibleCrew: number;
+  avgSatisfactionPerCrew: number;
+  // Fairness
   fairnessIndex: number;
+  fairnessGrade: string;
+  // Per-RoleRule Breakdown
+  breakdownByRoleRule: Array<{
+    roleRuleId: number;
+    ruleType: string;
+    eligible: number;
+    met: number;
+    avgSatisfaction: number;
+    percentMet: number;
+  }>;
 };
 
 export type LogbookPreviewResponse = {

@@ -26,10 +26,10 @@ export async function suggestDemoWindow(dateISO: string, shifts: Shift[]) {
   // Fetch DEMO roles and associated crew via new relation names
   const demoRoles = await prisma.role.findMany({
     where: { code: 'DEMO' },
-    include: { crewRoles: { include: { crew: true } } },
+    include: { CrewRole: { include: { Crew: true } } },
   });
   const demoCrewSet = new Set(
-    demoRoles.flatMap((r: any) => (r.crewRoles ?? []).map((cr: any) => cr.crew.id))
+    demoRoles.flatMap((r: any) => (r.CrewRole ?? []).map((cr: any) => cr.Crew.id))
   );
   const avail = Array(24).fill(0);
   for (const s of shifts) {

@@ -12,6 +12,7 @@ import type {
   BankedPreferenceDescriptor,
   RoleFairnessTrackerDescriptor,
   CrewRoleFairnessHistoryDescriptor,
+  RoleRuleDescriptor,
 } from './types';
 import type { PreferenceType } from '@logbook-writer/shared-types';
 import { resolvePreferenceAssignmentModel } from './preference-assignment-models';
@@ -133,7 +134,7 @@ export async function buildSolverInputV2(
   });
   const coverageWindowsPromise = prisma.roleCoverageWindow.findMany({
     where: { storeId, date: targetDate },
-    select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+    select: { roleId: true, startMin: true, endMin: true, crewPerMinute: true, constraintRule: true },
     orderBy: [{ startMin: 'asc' }, { roleId: 'asc' }],
   });
   const crewQuotasPromise = prisma.crewRoleQuota.findMany({
@@ -157,11 +158,53 @@ export async function buildSolverInputV2(
     },
   });
 
+  // Fetch role rules: store-level and crew-level
+  const roleRulesPromise = prisma.storeRoleRule.findMany({
+    where: { storeId },
+    select: {
+      id: true,
+      storeId: true,
+      roleRuleId: true,
+      valueInt: true,
+      isPriority: true,
+      createdAt: true,
+      updatedAt: true,
+      RoleRule: {
+        include: {
+          Role: { select: { id: true, code: true } },
+          TargetRole: { select: { id: true, code: true } },
+        },
+      },
+    },
+  });
+  const crewRoleRulesPromise = prisma.crewRoleRule.findMany({
+    where: {
+      Crew: { storeId },
+    },
+    select: {
+      id: true,
+      crewId: true,
+      roleRuleId: true,
+      valueInt: true,
+      isPriority: true,
+      createdAt: true,
+      updatedAt: true,
+      RoleRule: {
+        include: {
+          Role: { select: { id: true, code: true } },
+          TargetRole: { select: { id: true, code: true } },
+        },
+      },
+    },
+  });
+
   type FairnessTrackerRecord = Awaited<typeof fairnessTrackersPromise>[number];
   type FairnessHistoryRecord = Awaited<typeof fairnessHistoryPromise>[number];
   type RoleFamilyRecord = Awaited<typeof roleFamiliesPromise>[number];
   type CoverageWindowRecord = Awaited<typeof coverageWindowsPromise>[number];
   type CrewQuotaRecord = Awaited<typeof crewQuotasPromise>[number];
+  type StoreRoleRuleRecord = Awaited<typeof roleRulesPromise>[number];
+  type CrewRoleRuleRecord = Awaited<typeof crewRoleRulesPromise>[number];
 
   const [
     storeRecord,
@@ -172,6 +215,8 @@ export async function buildSolverInputV2(
     crewQuotaRecords,
     fairnessTrackerRecords,
     fairnessHistoryRecords,
+    storeRoleRuleRecords,
+    crewRoleRuleRecords,
   ] = (await Promise.all([
     storePromise,
     rolesPromise,
@@ -181,6 +226,8 @@ export async function buildSolverInputV2(
     crewQuotasPromise,
     fairnessTrackersPromise,
     fairnessHistoryPromise,
+    roleRulesPromise,
+    crewRoleRulesPromise,
   ])) as [
     Awaited<typeof storePromise>,
     Awaited<typeof rolesPromise>,
@@ -190,6 +237,8 @@ export async function buildSolverInputV2(
     Awaited<typeof crewQuotasPromise>,
     Awaited<typeof fairnessTrackersPromise>,
     Awaited<typeof fairnessHistoryPromise>,
+    Awaited<typeof roleRulesPromise>,
+    Awaited<typeof crewRoleRulesPromise>,
   ];
 
   if (!storeRecord) {
@@ -224,6 +273,97 @@ export async function buildSolverInputV2(
     } satisfies CrewRoleFairnessHistoryDescriptor;
   });
 
+  // Build role rules with priority resolution
+  // Priority order:
+  // 1. CrewRoleRule with isPriority=true → use crew override
+  // 2. StoreRoleRule with isPriority=true (no crew priority) → use store default
+  // 3. CrewRoleRule exists (no priority flags) → use crew override
+  // 4. StoreRoleRule exists (fallback) → use store default
+  
+  // Helper to create a unique key for a rule
+  // NOTE: We include valueInt because rules like CANNOT_ASSIGN_DURING_STORE_HOUR_X
+  // can have multiple entries with different valueInt (different hours)
+  const ruleKey = (roleId: number, type: string, targetRoleId: number | null, valueInt: number | null) =>
+    `${roleId}:${type}:${targetRoleId ?? 'null'}:${valueInt ?? 'null'}`;
+
+  // Index store-level rules by unique key
+  const storeRulesByKey = new Map<string, StoreRoleRuleRecord>();
+  for (const storeRule of storeRoleRuleRecords) {
+    const rr = storeRule.RoleRule;
+    const key = ruleKey(rr.roleId, rr.type, rr.targetRoleId, storeRule.valueInt);
+    storeRulesByKey.set(key, storeRule);
+  }
+
+  // Index crew-level rules by (crewId, key)
+  const crewRulesByCrewAndKey = new Map<string, Map<string, CrewRoleRuleRecord>>();
+  for (const crewRule of crewRoleRuleRecords) {
+    const rr = crewRule.RoleRule;
+    const key = ruleKey(rr.roleId, rr.type, rr.targetRoleId, crewRule.valueInt);
+    
+    if (!crewRulesByCrewAndKey.has(crewRule.crewId)) {
+      crewRulesByCrewAndKey.set(crewRule.crewId, new Map());
+    }
+    crewRulesByCrewAndKey.get(crewRule.crewId)!.set(key, crewRule);
+  }
+
+  // Collect all unique rule keys (union of store and crew keys)
+  const allRuleKeys = new Set<string>();
+  for (const key of storeRulesByKey.keys()) allRuleKeys.add(key);
+  for (const crewMap of crewRulesByCrewAndKey.values()) {
+    for (const key of crewMap.keys()) allRuleKeys.add(key);
+  }
+
+  // Get all crew IDs from the crew records
+  const ruleCrewIds = crewRecords.map(c => c.id);
+
+  const roleRules: RoleRuleDescriptor[] = [];
+
+  // For each crew, resolve which rules apply
+  for (const crewId of ruleCrewIds) {
+    const crewRulesMap = crewRulesByCrewAndKey.get(crewId);
+
+    for (const key of allRuleKeys) {
+      const storeRule = storeRulesByKey.get(key);
+      const crewRule = crewRulesMap?.get(key);
+
+      // Determine which rule wins based on priority
+      let winningRule: { source: 'store' | 'crew'; record: StoreRoleRuleRecord | CrewRoleRuleRecord } | null = null;
+
+      if (crewRule?.isPriority) {
+        // Crew has priority override
+        winningRule = { source: 'crew', record: crewRule };
+      } else if (storeRule?.isPriority && !crewRule) {
+        // Store has priority and crew has no rule
+        winningRule = { source: 'store', record: storeRule };
+      } else if (storeRule?.isPriority && crewRule && !crewRule.isPriority) {
+        // Store has priority, crew has rule but no priority → store wins
+        winningRule = { source: 'store', record: storeRule };
+      } else if (crewRule) {
+        // Crew has rule (no priority flags in play)
+        winningRule = { source: 'crew', record: crewRule };
+      } else if (storeRule) {
+        // Fallback to store rule
+        winningRule = { source: 'store', record: storeRule };
+      }
+
+      if (winningRule) {
+        const rr = winningRule.record.RoleRule;
+        roleRules.push({
+          id: rr.id,
+          roleId: rr.roleId,
+          roleCode: rr.Role.code,
+          type: rr.type,
+          targetRoleId: rr.targetRoleId,
+          targetRoleCode: rr.TargetRole?.code ?? null,
+          valueInt: winningRule.record.valueInt,
+          constraintType: rr.constraintType,
+          crewId: crewId, // Always crew-specific now
+          isPriority: winningRule.record.isPriority,
+        });
+      }
+    }
+  }
+
   const store: StoreDescriptor = {
     id: storeRecord.id,
     timezone: storeRecord.timezone,
@@ -243,13 +383,8 @@ export async function buildSolverInputV2(
   const roles: RoleDescriptor[] = roleRecords.map((role) => {
     const assignmentModel: AssignmentModelValue = role.assignmentModel ?? 'WINDOW';
 
-    const windowOffsets =
-      role.windowStartOffsetMin !== null && role.windowEndOffsetMin !== null
-        ? {
-            startOffsetMin: role.windowStartOffsetMin,
-            endOffsetMin: role.windowEndOffsetMin,
-          }
-        : undefined;
+    // NOTE: The DB schema may not have window offset fields yet; keep optional.
+    const windowOffsets = undefined;
 
     const fairnessConfig = fairnessTrackerLookup.get(role.id);
 
@@ -259,11 +394,13 @@ export async function buildSolverInputV2(
       displayName: role.displayName,
       assignmentModel,
       taskLength: role.taskLength,
-      canSplitForGaps: role.canSplitForGaps,
+      // Not currently present on Role schema; default false.
+      canSplitForGaps: false,
       familyId: role.familyId,
       allowOutsideStoreHours: role.allowOutsideStoreHours,
       consecutivePolicy: role.consecutivePolicy ?? 'NONE',
-      minShiftLengthForRoleAccess: role.minShiftLengthForRoleAccess,
+      // Not currently present on Role schema.
+      minShiftLengthForRoleAccess: null,
       windowOffsets,
       ...(fairnessConfig
         ? {
@@ -317,7 +454,8 @@ export async function buildSolverInputV2(
     roleId: record.roleId,
     startMin: record.startMin,
     endMin: record.endMin,
-    crewPerTaskLength: record.crewPerTaskLength,
+    crewPerMinute: record.crewPerMinute,
+    constraintRule: record.constraintRule,
   }));
 
   // Build crew quotas (replaces daily constraints)
@@ -432,6 +570,7 @@ export async function buildSolverInputV2(
     bankedPreferences,
     fairnessTrackers,
     fairnessHistory,
+    roleRules,
   } satisfies SolverInputV2;
 }
 

@@ -1,6 +1,6 @@
 // Normalizes window-style coverage rows (startHour/endHour ranges) into slot
 // intervals so the solver can iterate over contiguous demand blocks per role.
-import type { WindowRequirementDescriptor } from './types';
+// (Retired) WindowRequirementDescriptor was removed from SolverInputV2.
 import type { TimeGrid } from './time-grid';
 import { minutesToSlotIndex } from './time-grid';
 
@@ -24,7 +24,7 @@ const MINUTES_PER_HOUR = 60;
 // Convert a single window requirement (e.g., "need 2 people per hour from noon to
 // 4pm") into slot-aligned metadata, including total slot demand across the range.
 export function buildWindowRequirementRange(
-  requirement: WindowRequirementDescriptor,
+  requirement: any,
   grid: TimeGrid
 ): WindowRequirementRange {
   const startMinute = requirement.startHour * MINUTES_PER_HOUR;
@@ -68,7 +68,7 @@ export function buildWindowRequirementRange(
 // Bulk helper mirroring the hourly version. Keeps order stable for deterministic
 // iteration when building constraints or debugging coverage blocks.
 export function buildWindowRequirementRanges(
-  requirements: WindowRequirementDescriptor[],
+  requirements: any[],
   grid: TimeGrid
 ): WindowRequirementRange[] {
   return requirements.map((req) => buildWindowRequirementRange(req, grid));

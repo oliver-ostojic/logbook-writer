@@ -6,6 +6,7 @@
  */
 
 import type { PrismaClient } from '@prisma/client';
+import { getGrade } from './crew-rule-satisfaction';
 
 export interface AssignmentRecord {
   crewId: string;
@@ -474,40 +475,56 @@ export async function saveLogPreferenceMetadata(
   logbookId: string,
   satisfactionResults: SatisfactionResult[]
 ): Promise<void> {
-  const totalPreferences = satisfactionResults.length;
+  const eligiblePreferences = satisfactionResults.length;
   const preferencesMet = satisfactionResults.filter(r => r.met).length;
+  const percentMet = eligiblePreferences > 0 
+    ? (preferencesMet / eligiblePreferences) * 100 
+    : 0;
   
-  const totalWeightedSatisfaction = satisfactionResults.reduce(
-    (sum, r) => sum + (r.satisfaction * r.weightApplied),
-    0
-  );
-  const totalWeightApplied = satisfactionResults.reduce(
-    (sum, r) => sum + r.weightApplied,
-    0
-  );
-  
-  const averageSatisfaction = totalWeightApplied > 0 
-    ? totalWeightedSatisfaction / totalWeightApplied 
+  // Average satisfaction across all eligible preferences (0-100 scale)
+  const avgSatisfaction = eligiblePreferences > 0
+    ? (satisfactionResults.reduce((sum, r) => sum + r.satisfaction, 0) / eligiblePreferences) * 100
     : 0;
 
-  // Compute fairness using Gini on per-crew weighted satisfaction totals
-  const scoresByCrew = new Map<string, number>();
+  // Per-crew satisfaction scores
+  const satisfactionByCrew = new Map<string, number[]>();
   for (const r of satisfactionResults) {
-    const cur = scoresByCrew.get(r.crewId) ?? 0;
-    scoresByCrew.set(r.crewId, cur + r.satisfaction * r.weightApplied);
+    const scores = satisfactionByCrew.get(r.crewId) ?? [];
+    scores.push(r.satisfaction);
+    satisfactionByCrew.set(r.crewId, scores);
   }
 
-  const scores = Array.from(scoresByCrew.values());
-  const fairnessIndex = computeFairnessIndexFromScores(scores);
+  // Eligible crew = those with at least 1 preference
+  const eligibleCrew = satisfactionByCrew.size;
+  
+  // Average satisfaction per crew (average of per-crew averages, 0-100)
+  const crewAverages: number[] = [];
+  for (const scores of satisfactionByCrew.values()) {
+    const crewAvg = scores.reduce((s, v) => s + v, 0) / scores.length;
+    crewAverages.push(crewAvg * 100);
+  }
+  const avgSatisfactionPerCrew = crewAverages.length > 0
+    ? crewAverages.reduce((s, v) => s + v, 0) / crewAverages.length
+    : 0;
 
-  const data: any = {
+  // Compute fairness using Gini on per-crew satisfaction averages
+  const fairnessIndex = computeFairnessIndexFromScores(crewAverages);
+  
+  // Get letter grade
+  const fairnessGrade = getGrade(fairnessIndex);
+
+  const data = {
     id: crypto.randomUUID(),
     logbookId,
-    totalPreferences,
+    eligiblePreferences,
     preferencesMet,
-    averageSatisfaction,
-    totalWeightApplied,
+    percentMet,
+    avgSatisfaction,
+    eligibleCrew,
+    avgSatisfactionPerCrew,
     fairnessIndex,
+    fairnessGrade,
+    breakdownByRoleRule: [] as any[], // TODO: populate breakdown
   };
 
   await prisma.logPreferenceMetadata.create({

@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import { registerHealthRoutes } from './routes/health';
 import { registerCrewRoutes } from './routes/crew';
 import { registerRoleRoutes } from './routes/roles';
-import { registerWizardRoutes } from './routes/wizard';
+import { registerRoleRuleRoutes } from './routes/role-rules';
 import { registerScheduleRoutes } from './routes/schedule';
 import { registerSolverRoutes } from './routes/solver';
 import { registerSolverV2Routes } from './routes/solver2';
@@ -20,7 +20,7 @@ export async function buildServer() {
   registerHealthRoutes(app);
   registerCrewRoutes(app);
   registerRoleRoutes(app);
-  registerWizardRoutes(app);
+  registerRoleRuleRoutes(app);
   registerScheduleRoutes(app);
   registerSolverRoutes(app);
   registerSolverV2Routes(app);

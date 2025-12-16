@@ -1,4 +1,4 @@
-import { AssignmentModel, BankingStatus, ConsecutivePolicy } from '@prisma/client';
+import { AssignmentModel, BankingStatus, ConsecutivePolicy, RoleRuleType, ConstraintType } from '@prisma/client';
 import { PreferenceType } from '@logbook-writer/shared-types';
 
 export type AssignmentModelValue = AssignmentModel | 'SOLVER';
@@ -53,7 +53,8 @@ export interface CoverageWindowDescriptor {
   roleId: number;
   startMin: number; // minutes from midnight
   endMin: number; // minutes from midnight
-  crewPerTaskLength: number;
+  crewPerMinute: number; // how many crew should be assigned
+  constraintRule: 'MIN' | 'MAX' | 'EXACTLY'; // MIN/MAX/EXACTLY N crew
 }
 
 // NEW: Replaces DailyRequirementDescriptor
@@ -120,6 +121,21 @@ export interface CrewRoleFairnessHistoryDescriptor {
   lookbackDays: number;
 }
 
+// NEW: Role rules for solver constraints
+export interface RoleRuleDescriptor {
+  id: number;
+  roleId: number;
+  roleCode: string; // for debugging
+  type: RoleRuleType;
+  targetRoleId: number | null;
+  targetRoleCode: string | null; // for debugging
+  valueInt: number | null;
+  constraintType: ConstraintType;
+  // Scope: if crewId is set, applies only to that crew; otherwise store-wide
+  crewId: string | null;
+  isPriority: boolean;
+}
+
 export interface SolverInputV2 {
   store: StoreDescriptor;
   roleFamilies: RoleFamilyDescriptor[];
@@ -131,4 +147,5 @@ export interface SolverInputV2 {
   bankedPreferences: BankedPreferenceDescriptor[];
   fairnessTrackers: RoleFairnessTrackerDescriptor[];
   fairnessHistory: CrewRoleFairnessHistoryDescriptor[];
+  roleRules: RoleRuleDescriptor[];
 }

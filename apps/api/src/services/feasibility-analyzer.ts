@@ -367,7 +367,7 @@ function checkCrewQuotasFeasible(ctx: FeasibilityContext): FeasibilityViolation[
 // =============================================================================
 // CHECK 3: Are there enough qualified crew for each coverage window?
 // For each RoleCoverageWindow, check if we have enough eligible crew
-// covering the window [startMin, endMin) to satisfy crewPerTaskLength.
+// covering the window [startMin, endMin) to satisfy crewPerMinute.
 // =============================================================================
 function checkCoverageWindowsFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
@@ -384,7 +384,7 @@ function checkCoverageWindowsFeasible(ctx: FeasibilityContext): FeasibilityViola
       continue;
     }
 
-    const requiredCrew = window.crewPerTaskLength;
+    const requiredCrew = window.crewPerMinute;
     if (requiredCrew <= 0) continue;
 
     const taskLength = role.taskLength;

@@ -213,7 +213,7 @@ function checkCrewShiftBounds(context: AnalyzerContext): ConstraintViolation[] {
 
 /**
  * Check coverage windows - ensure each window has required crew coverage.
- * CoverageWindowDescriptor: {roleId, startMin, endMin, crewPerTaskLength}
+ * CoverageWindowDescriptor: {roleId, startMin, endMin, crewPerMinute}
  * For each task-length-sized chunk within the window, check we have enough crew assigned.
  */
 function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
@@ -240,17 +240,17 @@ function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
         }
       }
 
-      if (crewInSlot.size < window.crewPerTaskLength) {
+      if (crewInSlot.size < window.crewPerMinute) {
         violations.push({
           severity: 'error',
           category: 'coverage',
-          message: `${role.displayName} coverage window (${formatTime(window.startMin)}–${formatTime(window.endMin)}) requires ${window.crewPerTaskLength} crew but only ${crewInSlot.size} at ${formatTime(slotStart)}.`,
+          message: `${role.displayName} coverage window (${formatTime(window.startMin)}–${formatTime(window.endMin)}) requires ${window.crewPerMinute} crew but only ${crewInSlot.size} at ${formatTime(slotStart)}.`,
           details: { 
             roleId: role.id, 
             windowStart: window.startMin,
             windowEnd: window.endMin,
             slotStart,
-            required: window.crewPerTaskLength, 
+            required: window.crewPerMinute, 
             actual: crewInSlot.size 
           },
         });

@@ -4,6 +4,7 @@ This module implements the new constraint system:
 - RoleCoverageWindow: "N crew per taskLength between startMin-endMin"
 - CrewRoleQuota: "this crew must do X minutes of this role"
 - RoleFamily: aggregate min/max minutes per crew across related roles
+- RoleRules: per-role constraints (ordering, blocksizes, etc.)
 """
 
 from __future__ import annotations
@@ -11,6 +12,8 @@ from __future__ import annotations
 import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Tuple
+
+from .role_rules import apply_role_rules
 
 if TYPE_CHECKING:  # pragma: no cover
     from .solver_v2 import SolverV2
@@ -28,6 +31,7 @@ def add_all(solver: "SolverV2") -> None:
     _crew_quota_constraints(solver)
     _role_family_constraints(solver)
     _consecutive_required_constraints(solver)
+    apply_role_rules(solver)
     
     print("="*60 + "\n", file=sys.stderr)
 
@@ -95,8 +99,13 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
 def _coverage_window_constraints(solver: "SolverV2") -> None:
     """Build coverage window constraints.
     
-    For each RoleCoverageWindow, ensure crewPerTaskLength people are assigned
+    For each RoleCoverageWindow, ensure crewPerMinute people are assigned
     at each taskLength position within the window [startMin, endMin).
+    
+    The constraintRule determines how to apply the constraint:
+    - EXACTLY: exactly N crew must be assigned (default)
+    - MIN: at least N crew must be assigned
+    - MAX: at most N crew can be assigned
     """
     print("\n[2] COVERAGE_WINDOW constraints:", file=sys.stderr)
     
@@ -123,9 +132,11 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
         role_id = window['roleId']
         start_min = window['startMin']
         end_min = window['endMin']
-        crew_per_task = int(window.get('crewPerTaskLength', 1) or 1)
+        # Support both old (crewPerTaskLength) and new (crewPerMinute) field names
+        crew_per_minute = int(window.get('crewPerMinute', window.get('crewPerTaskLength', 1)) or 1)
+        constraint_rule = window.get('constraintRule', 'EXACTLY')  # MIN, MAX, or EXACTLY
         
-        if crew_per_task <= 0:
+        if crew_per_minute <= 0:
             continue
 
         role = role_by_id.get(role_id)
@@ -156,25 +167,32 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
                     covering_vars.append(var)
             
             if covering_vars:
-                # Require exactly crew_per_task assignments covering this position
-                m.Add(sum(covering_vars) == crew_per_task)
+                # Apply constraint based on constraintRule
+                if constraint_rule == 'MIN':
+                    m.Add(sum(covering_vars) >= crew_per_minute)
+                elif constraint_rule == 'MAX':
+                    m.Add(sum(covering_vars) <= crew_per_minute)
+                else:  # EXACTLY (default)
+                    m.Add(sum(covering_vars) == crew_per_minute)
                 constraints_added += 1
                 
-                if len(covering_vars) < crew_per_task:
+                if len(covering_vars) < crew_per_minute and constraint_rule in ('MIN', 'EXACTLY'):
                     impossible_constraints.append({
                         'role': role.get('code'),
                         'slot': task_start_slot,
                         'time': task_start_slot * slot_minutes,
-                        'required': crew_per_task,
-                        'available': len(covering_vars)
+                        'required': crew_per_minute,
+                        'available': len(covering_vars),
+                        'rule': constraint_rule
                     })
             else:
                 impossible_constraints.append({
                     'role': role.get('code'),
                     'slot': task_start_slot,
                     'time': task_start_slot * slot_minutes,
-                    'required': crew_per_task,
-                    'available': 0
+                    'required': crew_per_minute,
+                    'available': 0,
+                    'rule': constraint_rule
                 })
     
     print(f"   Constraints added: {constraints_added}", file=sys.stderr)
@@ -182,7 +200,8 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
     if impossible_constraints:
         print(f"   ⚠️  PROBLEM: {len(impossible_constraints)} positions have insufficient variables!", file=sys.stderr)
         for c in impossible_constraints[:10]:
-            print(f"      - {c['role']} at slot {c['slot']} ({c['time']}min): need {c['required']}, have {c['available']}", file=sys.stderr)
+            rule_str = f" ({c.get('rule', 'EXACTLY')})" if c.get('rule') else ""
+            print(f"      - {c['role']} at slot {c['slot']} ({c['time']}min): need {c['required']}{rule_str}, have {c['available']}", file=sys.stderr)
         if len(impossible_constraints) > 10:
             print(f"      ... and {len(impossible_constraints) - 10} more", file=sys.stderr)
 

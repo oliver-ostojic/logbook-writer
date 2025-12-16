@@ -63,7 +63,7 @@ export function registerConstraintRoutes(app: FastifyInstance) {
     const [coverageWindows, crewQuotas] = await Promise.all([
       prisma.roleCoverageWindow.findMany({
         where: { storeId: sid, date: day },
-        select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+        select: { roleId: true, startMin: true, endMin: true, crewPerMinute: true, constraintRule: true },
         orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
       }),
       prisma.crewRoleQuota.findMany({
@@ -101,7 +101,8 @@ export function registerConstraintRoutes(app: FastifyInstance) {
         roleId: Number(entry.roleId),
         startMin: Number(entry.startMin),
         endMin: Number(entry.endMin),
-        crewPerTaskLength: Math.round(Number(entry.crewPerTaskLength)),
+        crewPerMinute: Math.round(Number((entry as any).crewPerMinute ?? (entry as any).crewPerTaskLength)),
+        constraintRule: (entry as any).constraintRule ?? 'EXACTLY',
       }))
       .filter((entry) =>
         Number.isInteger(entry.roleId) &&
@@ -111,8 +112,8 @@ export function registerConstraintRoutes(app: FastifyInstance) {
         entry.startMin >= 0 &&
         entry.endMin <= 1440 && // 24 * 60
         entry.endMin > entry.startMin &&
-        Number.isInteger(entry.crewPerTaskLength) &&
-        entry.crewPerTaskLength >= 0
+        Number.isInteger(entry.crewPerMinute) &&
+        entry.crewPerMinute >= 0
       );
 
     // Normalize and validate crew quotas

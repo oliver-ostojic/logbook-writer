@@ -70,6 +70,7 @@ model Crew {
   CrewRole                CrewRole[]
   CrewRoleFairnessHistory CrewRoleFairnessHistory[]
   CrewRoleQuota           CrewRoleQuota[]
+  CrewRoleRule            CrewRoleRule[]
   PreferenceSatisfaction  PreferenceSatisfaction[]
   Shift                   Shift[]
 }
@@ -139,16 +140,30 @@ model CrewRoleQuota {
 }
 
 model LogPreferenceMetadata {
-  id                  String   @id @db.Uuid
-  logbookId           String   @unique @db.Uuid
-  totalPreferences    Int      @default(0)
-  preferencesMet      Int      @default(0)
-  averageSatisfaction Float    @default(0)
-  totalWeightApplied  Float    @default(0)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  fairnessIndex       Float    @default(0)
-  Logbook             Logbook  @relation(fields: [logbookId], references: [id])
+  id                     String   @id @db.Uuid
+  logbookId              String   @unique @db.Uuid
+
+  // Core Preference Metrics
+  eligiblePreferences    Int      @default(0)  // Number of eligible preferences (rule was applicable)
+  preferencesMet         Int      @default(0)  // Number of preferences met (satisfaction >= 0.5)
+  percentMet             Float    @default(0)  // preferencesMet / eligiblePreferences * 100
+  avgSatisfaction        Float    @default(0)  // Average satisfaction across all eligible prefs (0-100)
+
+  // Crew Metrics
+  eligibleCrew           Int      @default(0)  // Crew with ≥1 eligible preference
+  avgSatisfactionPerCrew Float    @default(0)  // Average of per-crew satisfaction scores (0-100)
+
+  // Fairness
+  fairnessIndex          Float    @default(0)  // Gini-based fairness (0-100, 100=perfect equality)
+  fairnessGrade          String   @default("F") // Letter grade (A+ to F)
+
+  // Per-RoleRule Breakdown (JSON array)
+  // Each entry: { roleRuleId, ruleType, eligible, met, avgSatisfaction, percentMet }
+  breakdownByRoleRule    Json     @default("[]")
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  Logbook                Logbook  @relation(fields: [logbookId], references: [id])
 }
 
 model Logbook {
@@ -195,7 +210,6 @@ model Role {
   id                          Int                       @id @default(autoincrement())
   storeId                     Int
   code                        String                    @unique
-  codePDF                     String
   displayName                 String
   allowOutsideStoreHours      Boolean                   @default(false)
   consecutivePolicy           ConsecutivePolicy?        @default(NONE)
@@ -203,9 +217,10 @@ model Role {
   windowEndOffsetMin          Int?
   minShiftLengthForRoleAccess Int?
   taskLength                  Int
-  canSplitForGaps             Boolean                   @default(false)
   familyId                    Int
   assignmentModel             AssignmentModel
+  canSplitForGaps             Boolean                   @default(false)
+  codePDF                     String?                   @db.VarChar(255)
   Assignment                  Assignment[]
   CrewRole                    CrewRole[]
   CrewRoleFairnessHistory     CrewRoleFairnessHistory[]
@@ -215,20 +230,69 @@ model Role {
   RoleCoverageWindow          RoleCoverageWindow[]
   RoleFairnessTracker         RoleFairnessTracker?
   RolePreference              RolePreference[]
+  RoleRules                   RoleRule[]                @relation("RoleToRoleRules")
+  TargetedByRules             RoleRule[]                @relation("TargetRoleToRoleRules")
+}
+
+model RoleRule {
+  id             Int             @id @default(autoincrement())
+  roleId         Int
+  type           RoleRuleType
+  targetRoleId   Int?
+  constraintType ConstraintType
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+  description    String?
+  CrewRoleRules  CrewRoleRule[]
+  Role           Role            @relation("RoleToRoleRules", fields: [roleId], references: [id])
+  TargetRole     Role?           @relation("TargetRoleToRoleRules", fields: [targetRoleId], references: [id])
+  StoreRoleRules StoreRoleRule[]
+
+  @@unique([roleId, type, targetRoleId])
+  @@index([roleId])
+}
+
+model CrewRoleRule {
+  id         Int      @id @default(autoincrement())
+  crewId     String   @db.Char(7)
+  roleRuleId Int
+  isPriority Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  valueInt   Int?
+  Crew       Crew     @relation(fields: [crewId], references: [id])
+  RoleRule   RoleRule @relation(fields: [roleRuleId], references: [id], onDelete: Cascade)
+
+  @@index([crewId])
+}
+
+model StoreRoleRule {
+  id         Int      @id @default(autoincrement())
+  storeId    Int
+  roleRuleId Int
+  isPriority Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  valueInt   Int?
+  RoleRule   RoleRule @relation(fields: [roleRuleId], references: [id], onDelete: Cascade)
+  Store      Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model RoleCoverageWindow {
-  id                Int      @id @default(autoincrement())
-  date              DateTime
-  startMin          Int
-  endMin            Int
-  crewPerTaskLength Int      @default(1)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @default(now())
-  storeId           Int
-  roleId            Int
-  Role              Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Store             Store    @relation(fields: [storeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id             Int            @id @default(autoincrement())
+  date           DateTime
+  startMin       Int
+  endMin         Int
+  crewPerMinute  Int            @default(1)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now())
+  storeId        Int
+  roleId         Int
+  constraintRule ConstraintRule @default(EXACTLY)
+  Role           Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Store          Store          @relation(fields: [storeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([storeId, roleId, date, startMin, endMin])
   @@index([storeId, date])
@@ -332,8 +396,15 @@ model Store {
   Run                      Run[]
   Shift                    Shift[]
   Company                  Company                   @relation(fields: [companyId], references: [id])
+  StoreRoleRule            StoreRoleRule[]
 
   @@index([companyId])
+}
+
+enum ConstraintRule {
+  MIN
+  MAX
+  EXACTLY
 }
 
 enum AssignmentModel {
@@ -373,6 +444,29 @@ enum PreferenceType {
   FAVORITE
   TIMING
   CONSECUTIVE
+}
+
+enum RoleRuleType {
+  CANNOT_BE_ASSIGNED_BEFORE
+  CANNOT_BE_ASSIGNED_AFTER
+  MIN_CONSECUTIVE_MINUTES
+  MAX_CONSECUTIVE_MINUTES
+  FORBID_ROLE
+  TIMING
+  LIKE_ROLE_FOR_HOUR_X
+  DISLIKE_ROLE_FOR_HOUR_X
+  MIN_SHIFT_LENGTH_FOR_ACCESS
+  ASSIGN_BEFORE_SHIFT_MIN_X
+  ASSIGN_AFTER_SHIFT_MIN_X
+  MAX_CREW_ON_AT_A_TIME
+  ALLOW_HALF_BLOCKSIZE
+  DISTRIBUTION_BETWEEN_ROLE_X
+  CANNOT_ASSIGN_DURING_STORE_HOUR_X
+}
+
+enum ConstraintType {
+  HARD
+  SOFT
 }
 
 enum RunStatus {

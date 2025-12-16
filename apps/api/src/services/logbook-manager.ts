@@ -45,13 +45,22 @@ export interface SolverOutputV2 {
 import {
   calculateAllSatisfaction,
   savePreferenceSatisfaction,
-  saveLogPreferenceMetadata,
   type AssignmentRecord,
   type PreferenceRecord,
   type CrewShiftWindow,
   type RoleTimingWindow,
   type TimingPreferenceContext,
 } from './preference-satisfaction';
+
+import {
+  calculateCrewRuleSatisfaction,
+  calculateAggregateStats,
+  aggregateSatisfactionStats,
+  saveLogPreferenceMetadata as saveCrewRuleLogPreferenceMetadata,
+  type CrewRoleRuleRecord,
+  type CrewShiftWindow as CrewRuleShiftWindow,
+  type SatisfactionResult as CrewRuleSatisfactionResult,
+} from './crew-rule-satisfaction';
 
 export interface LogbookMetadata {
   solver: {
@@ -144,6 +153,8 @@ export async function saveLogbookWithMetadata(
   }));
 
   // Fetch RolePreferences with CrewPreferences to build PreferenceRecord array
+  // Fetch RolePreferences with CrewPreferences to build PreferenceRecord array
+  // (Legacy system - kept for backwards compatibility)
   const rolePreferences = await prisma.rolePreference.findMany({
     where: { storeId },
     include: {
@@ -168,14 +179,92 @@ export async function saveLogbookWithMetadata(
     }
   }
 
-  // Calculate preference satisfaction
+  // Calculate preference satisfaction (legacy)
   const satisfactionResults = await calculateAllSatisfaction(
     assignmentRecords,
     preferenceRecords,
     timingContext
   );
 
-  // Calculate aggregate preference stats
+  // =========================================================================
+  // NEW: CrewRoleRule-based preference satisfaction
+  // =========================================================================
+  
+  // Get all crew IDs who have assignments
+  const crewIdsWithAssignments = new Set(assignmentRecords.map(a => a.crewId));
+  
+  // Fetch CrewRoleRules for crew who worked this day
+  const crewRoleRules = await prisma.crewRoleRule.findMany({
+    where: {
+      crewId: { in: Array.from(crewIdsWithAssignments) }
+    },
+    include: {
+      RoleRule: {
+        select: {
+          id: true,
+          roleId: true,
+          type: true,
+          targetRoleId: true,
+          constraintType: true,
+        }
+      }
+    }
+  });
+
+  // Build crew shift map for new system
+  const crewRuleShiftMap = new Map<string, CrewRuleShiftWindow>();
+  for (const crew of solverInput.crew) {
+    crewRuleShiftMap.set(crew.id, {
+      crewId: crew.id,
+      shiftStartMin: crew.shiftStartMin,
+      shiftEndMin: crew.shiftEndMin,
+    });
+  }
+
+  // Build role block sizes map
+  const roleBlockSizes = new Map<number, number>();
+  for (const role of solverInput.roles) {
+    roleBlockSizes.set(role.id, role.taskLength);
+  }
+
+  // Transform Prisma records to our interface
+  const crewRoleRuleRecords: CrewRoleRuleRecord[] = crewRoleRules.map(crr => ({
+    id: crr.id,
+    crewId: crr.crewId,
+    roleRuleId: crr.roleRuleId,
+    valueInt: crr.valueInt,
+    roleRule: {
+      id: crr.RoleRule.id,
+      roleId: crr.RoleRule.roleId,
+      type: crr.RoleRule.type,
+      targetRoleId: crr.RoleRule.targetRoleId,
+      constraintType: crr.RoleRule.constraintType,
+    }
+  }));
+
+  // Calculate satisfaction using new system
+  const crewRuleSatisfactionResults = calculateCrewRuleSatisfaction(
+    crewRoleRuleRecords,
+    assignmentRecords,
+    crewRuleShiftMap,
+    roleBlockSizes
+  );
+
+  // Calculate aggregate stats from new system (for logging)
+  const crewRuleStats = calculateAggregateStats(crewRuleSatisfactionResults);
+  
+  // Calculate full aggregate stats for saving to LogPreferenceMetadata
+  const fullCrewRuleStats = aggregateSatisfactionStats(crewRuleSatisfactionResults, crewRoleRuleRecords);
+
+  // Log comparison between old and new systems
+  console.log('\n📊 Preference Satisfaction Comparison:');
+  console.log(`   Legacy system: ${satisfactionResults.length} preferences, ${satisfactionResults.filter(r => r.met).length} met`);
+  console.log(`   New system: ${crewRuleStats.totalPreferences} preferences, ${crewRuleStats.preferencesMet} met`);
+  console.log(`   New system avg satisfaction: ${(crewRuleStats.averageSatisfaction * 100).toFixed(1)}%`);
+  console.log(`   New system fairness: ${crewRuleStats.fairnessIndex.toFixed(1)}%`);
+  console.log(`   Crew with preferences: ${crewRuleStats.crewWithPreferences}\n`);
+
+  // Calculate aggregate preference stats (legacy)
   const preferencesMet = satisfactionResults.filter(r => r.met).length;
   const totalWeightedSatisfaction = satisfactionResults.reduce(
     (sum, r) => sum + (r.satisfaction * r.weightApplied),
@@ -206,7 +295,7 @@ export async function saveLogbookWithMetadata(
     }),
     prisma.roleCoverageWindow.findMany({
       where: { storeId, date },
-      select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+      select: { roleId: true, startMin: true, endMin: true, crewPerMinute: true, constraintRule: true },
       orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
     }),
     prisma.crewRoleQuota.findMany({
@@ -318,7 +407,7 @@ export async function saveLogbookWithMetadata(
 
   await prisma.assignment.createMany({ data: assignmentData });
 
-  // Save preference satisfaction records
+  // Save preference satisfaction records (legacy - for backwards compatibility)
   await savePreferenceSatisfaction(
     prisma,
     logbook.id,
@@ -326,19 +415,20 @@ export async function saveLogbookWithMetadata(
     satisfactionResults
   );
 
-  // Save log preference metadata
-  await saveLogPreferenceMetadata(
+  // Save log preference metadata using NEW CrewRoleRule-based stats
+  await saveCrewRuleLogPreferenceMetadata(
     prisma,
     logbook.id,
-    satisfactionResults
+    fullCrewRuleStats
   );
 
   console.log('\n✅ Logbook saved successfully:');
   console.log(`   ID: ${logbook.id}`);
   console.log(`   Status: ${status}`);
   console.log(`   Assignments: ${assignmentData.length}`);
-  console.log(`   Preferences tracked: ${satisfactionResults.length}`);
-  console.log(`   Average satisfaction: ${(averageSatisfaction * 100).toFixed(1)}%\n`);
+  console.log(`   CrewRoleRule preferences: ${fullCrewRuleStats.eligiblePreferences} (was ${satisfactionResults.length} legacy)`);
+  console.log(`   Preferences met: ${fullCrewRuleStats.preferencesMet}/${fullCrewRuleStats.eligiblePreferences}`);
+  console.log(`   Average satisfaction: ${fullCrewRuleStats.avgSatisfactionPerCrew.toFixed(1)}%\n`);
 
   return logbook.id;
 }

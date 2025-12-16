@@ -222,7 +222,8 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
             windowsByRole[entry.roleId].push({
               startMin: entry.startMin,
               endMin: entry.endMin,
-              crewPerTaskLength: entry.crewPerTaskLength ?? 0,
+              // API returns crewPerMinute, fallback to crewPerTaskLength for backwards compat
+              crewPerTaskLength: entry.crewPerMinute ?? entry.crewPerTaskLength ?? 0,
             });
           });
 

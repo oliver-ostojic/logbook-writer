@@ -32,6 +32,24 @@ export default function BentoGrid() {
   const [loadingPeople, setLoadingPeople] = useState(false);
   const [initialShiftTimes, setInitialShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
   const [shiftTimes, setShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
+  const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
+  const [selectedCrew, setSelectedCrew] = useState<CrewMember[]>([]);
+
+  // LocalStorage key for persisting unsaved shifts
+  const getLocalStorageKey = (date: string) => `shifts-draft-${storeId}-${date}`;
+
+  // Save to localStorage whenever selectedCrew or shiftTimes change (after initial backend load)
+  useEffect(() => {
+    if (!hasLoadedFromBackend || !storeId || !selectedDate) return;
+    
+    const key = getLocalStorageKey(selectedDate);
+    const data = {
+      selectedCrew,
+      shiftTimes,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  }, [selectedCrew, shiftTimes, hasLoadedFromBackend, storeId, selectedDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +79,6 @@ export default function BentoGrid() {
     return () => { cancelled = true; };
   }, [API_URL, storeId]);
 
-  const [selectedCrew, setSelectedCrew] = useState<CrewMember[]>([]);
   const availablePeople = useMemo(() => {
     const selectedIds = new Set(selectedCrew.map(p => p.id));
     return allPeople.filter(p => !selectedIds.has(p.id));
@@ -79,25 +96,65 @@ export default function BentoGrid() {
   };
 
   // Load existing shifts for selected date -> populate selectedCrew + initialShiftTimes
+  // Also check localStorage for unsaved drafts
   useEffect(() => {
     let cancelled = false;
+    setHasLoadedFromBackend(false);
+    
     async function loadShifts() {
       try {
         if (!API_URL || !storeId || !selectedDate) return;
+        
+        // First, check localStorage for a draft
+        const localKey = getLocalStorageKey(selectedDate);
+        const localData = localStorage.getItem(localKey);
+        let localDraft: { selectedCrew: CrewMember[]; shiftTimes: Record<number, { start: string; end: string }>; savedAt: number } | null = null;
+        
+        if (localData) {
+          try {
+            localDraft = JSON.parse(localData);
+          } catch {
+            // Invalid JSON, ignore
+          }
+        }
+        
+        // Load from backend
         const res = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts?date=${encodeURIComponent(selectedDate)}`);
+        if (cancelled) return;
+        
         if (!res.ok) {
-          // If 404-like empty set behavior, just clear
-          setSelectedCrew([]);
-          setInitialShiftTimes({});
+          // No backend data - use localStorage draft if available
+          if (localDraft && localDraft.selectedCrew.length > 0) {
+            setSelectedCrew(localDraft.selectedCrew);
+            setShiftTimes(localDraft.shiftTimes);
+            setInitialShiftTimes({});
+          } else {
+            setSelectedCrew([]);
+            setInitialShiftTimes({});
+            setShiftTimes({});
+          }
+          setHasLoadedFromBackend(true);
           return;
         }
+        
         const data = await res.json();
         if (cancelled) return;
+        
         if (!Array.isArray(data) || data.length === 0) {
-          setSelectedCrew([]);
-          setInitialShiftTimes({});
+          // No backend data - use localStorage draft if available
+          if (localDraft && localDraft.selectedCrew.length > 0) {
+            setSelectedCrew(localDraft.selectedCrew);
+            setShiftTimes(localDraft.shiftTimes);
+            setInitialShiftTimes({});
+          } else {
+            setSelectedCrew([]);
+            setInitialShiftTimes({});
+            setShiftTimes({});
+          }
+          setHasLoadedFromBackend(true);
           return;
         }
+        
         // Map shifts to known people
         const byCrewId = new Map(allPeople.map(p => [p.crewId, p] as const));
         const mappedCrew: CrewMember[] = [];
@@ -108,13 +165,28 @@ export default function BentoGrid() {
           mappedCrew.push(p);
           times[p.id] = { start: s.start, end: s.end };
         }
-  setSelectedCrew(mappedCrew);
-  setInitialShiftTimes(times);
-  setShiftTimes(times);
+        
+        // If we have a localStorage draft, prefer it (user might have added more crew)
+        // But only if it has at least as many crew as the backend
+        if (localDraft && localDraft.selectedCrew.length >= mappedCrew.length) {
+          setSelectedCrew(localDraft.selectedCrew);
+          setShiftTimes(localDraft.shiftTimes);
+          setInitialShiftTimes(times);
+        } else {
+          // Use backend data and clear the draft
+          setSelectedCrew(mappedCrew);
+          setInitialShiftTimes(times);
+          setShiftTimes(times);
+          localStorage.removeItem(localKey);
+        }
+        
+        setHasLoadedFromBackend(true);
       } catch (e) {
         console.error('Failed to load shifts for date', selectedDate, e);
         setSelectedCrew([]);
         setInitialShiftTimes({});
+        setShiftTimes({});
+        setHasLoadedFromBackend(true);
       }
     }
     loadShifts();
@@ -226,7 +298,7 @@ export default function BentoGrid() {
                 <h3 className="text-sm/4 font-semibold text-gray-500">Step 3</h3>
                 <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Review & save shifts</p>
                 <p className="mt-2 text-sm/6 text-gray-600">
-                  When everything looks good, hit <em>Continue</em> to save today’s shifts and move on to role constraints.
+                  When everything looks good, hit <em>Continue</em> to save today's shifts and move on to role constraints.
                 </p>
                 {/* Button container that keeps the button vertically centered between the text above and card bottom */}
                 <SaveAndNext
@@ -236,6 +308,7 @@ export default function BentoGrid() {
                   shiftTimes={shiftTimes}
                   hasValidationErrors={shiftValidationErrors.length > 0}
                   onNavigate={(path) => router.push(path)}
+                  onSaveSuccess={() => localStorage.removeItem(getLocalStorageKey(selectedDate))}
                 />
               </div>
             </div>
@@ -255,6 +328,7 @@ function SaveAndNext({
   shiftTimes,
   hasValidationErrors,
   onNavigate,
+  onSaveSuccess,
 }: {
   storeId: string;
   selectedDate: string;
@@ -262,6 +336,7 @@ function SaveAndNext({
   shiftTimes: Record<number, { start: string; end: string }>;
   hasValidationErrors: boolean;
   onNavigate: (path: string) => void;
+  onSaveSuccess?: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,6 +359,8 @@ function SaveAndNext({
         body: JSON.stringify({ date: selectedDate, shifts: items }),
       });
       if (!res.ok) throw new Error(await res.text());
+      // Clear localStorage draft on successful save
+      onSaveSuccess?.();
       onNavigate(`/stores/${storeId}/logbook/create/constraints?date=${encodeURIComponent(selectedDate)}`);
     } catch (e: any) {
       setError(e?.message || 'Failed to save shifts');

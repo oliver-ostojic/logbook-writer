@@ -10,8 +10,9 @@ type CreateRoleBody = {
   storeId?: number;
   assignmentModel?: AssignmentModel;
   consecutivePolicy?: ConsecutivePolicy;
-  minSlots?: number;
-  maxSlots?: number;
+  taskLength?: number;
+  familyId?: number;
+  codePDF?: string;
   allowOutsideStoreHours?: boolean;
 };
 
@@ -21,9 +22,9 @@ type UpdateRoleBody = {
 
 export function registerRoleRoutes(app: FastifyInstance) {
   const roleInclude = {
-    crewRoles: {
+    CrewRole: {
       include: {
-        crew: { select: { id: true, name: true } },
+        Crew: { select: { id: true, name: true } },
       },
     },
   } satisfies Prisma.RoleInclude;
@@ -31,12 +32,12 @@ export function registerRoleRoutes(app: FastifyInstance) {
   type RoleWithCrew = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;
 
   const formatRole = (role: RoleWithCrew) => {
-    const { crewRoles, ...rest } = role;
+    const { CrewRole, ...rest } = role as any;
     return {
       ...rest,
-      crewMembers: crewRoles.map((cr) => ({
+      crewMembers: (CrewRole ?? []).map((cr: any) => ({
         crewId: cr.crewId,
-        crewMember: cr.crew,
+        crewMember: cr.Crew,
         roleId: cr.roleId,
         assignedAt: cr.assignedAt,
         specialization: (cr as any).specialization ?? null,
@@ -53,8 +54,9 @@ export function registerRoleRoutes(app: FastifyInstance) {
       storeId,
       assignmentModel,
       consecutivePolicy,
-      minSlots,
-      maxSlots,
+      taskLength,
+      familyId,
+      codePDF,
       allowOutsideStoreHours,
     } = req.body;
 
@@ -70,12 +72,15 @@ export function registerRoleRoutes(app: FastifyInstance) {
       const role = await prisma.role.create({
         data: {
           code: resolvedCode,
+          codePDF: codePDF ?? resolvedCode,
           displayName: displayName ?? resolvedCode,
           storeId,
-          assignmentModel: assignmentModel ? [assignmentModel] : [AssignmentModel.HOURLY],
+          assignmentModel: assignmentModel ?? AssignmentModel.HOURLY,
           consecutivePolicy: (consecutivePolicy ?? 'NONE') as ConsecutivePolicy,
-          minSlots: minSlots ?? 1,
-          maxSlots: maxSlots ?? 1,
+          taskLength: taskLength ?? 30,
+          // Default familyId to 1 if not provided. In production you probably want
+          // to require this or pick the store's default family.
+          familyId: familyId ?? 1,
           allowOutsideStoreHours: allowOutsideStoreHours ?? false,
         },
         include: roleInclude,
@@ -117,7 +122,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
       include: roleInclude,
     });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
-    const crew = role.crewRoles.map((cr) => cr.crew);
+    const crew = (role as any).CrewRole.map((cr: any) => cr.Crew);
     return crew;
   });
 

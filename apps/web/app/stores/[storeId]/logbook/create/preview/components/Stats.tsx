@@ -162,18 +162,20 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
   const runtimeMs = metadata?.solver?.runtimeMs ?? 0;
   const runtimeSeconds = runtimeMs / 1000;
   
-  // Preferences from preferenceMetadata or metadata.preferences
-  const totalPrefs = preferenceMetadata?.totalPreferences ?? metadata?.preferences?.total ?? 0;
-  const metPrefs = preferenceMetadata?.preferencesMet ?? metadata?.preferences?.met ?? 0;
-  const preferencesMetPct = totalPrefs > 0 ? (metPrefs / totalPrefs) * 100 : 0;
+  // Preferences from preferenceMetadata (new schema)
+  const eligiblePrefs = preferenceMetadata?.eligiblePreferences ?? 0;
+  const metPrefs = preferenceMetadata?.preferencesMet ?? 0;
+  const preferencesMetPct = preferenceMetadata?.percentMet ?? (eligiblePrefs > 0 ? (metPrefs / eligiblePrefs) * 100 : 0);
   
-  // Fairness from preferenceMetadata - already stored as 0-100
+  // Fairness from preferenceMetadata - stored as 0-100
   const fairnessScore = preferenceMetadata?.fairnessIndex ?? 0;
+  const fairnessGrade = preferenceMetadata?.fairnessGrade ?? '';
 
-  // Average satisfaction from preferenceMetadata or metadata.preferences
-  const avgSatisfaction = preferenceMetadata?.averageSatisfaction ?? metadata?.preferences?.averageSatisfaction ?? 0;
-  // Convert to percentage (0-100) if it's stored as 0-1
-  const avgSatisfactionPct = avgSatisfaction > 1 ? avgSatisfaction : avgSatisfaction * 100;
+  // Average satisfaction per crew from preferenceMetadata - stored as 0-100
+  const avgSatisfactionPct = preferenceMetadata?.avgSatisfactionPerCrew ?? preferenceMetadata?.avgSatisfaction ?? 0;
+  
+  // Eligible crew count
+  const eligibleCrew = preferenceMetadata?.eligibleCrew ?? 0;
 
   // Compute badges based on historical baselines
   const avgSatisfactionBadge = getPreferencesBadge(
@@ -193,16 +195,25 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
     baselines.fairnessTolerance,
   );
 
+  // Helper to get badge from grade
+  function getGradeBadge(grade: string): Badge {
+    if (grade.startsWith('A')) return { label: grade, color: 'green' };
+    if (grade.startsWith('B')) return { label: grade, color: 'blue' };
+    if (grade.startsWith('C')) return { label: grade, color: 'amber' };
+    if (grade.startsWith('D') || grade === 'F') return { label: grade, color: 'red' };
+    return { label: grade || '—', color: 'gray' };
+  }
+
   const stats = [
     {
-      label: 'Preferences met',
+      label: `${eligibleCrew} eligible crew`,
       name: 'Per-Crew Avg.',
       value: loading ? '—' : formatPercent(avgSatisfactionPct),
       badge: avgSatisfactionBadge,
     },
     {
-      label: 'Preferences met',
-      name: 'Overall',
+      label: `${metPrefs}/${eligiblePrefs} preferences`,
+      name: 'Overall Met',
       value: loading ? '—' : formatPercent(preferencesMetPct),
       badge: preferencesBadge,
     },
@@ -213,10 +224,10 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
       badge: solverBadge,
     },
     {
-      label: 'Preferences met',
+      label: 'Distribution',
       name: 'Fairness',
       value: loading ? '—' : formatPercent(fairnessScore),
-      badge: fairnessBadge,
+      badge: fairnessGrade ? getGradeBadge(fairnessGrade) : fairnessBadge,
     },
   ];
 
@@ -241,7 +252,7 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
               <dd
                 className={classNames(
                   getBadgeColorClasses(stat.badge.color),
-                  'rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset',
+                  'rounded-md px-2 py-1 text-sm font-semibold ring-1 ring-inset',
                 )}
               >
                 {stat.badge.label}

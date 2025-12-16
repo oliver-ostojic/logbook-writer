@@ -47,6 +47,10 @@ class SolverV2:
         self.role_families = self.payload.get('roleFamilies', [])
         self.coverage_windows = self.payload.get('coverageWindows', [])
         self.crew_quotas = self.payload.get('crewQuotas', [])
+        self.role_rules = self.payload.get('roleRules', [])
+        
+        # Soft constraint penalties - populated by constraint builders, used by objective
+        self.soft_constraint_penalties: List = []
         
         # DEPRECATED - kept for backward compatibility during transition
         self.hourly_requirements = self.payload.get('hourlyRequirements', [])
@@ -57,6 +61,10 @@ class SolverV2:
         
         # Solver settings (tunable parameters)
         self.settings = self.payload.get('settings', {})
+
+        # Preprocess role rules to apply ALLOW_HALF_BLOCKSIZE to role records
+        # This must happen BEFORE variable building
+        self._apply_allow_half_blocksize_to_roles()
 
         # Extract task lengths from roles for grid resolution
         task_lengths = [role.get('taskLength', 30) for role in self.roles if role.get('taskLength')]
@@ -136,6 +144,27 @@ class SolverV2:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+    def _apply_allow_half_blocksize_to_roles(self) -> None:
+        """Preprocess ALLOW_HALF_BLOCKSIZE role rules to set canSplitForGaps on roles.
+        
+        This must be called BEFORE variable building so that the VariableBuilder
+        knows which roles can have half-size task variables.
+        """
+        # Find all role IDs with ALLOW_HALF_BLOCKSIZE rules
+        half_block_role_ids = set()
+        for rule in self.role_rules:
+            if rule.get('type') == 'ALLOW_HALF_BLOCKSIZE':
+                half_block_role_ids.add(rule['roleId'])
+        
+        if half_block_role_ids:
+            import sys
+            print(f"[PREPROCESS] ALLOW_HALF_BLOCKSIZE rules found for role IDs: {half_block_role_ids}", file=sys.stderr)
+        
+        # Set canSplitForGaps=True on matching roles
+        for role in self.roles:
+            if role['id'] in half_block_role_ids:
+                role['canSplitForGaps'] = True
+    
     def _build_preference_lookup(self) -> Dict[Tuple[str, int], float]:
         weights: Dict[Tuple[str, int], float] = defaultdict(float)
         for pref in self.preferences:

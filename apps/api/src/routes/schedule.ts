@@ -3,11 +3,130 @@ import { PrismaClient } from '@prisma/client';
 import { startOfDay, hourOf, clamp } from '../utils';
 import { type Shift } from '../services/demo-window';
 import { segmentShiftByRegisterWindow, hhmmToMin, minToHHMM } from '../services/segmentation';
+import {
+  calculateCrewRuleSatisfaction,
+  aggregateSatisfactionStats,
+  saveLogPreferenceMetadata,
+  type AssignmentRecord,
+  type CrewRoleRuleRecord,
+  type CrewShiftWindow,
+} from '../services/crew-rule-satisfaction';
 
 // Import enums using require for runtime access
 const { LogbookStatus } = require('@prisma/client');
 
 const prisma = new PrismaClient();
+
+/**
+ * Recalculate and save preference satisfaction metadata for a logbook
+ * Call this after any assignment changes to keep stats up-to-date
+ */
+async function recalculateLogbookSatisfaction(logbookId: string): Promise<void> {
+  // Get the logbook with its assignments
+  const logbook = await prisma.logbook.findUnique({
+    where: { id: logbookId },
+    include: {
+      Assignment: {
+        include: { Role: true }
+      }
+    }
+  });
+
+  if (!logbook) return;
+
+  // Get shifts for the logbook's date/store
+  const shifts = await prisma.shift.findMany({
+    where: {
+      storeId: logbook.storeId,
+      date: logbook.date
+    }
+  });
+
+  // Build crew shifts map
+  const crewShifts = new Map<string, CrewShiftWindow>();
+  for (const shift of shifts) {
+    crewShifts.set(shift.crewId, {
+      crewId: shift.crewId,
+      shiftStartMin: shift.startMin,
+      shiftEndMin: shift.endMin,
+    });
+  }
+
+  // Get all crew who have assignments in this logbook
+  const crewIds = [...new Set(logbook.Assignment.map(a => a.crewId))];
+
+  // Get CrewRoleRules for these crew
+  const crewRoleRules = await prisma.crewRoleRule.findMany({
+    where: { crewId: { in: crewIds } },
+    include: {
+      RoleRule: true,
+      Crew: true
+    }
+  });
+
+  if (crewRoleRules.length === 0) {
+    // No rules to evaluate - set empty metadata
+    await saveLogPreferenceMetadata(prisma, logbookId, {
+      eligiblePreferences: 0,
+      preferencesMet: 0,
+      percentMet: 0,
+      avgSatisfaction: 0,
+      eligibleCrew: 0,
+      avgSatisfactionPerCrew: 0,
+      fairnessIndex: 100,
+      fairnessGrade: 'A+',
+      breakdownByRoleRule: [],
+    });
+    return;
+  }
+
+  // Get role block sizes
+  const roles = await prisma.role.findMany({
+    where: { storeId: logbook.storeId },
+    select: { id: true, taskLength: true }
+  });
+  const roleBlockSizes = new Map<number, number>();
+  for (const role of roles) {
+    roleBlockSizes.set(role.id, role.taskLength);
+  }
+
+  // Transform assignments to AssignmentRecord format
+  const assignments: AssignmentRecord[] = logbook.Assignment.map(a => ({
+    crewId: a.crewId,
+    roleId: a.roleId,
+    startMinutes: a.startTime.getUTCHours() * 60 + a.startTime.getUTCMinutes(),
+    endMinutes: a.endTime.getUTCHours() * 60 + a.endTime.getUTCMinutes(),
+  }));
+
+  // Transform CrewRoleRules
+  const crewRoleRuleRecords: CrewRoleRuleRecord[] = crewRoleRules.map(crr => ({
+    id: crr.id,
+    crewId: crr.crewId,
+    roleRuleId: crr.roleRuleId,
+    valueInt: crr.valueInt,
+    roleRule: {
+      id: crr.RoleRule.id,
+      roleId: crr.RoleRule.roleId,
+      type: crr.RoleRule.type,
+      targetRoleId: crr.RoleRule.targetRoleId,
+      constraintType: crr.RoleRule.constraintType,
+    }
+  }));
+
+  // Calculate satisfaction
+  const results = calculateCrewRuleSatisfaction(
+    crewRoleRuleRecords,
+    assignments,
+    crewShifts,
+    roleBlockSizes
+  );
+
+  // Aggregate stats
+  const stats = aggregateSatisfactionStats(results, crewRoleRuleRecords);
+
+  // Save to database
+  await saveLogPreferenceMetadata(prisma, logbookId, stats);
+}
 
 type RunBody = {
   date: string;
@@ -513,6 +632,16 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         }
       }
 
+      // Recalculate satisfaction stats after assignment changes
+      if (results.updated > 0 || results.created > 0) {
+        try {
+          await recalculateLogbookSatisfaction(logbookId);
+        } catch (err) {
+          console.error('[assignments] Failed to recalculate satisfaction:', err);
+          // Don't fail the request, just log the error
+        }
+      }
+
       return {
         success: results.updated > 0 || results.created > 0,
         updated: results.updated,
@@ -553,6 +682,15 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       });
 
       // Generate PDF (always regenerate, even if already published - assignments may have changed)
+      // Recalculate satisfaction stats before publishing (ensures up-to-date metadata)
+      try {
+        await recalculateLogbookSatisfaction(logbookId);
+        console.log(`[publish] Recalculated satisfaction for logbook ${logbookId}`);
+      } catch (err) {
+        console.error('[publish] Failed to recalculate satisfaction:', err);
+        // Continue with publishing even if recalculation fails
+      }
+
       let pdfPath: string | null = null;
       try {
         const pdfModule = await import('../services/pdf-generator') as any;
@@ -779,7 +917,7 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         }),
         prisma.roleCoverageWindow.findMany({
           where: { storeId, date: day },
-          select: { roleId: true, startMin: true, endMin: true, crewPerTaskLength: true },
+          select: { roleId: true, startMin: true, endMin: true, crewPerMinute: true, constraintRule: true },
           orderBy: [{ roleId: 'asc' }, { startMin: 'asc' }],
         }),
         prisma.crewRoleQuota.findMany({
@@ -855,9 +993,9 @@ export function registerScheduleRoutes(app: FastifyInstance) {
           },
         },
         select: {
-          totalPreferences: true,
+          eligiblePreferences: true,
           preferencesMet: true,
-          averageSatisfaction: true,
+          avgSatisfaction: true,
           fairnessIndex: true,
         },
       });
@@ -875,13 +1013,13 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       const totalRecords = historicalData.length;
       
       // Overall preferences met percentage
-      const totalPrefsSum = historicalData.reduce((sum, d) => sum + d.totalPreferences, 0);
+      const totalPrefsSum = historicalData.reduce((sum, d) => sum + d.eligiblePreferences, 0);
       const metPrefsSum = historicalData.reduce((sum, d) => sum + d.preferencesMet, 0);
       const overallPrefsMetPct = totalPrefsSum > 0 ? (metPrefsSum / totalPrefsSum) * 100 : 50;
 
-      // Average satisfaction (per-crew avg) - stored as 0-1, convert to percentage
-      const avgSatisfactionSum = historicalData.reduce((sum, d) => sum + (d.averageSatisfaction ?? 0), 0);
-      const avgSatisfactionPct = (avgSatisfactionSum / totalRecords) * 100;
+      // Average satisfaction (per-crew avg) - now stored as 0-100
+      const avgSatisfactionSum = historicalData.reduce((sum, d) => sum + (d.avgSatisfaction ?? 0), 0);
+      const avgSatisfactionPct = avgSatisfactionSum / totalRecords;
 
       // Fairness - already stored as 0-100
       const fairnessSum = historicalData.reduce((sum, d) => sum + (d.fairnessIndex ?? 0), 0);
@@ -889,11 +1027,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
 
       // Calculate standard deviation for tolerance (use half of std dev as tolerance)
       const overallPctValues = historicalData.map(d => 
-        d.totalPreferences > 0 ? (d.preferencesMet / d.totalPreferences) * 100 : 0
+        d.eligiblePreferences > 0 ? (d.preferencesMet / d.eligiblePreferences) * 100 : 0
       );
       const overallStdDev = calculateStdDev(overallPctValues, overallPrefsMetPct);
       
-      const satisfactionValues = historicalData.map(d => (d.averageSatisfaction ?? 0) * 100);
+      const satisfactionValues = historicalData.map(d => d.avgSatisfaction ?? 0);
       const satisfactionStdDev = calculateStdDev(satisfactionValues, avgSatisfactionPct);
 
       const fairnessValues = historicalData.map(d => d.fairnessIndex ?? 0);

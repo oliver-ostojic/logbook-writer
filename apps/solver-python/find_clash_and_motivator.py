@@ -87,7 +87,8 @@ def add_coverage_window_constraints(model, payload, time_grid, assignment_vars):
         role_id = window['roleId']
         start_min = window['startMin']
         end_min = window['endMin']
-        crew_per_task = int(window.get('crewPerTaskLength', 1) or 1)
+        # Support both old (crewPerTaskLength) and new (crewPerMinute) field names
+        crew_per_task = int(window.get('crewPerMinute', window.get('crewPerTaskLength', 1)) or 1)
         
         if crew_per_task <= 0:
             continue

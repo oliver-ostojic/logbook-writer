@@ -67,10 +67,10 @@ export function registerWizardRoutes(app: FastifyInstance) {
     const crewIds = Array.from(new Set(normalizedShifts.map(s => s.crewId)));
     const crewWithRoles = await prisma.crew.findMany({
       where: { id: { in: crewIds } },
-      include: { crewRoles: { include: { role: true } } },
+      include: { CrewRole: { include: { Role: true } } },
     });
     const eligibilities = crewWithRoles.flatMap((c: any) =>
-      c.crewRoles.map((cr: any) => ({ crewId: c.id, roleName: cr.role.code }))
+      c.CrewRole.map((cr: any) => ({ crewId: c.id, roleName: cr.Role.code }))
     );
 
     // Rules by hour

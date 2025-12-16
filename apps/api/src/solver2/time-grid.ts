@@ -20,15 +20,16 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 const alignDown = (value: number, step: number) => Math.floor(value / step) * step;
 const alignUp = (value: number, step: number) => Math.ceil(value / step) * step;
 
+// The legacy in-TS MILP builder currently assumes a uniform slot size.
+// Solver V2 (python) doesn't rely on this module; it's used only by the
+// experimental ts-side model builder and its unit tests.
+const DEFAULT_SLOT_MINUTES = 30;
+
 // Build the canonical slot grid by stretching from the earliest crew start to the
 // latest crew end, padding outward to whole-slot boundaries so every other helper
 // can safely snap minutes ↔︎ slot indexes.
 export function buildTimeGrid(store: StoreDescriptor, crew: CrewDescriptor[]): TimeGrid {
-  if (store.baseSlotMinutes <= 0) {
-    throw new Error('Store.baseSlotMinutes must be positive');
-  }
-
-  const slotMinutes = store.baseSlotMinutes;
+  const slotMinutes = DEFAULT_SLOT_MINUTES;
   const earliestCrewStart = crew.length
     ? crew.reduce((min, c) => Math.min(min, c.shiftStartMin), Number.POSITIVE_INFINITY)
     : store.openMinutesFromMidnight;

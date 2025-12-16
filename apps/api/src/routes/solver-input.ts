@@ -43,9 +43,9 @@ export async function solverInputRoutes(fastify: FastifyInstance) {
           roleCount: solverInput.roles.length,
           preferenceCount: solverInput.preferences.length,
           constraintCounts: {
-            hourly: solverInput.hourlyRequirements.length,
-            window: solverInput.windowRequirements.length,
-            daily: solverInput.dailyRequirements.length,
+            coverageWindows: solverInput.coverageWindows.length,
+            crewQuotas: solverInput.crewQuotas.length,
+            roleRules: solverInput.roleRules.length,
           },
         },
       });
