@@ -11,7 +11,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 # Default values for tunable parameters
 DEFAULT_ASSIGNMENT_REWARD = 100  # Reward for each assignment (fills slots) - HIGH to prioritize coverage
-DEFAULT_HALF_SIZE_PENALTY_RATIO = 0.85  # Gap filler gets reduced reward
+DEFAULT_HALF_SIZE_PENALTY = 70   # Half-segment = 30 net reward (still positive, but 2 halves = 60 < 1 full = 100)
 DEFAULT_CONSECUTIVE_BONUS = 10  # Bonus for adjacent same-role assignments (PREFERRED policy)
 DEFAULT_HOUR_ALIGNED_BONUS = 15  # Bonus for starting 60min tasks at :00 (not :30)
 
@@ -22,8 +22,7 @@ def apply(solver: "SolverV2") -> None:
     
     # Read tunable settings with defaults
     assignment_reward = solver.settings.get('assignmentReward', DEFAULT_ASSIGNMENT_REWARD)
-    half_size_penalty_ratio = solver.settings.get('halfSizePenaltyRatio', DEFAULT_HALF_SIZE_PENALTY_RATIO)
-    half_size_penalty = assignment_reward * half_size_penalty_ratio
+    half_size_penalty = solver.settings.get('halfSizePenalty', DEFAULT_HALF_SIZE_PENALTY)
     hour_aligned_bonus = solver.settings.get('hourAlignedBonus', DEFAULT_HOUR_ALIGNED_BONUS)
     
     weighted_terms = []
@@ -284,6 +283,11 @@ def _hour_preference_bonus(solver: "SolverV2") -> List:
       - LIKE: Add a bonus to encourage the assignment
       - DISLIKE: Add a negative term (penalty) to discourage the assignment
     
+    shiftRelativeMin is the number of minutes from the crew's shift start.
+    e.g., shiftRelativeMin=0 means first hour of shift (minutes 0-60 of their shift)
+          shiftRelativeMin=60 means second hour of shift
+          shiftRelativeMin=420 means hour 8 of shift
+    
     This only handles SOFT constraints - HARD DISLIKE is handled in role_rules.py
     """
     if not hasattr(solver, 'hour_preferences') or not solver.hour_preferences:
@@ -293,37 +297,51 @@ def _hour_preference_bonus(solver: "SolverV2") -> List:
     bonus_terms = []
     slot_minutes = solver.time_grid.slot_minutes
     
+    # Build crew shift start lookup
+    crew_shift_start = {}
+    for crew in solver.crew:
+        crew_shift_start[crew['id']] = crew.get('shiftStartMin', 0)
+    
     # Build lookups for hour preferences
-    # role_id -> hour -> preference (like=True means +bonus, like=False means -penalty)
-    role_hour_prefs = {}  # (role_id, hour) -> like
-    crew_role_hour_prefs = {}  # (crew_id, role_id, hour) -> like
+    # Now keyed by shiftRelativeMin (minutes from shift start) instead of absolute hour
+    role_shift_prefs = {}  # (role_id, shiftRelativeMin) -> like
+    crew_role_shift_prefs = {}  # (crew_id, role_id, shiftRelativeMin) -> like
     
     for pref in solver.hour_preferences:
         role_id = pref['roleId']
-        hour = pref['hour']
+        # Support both old 'hour' key and new 'shiftRelativeMin' key
+        shift_rel_min = pref.get('shiftRelativeMin', pref.get('hour', 0))
         like = pref['like']
         crew_id = pref.get('crewId')
         
         if crew_id:
-            crew_role_hour_prefs[(crew_id, role_id, hour)] = like
+            crew_role_shift_prefs[(crew_id, role_id, shift_rel_min)] = like
         else:
-            role_hour_prefs[(role_id, hour)] = like
+            role_shift_prefs[(role_id, shift_rel_min)] = like
     
     # Apply bonuses/penalties to each assignment var
     for key, var in solver.assignment_vars.items():
         crew_id, slot, role_id, task_slots = key
         
-        # Calculate the hour for this slot
+        # Calculate absolute slot time and shift-relative time
         slot_start_min = slot * slot_minutes
-        slot_hour = slot_start_min // 60
+        shift_start = crew_shift_start.get(crew_id, 0)
+        shift_relative_min = slot_start_min - shift_start
+        
+        # Skip if slot is before shift start (shouldn't happen, but be safe)
+        if shift_relative_min < 0:
+            continue
+        
+        # Round to hour boundary (0, 60, 120, etc.)
+        shift_hour_start = (shift_relative_min // 60) * 60
         
         # Check for crew-specific preference first, then store-wide
-        like = crew_role_hour_prefs.get((crew_id, role_id, slot_hour))
+        like = crew_role_shift_prefs.get((crew_id, role_id, shift_hour_start))
         if like is None:
-            like = role_hour_prefs.get((role_id, slot_hour))
+            like = role_shift_prefs.get((role_id, shift_hour_start))
         
         if like is None:
-            continue  # No hour preference for this role/hour combo
+            continue  # No hour preference for this role/shift-hour combo
         
         if like:
             # LIKE: add bonus

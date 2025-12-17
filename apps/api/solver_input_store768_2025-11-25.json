@@ -60,7 +60,7 @@
       "consecutivePolicy": "NONE",
       "minShiftLengthForRoleAccess": null,
       "fairnessTracking": {
-        "lookbackDays": 14,
+        "lookbackDays": 31,
         "enabled": true
       }
     },
@@ -136,7 +136,7 @@
       "consecutivePolicy": "NONE",
       "minShiftLengthForRoleAccess": null,
       "fairnessTracking": {
-        "lookbackDays": 14,
+        "lookbackDays": 31,
         "enabled": true
       }
     },
@@ -152,27 +152,12 @@
       "consecutivePolicy": "NONE",
       "minShiftLengthForRoleAccess": null,
       "fairnessTracking": {
-        "lookbackDays": 14,
+        "lookbackDays": 31,
         "enabled": true
       }
     }
   ],
   "crew": [
-    {
-      "id": "1316503",
-      "name": "Cheri Reimann",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35,
-        37,
-        38
-      ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
-    },
     {
       "id": "1344298",
       "name": "Dan Smith",
@@ -181,21 +166,6 @@
         30,
         33,
         36,
-        37,
-        38
-      ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
-    },
-    {
-      "id": "1336739",
-      "name": "Denise Madrid",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35,
         37,
         38
       ],
@@ -213,8 +183,8 @@
         37,
         38
       ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
+      "shiftStartMin": 270,
+      "shiftEndMin": 750
     },
     {
       "id": "1306654",
@@ -228,22 +198,8 @@
         37,
         38
       ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
-    },
-    {
-      "id": "1348347",
-      "name": "Juan Caceres",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        37,
-        38
-      ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
+      "shiftStartMin": 270,
+      "shiftEndMin": 750
     },
     {
       "id": "1340639",
@@ -270,8 +226,8 @@
         37,
         38
       ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
+      "shiftStartMin": 270,
+      "shiftEndMin": 750
     },
     {
       "id": "1286759",
@@ -313,8 +269,8 @@
         37,
         38
       ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
     },
     {
       "id": "1290575",
@@ -343,22 +299,8 @@
         37,
         38
       ],
-      "shiftStartMin": 300,
-      "shiftEndMin": 780
-    },
-    {
-      "id": "1369996",
-      "name": "Alice De Simoni",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        37,
-        38
-      ],
-      "shiftStartMin": 360,
-      "shiftEndMin": 840
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1345521",
@@ -389,20 +331,6 @@
       "shiftEndMin": 840
     },
     {
-      "id": "1294250",
-      "name": "Esteban Espinosa",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        38,
-        37
-      ],
-      "shiftStartMin": 360,
-      "shiftEndMin": 840
-    },
-    {
       "id": "1301376",
       "name": "Justin Bennett",
       "roleIds": [
@@ -411,24 +339,11 @@
         33,
         36,
         37,
-        38
+        38,
+        35
       ],
-      "shiftStartMin": 360,
-      "shiftEndMin": 840
-    },
-    {
-      "id": "1304830",
-      "name": "Marcela Soto",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        37,
-        38
-      ],
-      "shiftStartMin": 360,
-      "shiftEndMin": 840
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
     },
     {
       "id": "1307265",
@@ -489,21 +404,6 @@
       "shiftEndMin": 840
     },
     {
-      "id": "1326561",
-      "name": "Ashley Andrejko",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35,
-        38,
-        37
-      ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
-    },
-    {
       "id": "1364026",
       "name": "Crystal Rosa",
       "roleIds": [
@@ -515,23 +415,8 @@
         37,
         38
       ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
-    },
-    {
-      "id": "1307221",
-      "name": "Garet Reimann",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35,
-        37,
-        38
-      ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
+      "shiftStartMin": 720,
+      "shiftEndMin": 1200
     },
     {
       "id": "1318723",
@@ -557,8 +442,8 @@
         36,
         38
       ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
+      "shiftStartMin": 780,
+      "shiftEndMin": 1260
     },
     {
       "id": "1311212",
@@ -571,8 +456,8 @@
         35,
         38
       ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
+      "shiftStartMin": 780,
+      "shiftEndMin": 1260
     },
     {
       "id": "1319922",
@@ -597,8 +482,8 @@
         36,
         35
       ],
-      "shiftStartMin": 600,
-      "shiftEndMin": 1080
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1366677",
@@ -609,8 +494,8 @@
         33,
         36
       ],
-      "shiftStartMin": 660,
-      "shiftEndMin": 1140
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1350163",
@@ -621,20 +506,8 @@
         33,
         36
       ],
-      "shiftStartMin": 660,
-      "shiftEndMin": 1140
-    },
-    {
-      "id": "1357831",
-      "name": "Sharon Garcia",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 660,
-      "shiftEndMin": 1140
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
     },
     {
       "id": "1362952",
@@ -658,8 +531,8 @@
         33,
         36
       ],
-      "shiftStartMin": 720,
-      "shiftEndMin": 1200
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1281826",
@@ -670,8 +543,8 @@
         33,
         36
       ],
-      "shiftStartMin": 720,
-      "shiftEndMin": 1200
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1364634",
@@ -683,8 +556,8 @@
         36,
         37
       ],
-      "shiftStartMin": 720,
-      "shiftEndMin": 1200
+      "shiftStartMin": 600,
+      "shiftEndMin": 1080
     },
     {
       "id": "1369981",
@@ -696,20 +569,8 @@
         36,
         35
       ],
-      "shiftStartMin": 720,
-      "shiftEndMin": 1200
-    },
-    {
-      "id": "1344744",
-      "name": "Ruth Charles",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 780,
-      "shiftEndMin": 1140
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
     },
     {
       "id": "1335668",
@@ -718,7 +579,8 @@
         29,
         30,
         33,
-        36
+        36,
+        34
       ],
       "shiftStartMin": 840,
       "shiftEndMin": 1320
@@ -732,24 +594,12 @@
         33,
         36
       ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
+      "shiftStartMin": 780,
+      "shiftEndMin": 1260
     },
     {
       "id": "1282785",
       "name": "Adam Carey",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1283498",
-      "name": "Adam Levi",
       "roleIds": [
         29,
         30,
@@ -769,60 +619,12 @@
         33,
         36
       ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1353219",
-      "name": "Daniel Leon",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
+      "shiftStartMin": 780,
+      "shiftEndMin": 1260
     },
     {
       "id": "1298998",
       "name": "David Hauser",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1371389",
-      "name": "Emma Boles",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1360818",
-      "name": "Fiona Coffey",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1323506",
-      "name": "Gabby Tejada",
       "roleIds": [
         29,
         30,
@@ -841,20 +643,8 @@
         33,
         36
       ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1299878",
-      "name": "Kelly Mayo",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
     },
     {
       "id": "1371362",
@@ -882,127 +672,16 @@
       "shiftEndMin": 1320
     },
     {
-      "id": "1372431",
-      "name": "Matthew Studebaker",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1330422",
-      "name": "Mily Gordon",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1347636",
-      "name": "Ofelia Aguirre",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        35
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1330611",
-      "name": "Randy Guardado",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36,
-        37
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
       "id": "1317815",
       "name": "Stephanie Mitchell",
       "roleIds": [
         29,
         30,
         33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1349887",
-      "name": "Tati Mayea Ortiz",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1299316",
-      "name": "Tori Borrowdale",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1374209",
-      "name": "Yeffer Arestigueta",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 840,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1327993",
-      "name": "Di Cannon",
-      "roleIds": [
-        29,
-        30,
-        33,
-        36
-      ],
-      "shiftStartMin": 870,
-      "shiftEndMin": 1320
-    },
-    {
-      "id": "1340451",
-      "name": "Jodie Cordato",
-      "roleIds": [
-        29,
-        30,
-        33,
         36,
-        38
+        35
       ],
-      "shiftStartMin": 900,
+      "shiftStartMin": 840,
       "shiftEndMin": 1320
     },
     {
@@ -1014,7 +693,169 @@
         33,
         36
       ],
-      "shiftStartMin": 900,
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1287114",
+      "name": "Chase Watts",
+      "roleIds": [
+        38,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1289829",
+      "name": "Leonardo Saenz-Marmol",
+      "roleIds": [
+        38,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1239091",
+      "name": "Patricia Edgar",
+      "roleIds": [
+        35,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 270,
+      "shiftEndMin": 750
+    },
+    {
+      "id": "1269089",
+      "name": "Adrian Pena",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 780
+    },
+    {
+      "id": "1269088",
+      "name": "Cianna Sala",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 300,
+      "shiftEndMin": 600
+    },
+    {
+      "id": "1269087",
+      "name": "Q Mowatt",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1269086",
+      "name": "Ben Stogis",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1269085",
+      "name": "Jill Sachs",
+      "roleIds": [
+        35,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 360,
+      "shiftEndMin": 840
+    },
+    {
+      "id": "1269084",
+      "name": "Nikki Lera",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 660,
+      "shiftEndMin": 1140
+    },
+    {
+      "id": "1269083",
+      "name": "Aaron Haverstock",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1269082",
+      "name": "Kit Riffel",
+      "roleIds": [
+        35,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1269081",
+      "name": "Morgan Bussius",
+      "roleIds": [
+        35,
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
+      "shiftEndMin": 1320
+    },
+    {
+      "id": "1269080",
+      "name": "Rodney Colon",
+      "roleIds": [
+        29,
+        30,
+        33,
+        36
+      ],
+      "shiftStartMin": 840,
       "shiftEndMin": 1320
     }
   ],
@@ -1023,7 +864,7 @@
       "roleId": 30,
       "startMin": 480,
       "endMin": 540,
-      "crewPerMinute": 10,
+      "crewPerMinute": 7,
       "constraintRule": "EXACTLY"
     },
     {
@@ -1037,20 +878,20 @@
       "roleId": 30,
       "startMin": 540,
       "endMin": 600,
-      "crewPerMinute": 8,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 600,
       "endMin": 660,
-      "crewPerMinute": 12,
+      "crewPerMinute": 10,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 38,
       "startMin": 600,
-      "endMin": 960,
+      "endMin": 1080,
       "crewPerMinute": 1,
       "constraintRule": "EXACTLY"
     },
@@ -1058,63 +899,63 @@
       "roleId": 30,
       "startMin": 660,
       "endMin": 720,
-      "crewPerMinute": 11,
+      "crewPerMinute": 9,
+      "constraintRule": "EXACTLY"
+    },
+    {
+      "roleId": 37,
+      "startMin": 660,
+      "endMin": 1020,
+      "crewPerMinute": 1,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 720,
       "endMin": 780,
-      "crewPerMinute": 7,
-      "constraintRule": "EXACTLY"
-    },
-    {
-      "roleId": 37,
-      "startMin": 720,
-      "endMin": 960,
-      "crewPerMinute": 1,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 780,
       "endMin": 840,
-      "crewPerMinute": 11,
+      "crewPerMinute": 10,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 840,
       "endMin": 900,
-      "crewPerMinute": 12,
+      "crewPerMinute": 7,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 900,
       "endMin": 960,
-      "crewPerMinute": 11,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 960,
       "endMin": 1020,
-      "crewPerMinute": 12,
+      "crewPerMinute": 10,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 1020,
       "endMin": 1080,
-      "crewPerMinute": 11,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     },
     {
       "roleId": 30,
       "startMin": 1080,
       "endMin": 1140,
-      "crewPerMinute": 10,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     },
     {
@@ -1128,14 +969,42 @@
       "roleId": 30,
       "startMin": 1200,
       "endMin": 1260,
-      "crewPerMinute": 7,
+      "crewPerMinute": 9,
       "constraintRule": "EXACTLY"
     }
   ],
   "crewQuotas": [
     {
       "roleId": 35,
-      "crewId": "1283498",
+      "crewId": "1239091",
+      "startMin": 270,
+      "endMin": 750,
+      "requiredMin": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1269081",
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1269082",
+      "startMin": 840,
+      "endMin": 1320,
+      "requiredMin": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1269085",
+      "startMin": 360,
+      "endMin": 840,
+      "requiredMin": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1282785",
       "startMin": 840,
       "endMin": 1320,
       "requiredMin": 60
@@ -1157,36 +1026,22 @@
     {
       "roleId": 35,
       "crewId": "1291050",
-      "startMin": 300,
-      "endMin": 780,
-      "requiredMin": 60
-    },
-    {
-      "roleId": 35,
-      "crewId": "1306654",
-      "startMin": 300,
-      "endMin": 780,
-      "requiredMin": 60
-    },
-    {
-      "roleId": 35,
-      "crewId": "1307221",
-      "startMin": 600,
-      "endMin": 1080,
-      "requiredMin": 60
+      "startMin": 360,
+      "endMin": 840,
+      "requiredMin": 90
     },
     {
       "roleId": 35,
       "crewId": "1311212",
-      "startMin": 600,
-      "endMin": 1080,
+      "startMin": 780,
+      "endMin": 1260,
       "requiredMin": 60
     },
     {
       "roleId": 35,
-      "crewId": "1316503",
-      "startMin": 300,
-      "endMin": 780,
+      "crewId": "1317815",
+      "startMin": 840,
+      "endMin": 1320,
       "requiredMin": 60
     },
     {
@@ -1197,66 +1052,38 @@
       "requiredMin": 60
     },
     {
-      "roleId": 35,
-      "crewId": "1326561",
-      "startMin": 600,
-      "endMin": 1080,
-      "requiredMin": 60
-    },
-    {
-      "roleId": 35,
-      "crewId": "1336739",
-      "startMin": 300,
-      "endMin": 780,
-      "requiredMin": 120
-    },
-    {
-      "roleId": 35,
-      "crewId": "1347636",
+      "roleId": 34,
+      "crewId": "1335668",
       "startMin": 840,
       "endMin": 1320,
-      "requiredMin": 60
+      "requiredMin": 150
     },
     {
       "roleId": 35,
       "crewId": "1350023",
       "startMin": 840,
       "endMin": 1320,
-      "requiredMin": 120
+      "requiredMin": 60
     },
     {
       "roleId": 35,
       "crewId": "1355504",
-      "startMin": 600,
-      "endMin": 1080,
-      "requiredMin": 90
-    },
-    {
-      "roleId": 35,
-      "crewId": "1364026",
-      "startMin": 600,
-      "endMin": 1080,
-      "requiredMin": 60
-    },
-    {
-      "roleId": 35,
-      "crewId": "1369981",
-      "startMin": 720,
-      "endMin": 1200,
-      "requiredMin": 60
-    },
-    {
-      "roleId": 35,
-      "crewId": "1372431",
       "startMin": 840,
       "endMin": 1320,
       "requiredMin": 60
     },
     {
       "roleId": 35,
-      "crewId": "1379051",
-      "startMin": 300,
-      "endMin": 780,
+      "crewId": "1364026",
+      "startMin": 720,
+      "endMin": 1200,
+      "requiredMin": 60
+    },
+    {
+      "roleId": 35,
+      "crewId": "1369981",
+      "startMin": 840,
+      "endMin": 1320,
       "requiredMin": 60
     }
   ],
@@ -1309,19 +1136,19 @@
     {
       "roleId": 29,
       "storeId": 768,
-      "lookbackDays": 14,
+      "lookbackDays": 31,
       "enabled": true
     },
     {
       "roleId": 38,
       "storeId": 768,
-      "lookbackDays": 14,
+      "lookbackDays": 31,
       "enabled": true
     },
     {
       "roleId": 37,
       "storeId": 768,
-      "lookbackDays": 14,
+      "lookbackDays": 31,
       "enabled": true
     }
   ],
@@ -2036,6 +1863,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1336739",
+      "isPriority": false
+    },
+    {
       "id": 19,
       "roleId": 30,
       "roleCode": "REG",
@@ -2276,6 +2115,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1351978",
+      "isPriority": false
+    },
+    {
       "id": 11,
       "roleId": 36,
       "roleCode": "BRK",
@@ -2516,6 +2367,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1306654",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -2744,6 +2607,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1348347",
+      "isPriority": false
+    },
+    {
       "id": 11,
       "roleId": 36,
       "roleCode": "BRK",
@@ -2984,6 +2859,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1340639",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -3171,6 +3058,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1301716",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1301716",
       "isPriority": false
@@ -3404,6 +3303,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1286759",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -3638,6 +3549,18 @@
       "type": "DISTRIBUTION_BETWEEN_ROLE_X",
       "targetRoleId": 33,
       "targetRoleCode": "PROD",
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1291188",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
       "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1291188",
@@ -3896,6 +3819,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1291050",
+      "isPriority": false
+    },
+    {
       "id": 11,
       "roleId": 36,
       "roleCode": "BRK",
@@ -4124,6 +4059,18 @@
       "isPriority": false
     },
     {
+      "id": 26,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1290575",
+      "isPriority": false
+    },
+    {
       "id": 11,
       "roleId": 36,
       "roleCode": "BRK",
@@ -4556,6 +4503,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1369996",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -4808,6 +4767,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1345521",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -5264,6 +5235,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1294250",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -5540,6 +5523,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1301376",
+      "isPriority": false
+    },
+    {
       "id": 19,
       "roleId": 30,
       "roleCode": "REG",
@@ -5768,6 +5763,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1304830",
+      "isPriority": false
+    },
+    {
       "id": 11,
       "roleId": 36,
       "roleCode": "BRK",
@@ -6728,6 +6735,18 @@
       "isPriority": false
     },
     {
+      "id": 26,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1290542",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -6939,6 +6958,18 @@
       "targetRoleId": null,
       "targetRoleCode": null,
       "valueInt": 1,
+      "constraintType": "SOFT",
+      "crewId": "1326561",
+      "isPriority": false
+    },
+    {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1326561",
       "isPriority": false
@@ -7196,6 +7227,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1364026",
+      "isPriority": false
+    },
+    {
       "id": 19,
       "roleId": 30,
       "roleCode": "REG",
@@ -7436,6 +7479,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1307221",
+      "isPriority": false
+    },
+    {
       "id": 19,
       "roleId": 30,
       "roleCode": "REG",
@@ -7647,6 +7702,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1318723",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1318723",
       "isPriority": false
@@ -7892,6 +7959,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1285554",
+      "isPriority": false
+    },
+    {
       "id": 8,
       "roleId": 33,
       "roleCode": "PROD",
@@ -8151,6 +8230,18 @@
       "targetRoleId": null,
       "targetRoleCode": null,
       "valueInt": 120,
+      "constraintType": "SOFT",
+      "crewId": "1311212",
+      "isPriority": false
+    },
+    {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1311212",
       "isPriority": false
@@ -8828,6 +8919,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1366677",
+      "isPriority": false
+    },
+    {
       "id": 8,
       "roleId": 33,
       "roleCode": "PROD",
@@ -9051,6 +9154,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1350163",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1350163",
       "isPriority": false
@@ -9284,6 +9399,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1357831",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -9519,6 +9646,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1362952",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1362952",
       "isPriority": false
@@ -9764,6 +9903,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1332186",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -9795,6 +9946,18 @@
       "targetRoleId": 33,
       "targetRoleCode": "PROD",
       "valueInt": -1,
+      "constraintType": "SOFT",
+      "crewId": "1332186",
+      "isPriority": false
+    },
+    {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 420,
       "constraintType": "SOFT",
       "crewId": "1332186",
       "isPriority": false
@@ -9987,6 +10150,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1281826",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1281826",
       "isPriority": false
@@ -10215,6 +10390,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1364634",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1364634",
       "isPriority": false
@@ -10263,6 +10450,18 @@
       "targetRoleId": 33,
       "targetRoleCode": "PROD",
       "valueInt": -1,
+      "constraintType": "SOFT",
+      "crewId": "1364634",
+      "isPriority": false
+    },
+    {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 420,
       "constraintType": "SOFT",
       "crewId": "1364634",
       "isPriority": false
@@ -10976,6 +11175,18 @@
       "isPriority": false
     },
     {
+      "id": 26,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1335668",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -11163,6 +11374,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1269090",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1269090",
       "isPriority": false
@@ -11420,6 +11643,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1282785",
+      "isPriority": false
+    },
+    {
       "id": 8,
       "roleId": 33,
       "roleCode": "PROD",
@@ -12116,14 +12351,14 @@
       "isPriority": false
     },
     {
-      "id": 6,
+      "id": 22,
       "roleId": 30,
       "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
       "targetRoleId": null,
       "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
+      "valueInt": 0,
+      "constraintType": "SOFT",
       "crewId": "1353219",
       "isPriority": false
     },
@@ -12136,6 +12371,18 @@
       "targetRoleCode": null,
       "valueInt": 1,
       "constraintType": "SOFT",
+      "crewId": "1353219",
+      "isPriority": false
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
       "crewId": "1353219",
       "isPriority": false
     },
@@ -12327,6 +12574,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1298998",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1298998",
       "isPriority": false
@@ -12800,6 +13059,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1360818",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -13328,6 +13599,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1286287",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -13515,6 +13798,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1299878",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1299878",
       "isPriority": false
@@ -14456,6 +14751,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1330422",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -14900,6 +15207,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1330611",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -15164,6 +15483,18 @@
       "isPriority": false
     },
     {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1317815",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -15584,6 +15915,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1299316",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -15812,6 +16155,18 @@
       "isPriority": false
     },
     {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1374209",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -16052,6 +16407,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1327993",
+      "isPriority": false
+    },
+    {
       "id": 10,
       "roleId": 29,
       "roleCode": "P_HELM",
@@ -16059,6 +16426,18 @@
       "targetRoleId": null,
       "targetRoleCode": null,
       "valueInt": 1,
+      "constraintType": "SOFT",
+      "crewId": "1327993",
+      "isPriority": false
+    },
+    {
+      "id": 23,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "DISLIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 360,
       "constraintType": "SOFT",
       "crewId": "1327993",
       "isPriority": false
@@ -16292,6 +16671,18 @@
       "isPriority": false
     },
     {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1340451",
+      "isPriority": false
+    },
+    {
       "id": 5,
       "roleId": 30,
       "roleCode": "REG",
@@ -16490,6 +16881,18 @@
       "type": "DISTRIBUTION_BETWEEN_ROLE_X",
       "targetRoleId": 33,
       "targetRoleCode": "PROD",
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1317422",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
       "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1317422",
@@ -16529,246 +16932,6 @@
       "valueInt": 60,
       "constraintType": "SOFT",
       "crewId": "1317422",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1289998",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 19,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
-      "targetRoleId": 33,
-      "targetRoleCode": "PROD",
-      "valueInt": 0,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 0,
-      "constraintType": "SOFT",
-      "crewId": "1289998",
       "isPriority": false
     },
     {
@@ -16976,1011 +17139,303 @@
       "isPriority": false
     },
     {
-      "id": 8,
+      "id": 24,
       "roleId": 33,
       "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "SOFT",
-      "crewId": "1281401",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1281401",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1281401",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 19,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
-      "targetRoleId": 33,
-      "targetRoleCode": "PROD",
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "SOFT",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1282186",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1283615",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 19,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
-      "targetRoleId": 33,
-      "targetRoleCode": "PROD",
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1283615",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 19,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
-      "targetRoleId": 33,
-      "targetRoleCode": "PROD",
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1284237",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1284686",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1284686",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1284686",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 120,
-      "constraintType": "SOFT",
-      "crewId": "1284686",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1284686",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
       "targetRoleId": null,
       "targetRoleCode": null,
       "valueInt": 0,
       "constraintType": "SOFT",
-      "crewId": "1284686",
+      "crewId": "1281401",
+      "isPriority": false
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "SOFT",
+      "crewId": "1281401",
+      "isPriority": false
+    },
+    {
+      "id": 10,
+      "roleId": 29,
+      "roleCode": "P_HELM",
+      "type": "TIMING",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": -1,
+      "constraintType": "SOFT",
+      "crewId": "1281401",
+      "isPriority": false
+    },
+    {
+      "id": 11,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "TIMING",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1,
+      "constraintType": "SOFT",
+      "crewId": "1281401",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1283615",
+      "isPriority": true
+    },
+    {
+      "id": 1,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "CANNOT_BE_ASSIGNED_AFTER",
+      "targetRoleId": 29,
+      "targetRoleCode": "P_HELM",
+      "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 10,
+      "roleId": 29,
+      "roleCode": "P_HELM",
+      "type": "TIMING",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": -1,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 11,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "TIMING",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 19,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
+      "targetRoleId": 33,
+      "targetRoleCode": "PROD",
+      "valueInt": 1,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
+      "isPriority": false
+    },
+    {
+      "id": 22,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1283615",
       "isPriority": false
     },
     {
@@ -18171,6 +17626,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1287114",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1287114",
       "isPriority": false
@@ -18411,6 +17878,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1289829",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1289829",
       "isPriority": false
@@ -18700,246 +18179,6 @@
       "targetRoleCode": null,
       "valueInt": 60,
       "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 6,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 7,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 30,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 240,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 12,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 13,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 180,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 14,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 300,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 15,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "MAX_CREW_ON_AT_A_TIME",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 16,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 17,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 18,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "ALLOW_HALF_BLOCKSIZE",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": null,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 37,
-      "roleId": 35,
-      "roleCode": "SL",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1140,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 38,
-      "roleId": 34,
-      "roleCode": "ART",
-      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 1200,
-      "constraintType": "HARD",
-      "crewId": "1286822",
-      "isPriority": true
-    },
-    {
-      "id": 1,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "CANNOT_BE_ASSIGNED_AFTER",
-      "targetRoleId": 29,
-      "targetRoleCode": "P_HELM",
-      "valueInt": null,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 10,
-      "roleId": 29,
-      "roleCode": "P_HELM",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 8,
-      "roleId": 33,
-      "roleCode": "PROD",
-      "type": "MAX_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 19,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "DISTRIBUTION_BETWEEN_ROLE_X",
-      "targetRoleId": 33,
-      "targetRoleCode": "PROD",
-      "valueInt": 1,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 11,
-      "roleId": 36,
-      "roleCode": "BRK",
-      "type": "TIMING",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": -1,
-      "constraintType": "SOFT",
-      "crewId": "1286822",
-      "isPriority": false
-    },
-    {
-      "id": 5,
-      "roleId": 30,
-      "roleCode": "REG",
-      "type": "MIN_CONSECUTIVE_MINUTES",
-      "targetRoleId": null,
-      "targetRoleCode": null,
-      "valueInt": 60,
-      "constraintType": "HARD",
       "crewId": "1269091",
       "isPriority": true
     },
@@ -19119,6 +18358,18 @@
       "targetRoleId": 29,
       "targetRoleCode": "P_HELM",
       "valueInt": null,
+      "constraintType": "SOFT",
+      "crewId": "1269091",
+      "isPriority": false
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1269091",
       "isPriority": false
@@ -19157,6 +18408,2058 @@
       "valueInt": 0,
       "constraintType": "SOFT",
       "crewId": "1269091",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1239091",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1239091",
+      "isPriority": true
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269089",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269089",
+      "isPriority": true
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269089",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269088",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269088",
+      "isPriority": true
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269088",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269087",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269087",
+      "isPriority": true
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269087",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269086",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269086",
+      "isPriority": true
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269085",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269085",
+      "isPriority": true
+    },
+    {
+      "id": 28,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269085",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269084",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269084",
+      "isPriority": true
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269083",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269083",
+      "isPriority": true
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269083",
+      "isPriority": false
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269082",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269082",
+      "isPriority": true
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269081",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269081",
+      "isPriority": true
+    },
+    {
+      "id": 5,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 6,
+      "roleId": 30,
+      "roleCode": "REG",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 60,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": false
+    },
+    {
+      "id": 7,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MIN_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 30,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 8,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "MAX_CONSECUTIVE_MINUTES",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 240,
+      "constraintType": "SOFT",
+      "crewId": "1269080",
+      "isPriority": false
+    },
+    {
+      "id": 12,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "MIN_SHIFT_LENGTH_FOR_ACCESS",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 13,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_AFTER_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 180,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 14,
+      "roleId": 36,
+      "roleCode": "BRK",
+      "type": "ASSIGN_BEFORE_SHIFT_MIN_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 300,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 15,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "MAX_CREW_ON_AT_A_TIME",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 16,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 17,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 18,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "ALLOW_HALF_BLOCKSIZE",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": null,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 37,
+      "roleId": 35,
+      "roleCode": "SL",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1140,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 38,
+      "roleId": 34,
+      "roleCode": "ART",
+      "type": "CANNOT_ASSIGN_DURING_STORE_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 1200,
+      "constraintType": "HARD",
+      "crewId": "1269080",
+      "isPriority": true
+    },
+    {
+      "id": 24,
+      "roleId": 33,
+      "roleCode": "PROD",
+      "type": "LIKE_ROLE_FOR_HOUR_X",
+      "targetRoleId": null,
+      "targetRoleCode": null,
+      "valueInt": 0,
+      "constraintType": "SOFT",
+      "crewId": "1269080",
       "isPriority": false
     }
   ]

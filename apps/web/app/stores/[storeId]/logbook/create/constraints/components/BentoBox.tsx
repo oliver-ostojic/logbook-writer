@@ -41,8 +41,8 @@ type HourlyAvailability = {
 
 type WindowConstraintDraft = {
   roleId: number;
-  startHour: number;
-  endHour: number;
+  startHour: number;   // Actually minutes from midnight (legacy name)
+  endHour: number;     // Actually minutes from midnight (legacy name)
   requiredPerHour: number;
 };
 
@@ -126,7 +126,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         crewName: c.crewName,
         specialization: c.specialization ?? undefined,
       }))
-    )
+    ).sort((a, b) => (a.specialization ?? '').localeCompare(b.specialization ?? ''))
   ), [dailyRoles]);
 
   // Fetch dynamic crew-with-shifts data
@@ -238,17 +238,22 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
             if (isSingleWindow) {
               // Step 1: Window constraint
               const w = windows[0];
-              const startHour = Math.floor(w.startMin / 60);
-              const endHour = Math.ceil(w.endMin / 60);
+              // Store start/end as minutes directly (startHour/endHour are now minutes)
+              const startMin = w.startMin;
+              const endMin = w.endMin;
+              const durationMinutes = endMin - startMin;
               windowDrafts[roleId] = {
                 roleId,
-                startHour,
-                endHour,
+                startHour: startMin,  // Now stores minutes
+                endHour: endMin,      // Now stores minutes
                 requiredPerHour: w.crewPerTaskLength,
               };
+              // Format time with proper hour:minute for the UI
+              const startHourPart = Math.floor(startMin / 60);
+              const startMinPart = startMin % 60;
               windowPrefill[roleId] = {
-                time: `${String(startHour).padStart(2, '0')}:00`,
-                duration: String((endHour - startHour) * 60),
+                time: `${String(startHourPart).padStart(2, '0')}:${String(startMinPart).padStart(2, '0')}`,
+                duration: String(durationMinutes),
                 crewPerHour: w.crewPerTaskLength,
               };
             } else {
@@ -441,11 +446,11 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         });
       }
 
-      // Convert window constraints (Step 1) to coverageWindows format (minutes)
+      // Convert window constraints (Step 1) to coverageWindows format (already in minutes)
       const windowCoverageWindows = Object.values(windowConstraintDrafts).map((entry) => ({
         roleId: entry.roleId,
-        startMin: entry.startHour * 60,
-        endMin: entry.endHour * 60,
+        startMin: entry.startHour,   // Already in minutes from WindowRoleRadioGroup
+        endMin: entry.endHour,       // Already in minutes from WindowRoleRadioGroup
         crewPerTaskLength: entry.requiredPerHour,
       }));
 
@@ -567,7 +572,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
             start: shift.start,
             end: shift.end,
           })),
-          time_limit_seconds: 120,
+          time_limit_seconds: 30,
         }),
       });
 

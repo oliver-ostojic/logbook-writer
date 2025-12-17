@@ -279,41 +279,65 @@ function calculateSingleRuleSatisfaction(
     }
 
     case 'LIKE_ROLE_FOR_HOUR_X': {
-      // True if ANY of the crew's LIKE rules for this hour are satisfied
-      const hourMinutes = valueInt ?? 0;
+      // valueInt is minutes from START OF SHIFT (e.g., 60 = second hour of shift)
+      // Need to convert to absolute time by adding shift start
+      if (!crewShift) {
+        return null;  // Can't evaluate without shift info
+      }
+      
+      const shiftRelativeMinutes = valueInt ?? 0;
+      const absoluteHourStart = crewShift.shiftStartMin + shiftRelativeMinutes;
+      
+      // Check if this hour is within the crew's shift
+      if (absoluteHourStart >= crewShift.shiftEndMin) {
+        return null;  // Hour is beyond shift end, rule doesn't apply
+      }
+      
       const crewLikeRules = rulesByCrewAndType.get(`${rule.crewId}:LIKE_ROLE_FOR_HOUR_X`) ?? [];
-      const rulesForThisHour = crewLikeRules.filter(r => r.valueInt === hourMinutes);
+      const rulesForThisHour = crewLikeRules.filter(r => r.valueInt === shiftRelativeMinutes);
       
       // Check if any of the liked roles are assigned during this hour
       const anyLikedRoleAssigned = rulesForThisHour.some(likeRule => {
         const likedRoleId = likeRule.roleRule.roleId;
         return crewAssignments.some(a => 
           a.roleId === likedRoleId && 
-          assignmentOverlapsHour(a, hourMinutes)
+          assignmentOverlapsHour(a, absoluteHourStart)
         );
       });
       
       satisfaction = anyLikedRoleAssigned ? 1.0 : 0.0;
       details = anyLikedRoleAssigned 
-        ? `A liked role was assigned during hour ${hourMinutes}` 
-        : `No liked roles assigned during hour ${hourMinutes}`;
+        ? `A liked role was assigned during shift hour ${shiftRelativeMinutes / 60 + 1} (${absoluteHourStart}-${absoluteHourStart + 60}m)` 
+        : `No liked roles assigned during shift hour ${shiftRelativeMinutes / 60 + 1} (${absoluteHourStart}-${absoluteHourStart + 60}m)`;
       break;
     }
 
     case 'DISLIKE_ROLE_FOR_HOUR_X': {
-      // Per-rule satisfaction: true if THIS specific disliked role is not assigned during the hour
-      const hourMinutes = valueInt ?? 0;
+      // valueInt is minutes from START OF SHIFT (e.g., 60 = second hour of shift)
+      // Need to convert to absolute time by adding shift start
+      if (!crewShift) {
+        return null;  // Can't evaluate without shift info
+      }
+      
+      const shiftRelativeMinutes = valueInt ?? 0;
+      const absoluteHourStart = crewShift.shiftStartMin + shiftRelativeMinutes;
+      
+      // Check if this hour is within the crew's shift
+      if (absoluteHourStart >= crewShift.shiftEndMin) {
+        return null;  // Hour is beyond shift end, rule doesn't apply
+      }
+      
       const dislikedRoleId = roleId;
       
       const dislikedRoleAssigned = crewAssignments.some(a => 
         a.roleId === dislikedRoleId && 
-        assignmentOverlapsHour(a, hourMinutes)
+        assignmentOverlapsHour(a, absoluteHourStart)
       );
       
       satisfaction = dislikedRoleAssigned ? 0.0 : 1.0;
       details = dislikedRoleAssigned 
-        ? `Disliked role ${dislikedRoleId} was assigned during hour ${hourMinutes}` 
-        : `Disliked role ${dislikedRoleId} was NOT assigned during hour ${hourMinutes}`;
+        ? `Disliked role ${dislikedRoleId} was assigned during shift hour ${shiftRelativeMinutes / 60 + 1} (${absoluteHourStart}-${absoluteHourStart + 60}m)` 
+        : `Disliked role ${dislikedRoleId} was NOT assigned during shift hour ${shiftRelativeMinutes / 60 + 1}`;
       break;
     }
 

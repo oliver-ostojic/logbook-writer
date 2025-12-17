@@ -213,7 +213,32 @@ export default function CrewShiftTable(props: any) {
                     </button>
                   </td>
                 </tr>
-              ) : sortedCrew.map((person) => (
+              ) : sortedCrew.map((person, index) => {
+                const isFirst = index === 0;
+                const prevPerson = isFirst ? null : sortedCrew[index - 1];
+                const prevStart = prevPerson ? (shiftTimes[prevPerson.id]?.start || '09:00') : null;
+                const prevEnd = prevPerson ? (shiftTimes[prevPerson.id]?.end || '18:00') : null;
+                
+                const copyStartFromAbove = () => {
+                  if (!prevStart) return;
+                  const newEndTime = addEightHours(prevStart);
+                  setShiftTimes(prev => {
+                    const next = { ...prev, [person.id]: { start: prevStart, end: newEndTime } };
+                    onShiftTimesChange?.(next);
+                    return next;
+                  });
+                };
+                
+                const copyEndFromAbove = () => {
+                  if (!prevEnd) return;
+                  setShiftTimes(prev => {
+                    const next = { ...prev, [person.id]: { ...prev[person.id], start: prev[person.id]?.start || '09:00', end: prevEnd } };
+                    onShiftTimesChange?.(next);
+                    return next;
+                  });
+                };
+                
+                return (
                 <tr key={person.id}>
                   <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                     {person.name}
@@ -233,14 +258,25 @@ export default function CrewShiftTable(props: any) {
                             return next;
                           });
                         }}
-                        className="rounded-none rounded-s-lg block w-full pl-2.5 pr-1.5 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-0 focus:border-gray-300 shadow-sm placeholder:text-gray-700 transition-colors duration-150 ease-out hover:text-blue-700 hover:font-semibold focus:text-blue-700 focus:font-semibold"
+                        className="rounded-none rounded-s-lg block w-[120px] pl-2.5 pr-1.5 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-0 focus:border-gray-300 shadow-sm placeholder:text-gray-700 transition-colors duration-150 ease-out hover:text-blue-700 hover:font-semibold focus:text-blue-700 focus:font-semibold"
                         min="09:00"
                         max="18:00"
                         required
                       />
-                      <span className="inline-flex items-center px-2 text-sm text-gray-900 bg-gray-50 border rounded-s-0 border-s-0 border-gray-300 rounded-e-md">
-                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                      </span>
+                      {isFirst ? (
+                        <span className="inline-flex items-center px-2 text-sm bg-gray-50 text-gray-500 border rounded-s-0 border-s-0 border-gray-300 rounded-e-md">
+                          <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={copyStartFromAbove}
+                          title={`Copy ${prevStart} from above`}
+                          className="inline-flex items-center px-2 text-sm border rounded-s-0 border-s-0 border-gray-300 rounded-e-md bg-gray-50 text-gray-500"
+                        >
+                          <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-4">
@@ -254,14 +290,25 @@ export default function CrewShiftTable(props: any) {
                           onShiftTimesChange?.(next);
                           return next;
                         })}
-                        className="rounded-none rounded-s-lg flex-1 block w-full pl-2.5 pr-1.5 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-0 focus:border-gray-300 shadow-sm placeholder:text-gray-700 transition-colors duration-150 ease-out hover:text-blue-700 hover:font-semibold focus:text-blue-700 focus:font-semibold"
+                        className="rounded-none rounded-s-lg block w-[120px] pl-2.5 pr-1.5 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-0 focus:border-gray-300 shadow-sm placeholder:text-gray-700 transition-colors duration-150 ease-out hover:text-blue-700 hover:font-semibold focus:text-blue-700 focus:font-semibold"
                         min="09:00"
                         max="18:00"
                         required
                       />
-                      <span className="inline-flex items-center px-2 text-sm text-gray-900 bg-gray-50 border rounded-s-0 border-s-0 border-gray-300 rounded-e-md">
-                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                      </span>
+                      {isFirst ? (
+                        <span className="inline-flex items-center px-2 text-sm bg-gray-50 text-gray-500 border rounded-s-0 border-s-0 border-gray-300 rounded-e-md">
+                          <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={copyEndFromAbove}
+                          title={`Copy ${prevEnd} from above`}
+                          className="inline-flex items-center px-2 text-sm border rounded-s-0 border-s-0 border-gray-300 rounded-e-md bg-gray-50 text-gray-500"
+                        >
+                          <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -275,7 +322,7 @@ export default function CrewShiftTable(props: any) {
                       </button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

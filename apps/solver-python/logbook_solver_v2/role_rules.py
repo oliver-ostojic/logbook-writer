@@ -647,20 +647,28 @@ def _apply_assign_after_shift_min(solver: "SolverV2", rules: List[dict]) -> None
 def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) -> None:
     """LIKE_ROLE_FOR_HOUR_X / DISLIKE_ROLE_FOR_HOUR_X: Hour-specific preferences.
     
-    valueInt is the hour (0-23) that this preference applies to.
+    valueInt is the number of minutes from the START of the crew's shift.
+    e.g., valueInt=0 means first hour of shift (minutes 0-60 of their shift)
+          valueInt=60 means second hour of shift (minutes 60-120 of their shift)
+          valueInt=420 means hour 8 of shift (minutes 420-480 of their shift)
     
     LIKE_ROLE_FOR_HOUR_X (like=True):
-      - Crew prefers to be assigned this role during hour X
+      - Crew prefers to be assigned this role during that hour of their shift
       - Adds a bonus to the objective for assignments in that hour
       
     DISLIKE_ROLE_FOR_HOUR_X (like=False):
-      - Crew dislikes being assigned this role during hour X
+      - Crew dislikes being assigned this role during that hour of their shift
       - Adds a penalty to the objective for assignments in that hour
       - If HARD constraint, forbids the assignment entirely
     
-    Example: LIKE_ROLE_FOR_HOUR_X with valueInt=9 for REGISTER
-      means crew prefers REGISTER assignments at 9:00-9:59 AM
+    Example: LIKE_ROLE_FOR_HOUR_X with valueInt=0 for REGISTER
+      means crew prefers REGISTER during their first hour of work
     """
+    # Build crew shift lookup for converting relative to absolute time
+    crew_shift_start = {}
+    for crew in solver.crew:
+        crew_shift_start[crew['id']] = crew.get('shiftStartMin', 0)
+    
     # Store hour preferences for use in objective function
     hour_prefs = []
     constraint_name = "LIKE_ROLE_FOR_HOUR_X" if like else "DISLIKE_ROLE_FOR_HOUR_X"
@@ -670,46 +678,52 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
     for rule in rules:
         role_id = rule['roleId']
         role_code = rule.get('roleCode', f'role_{role_id}')
-        target_hour = rule.get('valueInt')
+        shift_relative_min = rule.get('valueInt')  # Minutes from shift start
         is_hard = rule.get('constraintType') == 'HARD'
         
-        if target_hour is None:
-            print(f"      ⚠️  {constraint_name} for {role_code} has no valueInt (hour), skipping", file=sys.stderr)
+        if shift_relative_min is None:
+            print(f"      ⚠️  {constraint_name} for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         # For HARD DISLIKE, we forbid the assignment entirely
         if is_hard and not like:
             for crew in _get_crew_for_rule(solver, rule):
                 crew_id = crew['id']
+                shift_start = crew_shift_start.get(crew_id, 0)
+                
+                # Convert shift-relative to absolute time
+                target_hour_start = shift_start + shift_relative_min
+                target_hour_end = target_hour_start + 60
                 
                 for (var_crew, slot, var_role, task_slots), var in solver.assignment_vars.items():
                     if var_crew != crew_id or var_role != role_id:
                         continue
                     
-                    # Check if this slot falls within the target hour
+                    # Check if this slot overlaps with the target hour (absolute time)
                     slot_start_min = slot * solver.time_grid.slot_minutes
-                    slot_hour = slot_start_min // 60
+                    slot_end_min = slot_start_min + (task_slots * solver.time_grid.slot_minutes)
                     
-                    if slot_hour == target_hour:
+                    if slot_start_min < target_hour_end and slot_end_min > target_hour_start:
                         # Forbid this assignment
                         m.Add(var == 0)
                         constraints_added += 1
             
             scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-            print(f"      HARD: {role_code} forbidden at hour {target_hour} for {scope}", file=sys.stderr)
+            print(f"      HARD: {role_code} forbidden at shift min {shift_relative_min} for {scope}", file=sys.stderr)
         else:
             # Soft constraint: store preference for objective function
+            # We store the shift-relative minute; objective function will convert per-crew
             hour_prefs.append({
                 'roleId': role_id,
                 'roleCode': role_code,
-                'hour': target_hour,
+                'shiftRelativeMin': shift_relative_min,  # Minutes from shift start
                 'like': like,  # True = bonus, False = penalty
                 'crewId': rule.get('crewId'),
             })
             
             pref_type = "like" if like else "dislike"
             scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-            print(f"      SOFT: {role_code} {pref_type} at hour {target_hour} for {scope}", file=sys.stderr)
+            print(f"      SOFT: {role_code} {pref_type} at shift min {shift_relative_min} for {scope}", file=sys.stderr)
     
     # Store on solver for objective function to use
     if not hasattr(solver, 'hour_preferences'):

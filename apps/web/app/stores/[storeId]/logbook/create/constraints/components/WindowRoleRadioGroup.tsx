@@ -80,22 +80,25 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
         onConstraintChange(role.roleId, undefined);
         return;
       }
-      const [hourStr] = (cfg.time ?? '0:00').split(':');
-      const startHour = Number.parseInt(hourStr ?? '0', 10);
+      // Parse both hour and minute from time string (e.g., "10:30")
+      const timeParts = (cfg.time ?? '0:00').split(':');
+      const hourPart = Number.parseInt(timeParts[0] ?? '0', 10);
+      const minutePart = Number.parseInt(timeParts[1] ?? '0', 10);
+      const startMinutes = hourPart * 60 + minutePart;  // Total minutes from midnight
       const durationMinutes = Number(cfg.duration);
-      if (!Number.isFinite(startHour) || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      if (!Number.isFinite(startMinutes) || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
         onConstraintChange(role.roleId, undefined);
         return;
       }
-      const durationHours = durationMinutes / 60;
-      const unclampedEnd = startHour + durationHours;
-      const normalizedStart = Math.max(0, Math.min(23, Math.floor(startHour)));
-      const normalizedEnd = Math.max(normalizedStart + 1, Math.min(24, Math.round(unclampedEnd)));
+      const endMinutes = startMinutes + durationMinutes;
+      // Clamp to valid day range (0 to 1440 = 24 hours)
+      const normalizedStart = Math.max(0, Math.min(1440, startMinutes));
+      const normalizedEnd = Math.max(normalizedStart + 30, Math.min(1440, endMinutes));
 
       onConstraintChange(role.roleId, {
         roleId: role.roleId,
-        startHour: normalizedStart,
-        endHour: normalizedEnd,
+        startHour: normalizedStart,  // Now in minutes, but keeping prop name for compatibility
+        endHour: normalizedEnd,      // Now in minutes, but keeping prop name for compatibility
         requiredPerHour: Math.max(0, cfg.crewPerHour ?? 0),
       });
     });
@@ -225,7 +228,7 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
                 <div className="inline-flex flex-col items-end gap-1">
                   {(() => {
                     const cfg = config[role.roleId] || {};
-                    const ph = (role.roleName?.toLowerCase() === 'parking helms') ? '2' : '1';
+                    const ph = '1';
                     const hasValue = typeof cfg.crewPerHour === 'number' && !Number.isNaN(cfg.crewPerHour);
                     const cls = hasValue
                       ? 'w-[2.75rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 shadow-sm focus:border-gray-300 focus:outline-none focus:ring-0 focus:ring-transparent focus:ring-offset-0 focus-visible:outline-none focus-visible:ring-0'
@@ -270,7 +273,7 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
                       />
                     );
                   })()}
-                  <span className="text-[11px] leading-4 text-gray-600 font-sans">Crew/Task</span>
+                  <span className="text-[11px] leading-4 text-gray-600 font-sans">Crew/Min</span>
                 </div>
               </div>
               {/* Time picker + duration under title */}

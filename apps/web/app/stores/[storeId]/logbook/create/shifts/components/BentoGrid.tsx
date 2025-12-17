@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -34,13 +34,19 @@ export default function BentoGrid() {
   const [shiftTimes, setShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
   const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
   const [selectedCrew, setSelectedCrew] = useState<CrewMember[]>([]);
+  
+  // Track the date that the current selectedCrew/shiftTimes belong to
+  const loadedDateRef = useRef<string | null>(null);
 
   // LocalStorage key for persisting unsaved shifts
   const getLocalStorageKey = (date: string) => `shifts-draft-${storeId}-${date}`;
 
   // Save to localStorage whenever selectedCrew or shiftTimes change (after initial backend load)
+  // Only save if the data belongs to the current selectedDate
   useEffect(() => {
     if (!hasLoadedFromBackend || !storeId || !selectedDate) return;
+    // Don't save if the loaded data is from a different date
+    if (loadedDateRef.current !== selectedDate) return;
     
     const key = getLocalStorageKey(selectedDate);
     const data = {
@@ -80,13 +86,14 @@ export default function BentoGrid() {
   }, [API_URL, storeId]);
 
   const availablePeople = useMemo(() => {
-    const selectedIds = new Set(selectedCrew.map(p => p.id));
-    return allPeople.filter(p => !selectedIds.has(p.id));
+    // Use crewId (stable backend id) for filtering, not id (unstable array index)
+    const selectedCrewIds = new Set(selectedCrew.map(p => p.crewId));
+    return allPeople.filter(p => !selectedCrewIds.has(p.crewId));
   }, [allPeople, selectedCrew]);
 
   const handleAddCrew = (crew: CrewMember) => {
-    // Check if crew member is already in the list
-    if (!selectedCrew.find(c => c.id === crew.id)) {
+    // Check if crew member is already in the list (use crewId for stable comparison)
+    if (!selectedCrew.find(c => c.crewId === crew.crewId)) {
       setSelectedCrew([...selectedCrew, crew]);
     }
   };
@@ -133,6 +140,7 @@ export default function BentoGrid() {
             setInitialShiftTimes({});
             setShiftTimes({});
           }
+          loadedDateRef.current = selectedDate;
           setHasLoadedFromBackend(true);
           return;
         }
@@ -151,6 +159,7 @@ export default function BentoGrid() {
             setInitialShiftTimes({});
             setShiftTimes({});
           }
+          loadedDateRef.current = selectedDate;
           setHasLoadedFromBackend(true);
           return;
         }
@@ -180,12 +189,14 @@ export default function BentoGrid() {
           localStorage.removeItem(localKey);
         }
         
+        loadedDateRef.current = selectedDate;
         setHasLoadedFromBackend(true);
       } catch (e) {
         console.error('Failed to load shifts for date', selectedDate, e);
         setSelectedCrew([]);
         setInitialShiftTimes({});
         setShiftTimes({});
+        loadedDateRef.current = selectedDate;
         setHasLoadedFromBackend(true);
       }
     }
@@ -244,15 +255,29 @@ export default function BentoGrid() {
         )}
         
         <div className="mt-5 sm:mt-8 grid grid-cols-1 gap-4 lg:grid-cols-6 lg:auto-rows-auto">
-          {/* Left tile - spans full height */}
+          {/* Top-left tile - Date selection */}
+          <div className="relative lg:col-span-2">
+            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]" />
+            <div className="relative flex h-full flex-col overflow-hidden max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]">
+              <div className="p-10 pt-10">
+                <h3 className="text-sm/4 font-semibold text-gray-500">Step 1</h3>
+                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700 pb-5" style={{ fontFamily: 'var(--font-heading)' }}>Choose the date</p>
+                <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
+                <DateBadge selectedDate={selectedDate} />
+              </div>
+            </div>
+            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]" />
+          </div>
+
+          {/* Right tile - Crew selection - spans full height */}
           <div className="relative lg:col-span-4 lg:row-span-2">
-            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-t-[2rem] lg:rounded-l-[3rem]" />
-            <div className="relative flex h-full flex-col overflow-hidden max-lg:rounded-t-[2rem] lg:rounded-l-[3rem]">
+            <div className="absolute inset-0 rounded-lg bg-white lg:rounded-r-[3rem]" />
+            <div className="relative flex h-full flex-col overflow-hidden lg:rounded-r-[3rem]">
               <div className="p-10 pt-10">
                 <div className="flex gap-6">
-                  {/* Left container: Step 1, title, search bar */}
+                  {/* Left container: Step 2, title, search bar */}
                   <div className="flex-1">
-                    <h3 className="text-sm/4 font-semibold text-gray-500">Step 1</h3>
+                    <h3 className="text-sm/4 font-semibold text-gray-500">Step 2</h3>
                     <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Select crew</p>
                     <div className="flex flex-row gap-10">
                       <div className="flex-1">
@@ -273,27 +298,13 @@ export default function BentoGrid() {
                 />
               </div>
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-t-[2rem] lg:rounded-l-[3rem]" />
+            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 lg:rounded-r-[3rem]" />
           </div>
 
-          {/* Top-right tile */}
-          <div className="relative lg:col-span-2">
-            <div className="absolute inset-0 rounded-lg bg-white lg:rounded-tr-[3rem]" />
-            <div className="relative flex h-full flex-col overflow-hidden lg:rounded-tr-[3rem]">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 2</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700 pb-5" style={{ fontFamily: 'var(--font-heading)' }}>Choose the date</p>
-                <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
-                <DateBadge selectedDate={selectedDate} />
-              </div>
-            </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 lg:rounded-tr-[3rem]" />
-          </div>
-
-          {/* Bottom-right tile */}
+          {/* Bottom-left tile - Review & save */}
           <div className="relative lg:col-span-2 lg:row-auto">
-            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-b-[2rem] lg:rounded-br-[3rem]" />
-            <div className="relative flex flex-col overflow-hidden max-lg:rounded-b-[2rem] lg:rounded-br-[3rem]">
+            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]" />
+            <div className="relative flex flex-col overflow-hidden max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]">
               <div className="p-10 pt-10">
                 <h3 className="text-sm/4 font-semibold text-gray-500">Step 3</h3>
                 <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Review & save shifts</p>
@@ -312,7 +323,7 @@ export default function BentoGrid() {
                 />
               </div>
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-b-[2rem] lg:rounded-br-[3rem]" />
+            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]" />
           </div>
         </div>
         <Footer />

@@ -71,7 +71,7 @@ export default function WizardStoreRulesPage() {
               hour,
               minReg: 0,
               minProduct: 0,
-              minParkingHelms: 2,
+              minParkingHelms: 1,
             });
           }
           

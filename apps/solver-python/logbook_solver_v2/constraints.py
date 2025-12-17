@@ -100,7 +100,11 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
     """Build coverage window constraints.
     
     For each RoleCoverageWindow, ensure crewPerMinute people are assigned
-    at each taskLength position within the window [startMin, endMin).
+    at EVERY slot within the window [startMin, endMin).
+    
+    This is a HARD constraint that enforces:
+    - At any given slot, exactly N crew are covering that slot for the role
+    - This prevents overlapping assignments (e.g., 1 full-hour + 2 half-hours)
     
     The constraintRule determines how to apply the constraint:
     - EXACTLY: exactly N crew must be assigned (default)
@@ -144,61 +148,49 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
             print(f"   ⚠️  Window references unknown role {role_id}", file=sys.stderr)
             continue
         
-        task_length = role.get('taskLength', slot_minutes)
-        task_slots = solver.time_grid.task_length_to_slots(task_length)
-        
         # Convert window to slots
         start_slot = solver.time_grid.minutes_to_slot_floor(start_min)
         end_slot = solver.time_grid.minutes_to_slot_floor(end_min)
         
-        # For each task-sized position in the window
-        for task_start_slot in range(start_slot, end_slot, task_slots):
-            task_end_slot = task_start_slot + task_slots
-            if task_end_slot > end_slot:
-                break
-            
-            # Get all variables that cover this task window
-            # A variable covers if it starts within or overlaps this position
+        # For EVERY slot in the window, enforce crewPerMinute limit
+        # This is the key fix - we check per-slot, not per-task-sized-block
+        for slot in range(start_slot, end_slot):
+            # Get all variables that COVER this slot (not just start at it)
+            # A variable covers slot S if it starts at or before S and ends after S
             covering_vars = []
             for (var_slot, var_task_slots, crew_id, var) in vars_by_role.get(role_id, []):
                 var_end_slot = var_slot + var_task_slots
-                # Check overlap: var covers [var_slot, var_end_slot), task is [task_start_slot, task_end_slot)
-                if var_slot < task_end_slot and var_end_slot > task_start_slot:
+                # Check if this variable covers the current slot
+                # var covers [var_slot, var_end_slot), so slot is covered if var_slot <= slot < var_end_slot
+                if var_slot <= slot < var_end_slot:
                     covering_vars.append(var)
             
-            if covering_vars:
-                # Apply constraint based on constraintRule
-                if constraint_rule == 'MIN':
-                    m.Add(sum(covering_vars) >= crew_per_minute)
-                elif constraint_rule == 'MAX':
-                    m.Add(sum(covering_vars) <= crew_per_minute)
-                else:  # EXACTLY (default)
-                    m.Add(sum(covering_vars) == crew_per_minute)
-                constraints_added += 1
-                
-                if len(covering_vars) < crew_per_minute and constraint_rule in ('MIN', 'EXACTLY'):
-                    impossible_constraints.append({
-                        'role': role.get('code'),
-                        'slot': task_start_slot,
-                        'time': task_start_slot * slot_minutes,
-                        'required': crew_per_minute,
-                        'available': len(covering_vars),
-                        'rule': constraint_rule
-                    })
-            else:
+            # ALWAYS add the constraint, even if no covering vars exist
+            # If no vars can cover this slot, sum(covering_vars) == 0, which will make
+            # EXACTLY or MIN constraints infeasible (as they should be!)
+            if constraint_rule == 'MIN':
+                m.Add(sum(covering_vars) >= crew_per_minute)
+            elif constraint_rule == 'MAX':
+                m.Add(sum(covering_vars) <= crew_per_minute)
+            else:  # EXACTLY (default)
+                m.Add(sum(covering_vars) == crew_per_minute)
+            constraints_added += 1
+            
+            # Track impossible constraints for debugging
+            if len(covering_vars) < crew_per_minute and constraint_rule in ('MIN', 'EXACTLY'):
                 impossible_constraints.append({
                     'role': role.get('code'),
-                    'slot': task_start_slot,
-                    'time': task_start_slot * slot_minutes,
+                    'slot': slot,
+                    'time': slot * slot_minutes,
                     'required': crew_per_minute,
-                    'available': 0,
+                    'available': len(covering_vars),
                     'rule': constraint_rule
                 })
     
     print(f"   Constraints added: {constraints_added}", file=sys.stderr)
     
     if impossible_constraints:
-        print(f"   ⚠️  PROBLEM: {len(impossible_constraints)} positions have insufficient variables!", file=sys.stderr)
+        print(f"   ⚠️  PROBLEM: {len(impossible_constraints)} slots have insufficient variables!", file=sys.stderr)
         for c in impossible_constraints[:10]:
             rule_str = f" ({c.get('rule', 'EXACTLY')})" if c.get('rule') else ""
             print(f"      - {c['role']} at slot {c['slot']} ({c['time']}min): need {c['required']}{rule_str}, have {c['available']}", file=sys.stderr)
