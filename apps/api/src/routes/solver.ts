@@ -224,6 +224,9 @@ const convertPythonResultToV2Output = (
   const totalMinutes = assignments.reduce((sum, a) => sum + (a.endMinute - a.startMinute), 0);
   const crewIds = new Set(assignments.map(a => a.crewId));
 
+  // Extract quotaWarnings from Python result
+  const quotaWarnings = pythonResult.metadata?.quotaWarnings as SolverOutputV2['metadata']['quotaWarnings'];
+
   return {
     success: pythonResult.success,
     metadata: {
@@ -233,6 +236,7 @@ const convertPythonResultToV2Output = (
       numCrew: crewIds.size,
       numHours: Math.round(totalMinutes / 60),
       numAssignments: assignments.length,
+      quotaWarnings,
     },
     assignments,
     error: pythonResult.error,

@@ -39,6 +39,17 @@ type PreviewShift = {
   endTime: string;
 };
 
+export type QuotaWarning = {
+  crewId: string;
+  crewName: string;
+  roleId: number;
+  roleCode: string;
+  requiredMinutes: number;
+  actualMinutes: number;
+  shortfallMinutes: number;
+  message: string;
+};
+
 export type LogbookMetadata = {
   solver: {
     status: string;
@@ -63,6 +74,7 @@ export type LogbookMetadata = {
     met: number;
     averageSatisfaction: number;
   };
+  quotaWarnings?: QuotaWarning[];
   generatedAt: string;
 };
 

@@ -52,6 +52,9 @@ class SolverV2:
         # Soft constraint penalties - populated by constraint builders, used by objective
         self.soft_constraint_penalties: List = []
         
+        # Quota shortfall vars - populated by quota constraints, used by objective and result reporting
+        self.quota_shortfall_vars: List = []
+        
         # DEPRECATED - kept for backward compatibility during transition
         self.hourly_requirements = self.payload.get('hourlyRequirements', [])
         self.window_requirements = self.payload.get('windowRequirements', [])
@@ -132,8 +135,34 @@ class SolverV2:
             'assignments': assignments,
         }
 
+        # Report quota shortfalls (quotas that couldn't be fully satisfied)
+        if success and hasattr(self, 'quota_trackers') and self.quota_trackers:
+            quota_warnings = []
+            for tracker in self.quota_trackers:
+                shortfall = solver.Value(tracker['shortfallVar'])
+                if shortfall > 0:
+                    required_min = tracker['requiredMin']
+                    actual_min = required_min - shortfall
+                    required_hours = required_min / 60
+                    actual_hours = actual_min / 60
+                    quota_warnings.append({
+                        'crewId': tracker['crewId'],
+                        'crewName': tracker['crewName'],
+                        'roleId': tracker['roleId'],
+                        'roleCode': tracker['roleCode'],
+                        'requiredMinutes': required_min,
+                        'actualMinutes': actual_min,
+                        'shortfallMinutes': shortfall,
+                        'message': f"{tracker['crewName']} could only get {actual_hours:.1f}h of {tracker['roleCode']} (needed {required_hours:.1f}h)"
+                    })
+            if quota_warnings:
+                result['metadata']['quotaWarnings'] = quota_warnings
+
         if not success:
             result['metadata']['violations'] = []
+            # Include quota divisibility violations if any
+            if hasattr(self, 'quota_violations') and self.quota_violations:
+                result['metadata']['quotaDivisibilityErrors'] = self.quota_violations
 
         return result
 
@@ -155,10 +184,6 @@ class SolverV2:
         for rule in self.role_rules:
             if rule.get('type') == 'ALLOW_HALF_BLOCKSIZE':
                 half_block_role_ids.add(rule['roleId'])
-        
-        if half_block_role_ids:
-            import sys
-            print(f"[PREPROCESS] ALLOW_HALF_BLOCKSIZE rules found for role IDs: {half_block_role_ids}", file=sys.stderr)
         
         # Set canSplitForGaps=True on matching roles
         for role in self.roles:

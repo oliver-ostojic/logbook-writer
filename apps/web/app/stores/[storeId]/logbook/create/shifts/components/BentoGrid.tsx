@@ -34,19 +34,18 @@ export default function BentoGrid() {
   const [shiftTimes, setShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
   const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
   const [selectedCrew, setSelectedCrew] = useState<CrewMember[]>([]);
-  
-  // Track the date that the current selectedCrew/shiftTimes belong to
-  const loadedDateRef = useRef<string | null>(null);
+  // Track which date the current state belongs to (prevents saving stale data to wrong date)
+  const [loadedForDate, setLoadedForDate] = useState<string | null>(null);
 
   // LocalStorage key for persisting unsaved shifts
   const getLocalStorageKey = (date: string) => `shifts-draft-${storeId}-${date}`;
 
   // Save to localStorage whenever selectedCrew or shiftTimes change (after initial backend load)
-  // Only save if the data belongs to the current selectedDate
+  // Only save if the data belongs to the currently loaded date
   useEffect(() => {
     if (!hasLoadedFromBackend || !storeId || !selectedDate) return;
-    // Don't save if the loaded data is from a different date
-    if (loadedDateRef.current !== selectedDate) return;
+    // Don't save if the current state doesn't belong to selectedDate
+    if (loadedForDate !== selectedDate) return;
     
     const key = getLocalStorageKey(selectedDate);
     const data = {
@@ -55,7 +54,7 @@ export default function BentoGrid() {
       savedAt: Date.now(),
     };
     localStorage.setItem(key, JSON.stringify(data));
-  }, [selectedCrew, shiftTimes, hasLoadedFromBackend, storeId, selectedDate]);
+  }, [selectedCrew, shiftTimes, hasLoadedFromBackend, storeId, selectedDate, loadedForDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,6 +106,7 @@ export default function BentoGrid() {
   useEffect(() => {
     let cancelled = false;
     setHasLoadedFromBackend(false);
+    setLoadedForDate(null); // Clear until load completes
     
     async function loadShifts() {
       try {
@@ -140,8 +140,9 @@ export default function BentoGrid() {
             setInitialShiftTimes({});
             setShiftTimes({});
           }
-          loadedDateRef.current = selectedDate;
+          setLoadedForDate(selectedDate);
           setHasLoadedFromBackend(true);
+          setLoadedForDate(selectedDate);
           return;
         }
         
@@ -159,8 +160,9 @@ export default function BentoGrid() {
             setInitialShiftTimes({});
             setShiftTimes({});
           }
-          loadedDateRef.current = selectedDate;
+          setLoadedForDate(selectedDate);
           setHasLoadedFromBackend(true);
+          setLoadedForDate(selectedDate);
           return;
         }
         
@@ -189,15 +191,17 @@ export default function BentoGrid() {
           localStorage.removeItem(localKey);
         }
         
-        loadedDateRef.current = selectedDate;
+        setLoadedForDate(selectedDate);
         setHasLoadedFromBackend(true);
+        setLoadedForDate(selectedDate);
       } catch (e) {
         console.error('Failed to load shifts for date', selectedDate, e);
         setSelectedCrew([]);
         setInitialShiftTimes({});
         setShiftTimes({});
-        loadedDateRef.current = selectedDate;
+        setLoadedForDate(selectedDate);
         setHasLoadedFromBackend(true);
+        setLoadedForDate(selectedDate);
       }
     }
     loadShifts();

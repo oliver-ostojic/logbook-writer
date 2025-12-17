@@ -36,17 +36,18 @@ class VariableBuilder:
         crew_records: List[dict],
         role_records: List[dict],
     ) -> Dict[AssignmentKey, cp_model.IntVar]:
+        DEBUG = False
         role_by_id = {role['id']: role for role in role_records}
         role_code_by_id = {role['id']: role['code'] for role in role_records}
         variables: Dict[AssignmentKey, cp_model.IntVar] = {}
 
-        print(f"\n{'='*70}", file=sys.stderr)
-        print("VARIABLE BUILDING DEBUG", file=sys.stderr)
-        print(f"{'='*70}", file=sys.stderr)
-        print(f"Crew count: {len(crew_records)}", file=sys.stderr)
-        print(f"Role count: {len(role_records)}", file=sys.stderr)
-        print(f"Roles: {[(r['id'], r['code'], r.get('taskLength', 30), r.get('allowOutsideStoreHours', False)) for r in role_records]}", file=sys.stderr)
-        print(f"Time grid: slot_minutes={self.time_grid.slot_minutes}, open={self.time_grid.open_minutes}, close={self.time_grid.close_minutes}", file=sys.stderr)
+        if DEBUG: print(f"\n{'='*70}", file=sys.stderr)
+        if DEBUG: print("VARIABLE BUILDING DEBUG", file=sys.stderr)
+        if DEBUG: print(f"{'='*70}", file=sys.stderr)
+        if DEBUG: print(f"Crew count: {len(crew_records)}", file=sys.stderr)
+        if DEBUG: print(f"Role count: {len(role_records)}", file=sys.stderr)
+        if DEBUG: print(f"Roles: {[(r['id'], r['code'], r.get('taskLength', 30), r.get('allowOutsideStoreHours', False)) for r in role_records]}", file=sys.stderr)
+        if DEBUG: print(f"Time grid: slot_minutes={self.time_grid.slot_minutes}, open={self.time_grid.open_minutes}, close={self.time_grid.close_minutes}", file=sys.stderr)
         
         # Track variables by crew and by slot for debugging
         vars_by_crew: Dict[str, Dict[int, List[str]]] = defaultdict(lambda: defaultdict(list))
@@ -56,7 +57,7 @@ class VariableBuilder:
             crew_name = crew.get('name', crew_id)
             eligible_role_ids = set(crew.get('roleIds') or [])
             if not eligible_role_ids:
-                print(f"\n⚠️  Crew {crew_name}: NO roleIds!", file=sys.stderr)
+                if DEBUG: print(f"\n⚠️  Crew {crew_name}: NO roleIds!", file=sys.stderr)
                 continue
 
             shift_start_min = crew['shiftStartMin']
@@ -64,7 +65,7 @@ class VariableBuilder:
             shift_start_slot = self.time_grid.minutes_to_slot_floor(shift_start_min)
             shift_end_slot = self.time_grid.minutes_to_slot_floor(shift_end_min)
             if shift_end_slot <= shift_start_slot:
-                print(f"\n⚠️  Crew {crew_name}: Invalid shift {shift_start_min}-{shift_end_min}", file=sys.stderr)
+                if DEBUG: print(f"\n⚠️  Crew {crew_name}: Invalid shift {shift_start_min}-{shift_end_min}", file=sys.stderr)
                 continue
 
             for role_id in eligible_role_ids:
@@ -111,9 +112,9 @@ class VariableBuilder:
                         vars_by_crew[crew_name][slot].append(f"{role_code}({current_task_slots})")
 
         # Print detailed per-crew, per-hour breakdown
-        print(f"\n{'='*70}", file=sys.stderr)
-        print("VARIABLES BY CREW AND HOUR", file=sys.stderr)
-        print(f"{'='*70}", file=sys.stderr)
+        if DEBUG: print(f"\n{'='*70}", file=sys.stderr)
+        if DEBUG: print("VARIABLES BY CREW AND HOUR", file=sys.stderr)
+        if DEBUG: print(f"{'='*70}", file=sys.stderr)
         
         slot_minutes = self.time_grid.slot_minutes
         
@@ -130,13 +131,13 @@ class VariableBuilder:
             shift_start_slot = self.time_grid.minutes_to_slot_floor(shift_start)
             shift_end_slot = self.time_grid.minutes_to_slot_floor(shift_end)
             
-            print(f"\n📋 {crew_name}", file=sys.stderr)
-            print(f"   Shift: {shift_start}-{shift_end} min ({shift_start//60}:{shift_start%60:02d}-{shift_end//60}:{shift_end%60:02d})", file=sys.stderr)
-            print(f"   Roles: {crew_record.get('roleIds', [])}", file=sys.stderr)
-            print(f"   Slots: {shift_start_slot} to {shift_end_slot}", file=sys.stderr)
+            if DEBUG: print(f"\n📋 {crew_name}", file=sys.stderr)
+            if DEBUG: print(f"   Shift: {shift_start}-{shift_end} min ({shift_start//60}:{shift_start%60:02d}-{shift_end//60}:{shift_end%60:02d})", file=sys.stderr)
+            if DEBUG: print(f"   Roles: {crew_record.get('roleIds', [])}", file=sys.stderr)
+            if DEBUG: print(f"   Slots: {shift_start_slot} to {shift_end_slot}", file=sys.stderr)
             
             # Show slot-by-slot: what STARTS at this slot and what COVERS this slot
-            print(f"   --- Slot-by-slot breakdown ---", file=sys.stderr)
+            if DEBUG: print(f"   --- Slot-by-slot breakdown ---", file=sys.stderr)
             for slot in range(shift_start_slot, shift_end_slot):
                 time_min = slot * slot_minutes
                 time_str = f"{time_min//60}:{time_min%60:02d}"
@@ -162,17 +163,17 @@ class VariableBuilder:
                 
                 all_options = starts_here + covers_here
                 if all_options:
-                    print(f"   s{slot:02d} ({time_str}): starts={starts_here}, covers={covers_here}", file=sys.stderr)
+                    if DEBUG: print(f"   s{slot:02d} ({time_str}): starts={starts_here}, covers={covers_here}", file=sys.stderr)
                 else:
-                    print(f"   s{slot:02d} ({time_str}): ⚠️  NOTHING AVAILABLE!", file=sys.stderr)
+                    if DEBUG: print(f"   s{slot:02d} ({time_str}): ⚠️  NOTHING AVAILABLE!", file=sys.stderr)
         
         if len(crew_names) < len(vars_by_crew):
-            print(f"\n... and {len(vars_by_crew) - len(crew_names)} more crew (showing first 3)", file=sys.stderr)
+            if DEBUG: print(f"\n... and {len(vars_by_crew) - len(crew_names)} more crew (showing first 3)", file=sys.stderr)
         
         # Summary: slots with no variables for any crew
-        print(f"\n{'='*70}", file=sys.stderr)
-        print("SLOT COVERAGE SUMMARY", file=sys.stderr)
-        print(f"{'='*70}", file=sys.stderr)
+        if DEBUG: print(f"\n{'='*70}", file=sys.stderr)
+        if DEBUG: print("SLOT COVERAGE SUMMARY", file=sys.stderr)
+        if DEBUG: print(f"{'='*70}", file=sys.stderr)
         
         # Check for slots that have NO covering variables (considering multi-slot tasks)
         crew_with_gaps = []
@@ -211,19 +212,19 @@ class VariableBuilder:
                 crew_with_gaps.append((crew_name, gaps))
         
         if crew_with_gaps:
-            print(f"⚠️  {len(crew_with_gaps)} crew have slots with NO variables:", file=sys.stderr)
+            if DEBUG: print(f"⚠️  {len(crew_with_gaps)} crew have slots with NO variables:", file=sys.stderr)
             for crew_name, gaps in crew_with_gaps[:10]:
                 gap_times = [f"slot {g} ({g*slot_minutes}min)" for g in gaps[:5]]
                 if len(gaps) > 5:
                     gap_times.append(f"...+{len(gaps)-5} more")
-                print(f"   {crew_name}: {', '.join(gap_times)}", file=sys.stderr)
+                if DEBUG: print(f"   {crew_name}: {', '.join(gap_times)}", file=sys.stderr)
             if len(crew_with_gaps) > 10:
-                print(f"   ... and {len(crew_with_gaps) - 10} more crew", file=sys.stderr)
+                if DEBUG: print(f"   ... and {len(crew_with_gaps) - 10} more crew", file=sys.stderr)
         else:
-            print("✅ All crew have variables for all their shift slots", file=sys.stderr)
+            if DEBUG: print("✅ All crew have variables for all their shift slots", file=sys.stderr)
 
-        print(f"\nTotal variables created: {len(variables)}", file=sys.stderr)
-        print(f"{'='*70}\n", file=sys.stderr)
+        if DEBUG: print(f"\nTotal variables created: {len(variables)}", file=sys.stderr)
+        if DEBUG: print(f"{'='*70}\n", file=sys.stderr)
         
         return variables
 

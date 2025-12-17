@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Dict, List, Tuple
 if TYPE_CHECKING:  # pragma: no cover
     from .solver_v2 import SolverV2
 
+DEBUG = False
+
 # Default values for tunable parameters
 DEFAULT_ASSIGNMENT_REWARD = 100  # Reward for each assignment (fills slots) - HIGH to prioritize coverage
 DEFAULT_HALF_SIZE_PENALTY = 70   # Half-segment = 30 net reward (still positive, but 2 halves = 60 < 1 full = 100)
@@ -77,6 +79,12 @@ def apply(solver: "SolverV2") -> None:
     
     # Soft constraint penalties from role rules (e.g., soft MAX_CONSECUTIVE_MINUTES)
     soft_penalties = solver.soft_constraint_penalties
+    
+    # Add quota shortfall penalties (crew couldn't get full quota amount)
+    quota_shortfall_penalties = []
+    if hasattr(solver, 'quota_shortfall_vars') and solver.quota_shortfall_vars:
+        for item in solver.quota_shortfall_vars:
+            quota_shortfall_penalties.append(item['penalty'] * item['var'])
 
     # Maximize: assignment rewards + preferences + bonuses - penalties
     # This motivates solver to fill all slots while respecting preferences
@@ -89,8 +97,9 @@ def apply(solver: "SolverV2") -> None:
     distribution_bonus = sum(distribution_terms) if distribution_terms else 0
     gap_penalties = sum(gap_filler_penalties) if gap_filler_penalties else 0
     soft_constraint_penalties = sum(soft_penalties) if soft_penalties else 0
+    quota_penalties = sum(quota_shortfall_penalties) if quota_shortfall_penalties else 0
     
-    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus - gap_penalties - soft_constraint_penalties)
+    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus - gap_penalties - soft_constraint_penalties - quota_penalties)
 
 
 def _consecutive_role_bonus(solver: "SolverV2") -> List:
@@ -266,7 +275,7 @@ def _timing_preference_bonus(solver: "SolverV2") -> List:
             bonus_terms.append(scaled_bonus * var)
     
     if bonus_terms:
-        print(f"    [Objective] Added {len(bonus_terms)} TIMING gradient bonuses", file=sys.stderr)
+        if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} TIMING gradient bonuses", file=sys.stderr)
     
     return bonus_terms
 
@@ -351,7 +360,7 @@ def _hour_preference_bonus(solver: "SolverV2") -> List:
             bonus_terms.append(-hour_weight * var)
     
     if bonus_terms:
-        print(f"    [Objective] Added {len(bonus_terms)} hour preference terms", file=sys.stderr)
+        if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} hour preference terms", file=sys.stderr)
     
     return bonus_terms
 
@@ -443,7 +452,7 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
                     for var, minutes in target_vars:
                         bonus_terms.append(distribution_weight * var)
                     
-                    print(f"      Added equal bonus for {crew_id}: {primary_family_name} and {target_family_name}", file=sys.stderr)
+                    if DEBUG: print(f"      Added equal bonus for {crew_id}: {primary_family_name} and {target_family_name}", file=sys.stderr)
         
         else:
             # Role-level balancing (fallback)
@@ -487,7 +496,7 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
                         bonus_terms.append(distribution_weight * var)
     
     if bonus_terms:
-        print(f"    [Objective] Added {len(bonus_terms)} distribution preference terms", file=sys.stderr)
+        if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} distribution preference terms", file=sys.stderr)
     
     return bonus_terms
 

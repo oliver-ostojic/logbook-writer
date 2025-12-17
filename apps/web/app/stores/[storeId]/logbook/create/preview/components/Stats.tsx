@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import type { LogbookMetadata, PreferenceMetadata } from './LogbookView';
+import type { LogbookMetadata, PreferenceMetadata, QuotaWarning } from './LogbookView';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -231,6 +231,18 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
     },
   ];
 
+  // Extract quota warnings
+  const quotaWarnings = metadata?.quotaWarnings ?? [];
+
+  // Helper to abbreviate crew name (First Last -> First L.)
+  function abbreviateName(fullName: string): string {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    const firstName = parts[0];
+    const lastInitial = parts[parts.length - 1][0];
+    return `${firstName} ${lastInitial}.`;
+  }
+
   return (
     <div className="relative isolate overflow-hidden">
       <div className="border-b border-b-gray-900/10 lg:border-t lg:border-t-gray-900/5">
@@ -264,6 +276,36 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
           ))}
         </dl>
       </div>
+
+      {/* Quota Warnings Section */}
+      {quotaWarnings.length > 0 && (
+        <div className="border-t border-gray-900/5 px-4 py-6 sm:px-6 xl:px-8">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900">
+                {quotaWarnings.length} hard constraint{quotaWarnings.length === 1 ? '' : 's'} could not be fully met
+              </p>
+              <ul className="mt-2 text-sm text-gray-600 space-y-1">
+                {quotaWarnings.map((warning, idx) => (
+                  <li key={idx} className="flex items-center gap-1.5">
+                    <span className="text-gray-400">•</span>
+                    <span>
+                      <span className="font-medium text-gray-700">{abbreviateName(warning.crewName)}</span>
+                      {' '}could only get {(warning.actualMinutes / 60).toFixed(1)}h of {warning.roleCode}{' '}
+                      <span className="text-gray-400">(needed {(warning.requiredMinutes / 60).toFixed(1)}h)</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         aria-hidden="true"

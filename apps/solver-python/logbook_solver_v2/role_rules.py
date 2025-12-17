@@ -24,14 +24,16 @@ from typing import TYPE_CHECKING, Dict, List
 if TYPE_CHECKING:
     from .solver_v2 import SolverV2
 
+DEBUG = False
+
 
 def apply_role_rules(solver: "SolverV2") -> None:
     """Apply all role rules to the solver model."""
     if not solver.role_rules:
-        print("[ROLE_RULES] No role rules to apply", file=sys.stderr)
+        if DEBUG: print("[ROLE_RULES] No role rules to apply", file=sys.stderr)
         return
     
-    print(f"\n[ROLE_RULES] Applying {len(solver.role_rules)} role rules", file=sys.stderr)
+    if DEBUG: print(f"\n[ROLE_RULES] Applying {len(solver.role_rules)} role rules", file=sys.stderr)
     
     # Group rules by type for efficient processing
     rules_by_type: Dict[str, List[dict]] = defaultdict(list)
@@ -40,7 +42,7 @@ def apply_role_rules(solver: "SolverV2") -> None:
     
     # Apply each rule type
     for rule_type, rules in rules_by_type.items():
-        print(f"   {rule_type}: {len(rules)} rules", file=sys.stderr)
+        if DEBUG: print(f"   {rule_type}: {len(rules)} rules", file=sys.stderr)
         
         if rule_type == 'FORBID_ROLE':
             _apply_forbid_role(solver, rules)
@@ -73,7 +75,7 @@ def apply_role_rules(solver: "SolverV2") -> None:
         elif rule_type == 'CANNOT_ASSIGN_DURING_STORE_HOUR_X':
             _apply_cannot_assign_during_store_hour(solver, rules)
         else:
-            print(f"      ⚠️  Rule type {rule_type} not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  Rule type {rule_type} not yet implemented", file=sys.stderr)
 
 
 def _get_crew_for_rule(solver: "SolverV2", rule: dict) -> List[dict]:
@@ -104,7 +106,7 @@ def _apply_forbid_role(solver: "SolverV2", rules: List[dict]) -> None:
         crew_id_filter = rule.get('crewId')
         
         if not is_hard:
-            print(f"      ⚠️  SOFT FORBID_ROLE not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  SOFT FORBID_ROLE not yet implemented", file=sys.stderr)
             continue
         
         for crew in _get_crew_for_rule(solver, rule):
@@ -120,9 +122,9 @@ def _apply_forbid_role(solver: "SolverV2", rules: List[dict]) -> None:
                 constraints_added += 1
         
         scope = f"crew {crew_id_filter}" if crew_id_filter else "all crew"
-        print(f"      FORBID {role_code} for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      FORBID {role_code} for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} FORBID_ROLE constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} FORBID_ROLE constraints", file=sys.stderr)
 
 
 def _apply_min_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> None:
@@ -147,13 +149,13 @@ def _apply_min_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
         min_minutes = rule.get('valueInt', 0)
         
         if not min_minutes or min_minutes <= 0:
-            print(f"      ⚠️  MIN_CONSECUTIVE_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  MIN_CONSECUTIVE_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
         
         if not is_hard:
-            print(f"      ⚠️  SOFT MIN_CONSECUTIVE_MINUTES not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  SOFT MIN_CONSECUTIVE_MINUTES not yet implemented", file=sys.stderr)
             continue
         
         # Convert minutes to slots (min_slots in slots)
@@ -231,9 +233,9 @@ def _apply_min_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                     constraints_added += 1
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      MIN_CONSECUTIVE_MINUTES {role_code} >= {min_minutes}min ({min_slots} slots) for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      MIN_CONSECUTIVE_MINUTES {role_code} >= {min_minutes}min ({min_slots} slots) for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} MIN_CONSECUTIVE_MINUTES constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} MIN_CONSECUTIVE_MINUTES constraints", file=sys.stderr)
 
 
 def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> None:
@@ -268,7 +270,7 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
         max_minutes = rule.get('valueInt', 0)
         
         if not max_minutes or max_minutes <= 0:
-            print(f"      ⚠️  MAX_CONSECUTIVE_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  MAX_CONSECUTIVE_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
@@ -366,14 +368,14 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                     full_block_bonuses_added += 1
             
             soft_rewards_added += full_block_bonuses_added + adjacency_bonuses_added
-            print(f"         {crew_id}: {adjacency_bonuses_added} adj + {full_block_bonuses_added} full-block bonuses for {role_code}", file=sys.stderr)
+            if DEBUG: print(f"         {crew_id}: {adjacency_bonuses_added} adj + {full_block_bonuses_added} full-block bonuses for {role_code}", file=sys.stderr)
         
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
         constraint_type = "HARD" if is_hard else "SOFT (reward)"
-        print(f"      MAX_CONSECUTIVE_MINUTES ({constraint_type}) {role_code} <= {max_minutes}min ({max_slots} slots) for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      MAX_CONSECUTIVE_MINUTES ({constraint_type}) {role_code} <= {max_minutes}min ({max_slots} slots) for {scope}", file=sys.stderr)
     
-    print(f"      Added {hard_constraints_added} HARD constraints + {soft_rewards_added} SOFT reward terms", file=sys.stderr)
+    if DEBUG: print(f"      Added {hard_constraints_added} HARD constraints + {soft_rewards_added} SOFT reward terms", file=sys.stderr)
 
 
 def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bool) -> None:
@@ -402,13 +404,13 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
         target_role_code = rule.get('targetRoleCode', f'role_{target_role_id}')
         
         if not target_role_id:
-            print(f"      ⚠️  {constraint_name} for {role_code} has no targetRoleId, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  {constraint_name} for {role_code} has no targetRoleId, skipping", file=sys.stderr)
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
         
         if not is_hard:
-            print(f"      ⚠️  SOFT {constraint_name} not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  SOFT {constraint_name} not yet implemented", file=sys.stderr)
             continue
         
         for crew in _get_crew_for_rule(solver, rule):
@@ -471,9 +473,9 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
         
         direction = "before" if before else "after"
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      {role_code} cannot be {direction} {target_role_code} for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      {role_code} cannot be {direction} {target_role_code} for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} {constraint_name} constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} {constraint_name} constraints", file=sys.stderr)
 
 
 def _apply_timing(solver: "SolverV2", rules: List[dict]) -> None:
@@ -512,14 +514,14 @@ def _apply_timing(solver: "SolverV2", rules: List[dict]) -> None:
         })
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      TIMING {role_code}: prefer {direction} for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      TIMING {role_code}: prefer {direction} for {scope}", file=sys.stderr)
     
     # Store on solver for objective function to use
     if not hasattr(solver, 'timing_preferences'):
         solver.timing_preferences = []
     solver.timing_preferences.extend(timing_prefs)
     
-    print(f"      Stored {len(timing_prefs)} TIMING preferences for objective", file=sys.stderr)
+    if DEBUG: print(f"      Stored {len(timing_prefs)} TIMING preferences for objective", file=sys.stderr)
 
 
 def _apply_assign_before_shift_min(solver: "SolverV2", rules: List[dict]) -> None:
@@ -541,7 +543,7 @@ def _apply_assign_before_shift_min(solver: "SolverV2", rules: List[dict]) -> Non
         before_minutes = rule.get('valueInt', 0)
         
         if not before_minutes or before_minutes <= 0:
-            print(f"      ⚠️  ASSIGN_BEFORE_SHIFT_MIN_X for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  ASSIGN_BEFORE_SHIFT_MIN_X for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
@@ -577,12 +579,12 @@ def _apply_assign_before_shift_min(solver: "SolverV2", rules: List[dict]) -> Non
                     constraints_added += 1
             else:
                 # Soft constraint: penalize late starts (not implemented yet)
-                print(f"      ⚠️  SOFT ASSIGN_BEFORE_SHIFT_MIN_X not yet implemented", file=sys.stderr)
+                if DEBUG: print(f"      ⚠️  SOFT ASSIGN_BEFORE_SHIFT_MIN_X not yet implemented", file=sys.stderr)
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      {role_code} must start within first {before_minutes}min of shift for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      {role_code} must start within first {before_minutes}min of shift for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} ASSIGN_BEFORE_SHIFT_MIN_X constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} ASSIGN_BEFORE_SHIFT_MIN_X constraints", file=sys.stderr)
 
 
 def _apply_assign_after_shift_min(solver: "SolverV2", rules: List[dict]) -> None:
@@ -604,7 +606,7 @@ def _apply_assign_after_shift_min(solver: "SolverV2", rules: List[dict]) -> None
         after_minutes = rule.get('valueInt', 0)
         
         if not after_minutes or after_minutes <= 0:
-            print(f"      ⚠️  ASSIGN_AFTER_SHIFT_MIN_X for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  ASSIGN_AFTER_SHIFT_MIN_X for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
@@ -636,12 +638,12 @@ def _apply_assign_after_shift_min(solver: "SolverV2", rules: List[dict]) -> None
                     constraints_added += 1
             else:
                 # Soft constraint: penalize early starts (not implemented yet)
-                print(f"      ⚠️  SOFT ASSIGN_AFTER_SHIFT_MIN_X not yet implemented", file=sys.stderr)
+                if DEBUG: print(f"      ⚠️  SOFT ASSIGN_AFTER_SHIFT_MIN_X not yet implemented", file=sys.stderr)
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      {role_code} must start after {after_minutes}min into shift for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      {role_code} must start after {after_minutes}min into shift for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} ASSIGN_AFTER_SHIFT_MIN_X constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} ASSIGN_AFTER_SHIFT_MIN_X constraints", file=sys.stderr)
 
 
 def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) -> None:
@@ -682,7 +684,7 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
         is_hard = rule.get('constraintType') == 'HARD'
         
         if shift_relative_min is None:
-            print(f"      ⚠️  {constraint_name} for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  {constraint_name} for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         # For HARD DISLIKE, we forbid the assignment entirely
@@ -709,7 +711,7 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
                         constraints_added += 1
             
             scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-            print(f"      HARD: {role_code} forbidden at shift min {shift_relative_min} for {scope}", file=sys.stderr)
+            if DEBUG: print(f"      HARD: {role_code} forbidden at shift min {shift_relative_min} for {scope}", file=sys.stderr)
         else:
             # Soft constraint: store preference for objective function
             # We store the shift-relative minute; objective function will convert per-crew
@@ -723,7 +725,7 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
             
             pref_type = "like" if like else "dislike"
             scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-            print(f"      SOFT: {role_code} {pref_type} at shift min {shift_relative_min} for {scope}", file=sys.stderr)
+            if DEBUG: print(f"      SOFT: {role_code} {pref_type} at shift min {shift_relative_min} for {scope}", file=sys.stderr)
     
     # Store on solver for objective function to use
     if not hasattr(solver, 'hour_preferences'):
@@ -731,9 +733,9 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
     solver.hour_preferences.extend(hour_prefs)
     
     if constraints_added > 0:
-        print(f"      Added {constraints_added} HARD {constraint_name} constraints", file=sys.stderr)
+        if DEBUG: print(f"      Added {constraints_added} HARD {constraint_name} constraints", file=sys.stderr)
     if hour_prefs:
-        print(f"      Stored {len(hour_prefs)} SOFT {constraint_name} preferences for objective", file=sys.stderr)
+        if DEBUG: print(f"      Stored {len(hour_prefs)} SOFT {constraint_name} preferences for objective", file=sys.stderr)
 
 
 def _apply_min_shift_length_for_access(solver: "SolverV2", rules: List[dict]) -> None:
@@ -758,7 +760,7 @@ def _apply_min_shift_length_for_access(solver: "SolverV2", rules: List[dict]) ->
         min_shift_minutes = rule.get('valueInt') or 0
         
         if min_shift_minutes <= 0:
-            print(f"      ⚠️  MIN_SHIFT_LENGTH_FOR_ACCESS for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  MIN_SHIFT_LENGTH_FOR_ACCESS for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         # Check each crew member's shift length
@@ -775,12 +777,12 @@ def _apply_min_shift_length_for_access(solver: "SolverV2", rules: List[dict]) ->
                         m.Add(var == 0)
                         constraints_added += 1
                 
-                print(f"      {crew_id} shift={shift_length}min < {min_shift_minutes}min, forbidden from {role_code}", file=sys.stderr)
+                if DEBUG: print(f"      {crew_id} shift={shift_length}min < {min_shift_minutes}min, forbidden from {role_code}", file=sys.stderr)
         
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        print(f"      {role_code} requires {min_shift_minutes}min shift for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      {role_code} requires {min_shift_minutes}min shift for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} MIN_SHIFT_LENGTH_FOR_ACCESS constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} MIN_SHIFT_LENGTH_FOR_ACCESS constraints", file=sys.stderr)
 
 
 def _apply_max_crew_on_at_a_time(solver: "SolverV2", rules: List[dict]) -> None:
@@ -800,11 +802,11 @@ def _apply_max_crew_on_at_a_time(solver: "SolverV2", rules: List[dict]) -> None:
         is_hard = rule['constraintType'] == 'HARD'
         
         if not max_crew or max_crew <= 0:
-            print(f"      ⚠️  MAX_CREW_ON_AT_A_TIME for {role_code} has no valueInt, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  MAX_CREW_ON_AT_A_TIME for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
         if not is_hard:
-            print(f"      ⚠️  SOFT MAX_CREW_ON_AT_A_TIME not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  SOFT MAX_CREW_ON_AT_A_TIME not yet implemented", file=sys.stderr)
             continue
         
         # For each time slot, count how many crew are assigned to this role
@@ -831,9 +833,9 @@ def _apply_max_crew_on_at_a_time(solver: "SolverV2", rules: List[dict]) -> None:
                 m.Add(sum(covering_vars) <= max_crew)
                 constraints_added += 1
         
-        print(f"      MAX_CREW_ON_AT_A_TIME {role_code} <= {max_crew} crew", file=sys.stderr)
+        if DEBUG: print(f"      MAX_CREW_ON_AT_A_TIME {role_code} <= {max_crew} crew", file=sys.stderr)
     
-    print(f"      Added {constraints_added} MAX_CREW_ON_AT_A_TIME constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} MAX_CREW_ON_AT_A_TIME constraints", file=sys.stderr)
 
 
 def _apply_allow_half_blocksize(solver: "SolverV2", rules: List[dict]) -> None:
@@ -848,7 +850,7 @@ def _apply_allow_half_blocksize(solver: "SolverV2", rules: List[dict]) -> None:
     """
     for rule in rules:
         role_code = rule.get('roleCode', f"role_{rule['roleId']}")
-        print(f"      ALLOW_HALF_BLOCKSIZE for {role_code} (handled in variable building)", file=sys.stderr)
+        if DEBUG: print(f"      ALLOW_HALF_BLOCKSIZE for {role_code} (handled in variable building)", file=sys.stderr)
 
 
 def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> None:
@@ -901,11 +903,11 @@ def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> 
         crew_id = rule.get('crewId')
         
         if target_role_id is None:
-            print(f"      ⚠️  DISTRIBUTION_BETWEEN_ROLE_X for {role_code} has no targetRoleId, skipping", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  DISTRIBUTION_BETWEEN_ROLE_X for {role_code} has no targetRoleId, skipping", file=sys.stderr)
             continue
         
         if is_hard:
-            print(f"      ⚠️  HARD DISTRIBUTION_BETWEEN_ROLE_X not supported (use SOFT)", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  HARD DISTRIBUTION_BETWEEN_ROLE_X not supported (use SOFT)", file=sys.stderr)
             continue
         
         # Look up families for both roles
@@ -914,7 +916,7 @@ def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> 
         
         if primary_family_id is None or target_family_id is None:
             # Fall back to individual role balancing if no families defined
-            print(f"      ⚠️  Roles not in families, falling back to role-level balance", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  Roles not in families, falling back to role-level balance", file=sys.stderr)
             solver.distribution_preferences.append({
                 'mode': 'role',  # Individual role balance
                 'roleId': role_id,
@@ -945,9 +947,9 @@ def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> 
             
             scope = f"crew {crew_id}" if crew_id else "all crew"
             pref_str = {-1: "prefer primary", 0: "equal", 1: "prefer target"}[preference]
-            print(f"      DISTRIBUTION {primary_family_name} <-> {target_family_name}: {pref_str} for {scope}", file=sys.stderr)
+            if DEBUG: print(f"      DISTRIBUTION {primary_family_name} <-> {target_family_name}: {pref_str} for {scope}", file=sys.stderr)
     
-    print(f"      Stored {len(solver.distribution_preferences)} distribution preferences for objective", file=sys.stderr)
+    if DEBUG: print(f"      Stored {len(solver.distribution_preferences)} distribution preferences for objective", file=sys.stderr)
 
 
 def _apply_cannot_assign_during_store_hour(solver: "SolverV2", rules: List[dict]) -> None:
@@ -973,11 +975,11 @@ def _apply_cannot_assign_during_store_hour(solver: "SolverV2", rules: List[dict]
         crew_id_filter = rule.get('crewId')
         
         if hour_minutes is None:
-            print(f"      ⚠️  CANNOT_ASSIGN_DURING_STORE_HOUR_X missing valueInt (hour in minutes)", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  CANNOT_ASSIGN_DURING_STORE_HOUR_X missing valueInt (hour in minutes)", file=sys.stderr)
             continue
         
         if not is_hard:
-            print(f"      ⚠️  SOFT CANNOT_ASSIGN_DURING_STORE_HOUR_X not yet implemented", file=sys.stderr)
+            if DEBUG: print(f"      ⚠️  SOFT CANNOT_ASSIGN_DURING_STORE_HOUR_X not yet implemented", file=sys.stderr)
             continue
         
         # Calculate which slots fall within this hour
@@ -1005,9 +1007,9 @@ def _apply_cannot_assign_during_store_hour(solver: "SolverV2", rules: List[dict]
         
         scope = f"crew {crew_id_filter}" if crew_id_filter else "all crew"
         hour_str = f"{hour_minutes // 60:02d}:{hour_minutes % 60:02d}"
-        print(f"      CANNOT_ASSIGN {role_code} during hour {hour_str} for {scope}", file=sys.stderr)
+        if DEBUG: print(f"      CANNOT_ASSIGN {role_code} during hour {hour_str} for {scope}", file=sys.stderr)
     
-    print(f"      Added {constraints_added} CANNOT_ASSIGN_DURING_STORE_HOUR_X constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} CANNOT_ASSIGN_DURING_STORE_HOUR_X constraints", file=sys.stderr)
 
 
 __all__ = ["apply_role_rules"]

@@ -24,6 +24,17 @@ export interface AssignmentV2 {
 /**
  * V2 Solver output with roleId-based assignments
  */
+export interface QuotaWarning {
+  crewId: string;
+  crewName: string;
+  roleId: number;
+  roleCode: string;
+  requiredMinutes: number;
+  actualMinutes: number;
+  shortfallMinutes: number;
+  message: string;
+}
+
 export interface SolverOutputV2 {
   success: boolean;
   metadata: {
@@ -38,6 +49,7 @@ export interface SolverOutputV2 {
     constraintAnalysis?: any;
     feasibilityViolations?: string[];
     feasibilityResult?: any;
+    quotaWarnings?: QuotaWarning[];
   };
   assignments?: AssignmentV2[];
   error?: string;
@@ -85,6 +97,7 @@ export interface LogbookMetadata {
     met: number;
     averageSatisfaction: number;
   };
+  quotaWarnings?: QuotaWarning[];
   generatedAt: string;
   inputHash?: string; // Hash of shifts + constraints for change detection
 }
@@ -345,6 +358,7 @@ export async function saveLogbookWithMetadata(
       met: preferencesMet,
       averageSatisfaction: Math.round(averageSatisfaction * 1000) / 1000,
     },
+    quotaWarnings: solverOutput.metadata.quotaWarnings,
     generatedAt: new Date().toISOString(),
     inputHash, // Hash of shifts + constraints for change detection
   };

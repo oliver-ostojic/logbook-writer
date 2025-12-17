@@ -18,12 +18,16 @@ from .role_rules import apply_role_rules
 if TYPE_CHECKING:  # pragma: no cover
     from .solver_v2 import SolverV2
 
+# Set to True to enable verbose constraint debugging output
+DEBUG = False
+
 
 def add_all(solver: "SolverV2") -> None:
     """Attach every hard constraint to the model."""
-    print("\n" + "="*60, file=sys.stderr)
-    print("CONSTRAINT DEBUGGING", file=sys.stderr)
-    print("="*60, file=sys.stderr)
+    if DEBUG:
+        if DEBUG: print("\n" + "="*60, file=sys.stderr)
+        if DEBUG: print("CONSTRAINT DEBUGGING", file=sys.stderr)
+        if DEBUG: print("="*60, file=sys.stderr)
     
     _one_task_per_slot(solver)
     _coverage_window_constraints(solver)
@@ -33,7 +37,8 @@ def add_all(solver: "SolverV2") -> None:
     _consecutive_required_constraints(solver)
     apply_role_rules(solver)
     
-    print("="*60 + "\n", file=sys.stderr)
+    if DEBUG:
+        if DEBUG: print("="*60 + "\n", file=sys.stderr)
 
 
 def _one_task_per_slot(solver: "SolverV2") -> None:
@@ -43,7 +48,7 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
     no overlapping assignments. For a task starting at slot S with length L,
     it occupies slots [S, S+L).
     """
-    print("\n[1] ONE_TASK_PER_SLOT constraint:", file=sys.stderr)
+    if DEBUG: print("\n[1] ONE_TASK_PER_SLOT constraint:", file=sys.stderr)
     
     m = solver.model
     slot_minutes = solver.time_grid.slot_minutes
@@ -78,10 +83,10 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
                 slot_min = slot * slot_minutes
                 slots_with_no_vars.append((crew_name, slot, slot_min))
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
     
     if slots_with_no_vars:
-        print(f"   ⚠️  PROBLEM: {len(slots_with_no_vars)} crew-slots have NO variables!", file=sys.stderr)
+        if DEBUG: print(f"   ⚠️  PROBLEM: {len(slots_with_no_vars)} crew-slots have NO variables!", file=sys.stderr)
         # Group by crew
         by_crew = defaultdict(list)
         for crew_name, slot, slot_min in slots_with_no_vars:
@@ -91,9 +96,9 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
             slot_info = ", ".join([f"slot {s} ({m}min)" for s, m in slots[:3]])
             if len(slots) > 3:
                 slot_info += f" ... +{len(slots)-3} more"
-            print(f"      - {crew_name}: {slot_info}", file=sys.stderr)
+            if DEBUG: print(f"      - {crew_name}: {slot_info}", file=sys.stderr)
         if len(by_crew) > 5:
-            print(f"      ... and {len(by_crew) - 5} more crew", file=sys.stderr)
+            if DEBUG: print(f"      ... and {len(by_crew) - 5} more crew", file=sys.stderr)
 
 
 def _coverage_window_constraints(solver: "SolverV2") -> None:
@@ -111,10 +116,10 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
     - MIN: at least N crew must be assigned
     - MAX: at most N crew can be assigned
     """
-    print("\n[2] COVERAGE_WINDOW constraints:", file=sys.stderr)
+    if DEBUG: print("\n[2] COVERAGE_WINDOW constraints:", file=sys.stderr)
     
     if not solver.coverage_windows:
-        print("   No coverage windows defined", file=sys.stderr)
+        if DEBUG: print("   No coverage windows defined", file=sys.stderr)
         return
 
     m = solver.model
@@ -126,8 +131,8 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
     for (crew_id, slot, role_id, task_slots), var in solver.assignment_vars.items():
         vars_by_role[role_id].append((slot, task_slots, crew_id, var))
 
-    print(f"   Coverage windows: {len(solver.coverage_windows)}", file=sys.stderr)
-    print(f"   Variables by role: {[(rid, len(vs)) for rid, vs in vars_by_role.items()]}", file=sys.stderr)
+    if DEBUG: print(f"   Coverage windows: {len(solver.coverage_windows)}", file=sys.stderr)
+    if DEBUG: print(f"   Variables by role: {[(rid, len(vs)) for rid, vs in vars_by_role.items()]}", file=sys.stderr)
     
     constraints_added = 0
     impossible_constraints = []
@@ -145,7 +150,7 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
 
         role = role_by_id.get(role_id)
         if not role:
-            print(f"   ⚠️  Window references unknown role {role_id}", file=sys.stderr)
+            if DEBUG: print(f"   ⚠️  Window references unknown role {role_id}", file=sys.stderr)
             continue
         
         # Convert window to slots
@@ -187,15 +192,15 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
                     'rule': constraint_rule
                 })
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
     
     if impossible_constraints:
-        print(f"   ⚠️  PROBLEM: {len(impossible_constraints)} slots have insufficient variables!", file=sys.stderr)
+        if DEBUG: print(f"   ⚠️  PROBLEM: {len(impossible_constraints)} positions have insufficient variables!", file=sys.stderr)
         for c in impossible_constraints[:10]:
             rule_str = f" ({c.get('rule', 'EXACTLY')})" if c.get('rule') else ""
-            print(f"      - {c['role']} at slot {c['slot']} ({c['time']}min): need {c['required']}{rule_str}, have {c['available']}", file=sys.stderr)
+            if DEBUG: print(f"      - {c['role']} at slot {c['slot']} ({c['time']}min): need {c['required']}{rule_str}, have {c['available']}", file=sys.stderr)
         if len(impossible_constraints) > 10:
-            print(f"      ... and {len(impossible_constraints) - 10} more", file=sys.stderr)
+            if DEBUG: print(f"      ... and {len(impossible_constraints) - 10} more", file=sys.stderr)
 
 
 def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
@@ -207,10 +212,10 @@ def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
     This prevents issues like parking helms being assigned at 8am when their
     coverage window doesn't start until later.
     """
-    print("\n[2b] NO_ASSIGNMENTS_OUTSIDE_WINDOWS constraint:", file=sys.stderr)
+    if DEBUG: print("\n[2b] NO_ASSIGNMENTS_OUTSIDE_WINDOWS constraint:", file=sys.stderr)
     
     if not solver.coverage_windows:
-        print("   No coverage windows - skipping", file=sys.stderr)
+        if DEBUG: print("   No coverage windows - skipping", file=sys.stderr)
         return
     
     m = solver.model
@@ -228,10 +233,10 @@ def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
     roles_with_windows = set(role_windows.keys())
     
     if not roles_with_windows:
-        print("   No roles with coverage windows - skipping", file=sys.stderr)
+        if DEBUG: print("   No roles with coverage windows - skipping", file=sys.stderr)
         return
     
-    print(f"   Roles with coverage windows: {roles_with_windows}", file=sys.stderr)
+    if DEBUG: print(f"   Roles with coverage windows: {roles_with_windows}", file=sys.stderr)
     
     constraints_added = 0
     forbidden_vars = []
@@ -258,18 +263,149 @@ def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
             constraints_added += 1
             forbidden_vars.append((crew_id, slot, role_id, task_slots))
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
     
     if forbidden_vars:
-        print(f"   Forbade {len(forbidden_vars)} variables outside coverage windows", file=sys.stderr)
+        if DEBUG: print(f"   Forbade {len(forbidden_vars)} variables outside coverage windows", file=sys.stderr)
         # Show some examples
         for (crew_id, slot, role_id, task_slots) in forbidden_vars[:5]:
             role = next((r for r in solver.roles if r['id'] == role_id), None)
             role_code = role.get('code', role_id) if role else role_id
             time_min = slot * slot_minutes
-            print(f"      - crew {crew_id}, {role_code} at slot {slot} ({time_min}min)", file=sys.stderr)
+            if DEBUG: print(f"      - crew {crew_id}, {role_code} at slot {slot} ({time_min}min)", file=sys.stderr)
         if len(forbidden_vars) > 5:
-            print(f"      ... and {len(forbidden_vars) - 5} more", file=sys.stderr)
+            if DEBUG: print(f"      ... and {len(forbidden_vars) - 5} more", file=sys.stderr)
+
+
+def _validate_quota_divisibility(solver: "SolverV2") -> List[dict]:
+    """Validate that each crew quota's required minutes is achievable given role task lengths.
+    
+    For a quota of N minutes on a role with taskLength T:
+    - If N is divisible by T, it's achievable with full blocks
+    - If N is NOT divisible by T, check if ALLOW_HALF_BLOCKSIZE rule exists
+    - If ALLOW_HALF_BLOCKSIZE exists, check if N is divisible by T/2
+    - If neither works, this quota is IMPOSSIBLE to satisfy
+    
+    Returns list of violation dicts for impossible quotas.
+    """
+    violations = []
+    
+    # Build role lookup
+    role_by_id = {r['id']: r for r in solver.roles}
+    
+    # Build crew lookup for names
+    crew_by_id = {c['id']: c for c in solver.crew}
+    
+    # Find roles with ALLOW_HALF_BLOCKSIZE
+    half_block_roles = set()
+    for rule in solver.role_rules:
+        if rule.get('type') == 'ALLOW_HALF_BLOCKSIZE':
+            half_block_roles.add(rule['roleId'])
+    
+    for quota in solver.crew_quotas:
+        crew_id = quota['crewId']
+        role_id = quota['roleId']
+        required_min = int(quota.get('requiredMin', 0) or 0)
+        quota_start = quota.get('startMin', 0)
+        quota_end = quota.get('endMin', 24 * 60)
+        
+        if required_min <= 0:
+            continue
+        
+        role = role_by_id.get(role_id)
+        if not role:
+            continue
+        
+        task_length = role.get('taskLength', 60)
+        role_code = role.get('code', f'role_{role_id}')
+        crew = crew_by_id.get(crew_id, {})
+        crew_name = crew.get('name', crew_id)
+        shift_start = crew.get('shiftStartMin', 0)
+        shift_end = crew.get('shiftEndMin', 0)
+        
+        # Check 1: Shift overlap with quota window
+        overlap_start = max(shift_start, quota_start)
+        overlap_end = min(shift_end, quota_end)
+        overlap_minutes = max(0, overlap_end - overlap_start)
+        
+        if overlap_minutes < required_min:
+            # Format times nicely
+            def fmt_time(mins):
+                h, m = divmod(mins, 60)
+                period = "AM" if h < 12 else "PM"
+                h = h if h <= 12 else h - 12
+                h = 12 if h == 0 else h
+                return f"{h}:{m:02d} {period}"
+            
+            hours_required = required_min / 60
+            hours_available = overlap_minutes / 60
+            
+            violations.append({
+                'severity': 'error',
+                'category': 'quota_shift_overlap',
+                'crewId': crew_id,
+                'crewName': crew_name,
+                'roleId': role_id,
+                'roleCode': role_code,
+                'requiredMin': required_min,
+                'overlapMin': overlap_minutes,
+                'shiftStart': shift_start,
+                'shiftEnd': shift_end,
+                'quotaStart': quota_start,
+                'quotaEnd': quota_end,
+                'message': f"{crew_name} needs {hours_required:.1f}h of {role_code} but only has {hours_available:.1f}h available. "
+                           f"Their shift ({fmt_time(shift_start)}–{fmt_time(shift_end)}) only overlaps {overlap_minutes} minutes "
+                           f"with the quota window ({fmt_time(quota_start)}–{fmt_time(quota_end)}), but {required_min} minutes are required."
+            })
+            continue  # Skip divisibility check since overlap is the bigger problem
+        
+        # Check 2: Divisibility by task length
+        if required_min % task_length == 0:
+            continue  # Achievable with full blocks
+        
+        # Not divisible by full block - check for ALLOW_HALF_BLOCKSIZE
+        half_length = task_length // 2
+        has_half_block = role_id in half_block_roles or role.get('canSplitForGaps', False)
+        
+        if has_half_block:
+            # Check if divisible by half block
+            if required_min % half_length == 0:
+                continue  # Achievable with half blocks
+            else:
+                # Still not divisible even with half blocks
+                violations.append({
+                    'severity': 'error',
+                    'category': 'quota_divisibility',
+                    'crewId': crew_id,
+                    'crewName': crew_name,
+                    'roleId': role_id,
+                    'roleCode': role_code,
+                    'requiredMin': required_min,
+                    'taskLength': task_length,
+                    'halfLength': half_length,
+                    'hasHalfBlock': True,
+                    'message': f"{crew_name}'s quota of {required_min} minutes for {role_code} is not achievable. "
+                               f"The role uses {task_length}-minute blocks (or {half_length}-minute half-blocks), "
+                               f"but {required_min} is not divisible by either {task_length} or {half_length}."
+                })
+        else:
+            # No half blocks allowed
+            violations.append({
+                'severity': 'error',
+                'category': 'quota_divisibility',
+                'crewId': crew_id,
+                'crewName': crew_name,
+                'roleId': role_id,
+                'roleCode': role_code,
+                'requiredMin': required_min,
+                'taskLength': task_length,
+                'hasHalfBlock': False,
+                'message': f"{crew_name}'s quota of {required_min} minutes for {role_code} is not achievable. "
+                           f"The role uses {task_length}-minute blocks, but {required_min} is not divisible by {task_length}. "
+                           f"Consider adding ALLOW_HALF_BLOCKSIZE rule for {role_code} to enable {task_length // 2}-minute assignments."
+            })
+    
+    return violations
 
 
 def _crew_quota_constraints(solver: "SolverV2") -> None:
@@ -278,11 +414,32 @@ def _crew_quota_constraints(solver: "SolverV2") -> None:
     Each CrewRoleQuota specifies: this crew must have at least requiredMin 
     minutes of assignment for this role within [startMin, endMin).
     """
-    print("\n[3] CREW_QUOTA constraints:", file=sys.stderr)
+    if DEBUG: print("\n[3] CREW_QUOTA constraints:", file=sys.stderr)
     
     if not solver.crew_quotas:
-        print("   No crew quotas defined", file=sys.stderr)
+        if DEBUG: print("   No crew quotas defined", file=sys.stderr)
         return
+
+    # First, validate quota feasibility (shift overlap + divisibility)
+    quota_violations = _validate_quota_divisibility(solver)
+    if quota_violations:
+        overlap_issues = [v for v in quota_violations if v['category'] == 'quota_shift_overlap']
+        divisibility_issues = [v for v in quota_violations if v['category'] == 'quota_divisibility']
+        
+        if overlap_issues:
+            if DEBUG: print(f"   ⚠️  SHIFT OVERLAP PROBLEMS: {len(overlap_issues)} quotas exceed available shift time!", file=sys.stderr)
+            for v in overlap_issues:
+                if DEBUG: print(f"      ❌ {v['message']}", file=sys.stderr)
+        
+        if divisibility_issues:
+            if DEBUG: print(f"   ⚠️  DIVISIBILITY PROBLEMS: {len(divisibility_issues)} quotas not divisible by task length!", file=sys.stderr)
+            for v in divisibility_issues:
+                if DEBUG: print(f"      ❌ {v['message']}", file=sys.stderr)
+        
+        # Store violations on solver for reporting
+        if not hasattr(solver, 'quota_violations'):
+            solver.quota_violations = []
+        solver.quota_violations.extend(quota_violations)
 
     m = solver.model
     slot_minutes = solver.time_grid.slot_minutes
@@ -292,10 +449,18 @@ def _crew_quota_constraints(solver: "SolverV2") -> None:
     for (crew_id, slot, role_id, task_slots), var in solver.assignment_vars.items():
         vars_by_crew_role[(crew_id, role_id)].append((slot, task_slots, var))
 
-    print(f"   Crew quotas: {len(solver.crew_quotas)}", file=sys.stderr)
+    # Build lookups for nice messages
+    role_by_id = {r['id']: r for r in solver.roles}
+    crew_by_id = {c['id']: c for c in solver.crew}
+
+    if DEBUG: print(f"   Crew quotas: {len(solver.crew_quotas)}", file=sys.stderr)
     
     constraints_added = 0
     impossible_quotas = []
+    
+    # Store quota tracking info for post-solve analysis
+    if not hasattr(solver, 'quota_trackers'):
+        solver.quota_trackers = []
 
     for quota in solver.crew_quotas:
         crew_id = quota['crewId']
@@ -322,16 +487,56 @@ def _crew_quota_constraints(solver: "SolverV2") -> None:
         # Calculate max possible minutes from available vars
         max_possible = sum(minutes for minutes, var in matching_vars)
         
+        # Get nice names for messages
+        role = role_by_id.get(role_id, {})
+        role_code = role.get('code', f'role_{role_id}')
+        crew = crew_by_id.get(crew_id, {})
+        crew_name = crew.get('name', crew_id)
+        
         if matching_vars:
-            # Sum of (minutes * var) == required_min (EXACT match required)
-            total_minutes = sum(minutes * var for minutes, var in matching_vars)
-            m.Add(total_minutes == required_min)
+            # SOFT CONSTRAINT: Try to get as close to required_min as possible
+            # Create an expression for total minutes assigned
+            total_minutes_expr = sum(minutes * var for minutes, var in matching_vars)
+            
+            # Create a variable to track shortfall (how much we're short of the target)
+            # shortfall = max(0, required_min - total_minutes)
+            shortfall_var = m.NewIntVar(0, required_min, f'quota_shortfall_{crew_id}_{role_id}')
+            
+            # shortfall >= required_min - total_minutes (captures positive shortfall)
+            m.Add(shortfall_var >= required_min - total_minutes_expr)
+            
+            # Also ensure we don't exceed the requirement (keep it exact or under)
+            # This prevents over-assignment which could steal time from other constraints
+            m.Add(total_minutes_expr <= required_min)
+            
             constraints_added += 1
+            
+            # Store tracker for post-solve reporting
+            solver.quota_trackers.append({
+                'crewId': crew_id,
+                'crewName': crew_name,
+                'roleId': role_id,
+                'roleCode': role_code,
+                'requiredMin': required_min,
+                'maxPossible': max_possible,
+                'shortfallVar': shortfall_var,
+                'totalMinutesExpr': total_minutes_expr,
+                'matchingVars': matching_vars,
+            })
+            
+            # Add shortfall to soft constraint penalties (will be used in objective)
+            # High weight to strongly prefer meeting quotas
+            QUOTA_SHORTFALL_PENALTY = 1000  # Per minute of shortfall
+            if not hasattr(solver, 'soft_constraint_penalties'):
+                solver.soft_constraint_penalties = []
+            solver.soft_constraint_penalties.append(QUOTA_SHORTFALL_PENALTY * shortfall_var)
             
             if max_possible < required_min:
                 impossible_quotas.append({
                     'crewId': crew_id,
+                    'crewName': crew_name,
                     'roleId': role_id,
+                    'roleCode': role_code,
                     'required': required_min,
                     'maxPossible': max_possible,
                     'numVars': len(matching_vars)
@@ -340,20 +545,22 @@ def _crew_quota_constraints(solver: "SolverV2") -> None:
             if required_min > 0:
                 impossible_quotas.append({
                     'crewId': crew_id,
+                    'crewName': crew_name,
                     'roleId': role_id,
+                    'roleCode': role_code,
                     'required': required_min,
                     'maxPossible': 0,
                     'numVars': 0
                 })
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Soft quota constraints added: {constraints_added}", file=sys.stderr)
     
     if impossible_quotas:
-        print(f"   ⚠️  PROBLEM: {len(impossible_quotas)} quotas are impossible to satisfy!", file=sys.stderr)
+        if DEBUG: print(f"   ⚠️  WARNING: {len(impossible_quotas)} quotas may not be fully satisfiable:", file=sys.stderr)
         for q in impossible_quotas[:10]:
-            print(f"      - crew {q['crewId']}, role {q['roleId']}: need {q['required']}min, max possible {q['maxPossible']}min ({q['numVars']} vars)", file=sys.stderr)
+            if DEBUG: print(f"      - {q['crewName']}: {q['roleCode']} needs {q['required']}min, max possible {q['maxPossible']}min", file=sys.stderr)
         if len(impossible_quotas) > 10:
-            print(f"      ... and {len(impossible_quotas) - 10} more", file=sys.stderr)
+            if DEBUG: print(f"      ... and {len(impossible_quotas) - 10} more", file=sys.stderr)
 
 
 def _role_family_constraints(solver: "SolverV2") -> None:
@@ -362,10 +569,10 @@ def _role_family_constraints(solver: "SolverV2") -> None:
     Each crew's total time across all roles in a family must be within
     [minMinutes, maxMinutes].
     """
-    print("\n[4] ROLE_FAMILY constraints:", file=sys.stderr)
+    if DEBUG: print("\n[4] ROLE_FAMILY constraints:", file=sys.stderr)
     
     if not solver.role_families:
-        print("   No role families defined", file=sys.stderr)
+        if DEBUG: print("   No role families defined", file=sys.stderr)
         return
 
     m = solver.model
@@ -393,7 +600,7 @@ def _role_family_constraints(solver: "SolverV2") -> None:
             task_minutes = task_slots * slot_minutes
             vars_by_crew_family[(crew_id, family_id)].append((task_minutes, var))
 
-    print(f"   Role families: {len(solver.role_families)}", file=sys.stderr)
+    if DEBUG: print(f"   Role families: {len(solver.role_families)}", file=sys.stderr)
     
     constraints_added = 0
     impossible_family = []
@@ -449,14 +656,14 @@ def _role_family_constraints(solver: "SolverV2") -> None:
                 m.Add(total_minutes <= max_minutes)
                 constraints_added += 1
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
     
     if impossible_family:
-        print(f"   ⚠️  PROBLEM: {len(impossible_family)} crew-family mins are impossible!", file=sys.stderr)
+        if DEBUG: print(f"   ⚠️  PROBLEM: {len(impossible_family)} crew-family mins are impossible!", file=sys.stderr)
         for f in impossible_family[:10]:
-            print(f"      - crew {f['crewId']}, {f['family']}: need {f['minRequired']}min, max possible {f['maxPossible']}min", file=sys.stderr)
+            if DEBUG: print(f"      - crew {f['crewId']}, {f['family']}: need {f['minRequired']}min, max possible {f['maxPossible']}min", file=sys.stderr)
         if len(impossible_family) > 10:
-            print(f"      ... and {len(impossible_family) - 10} more", file=sys.stderr)
+            if DEBUG: print(f"      ... and {len(impossible_family) - 10} more", file=sys.stderr)
 
 
 def _consecutive_required_constraints(solver: "SolverV2") -> None:
@@ -472,7 +679,7 @@ def _consecutive_required_constraints(solver: "SolverV2") -> None:
     Implementation: For each consecutive triplet where middle slot is unassigned,
     add constraint: x_S + x_S+2 <= 1 (can't have both without middle)
     """
-    print("\n[5] CONSECUTIVE_REQUIRED constraints:", file=sys.stderr)
+    if DEBUG: print("\n[5] CONSECUTIVE_REQUIRED constraints:", file=sys.stderr)
     
     m = solver.model
     
@@ -483,10 +690,10 @@ def _consecutive_required_constraints(solver: "SolverV2") -> None:
             required_role_ids.add(role['id'])
     
     if not required_role_ids:
-        print("   No roles with REQUIRED policy - skipping", file=sys.stderr)
+        if DEBUG: print("   No roles with REQUIRED policy - skipping", file=sys.stderr)
         return
     
-    print(f"   Roles with REQUIRED policy: {required_role_ids}", file=sys.stderr)
+    if DEBUG: print(f"   Roles with REQUIRED policy: {required_role_ids}", file=sys.stderr)
     
     constraints_added = 0
     
@@ -538,7 +745,7 @@ def _consecutive_required_constraints(solver: "SolverV2") -> None:
                 # Further gaps will be transitively handled
                 break
     
-    print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+    if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
 
 
 __all__ = ["add_all"]
