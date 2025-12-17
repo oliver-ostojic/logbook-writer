@@ -325,7 +325,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
   });
 
   // List HOURLY assignment roles (Register, Product, Parking Helms, etc.) for configuring hourly staffing
-  // Step 3 shows roles with HOURLY or HOURLY_OR_WINDOW assignmentModel
+  // Step 3 shows roles with HOURLY, HOURLY_OR_WINDOW, or HOURLY_AND_SOLVER assignmentModel
   app.get('/stores/:storeId/hourly-roles', async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
 
@@ -342,7 +342,7 @@ export function registerShiftRoutes(app: FastifyInstance) {
       where: {
         storeId: sid,
         assignmentModel: {
-          in: ['HOURLY', 'HOURLY_OR_WINDOW'],
+          in: ['HOURLY', 'HOURLY_OR_WINDOW', 'HOURLY_AND_SOLVER'],
         },
       },
       select: {

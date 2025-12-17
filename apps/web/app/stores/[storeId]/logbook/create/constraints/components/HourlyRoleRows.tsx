@@ -27,7 +27,7 @@ type HourlyRoleRowsProps = {
   lockedRoleIds: Set<number>;
   onRoleConfigured: (roleId: number, isConfigured: boolean) => void;
   initialConstraints?: Record<number, Record<number, number>> | null;
-  onHourlyConstraintsChange?: (entries: Array<{ roleId: number; hour: number; requiredPerHour: number }>) => void;
+  onHourlyConstraintsChange?: (entries: Array<{ roleId: number; hour: number; requiredPerHour: number; type: 'MIN' | 'EXACTLY' }>) => void;
   storeHours?: StoreHours | null;
 };
 
@@ -35,10 +35,19 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
   // Use the first available hour as default, or 8 if data is empty
   const defaultHour = hourlyData.find(h => h.inStock)?.hour ?? 8;
   const [selected, setSelected] = useState<number>(defaultHour);
-  const [registerValues, setRegisterValues] = useState<Record<number, string>>({});
-  const [parkingHelmsValues, setParkingHelmsValues] = useState<Record<number, string>>({});
-  const [confirmedRegister, setConfirmedRegister] = useState<Set<number>>(new Set());
-  const [confirmedParkingHelms, setConfirmedParkingHelms] = useState<Set<number>>(new Set());
+  
+  // Dynamic state: { [roleId]: { [hour]: string } }
+  const [roleValues, setRoleValues] = useState<Record<number, Record<number, string>>>({});
+  const [confirmedRoles, setConfirmedRoles] = useState<Record<number, Set<number>>>({});
+
+  // Filter to hourly-type roles
+  const hourlyRoles = useMemo(() => {
+    return roles.filter(r => 
+      r.assignmentModel === 'HOURLY' || 
+      r.assignmentModel === 'HOURLY_OR_WINDOW' || 
+      r.assignmentModel === 'HOURLY_AND_SOLVER'
+    );
+  }, [roles]);
 
   const allowedRoleIdsByHour = useMemo(() => {
     const result = new Map<number, Set<number>>();
@@ -54,8 +63,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
     };
 
     roles.forEach((role) => {
-      // Roles with HOURLY or HOURLY_OR_WINDOW assignment model can be configured in Step 3
-      if (role.assignmentModel !== 'HOURLY' && role.assignmentModel !== 'HOURLY_OR_WINDOW') return;
+      if (role.assignmentModel !== 'HOURLY' && role.assignmentModel !== 'HOURLY_OR_WINDOW' && role.assignmentModel !== 'HOURLY_AND_SOLVER') return;
       for (let hour = 0; hour < 24; hour++) {
         if (!role.allowOutsideStoreHours && !withinStoreHours(hour)) {
           continue;
@@ -89,126 +97,101 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
     return Boolean(allowedForHour && allowedForHour.has(roleId));
   }, [allowedRoleIdsByHour]);
 
-  // Find the roles that need mutual exclusion and have HOURLY assignment
-  const registerRole = roles.find(r => r.roleCode === 'REGISTER' || r.roleName.toLowerCase().includes('register'));
-  const parkingHelmsRole = roles.find(r => r.roleCode === 'PARKING_HELM' || r.roleName.toLowerCase().includes('parking helm'));
-  
   // HOURLY_OR_WINDOW roles need mutual exclusion - can only be configured in one step
-  const needsMutualExclusion = (role: RoleWithCrew | undefined) => {
-    if (!role) return false;
+  const needsMutualExclusion = (role: RoleWithCrew) => {
     return role.assignmentModel === 'HOURLY_OR_WINDOW';
   };
 
-  const isRegisterLocked = registerRole && lockedRoleIds.has(registerRole.roleId) && needsMutualExclusion(registerRole);
-  const isParkingHelmsLocked = parkingHelmsRole && lockedRoleIds.has(parkingHelmsRole.roleId) && needsMutualExclusion(parkingHelmsRole);
+  const isRoleLocked = (role: RoleWithCrew) => {
+    return lockedRoleIds.has(role.roleId) && needsMutualExclusion(role);
+  };
 
-  // Watch for value changes and notify parent when any hour has a value
+  // Watch for value changes and notify parent
   useEffect(() => {
-    if (registerRole) {
-      const hasAnyRegisterValue = Object.values(registerValues).some(v => v && v !== '');
-      onRoleConfigured(registerRole.roleId, hasAnyRegisterValue);
-    }
-    if (parkingHelmsRole) {
-      const hasAnyParkingHelmsValue = Object.values(parkingHelmsValues).some(v => v && v !== '');
-      onRoleConfigured(parkingHelmsRole.roleId, hasAnyParkingHelmsValue);
-    }
-  }, [registerValues, parkingHelmsValues, registerRole, parkingHelmsRole, onRoleConfigured]);
+    hourlyRoles.forEach(role => {
+      const values = roleValues[role.roleId] || {};
+      const hasAnyValue = Object.values(values).some(v => v && v !== '');
+      onRoleConfigured(role.roleId, hasAnyValue);
+    });
+  }, [roleValues, hourlyRoles, onRoleConfigured]);
 
   // Hydrate from persisted constraints
   useEffect(() => {
     if (!initialConstraints) return;
-    if (registerRole && initialConstraints[registerRole.roleId]) {
-      const nextValues: Record<number, string> = {};
-      Object.entries(initialConstraints[registerRole.roleId]).forEach(([hour, value]) => {
-        nextValues[Number(hour)] = String(value);
-      });
-      setRegisterValues(nextValues);
-      setConfirmedRegister(new Set(Object.keys(nextValues).map(Number)));
-    } else if (registerRole) {
-      setRegisterValues({});
-      setConfirmedRegister(new Set());
-    }
-    if (parkingHelmsRole && initialConstraints[parkingHelmsRole.roleId]) {
-      const nextValues: Record<number, string> = {};
-      Object.entries(initialConstraints[parkingHelmsRole.roleId]).forEach(([hour, value]) => {
-        nextValues[Number(hour)] = String(value);
-      });
-      setParkingHelmsValues(nextValues);
-      setConfirmedParkingHelms(new Set(Object.keys(nextValues).map(Number)));
-    } else if (parkingHelmsRole) {
-      setParkingHelmsValues({});
-      setConfirmedParkingHelms(new Set());
-    }
-  }, [initialConstraints, registerRole, parkingHelmsRole]);
+    const nextValues: Record<number, Record<number, string>> = {};
+    const nextConfirmed: Record<number, Set<number>> = {};
+    
+    hourlyRoles.forEach(role => {
+      if (initialConstraints[role.roleId]) {
+        nextValues[role.roleId] = {};
+        nextConfirmed[role.roleId] = new Set();
+        Object.entries(initialConstraints[role.roleId]).forEach(([hour, value]) => {
+          nextValues[role.roleId][Number(hour)] = String(value);
+          nextConfirmed[role.roleId].add(Number(hour));
+        });
+      }
+    });
+    
+    setRoleValues(nextValues);
+    setConfirmedRoles(nextConfirmed);
+  }, [initialConstraints, hourlyRoles]);
 
   // Bubble up normalized entries
   useEffect(() => {
     if (!onHourlyConstraintsChange) return;
     const entries: Array<{ roleId: number; hour: number; requiredPerHour: number }> = [];
 
-    if (registerRole) {
-      Object.entries(registerValues).forEach(([hourStr, value]) => {
+    hourlyRoles.forEach(role => {
+      const values = roleValues[role.roleId] || {};
+      Object.entries(values).forEach(([hourStr, value]) => {
         const parsed = Number(value);
         const parsedHour = Number(hourStr);
         if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsedHour)) return;
-        if (!isRoleAllowedAtHour(registerRole.roleId, parsedHour)) return;
-        entries.push({ roleId: registerRole.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed) });
+        if (!isRoleAllowedAtHour(role.roleId, parsedHour)) return;
+        entries.push({ roleId: role.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed) });
       });
-    }
-    if (parkingHelmsRole) {
-      Object.entries(parkingHelmsValues).forEach(([hourStr, value]) => {
-        const parsed = Number(value);
-        const parsedHour = Number(hourStr);
-        if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsedHour)) return;
-        if (!isRoleAllowedAtHour(parkingHelmsRole.roleId, parsedHour)) return;
-        entries.push({ roleId: parkingHelmsRole.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed) });
-      });
-    }
+    });
 
     onHourlyConstraintsChange(entries);
-  }, [registerValues, parkingHelmsValues, registerRole, parkingHelmsRole, onHourlyConstraintsChange, isRoleAllowedAtHour]);
+  }, [roleValues, hourlyRoles, onHourlyConstraintsChange, isRoleAllowedAtHour]);
 
   const selectedOption = hourlyData.find(opt => opt.hour === selected);
   const allowedRolesForSelectedHour = allowedRoleIdsByHour.get(selected) ?? new Set<number>();
 
-  // Get value with default
-  const getRegisterValue = (hour: number) => registerValues[hour] ?? '';
-  const getParkingHelmsValue = (hour: number) => parkingHelmsValues[hour] ?? '';
-  
-  const isRegisterConfirmed = confirmedRegister.has(selected);
-  const isParkingHelmsConfirmed = confirmedParkingHelms.has(selected);
-  const isRegisterAllowedAtHour = registerRole ? allowedRolesForSelectedHour.has(registerRole.roleId) : false;
-  const isParkingAllowedAtHour = parkingHelmsRole ? allowedRolesForSelectedHour.has(parkingHelmsRole.roleId) : false;
+  const getRoleValue = (roleId: number, hour: number) => roleValues[roleId]?.[hour] ?? '';
+  const isRoleConfirmedAtHour = (roleId: number, hour: number) => confirmedRoles[roleId]?.has(hour) ?? false;
 
-  const handleRegisterChange = (value: string) => {
-    if (isRegisterLocked || !isRegisterAllowedAtHour) return;
-    setRegisterValues({ ...registerValues, [selected]: value });
-    setConfirmedRegister(new Set(confirmedRegister).add(selected));
+  const handleRoleChange = (roleId: number, value: string) => {
+    const role = hourlyRoles.find(r => r.roleId === roleId);
+    if (!role || isRoleLocked(role) || !allowedRolesForSelectedHour.has(roleId)) return;
+    
+    setRoleValues(prev => ({
+      ...prev,
+      [roleId]: { ...(prev[roleId] || {}), [selected]: value }
+    }));
+    setConfirmedRoles(prev => ({
+      ...prev,
+      [roleId]: new Set(prev[roleId] || []).add(selected)
+    }));
   };
 
-  const handleRegisterKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, value: string, setValue: (val: string) => void) => {
-    if (isRegisterLocked || !isRegisterAllowedAtHour) return;
+  const handleRoleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, roleId: number) => {
+    const role = hourlyRoles.find(r => r.roleId === roleId);
+    if (!role || isRoleLocked(role) || !allowedRolesForSelectedHour.has(roleId)) return;
     if (e.key === 'Enter') {
+      const value = getRoleValue(roleId, selected);
       if (!value) {
-        setValue('0');
+        handleRoleChange(roleId, '0');
       }
     }
   };
 
-  const handleParkingHelmsChange = (value: string) => {
-    if (isParkingHelmsLocked || !isParkingAllowedAtHour) return;
-    setParkingHelmsValues({ ...parkingHelmsValues, [selected]: value });
-    setConfirmedParkingHelms(new Set(confirmedParkingHelms).add(selected));
-  };
-
-  const handleParkingHelmsKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, value: string, setValue: (val: string) => void) => {
-    if (isParkingHelmsLocked || !isParkingAllowedAtHour) return;
-    if (e.key === 'Enter') {
-      if (!value) {
-        setValue('0');
-      }
-    }
-  };
+  // Get roles that are allowed at the selected hour, sorted: HOURLY first, then HOURLY_AND_SOLVER, then HOURLY_OR_WINDOW
+  const rolesForSelectedHour = useMemo(() => {
+    const filtered = hourlyRoles.filter(role => allowedRolesForSelectedHour.has(role.roleId));
+    const order: Record<string, number> = { 'HOURLY': 0, 'HOURLY_AND_SOLVER': 1, 'HOURLY_OR_WINDOW': 2 };
+    return filtered.sort((a, b) => (order[a.assignmentModel] ?? 99) - (order[b.assignmentModel] ?? 99));
+  }, [hourlyRoles, allowedRolesForSelectedHour]);
 
   return (
     <div className="flex flex-row gap-10 items-stretch pt-4">
@@ -222,68 +205,46 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
               <p className="text-sm text-gray-600 mt-1 font-sans">{selectedOption.crewAvailable} crew available</p>
             </div>
 
-            {/* Register and Parking Helms inputs in a row */}
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Register input */}
-              {registerRole && isRegisterAllowedAtHour && (
-                <div className="flex-1 relative">
-                  <label htmlFor="register" className="block text-sm font-medium text-gray-700 mb-2">
-                    Register
-                    {isRegisterLocked && (
-                      <span className="ml-2 text-xs text-gray-500">(Configured in Step 1)</span>
+            {/* Role inputs - 2 per row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {rolesForSelectedHour.map(role => {
+                const locked = isRoleLocked(role);
+                const confirmed = isRoleConfirmedAtHour(role.roleId, selected);
+                const value = getRoleValue(role.roleId, selected);
+                
+                return (
+                  <div key={role.roleId} className="relative">
+                    <label htmlFor={`role-${role.roleId}`} className="block text-sm font-medium text-gray-700 mb-2">
+                      {role.roleName}
+                      {role.assignmentModel === 'HOURLY_AND_SOLVER' && (
+                        <span className="ml-1 text-xs text-gray-500">(Minimum)</span>
+                      )}
+                    </label>
+                    <input
+                      type="number"
+                      id={`role-${role.roleId}`}
+                      min="0"
+                      max={selectedOption.crewAvailable}
+                      value={value}
+                      onChange={(e) => handleRoleChange(role.roleId, e.target.value)}
+                      onKeyDown={(e) => handleRoleKeyPress(e, role.roleId)}
+                      disabled={locked}
+                      className={`block w-full rounded-md shadow-sm border px-3 py-2 sm:text-sm ${
+                        locked
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : !confirmed 
+                          ? 'bg-gray-100 text-gray-500 border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]' 
+                          : 'bg-white border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]'
+                      }`}
+                      placeholder="0"
+                    />
+                    {locked && (
+                      <p className="text-xs mt-1 font-sans font-normal" style={{ color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' }}>Configured in Step 1</p>
                     )}
-                  </label>
-                  <input
-                    type="number"
-                    id="register"
-                    min="0"
-                    max={selectedOption.crewAvailable}
-                    value={getRegisterValue(selected)}
-                    onChange={(e) => handleRegisterChange(e.target.value)}
-                    onKeyDown={(e) => handleRegisterKeyPress(e, getRegisterValue(selected), (val) => handleRegisterChange(val))}
-                    disabled={isRegisterLocked}
-                    className={`block w-full rounded-md shadow-sm border px-3 py-2 sm:text-sm ${
-                      isRegisterLocked
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : !isRegisterConfirmed 
-                        ? 'bg-gray-100 text-gray-500 border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]' 
-                        : 'bg-white border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]'
-                    }`}
-                    placeholder="0"
-                  />
-                </div>
-              )}
-
-              {/* Parking Helms input */}
-              {parkingHelmsRole && isParkingAllowedAtHour && (
-                <div className="flex-1 relative">
-                  <label htmlFor="parkingHelms" className="block text-sm font-medium text-gray-700 mb-2">
-                    Parking Helms
-                  </label>
-                  <input
-                    type="number"
-                    id="parkingHelms"
-                    min="0"
-                    max={selectedOption.crewAvailable}
-                    value={getParkingHelmsValue(selected)}
-                    onChange={(e) => handleParkingHelmsChange(e.target.value)}
-                    onKeyDown={(e) => handleParkingHelmsKeyPress(e, getParkingHelmsValue(selected), (val) => handleParkingHelmsChange(val))}
-                    disabled={isParkingHelmsLocked}
-                    className={`block w-full rounded-md shadow-sm border px-3 py-2 sm:text-sm ${
-                      isParkingHelmsLocked
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : !isParkingHelmsConfirmed 
-                        ? 'bg-gray-100 text-gray-500 border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]'
-                        : 'bg-white border-gray-300 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]'
-                    }`}
-                    placeholder="0"
-                  />
-                  {isParkingHelmsLocked && (
-                    <p className="text-xs mt-1 font-sans font-normal" style={{ color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' }}>Configured in Step 1</p>
-                  )}
-                </div>
-              )}
-              {!((registerRole && isRegisterAllowedAtHour) || (parkingHelmsRole && isParkingAllowedAtHour)) && (
+                  </div>
+                );
+              })}
+              {rolesForSelectedHour.length === 0 && (
                 <p className="text-sm text-gray-500">No HOURLY roles are available at this hour. Pick a different time to set staffing.</p>
               )}
             </div>

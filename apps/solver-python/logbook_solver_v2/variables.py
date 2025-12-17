@@ -35,17 +35,41 @@ class VariableBuilder:
         *,
         crew_records: List[dict],
         role_records: List[dict],
+        crew_quotas: List[dict] | None = None,
     ) -> Dict[AssignmentKey, cp_model.IntVar]:
         DEBUG = False
         role_by_id = {role['id']: role for role in role_records}
         role_code_by_id = {role['id']: role['code'] for role in role_records}
         variables: Dict[AssignmentKey, cp_model.IntVar] = {}
+        
+        # Build a set of (crewId, roleId) pairs that have daily quotas
+        # For DAILY roles, we ONLY create variables if a quota exists
+        daily_quota_pairs: set[Tuple[str, int]] = set()
+        if crew_quotas:
+            for req in crew_quotas:
+                crew_id = req.get('crewId')
+                role_id = req.get('roleId')
+                required_minutes = req.get('requiredMin', 0)  # Note: field is 'requiredMin' not 'requiredMinutes'
+                if crew_id and role_id and required_minutes > 0:
+                    daily_quota_pairs.add((str(crew_id), role_id))
+        
+        # Identify which roles have DAILY assignment model
+        # Check both 'assignmentModels' (list) and 'assignmentModel' (string) for compatibility
+        daily_role_ids: set[int] = set()
+        for role in role_records:
+            assignment_models = role.get('assignmentModels') or []
+            assignment_model = role.get('assignmentModel')  # singular string fallback
+            is_daily = 'DAILY' in assignment_models or assignment_model == 'DAILY'
+            if is_daily:
+                daily_role_ids.add(role['id'])
 
         if DEBUG: print(f"\n{'='*70}", file=sys.stderr)
         if DEBUG: print("VARIABLE BUILDING DEBUG", file=sys.stderr)
         if DEBUG: print(f"{'='*70}", file=sys.stderr)
         if DEBUG: print(f"Crew count: {len(crew_records)}", file=sys.stderr)
         if DEBUG: print(f"Role count: {len(role_records)}", file=sys.stderr)
+        if DEBUG: print(f"DAILY role IDs: {daily_role_ids}", file=sys.stderr)
+        if DEBUG: print(f"Daily quota pairs count: {len(daily_quota_pairs)}", file=sys.stderr)
         if DEBUG: print(f"Roles: {[(r['id'], r['code'], r.get('taskLength', 30), r.get('allowOutsideStoreHours', False)) for r in role_records]}", file=sys.stderr)
         if DEBUG: print(f"Time grid: slot_minutes={self.time_grid.slot_minutes}, open={self.time_grid.open_minutes}, close={self.time_grid.close_minutes}", file=sys.stderr)
         
@@ -72,6 +96,12 @@ class VariableBuilder:
                 role = role_by_id.get(role_id)
                 if not role:
                     continue
+                
+                # For DAILY roles, only create variables if crew has a quota for this role
+                if role_id in daily_role_ids:
+                    if (crew_id, role_id) not in daily_quota_pairs:
+                        if DEBUG: print(f"    Skipping DAILY role {role_code_by_id.get(role_id)} for {crew_name}: no quota", file=sys.stderr)
+                        continue
 
                 # Get task length in minutes (default to grid slot size)
                 task_length = role.get('taskLength') or self.time_grid.slot_minutes

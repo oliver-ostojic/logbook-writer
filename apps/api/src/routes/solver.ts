@@ -298,7 +298,7 @@ async function runSolverV2ForLogbook(options: {
   }
 
   console.log(`[SOLVER DEBUG] Feasibility passed, running Python solver...`);
-  const timeLimitSeconds = options.timeLimitSeconds ?? 120; // Default to 120 seconds
+  const timeLimitSeconds = options.timeLimitSeconds ?? 60; // Default to 60 seconds
   const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
   console.log(`[SOLVER DEBUG] Python solver returned: success=${pythonResult.success}, status=${pythonResult.status}`);
   const constraintCounts = pythonResult.metadata?.constraintCounts as Record<string, unknown> | undefined;

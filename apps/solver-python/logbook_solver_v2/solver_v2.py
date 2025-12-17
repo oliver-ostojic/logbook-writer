@@ -58,7 +58,7 @@ class SolverV2:
         # DEPRECATED - kept for backward compatibility during transition
         self.hourly_requirements = self.payload.get('hourlyRequirements', [])
         self.window_requirements = self.payload.get('windowRequirements', [])
-        self.daily_requirements = self.payload.get('dailyRequirements', [])
+        self.crew_quotas = self.payload.get('crewQuotas', [])
         
         self.preferences = self.payload.get('preferences', [])
         
@@ -79,7 +79,11 @@ class SolverV2:
         )
 
         builder = VariableBuilder(self.model, self.time_grid)
-        self.assignment_vars = builder.build(crew_records=self.crew, role_records=self.roles)
+        self.assignment_vars = builder.build(
+            crew_records=self.crew,
+            role_records=self.roles,
+            crew_quotas=self.crew_quotas,
+        )
         self.assignment_index = AssignmentIndex(self.assignment_vars)
         self.role_code_by_id = {role['id']: role['code'] for role in self.roles}
         self.role_by_id = {role['id']: role for role in self.roles}

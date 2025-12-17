@@ -209,6 +209,9 @@ def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
     For roles that have coverage windows (HOURLY, HOURLY_OR_WINDOW, WINDOW assignment models),
     we forbid any assignment that starts outside those windows.
     
+    EXCEPTION: Roles with HOURLY_AND_SOLVER or SOLVER assignment model are NOT restricted.
+    They can be assigned anywhere, but still respect coverage window constraints where defined.
+    
     This prevents issues like parking helms being assigned at 8am when their
     coverage window doesn't start until later.
     """
@@ -221,15 +224,37 @@ def _no_assignments_outside_coverage_windows(solver: "SolverV2") -> None:
     m = solver.model
     slot_minutes = solver.time_grid.slot_minutes
     
+    # Build role lookup to check assignment models
+    role_by_id = {role['id']: role for role in solver.roles}
+    
+    # Assignment models that should NOT be restricted to coverage windows
+    # These get solver rewards everywhere but can still have coverage constraints
+    UNRESTRICTED_MODELS = {'SOLVER', 'HOURLY_AND_SOLVER'}
+    
     # Build a lookup: role_id -> list of (start_slot, end_slot) coverage windows
+    # Only for roles that SHOULD be restricted
     role_windows: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
     for window in solver.coverage_windows:
         role_id = window['roleId']
+        role = role_by_id.get(role_id)
+        if not role:
+            continue
+        
+        # Check assignment model - skip unrestricted roles
+        assignment_model = role.get('assignmentModel') or ''
+        assignment_models = role.get('assignmentModels') or []
+        
+        # If ANY of the models is unrestricted, skip this role
+        all_models = set(assignment_models) | {assignment_model}
+        if all_models & UNRESTRICTED_MODELS:
+            if DEBUG: print(f"   Skipping {role.get('code')} - has unrestricted assignment model", file=sys.stderr)
+            continue
+        
         start_slot = solver.time_grid.minutes_to_slot_floor(window['startMin'])
         end_slot = solver.time_grid.minutes_to_slot_floor(window['endMin'])
         role_windows[role_id].append((start_slot, end_slot))
     
-    # Find roles that HAVE coverage windows (these are restricted)
+    # Find roles that HAVE coverage windows AND should be restricted
     roles_with_windows = set(role_windows.keys())
     
     if not roles_with_windows:

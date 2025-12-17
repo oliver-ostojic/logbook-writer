@@ -395,6 +395,7 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
     """
     m = solver.model
     constraints_added = 0
+    soft_penalties_added = 0
     constraint_name = "CANNOT_BE_ASSIGNED_BEFORE" if before else "CANNOT_BE_ASSIGNED_AFTER"
     
     for rule in rules:
@@ -408,10 +409,6 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
-        
-        if not is_hard:
-            if DEBUG: print(f"      ⚠️  SOFT {constraint_name} not yet implemented", file=sys.stderr)
-            continue
         
         for crew in _get_crew_for_rule(solver, rule):
             crew_id = crew['id']
@@ -457,25 +454,46 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
                     for role_slot in range(shift_start, target_slot):
                         role_cov = role_coverage.get(role_slot)
                         if role_cov is not None:
-                            # target_cov => NOT role_cov
-                            # Equivalent to: target_cov + role_cov <= 1
-                            m.Add(target_cov + role_cov <= 1)
-                            constraints_added += 1
+                            if is_hard:
+                                # HARD: target_cov => NOT role_cov
+                                # Equivalent to: target_cov + role_cov <= 1
+                                m.Add(target_cov + role_cov <= 1)
+                                constraints_added += 1
+                            else:
+                                # SOFT: Create violation indicator and add penalty
+                                # violation = 1 if both target_cov AND role_cov are 1
+                                violation = m.NewBoolVar(f'ord_viol_{crew_id}_{role_id}_{target_slot}_{role_slot}')
+                                m.AddBoolAnd([target_cov, role_cov]).OnlyEnforceIf(violation)
+                                m.AddBoolOr([target_cov.Not(), role_cov.Not()]).OnlyEnforceIf(violation.Not())
+                                # Penalty of 200 per violation (stronger than preference bonus)
+                                ORDERING_VIOLATION_PENALTY = 200
+                                solver.soft_constraint_penalties.append(ORDERING_VIOLATION_PENALTY * violation)
+                                soft_penalties_added += 1
                 else:
                     # role cannot be AFTER target
                     # For all slots S > target_slot: target_cov => NOT role_coverage[S]
                     for role_slot in range(target_slot + 1, shift_end):
                         role_cov = role_coverage.get(role_slot)
                         if role_cov is not None:
-                            # target_cov => NOT role_cov
-                            m.Add(target_cov + role_cov <= 1)
-                            constraints_added += 1
+                            if is_hard:
+                                # HARD: target_cov => NOT role_cov
+                                m.Add(target_cov + role_cov <= 1)
+                                constraints_added += 1
+                            else:
+                                # SOFT: Create violation indicator and add penalty
+                                violation = m.NewBoolVar(f'ord_viol_{crew_id}_{role_id}_{target_slot}_{role_slot}')
+                                m.AddBoolAnd([target_cov, role_cov]).OnlyEnforceIf(violation)
+                                m.AddBoolOr([target_cov.Not(), role_cov.Not()]).OnlyEnforceIf(violation.Not())
+                                ORDERING_VIOLATION_PENALTY = 200
+                                solver.soft_constraint_penalties.append(ORDERING_VIOLATION_PENALTY * violation)
+                                soft_penalties_added += 1
         
         direction = "before" if before else "after"
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
-        if DEBUG: print(f"      {role_code} cannot be {direction} {target_role_code} for {scope}", file=sys.stderr)
+        constraint_type = "HARD" if is_hard else "SOFT"
+        if DEBUG: print(f"      {constraint_type}: {role_code} cannot be {direction} {target_role_code} for {scope}", file=sys.stderr)
     
-    if DEBUG: print(f"      Added {constraints_added} {constraint_name} constraints", file=sys.stderr)
+    if DEBUG: print(f"      Added {constraints_added} HARD constraints + {soft_penalties_added} SOFT penalty terms", file=sys.stderr)
 
 
 def _apply_timing(solver: "SolverV2", rules: List[dict]) -> None:

@@ -410,6 +410,7 @@ enum ConstraintRule {
 enum AssignmentModel {
   HOURLY
   HOURLY_OR_WINDOW
+  HOURLY_AND_SOLVER
   DAILY
   SOLVER
   WINDOW
