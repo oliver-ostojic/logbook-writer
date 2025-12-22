@@ -16,7 +16,7 @@ type Person = {
   id: number | null;
   name: string;
   email: string;
-  crewId?: string; // backend crew id (7-char string) retained for later wiring
+  crewId: string; // backend crew id (7-char string) - required for shift association
 }
 
 type CrewComboboxProps = {

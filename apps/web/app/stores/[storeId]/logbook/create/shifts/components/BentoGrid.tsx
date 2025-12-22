@@ -14,10 +14,10 @@ import ShiftValidationBox from './ShiftValidationBox';
 import Footer from '../../../../../../../components/Footer';
 
 type CrewMember = {
-  id: number; // local numeric id for UI
+  id: number; // local numeric id for UI (used for display only)
   name: string;
   email: string;
-  crewId?: string; // backend id (string)
+  crewId: string; // backend id (string) - STABLE identifier
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -30,8 +30,8 @@ export default function BentoGrid() {
   const [allPeople, setAllPeople] = useState<CrewMember[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [loadingPeople, setLoadingPeople] = useState(false);
-  const [initialShiftTimes, setInitialShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
-  const [shiftTimes, setShiftTimes] = useState<Record<number, { start: string; end: string }>>({});
+  const [initialShiftTimes, setInitialShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
+  const [shiftTimes, setShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
   const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
   const [selectedCrew, setSelectedCrew] = useState<CrewMember[]>([]);
   // Track which date the current state belongs to (prevents saving stale data to wrong date)
@@ -97,8 +97,8 @@ export default function BentoGrid() {
     }
   };
 
-  const handleRemoveCrew = (id: number) => {
-    setSelectedCrew(selectedCrew.filter(crew => crew.id !== id));
+  const handleRemoveCrew = (crewId: string) => {
+    setSelectedCrew(selectedCrew.filter(crew => crew.crewId !== crewId));
   };
 
   // Load existing shifts for selected date -> populate selectedCrew + initialShiftTimes
@@ -115,7 +115,7 @@ export default function BentoGrid() {
         // First, check localStorage for a draft
         const localKey = getLocalStorageKey(selectedDate);
         const localData = localStorage.getItem(localKey);
-        let localDraft: { selectedCrew: CrewMember[]; shiftTimes: Record<number, { start: string; end: string }>; savedAt: number } | null = null;
+        let localDraft: { selectedCrew: CrewMember[]; shiftTimes: Record<string, { start: string; end: string }>; savedAt: number } | null = null;
         
         if (localData) {
           try {
@@ -169,12 +169,12 @@ export default function BentoGrid() {
         // Map shifts to known people
         const byCrewId = new Map(allPeople.map(p => [p.crewId, p] as const));
         const mappedCrew: CrewMember[] = [];
-        const times: Record<number, { start: string; end: string }> = {};
+        const times: Record<string, { start: string; end: string }> = {};
         for (const s of data) {
           const p = byCrewId.get(s.crewId);
           if (!p) continue;
           mappedCrew.push(p);
-          times[p.id] = { start: s.start, end: s.end };
+          times[p.crewId] = { start: s.start, end: s.end };
         }
         
         // If we have a localStorage draft, prefer it (user might have added more crew)
@@ -227,7 +227,7 @@ export default function BentoGrid() {
     };
     
     for (const crew of selectedCrew) {
-      const times = shiftTimes[crew.id];
+      const times = shiftTimes[crew.crewId];
       if (!times) continue;
       
       const startMinutes = toMinutes(times.start);
@@ -348,7 +348,7 @@ function SaveAndNext({
   storeId: string;
   selectedDate: string;
   selectedCrew: CrewMember[];
-  shiftTimes: Record<number, { start: string; end: string }>;
+  shiftTimes: Record<string, { start: string; end: string }>;
   hasValidationErrors: boolean;
   onNavigate: (path: string) => void;
   onSaveSuccess?: () => void;
@@ -364,9 +364,9 @@ function SaveAndNext({
       const items = selectedCrew
         .filter(p => p.crewId)
         .map(p => ({
-          crewId: p.crewId as string,
-          start: shiftTimes[p.id]?.start || '09:00',
-          end: shiftTimes[p.id]?.end || '18:00',
+          crewId: p.crewId,
+          start: shiftTimes[p.crewId]?.start || '09:00',
+          end: shiftTimes[p.crewId]?.end || '18:00',
         }));
       const res = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts`, {
         method: 'POST',

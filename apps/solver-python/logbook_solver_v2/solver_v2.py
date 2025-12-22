@@ -35,9 +35,21 @@ class AssignmentIndex:
 class SolverV2:
     """CP-SAT model that consumes the metadata-driven SolverInputV2 payload."""
 
-    def __init__(self, payload: Dict[str, Any]):
+    def __init__(self, payload: Dict[str, Any], force_soft_mode: bool = False):
+        """
+        Initialize the solver.
+        
+        Args:
+            payload: The solver input payload
+            force_soft_mode: If True, treat all HARD constraints as SOFT for 
+                            feasibility diagnosis. This is for testing only!
+        """
         self.payload = normalize_payload(payload)
         self.model = cp_model.CpModel()
+        self.force_soft_mode = force_soft_mode
+        
+        # Track softened constraints for reporting
+        self.softened_constraint_violations: List[Dict[str, Any]] = []
 
         self.store = self.payload['store']
         self.roles = self.payload['roles']
@@ -91,6 +103,28 @@ class SolverV2:
 
         constraints.add_all(self)
         objective.apply(self)
+
+    # ------------------------------------------------------------------
+    # Constraint helpers
+    # ------------------------------------------------------------------
+    def is_hard_constraint(self, rule: Dict[str, Any]) -> bool:
+        """Check if a rule should be enforced as HARD.
+        
+        In force_soft_mode, all HARD constraints are treated as SOFT for diagnosis.
+        """
+        if self.force_soft_mode:
+            return False
+        return rule.get('constraintType') == 'HARD'
+    
+    def register_soft_violation(self, rule: Dict[str, Any], violation_var: Any, description: str) -> None:
+        """Register a potential softened constraint violation for reporting."""
+        if self.force_soft_mode and rule.get('constraintType') == 'HARD':
+            self.softened_constraint_violations.append({
+                'rule': rule,
+                'violationVar': violation_var,
+                'description': description,
+                'originalConstraintType': 'HARD',
+            })
 
     # ------------------------------------------------------------------
     # Public API
@@ -167,6 +201,39 @@ class SolverV2:
             # Include quota divisibility violations if any
             if hasattr(self, 'quota_violations') and self.quota_violations:
                 result['metadata']['quotaDivisibilityErrors'] = self.quota_violations
+
+        # Report softened constraint violations (only in force_soft_mode)
+        if success and self.force_soft_mode and self.softened_constraint_violations:
+            softened_violations = []
+            for entry in self.softened_constraint_violations:
+                violation_var = entry['violationVar']
+                try:
+                    # Try to get the value - handle different var types
+                    if violation_var is None:
+                        violation_value = 0
+                    elif hasattr(violation_var, 'Index'):
+                        # It's a proper CP-SAT variable
+                        violation_value = solver.Value(violation_var)
+                    else:
+                        # It might be a constant or literal
+                        violation_value = int(violation_var) if violation_var else 0
+                except Exception:
+                    violation_value = 1  # Assume violated if we can't read it
+                
+                if violation_value > 0:
+                    rule = entry['rule']
+                    softened_violations.append({
+                        'ruleType': rule.get('type'),
+                        'roleId': rule.get('roleId'),
+                        'crewId': rule.get('crewId'),
+                        'valueInt': rule.get('valueInt'),
+                        'violationAmount': violation_value,
+                        'description': entry['description'],
+                        'message': f"⚠️ HARD constraint was softened: {entry['description']} (violated by {violation_value})"
+                    })
+            if softened_violations:
+                result['metadata']['softenedConstraintViolations'] = softened_violations
+                result['metadata']['forceSoftModeEnabled'] = True
 
         return result
 

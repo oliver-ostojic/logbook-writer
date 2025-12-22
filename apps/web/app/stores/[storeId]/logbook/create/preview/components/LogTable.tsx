@@ -825,11 +825,15 @@ export default function LogbookSchedule({
                           >
                             {displayRoleCode}
                           </div>
-                          {/* Edit dropdown */}
+                          {/* Edit dropdown - opens upward for last 2 rows to avoid clipping */}
                           {isSlotEditing && (
                             <div
                               ref={dropdownRef}
-                              className="absolute inset-x-1 top-full z-50 mt-1 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5"
+                              className={`absolute inset-x-1 z-50 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 ${
+                                index >= displayedCrewRows.length - 2 
+                                  ? 'bottom-full mb-1' 
+                                  : 'top-full mt-1'
+                              }`}
                             >
                               <div className="max-h-60 overflow-y-auto py-1 text-xs text-gray-700">
                                 {roleOptions.length === 0 ? (

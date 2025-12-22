@@ -6,11 +6,12 @@ type CrewMember = {
   id: number;
   name: string;
   email: string;
+  crewId: string;
 };
 
 type CrewShiftTableProps = {
   selectedCrew: CrewMember[];
-  onRemoveCrew: (id: number) => void;
+  onRemoveCrew: (crewId: string) => void;
   initialShiftTimes?: ShiftTimes;
   onShiftTimesChange?: (t: ShiftTimes) => void;
 };
@@ -18,7 +19,7 @@ type CrewShiftTableProps = {
 type SortField = 'name' | 'start' | null;
 
 type ShiftTimes = {
-  [key: number]: { start: string; end: string };
+  [key: string]: { start: string; end: string };
 };
 
 // NOTE: Accept props as any to avoid overzealous "serializable props" checks in certain analyzers
@@ -46,8 +47,8 @@ export default function CrewShiftTable(props: any) {
     const newTimes: ShiftTimes = { ...shiftTimes };
     let hasChanges = false;
     selectedCrew.forEach((person) => {
-      if (!newTimes[person.id]) {
-        newTimes[person.id] = { start: '09:00', end: '18:00' };
+      if (!newTimes[person.crewId]) {
+        newTimes[person.crewId] = { start: '09:00', end: '18:00' };
         hasChanges = true;
       }
     });
@@ -62,8 +63,7 @@ export default function CrewShiftTable(props: any) {
     if (!initialShiftTimes) return;
     const merged: ShiftTimes = { ...shiftTimes };
     for (const [k, v] of Object.entries(initialShiftTimes)) {
-      const key = Number(k);
-      merged[key] = { start: v.start, end: v.end };
+      merged[k] = { start: v.start, end: v.end };
     }
     setShiftTimes(merged);
     onShiftTimesChange?.(merged);
@@ -86,8 +86,8 @@ export default function CrewShiftTable(props: any) {
         primaryResult = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
         if (!nameSortAsc) primaryResult = -primaryResult;
       } else {
-        const aTime = shiftTimes[a.id]?.start || '09:00';
-        const bTime = shiftTimes[b.id]?.start || '09:00';
+        const aTime = shiftTimes[a.crewId]?.start || '09:00';
+        const bTime = shiftTimes[b.crewId]?.start || '09:00';
         primaryResult = aTime.localeCompare(bTime);
         if (!startSortAsc) primaryResult = -primaryResult;
       }
@@ -99,8 +99,8 @@ export default function CrewShiftTable(props: any) {
           secondaryResult = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
           if (!nameSortAsc) secondaryResult = -secondaryResult;
         } else {
-          const aTime = shiftTimes[a.id]?.start || '09:00';
-          const bTime = shiftTimes[b.id]?.start || '09:00';
+          const aTime = shiftTimes[a.crewId]?.start || '09:00';
+          const bTime = shiftTimes[b.crewId]?.start || '09:00';
           secondaryResult = aTime.localeCompare(bTime);
           if (!startSortAsc) secondaryResult = -secondaryResult;
         }
@@ -216,14 +216,14 @@ export default function CrewShiftTable(props: any) {
               ) : sortedCrew.map((person, index) => {
                 const isFirst = index === 0;
                 const prevPerson = isFirst ? null : sortedCrew[index - 1];
-                const prevStart = prevPerson ? (shiftTimes[prevPerson.id]?.start || '09:00') : null;
-                const prevEnd = prevPerson ? (shiftTimes[prevPerson.id]?.end || '18:00') : null;
+                const prevStart = prevPerson ? (shiftTimes[prevPerson.crewId]?.start || '09:00') : null;
+                const prevEnd = prevPerson ? (shiftTimes[prevPerson.crewId]?.end || '18:00') : null;
                 
                 const copyStartFromAbove = () => {
                   if (!prevStart) return;
                   const newEndTime = addEightHours(prevStart);
                   setShiftTimes(prev => {
-                    const next = { ...prev, [person.id]: { start: prevStart, end: newEndTime } };
+                    const next = { ...prev, [person.crewId]: { start: prevStart, end: newEndTime } };
                     onShiftTimesChange?.(next);
                     return next;
                   });
@@ -232,14 +232,14 @@ export default function CrewShiftTable(props: any) {
                 const copyEndFromAbove = () => {
                   if (!prevEnd) return;
                   setShiftTimes(prev => {
-                    const next = { ...prev, [person.id]: { ...prev[person.id], start: prev[person.id]?.start || '09:00', end: prevEnd } };
+                    const next = { ...prev, [person.crewId]: { ...prev[person.crewId], start: prev[person.crewId]?.start || '09:00', end: prevEnd } };
                     onShiftTimesChange?.(next);
                     return next;
                   });
                 };
                 
                 return (
-                <tr key={person.id}>
+                <tr key={person.crewId}>
                   <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                     {person.name}
                   </td>
@@ -247,13 +247,13 @@ export default function CrewShiftTable(props: any) {
                     <div className="flex">
                       <input
                         type="time"
-                        id={`start-${person.id}`}
-                        value={shiftTimes[person.id]?.start || '09:00'}
+                        id={`start-${person.crewId}`}
+                        value={shiftTimes[person.crewId]?.start || '09:00'}
                         onChange={(e) => {
                           const newStartTime = e.target.value;
                           const newEndTime = addEightHours(newStartTime);
                           setShiftTimes(prev => {
-                            const next = { ...prev, [person.id]: { start: newStartTime, end: newEndTime } };
+                            const next = { ...prev, [person.crewId]: { start: newStartTime, end: newEndTime } };
                             onShiftTimesChange?.(next);
                             return next;
                           });
@@ -283,10 +283,10 @@ export default function CrewShiftTable(props: any) {
                     <div className="flex">
                       <input
                         type="time"
-                        id={`end-${person.id}`}
-                        value={shiftTimes[person.id]?.end || '18:00'}
+                        id={`end-${person.crewId}`}
+                        value={shiftTimes[person.crewId]?.end || '18:00'}
                         onChange={(e) => setShiftTimes(prev => {
-                          const next = { ...prev, [person.id]: { ...prev[person.id], start: prev[person.id]?.start || '09:00', end: e.target.value } };
+                          const next = { ...prev, [person.crewId]: { ...prev[person.crewId], start: prev[person.crewId]?.start || '09:00', end: e.target.value } };
                           onShiftTimesChange?.(next);
                           return next;
                         })}
@@ -314,7 +314,7 @@ export default function CrewShiftTable(props: any) {
                   <td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                     <button
                         type="button"
-                        onClick={() => onRemoveCrew(person.id)}
+                        onClick={() => onRemoveCrew(person.crewId)}
                         aria-label={`Remove ${person.name}`}
                         className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-500 shadow-sm transition-colors hover:text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] hover:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] hover:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l)_/_0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]"
                       >

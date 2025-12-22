@@ -273,7 +273,8 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
             if DEBUG: print(f"      ⚠️  MAX_CONSECUTIVE_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
             continue
         
-        is_hard = rule['constraintType'] == 'HARD'
+        is_hard = solver.is_hard_constraint(rule)
+        was_originally_hard = rule['constraintType'] == 'HARD'
         
         # Convert minutes to slots
         max_slots = max_minutes // slot_minutes
@@ -285,10 +286,11 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
         
         for crew in _get_crew_for_rule(solver, rule):
             crew_id = crew['id']
+            crew_name = crew.get('name', crew_id)
             shift_start = solver.time_grid.minutes_to_slot_floor(crew['shiftStartMin'])
             shift_end = solver.time_grid.minutes_to_slot_floor(crew['shiftEndMin'])
             
-            # === CONSTRAINT ENFORCEMENT (HARD only) ===
+            # === CONSTRAINT ENFORCEMENT ===
             if is_hard:
                 # HARD constraint: For each window of size (max_slots + 1), not all can be covered
                 for window_start in range(shift_start, shift_end - forbidden_window + 1):
@@ -312,6 +314,51 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                     if len(slot_coverage_vars) == forbidden_window:
                         m.Add(sum(slot_coverage_vars) <= max_slots)
                         hard_constraints_added += 1
+            
+            elif was_originally_hard and solver.force_soft_mode:
+                # SOFT fallback for diagnosis: allow violation but track it
+                # Create a violation counter for this crew+role
+                violation_var = m.NewIntVar(0, shift_end - shift_start, f'maxconsec_violation_{crew_id}_{role_id}')
+                total_violations = []
+                
+                for window_start in range(shift_start, shift_end - forbidden_window + 1):
+                    slot_coverage_vars = []
+                    
+                    for slot_offset in range(forbidden_window):
+                        slot = window_start + slot_offset
+                        covering_vars = []
+                        
+                        for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
+                            if var_crew != crew_id or var_role != role_id:
+                                continue
+                            if var_slot <= slot < var_slot + task_slots:
+                                covering_vars.append(var)
+                        
+                        if covering_vars:
+                            slot_cov = m.NewBoolVar(f'maxconsec_cov_{crew_id}_{role_id}_{window_start}_{slot_offset}')
+                            m.AddMaxEquality(slot_cov, covering_vars)
+                            slot_coverage_vars.append(slot_cov)
+                    
+                    if len(slot_coverage_vars) == forbidden_window:
+                        # Create a violation indicator for this window
+                        window_violation = m.NewBoolVar(f'maxconsec_viol_{crew_id}_{role_id}_{window_start}')
+                        # violation = 1 if sum > max_slots
+                        m.Add(sum(slot_coverage_vars) <= max_slots).OnlyEnforceIf(window_violation.Not())
+                        m.Add(sum(slot_coverage_vars) > max_slots).OnlyEnforceIf(window_violation)
+                        total_violations.append(window_violation)
+                
+                if total_violations:
+                    m.Add(violation_var == sum(total_violations))
+                    # Penalize violations heavily
+                    SOFT_VIOLATION_PENALTY = 10000
+                    solver.soft_constraint_penalties.append(SOFT_VIOLATION_PENALTY * violation_var)
+                    
+                    # Register for reporting
+                    solver.register_soft_violation(
+                        rule, 
+                        violation_var,
+                        f"{crew_name} MAX_CONSECUTIVE_MINUTES={max_minutes}min for {role_code}"
+                    )
             
             # === BONUSES (applied to BOTH hard and soft) ===
             # Reward achieving the MAX consecutive duration

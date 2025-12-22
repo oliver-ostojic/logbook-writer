@@ -33,9 +33,18 @@ def main() -> int:
         payload = _read_payload()
         solver_input = payload.get("solverInput") or payload
         time_limit = payload.get("timeLimitSeconds")
+        diagnose_infeasibility = payload.get("diagnoseInfeasibility", False)
 
-        solver = SolverV2(solver_input)
+        # First try with normal HARD constraints
+        solver = SolverV2(solver_input, force_soft_mode=False)
         result = solver.solve(time_limit_seconds=time_limit)
+
+        # If infeasible and diagnose flag is set, re-run with force_soft_mode
+        if not result.get("success") and diagnose_infeasibility:
+            print("⚠️ INFEASIBLE - Re-running with force_soft_mode for diagnosis...", file=sys.stderr)
+            solver_soft = SolverV2(solver_input, force_soft_mode=True)
+            result = solver_soft.solve(time_limit_seconds=time_limit)
+            result["metadata"]["diagnosisMode"] = True
 
         # The result from SolverV2.solve() is already a dict with:
         # status, success, objectiveValue, assignments, metadata
