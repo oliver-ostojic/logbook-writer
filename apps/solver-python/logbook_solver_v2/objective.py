@@ -212,32 +212,38 @@ def _timing_preference_bonus(solver: "SolverV2") -> List:
         end_slot = solver.time_grid.minutes_to_slot_floor(end_min)
         crew_shifts[crew_id] = (start_slot, end_slot)
     
-    # Build lookup: role_id -> timing preference (-1, 0, or 1)
+    # Build lookup: role_id -> (timing preference, rule_id)
     # Also track crew-specific overrides
-    role_timing = {}  # role_id -> preference
-    crew_role_timing = {}  # (crew_id, role_id) -> preference
+    role_timing = {}  # role_id -> (preference, rule_id)
+    crew_role_timing = {}  # (crew_id, role_id) -> (preference, rule_id)
     
     for pref in solver.timing_preferences:
         role_id = pref['roleId']
         timing_val = pref['preference']
+        rule_id = pref.get('ruleId', 0)
         crew_id = pref.get('crewId')
         
         if crew_id:
-            crew_role_timing[(crew_id, role_id)] = timing_val
+            crew_role_timing[(crew_id, role_id)] = (timing_val, rule_id)
         else:
-            role_timing[role_id] = timing_val
+            role_timing[role_id] = (timing_val, rule_id)
     
     # Apply gradient bonus to each assignment var
     for key, var in solver.assignment_vars.items():
         crew_id, slot, role_id, task_slots = key
         
-        # Get timing preference (crew-specific overrides store-wide)
-        timing_pref = crew_role_timing.get((crew_id, role_id))
-        if timing_pref is None:
-            timing_pref = role_timing.get(role_id)
+        # Get timing preference and rule_id (crew-specific overrides store-wide)
+        timing_info = crew_role_timing.get((crew_id, role_id))
+        if timing_info is None:
+            timing_info = role_timing.get(role_id)
         
-        if timing_pref is None:
+        if timing_info is None:
             continue  # No timing preference for this role
+        
+        timing_pref, rule_id = timing_info
+        
+        # Get rule weight for tuning
+        rule_weight = solver.get_rule_weight(rule_id)
         
         # Get crew's shift boundaries
         shift_start, shift_end = crew_shifts.get(crew_id, (0, solver.time_grid.num_slots))
@@ -270,7 +276,8 @@ def _timing_preference_bonus(solver: "SolverV2") -> List:
         
         # Scale the bonus and add to objective
         # Use integer scaling (multiply by 100) for CP-SAT which prefers integers
-        scaled_bonus = int(bonus_factor * timing_weight * 100)
+        # Also multiply by rule_weight for tuning
+        scaled_bonus = int(bonus_factor * timing_weight * rule_weight * 100)
         if scaled_bonus > 0:
             bonus_terms.append(scaled_bonus * var)
     
@@ -313,20 +320,21 @@ def _hour_preference_bonus(solver: "SolverV2") -> List:
     
     # Build lookups for hour preferences
     # Now keyed by shiftRelativeMin (minutes from shift start) instead of absolute hour
-    role_shift_prefs = {}  # (role_id, shiftRelativeMin) -> like
-    crew_role_shift_prefs = {}  # (crew_id, role_id, shiftRelativeMin) -> like
+    role_shift_prefs = {}  # (role_id, shiftRelativeMin) -> (like, rule_id)
+    crew_role_shift_prefs = {}  # (crew_id, role_id, shiftRelativeMin) -> (like, rule_id)
     
     for pref in solver.hour_preferences:
         role_id = pref['roleId']
+        rule_id = pref.get('ruleId', 0)
         # Support both old 'hour' key and new 'shiftRelativeMin' key
         shift_rel_min = pref.get('shiftRelativeMin', pref.get('hour', 0))
         like = pref['like']
         crew_id = pref.get('crewId')
         
         if crew_id:
-            crew_role_shift_prefs[(crew_id, role_id, shift_rel_min)] = like
+            crew_role_shift_prefs[(crew_id, role_id, shift_rel_min)] = (like, rule_id)
         else:
-            role_shift_prefs[(role_id, shift_rel_min)] = like
+            role_shift_prefs[(role_id, shift_rel_min)] = (like, rule_id)
     
     # Apply bonuses/penalties to each assignment var
     for key, var in solver.assignment_vars.items():
@@ -345,19 +353,23 @@ def _hour_preference_bonus(solver: "SolverV2") -> List:
         shift_hour_start = (shift_relative_min // 60) * 60
         
         # Check for crew-specific preference first, then store-wide
-        like = crew_role_shift_prefs.get((crew_id, role_id, shift_hour_start))
-        if like is None:
-            like = role_shift_prefs.get((role_id, shift_hour_start))
+        pref_info = crew_role_shift_prefs.get((crew_id, role_id, shift_hour_start))
+        if pref_info is None:
+            pref_info = role_shift_prefs.get((role_id, shift_hour_start))
         
-        if like is None:
+        if pref_info is None:
             continue  # No hour preference for this role/shift-hour combo
+        
+        like, rule_id = pref_info
+        rule_weight = solver.get_rule_weight(rule_id)
+        weighted_hour_weight = int(hour_weight * rule_weight)
         
         if like:
             # LIKE: add bonus
-            bonus_terms.append(hour_weight * var)
+            bonus_terms.append(weighted_hour_weight * var)
         else:
             # DISLIKE: add penalty (negative bonus)
-            bonus_terms.append(-hour_weight * var)
+            bonus_terms.append(-weighted_hour_weight * var)
     
     if bonus_terms:
         if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} hour preference terms", file=sys.stderr)
@@ -399,6 +411,11 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
         mode = pref.get('mode', 'role')
         preference = pref['preference']  # -1, 0, or 1
         crew_filter = pref.get('crewId')
+        rule_id = pref.get('ruleId', 0)
+        
+        # Get rule weight for tuning
+        rule_weight = solver.get_rule_weight(rule_id)
+        weighted_distribution = int(distribution_weight * rule_weight)
         
         # Get relevant crew
         relevant_crew = []
@@ -436,11 +453,11 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
                 if preference == -1:
                     # Prefer primary family
                     for var, minutes in primary_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                 elif preference == 1:
                     # Prefer target family
                     for var, minutes in target_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                 else:
                     # preference == 0: prefer equal distribution
                     # Give EQUAL bonus to both families - this encourages filling
@@ -448,9 +465,9 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
                     # The solver will fill all slots (to maximize bonus) and
                     # distribute evenly (since both give equal reward).
                     for var, minutes in primary_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                     for var, minutes in target_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                     
                     if DEBUG: print(f"      Added equal bonus for {crew_id}: {primary_family_name} and {target_family_name}", file=sys.stderr)
         
@@ -482,18 +499,18 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
                 if preference == -1:
                     # Prefer primary role
                     for var, minutes in role_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                 elif preference == 1:
                     # Prefer target role
                     for var, minutes in target_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                 else:
                     # preference == 0: prefer equal distribution
                     # Give EQUAL bonus to both roles
                     for var, minutes in role_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
                     for var, minutes in target_vars:
-                        bonus_terms.append(distribution_weight * var)
+                        bonus_terms.append(weighted_distribution * var)
     
     if bonus_terms:
         if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} distribution preference terms", file=sys.stderr)

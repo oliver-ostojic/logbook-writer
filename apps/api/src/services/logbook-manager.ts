@@ -66,7 +66,6 @@ import {
 
 import {
   calculateCrewRuleSatisfaction,
-  calculateAggregateStats,
   aggregateSatisfactionStats,
   saveLogPreferenceMetadata as saveCrewRuleLogPreferenceMetadata,
   type CrewRoleRuleRecord,
@@ -263,33 +262,16 @@ export async function saveLogbookWithMetadata(
     roleBlockSizes
   );
 
-  // Calculate aggregate stats from new system (for logging)
-  const crewRuleStats = calculateAggregateStats(crewRuleSatisfactionResults);
-  
   // Calculate full aggregate stats for saving to LogPreferenceMetadata
   const fullCrewRuleStats = aggregateSatisfactionStats(crewRuleSatisfactionResults, crewRoleRuleRecords);
 
-  // Log comparison between old and new systems
-  console.log('\n📊 Preference Satisfaction Comparison:');
-  console.log(`   Legacy system: ${satisfactionResults.length} preferences, ${satisfactionResults.filter(r => r.met).length} met`);
-  console.log(`   New system: ${crewRuleStats.totalPreferences} preferences, ${crewRuleStats.preferencesMet} met`);
-  console.log(`   New system avg satisfaction: ${(crewRuleStats.averageSatisfaction * 100).toFixed(1)}%`);
-  console.log(`   New system fairness: ${crewRuleStats.fairnessIndex.toFixed(1)}%`);
-  console.log(`   Crew with preferences: ${crewRuleStats.crewWithPreferences}\n`);
-
-  // Calculate aggregate preference stats (legacy)
-  const preferencesMet = satisfactionResults.filter(r => r.met).length;
-  const totalWeightedSatisfaction = satisfactionResults.reduce(
-    (sum, r) => sum + (r.satisfaction * r.weightApplied),
-    0
-  );
-  const totalWeightApplied = satisfactionResults.reduce(
-    (sum, r) => sum + r.weightApplied,
-    0
-  );
-  const averageSatisfaction = totalWeightApplied > 0 
-    ? totalWeightedSatisfaction / totalWeightApplied 
-    : 0;
+  // Log satisfaction stats (using NEW eligible-only system)
+  console.log('\n📊 Preference Satisfaction (Eligible-Only):');
+  console.log(`   Eligible preferences: ${fullCrewRuleStats.eligiblePreferences}`);
+  console.log(`   Preferences met: ${fullCrewRuleStats.preferencesMet}/${fullCrewRuleStats.eligiblePreferences}`);
+  console.log(`   Avg satisfaction: ${fullCrewRuleStats.avgSatisfaction.toFixed(1)}%`);
+  console.log(`   Fairness index: ${fullCrewRuleStats.fairnessIndex.toFixed(1)}%`);
+  console.log(`   Eligible crew: ${fullCrewRuleStats.eligibleCrew}\n`);
 
   // Count constraints (using new schema)
   const coverageWindowCount = await prisma.roleCoverageWindow.count({
@@ -353,10 +335,11 @@ export async function saveLogbookWithMetadata(
       coverageWindows: coverageWindowCount,
       crewQuotas: crewQuotaCount,
     },
+    // Use NEW eligible-only stats from CrewRoleRule system (same as binary matrix approach)
     preferences: {
-      total: satisfactionResults.length,
-      met: preferencesMet,
-      averageSatisfaction: Math.round(averageSatisfaction * 1000) / 1000,
+      total: fullCrewRuleStats.eligiblePreferences,
+      met: fullCrewRuleStats.preferencesMet,
+      averageSatisfaction: Math.round((fullCrewRuleStats.avgSatisfaction / 100) * 1000) / 1000,
     },
     quotaWarnings: solverOutput.metadata.quotaWarnings,
     generatedAt: new Date().toISOString(),
@@ -440,7 +423,7 @@ export async function saveLogbookWithMetadata(
   console.log(`   ID: ${logbook.id}`);
   console.log(`   Status: ${status}`);
   console.log(`   Assignments: ${assignmentData.length}`);
-  console.log(`   CrewRoleRule preferences: ${fullCrewRuleStats.eligiblePreferences} (was ${satisfactionResults.length} legacy)`);
+  console.log(`   Eligible preferences: ${fullCrewRuleStats.eligiblePreferences}`);
   console.log(`   Preferences met: ${fullCrewRuleStats.preferencesMet}/${fullCrewRuleStats.eligiblePreferences}`);
   console.log(`   Average satisfaction: ${fullCrewRuleStats.avgSatisfactionPerCrew.toFixed(1)}%\n`);
 

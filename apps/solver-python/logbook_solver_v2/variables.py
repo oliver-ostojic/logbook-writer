@@ -76,7 +76,12 @@ class VariableBuilder:
         # Track variables by crew and by slot for debugging
         vars_by_crew: Dict[str, Dict[int, List[str]]] = defaultdict(lambda: defaultdict(list))
         
-        for crew in crew_records:
+        # IMPORTANT: Keep model construction deterministic.
+        # Even with CP-SAT random_seed fixed, variable/constraint creation order can
+        # affect the search and lead to different feasible solutions.
+        crew_records_sorted = sorted(crew_records, key=lambda c: str(c.get('id', '')))
+
+        for crew in crew_records_sorted:
             crew_id = crew['id']
             crew_name = crew.get('name', crew_id)
             eligible_role_ids = set(crew.get('roleIds') or [])
@@ -92,7 +97,7 @@ class VariableBuilder:
                 if DEBUG: print(f"\n⚠️  Crew {crew_name}: Invalid shift {shift_start_min}-{shift_end_min}", file=sys.stderr)
                 continue
 
-            for role_id in eligible_role_ids:
+            for role_id in sorted(eligible_role_ids):
                 role = role_by_id.get(role_id)
                 if not role:
                     continue

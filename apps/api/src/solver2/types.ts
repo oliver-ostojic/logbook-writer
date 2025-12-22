@@ -123,7 +123,8 @@ export interface CrewRoleFairnessHistoryDescriptor {
 
 // NEW: Role rules for solver constraints
 export interface RoleRuleDescriptor {
-  id: number;
+  id: number;  // CrewRoleRule.id or StoreRoleRule.id (unique per crew-rule combination)
+  roleRuleId: number;  // RoleRule.id (the template rule)
   roleId: number;
   roleCode: string; // for debugging
   type: RoleRuleType;
@@ -134,6 +135,7 @@ export interface RoleRuleDescriptor {
   // Scope: if crewId is set, applies only to that crew; otherwise store-wide
   crewId: string | null;
   isPriority: boolean;
+  source: 'store' | 'crew';  // Whether this came from StoreRoleRule or CrewRoleRule
 }
 
 export interface SolverInputV2 {

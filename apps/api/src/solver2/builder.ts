@@ -280,37 +280,48 @@ export async function buildSolverInputV2(
   // 3. CrewRoleRule exists (no priority flags) → use crew override
   // 4. StoreRoleRule exists (fallback) → use store default
   
-  // Helper to create a unique key for a rule
-  // NOTE: We include valueInt because rules like CANNOT_ASSIGN_DURING_STORE_HOUR_X
-  // can have multiple entries with different valueInt (different hours)
-  const ruleKey = (roleId: number, type: string, targetRoleId: number | null, valueInt: number | null) =>
-    `${roleId}:${type}:${targetRoleId ?? 'null'}:${valueInt ?? 'null'}`;
+  // Helper to create a unique "base" key for a rule.
+  // IMPORTANT:
+  // - We intentionally do NOT include valueInt here.
+  // - valueInt is a parameter of the rule instance, and we want crew overrides
+  //   to replace the store rule even when valueInt differs (e.g., MAX_CONSECUTIVE=60 store,
+  //   but crew override MAX_CONSECUTIVE=180).
+  // - Some rule types can legitimately have multiple instances differing by valueInt
+  //   (e.g., CANNOT_ASSIGN_DURING_STORE_HOUR_X), but those should be handled as a set
+  //   where crew can override the whole set.
+  const ruleBaseKey = (roleId: number, type: string, targetRoleId: number | null) =>
+    `${roleId}:${type}:${targetRoleId ?? 'null'}`;
 
-  // Index store-level rules by unique key
-  const storeRulesByKey = new Map<string, StoreRoleRuleRecord>();
+  // Index store-level rules by base key (may be multiple records per base key)
+  const storeRulesByBaseKey = new Map<string, StoreRoleRuleRecord[]>();
   for (const storeRule of storeRoleRuleRecords) {
     const rr = storeRule.RoleRule;
-    const key = ruleKey(rr.roleId, rr.type, rr.targetRoleId, storeRule.valueInt);
-    storeRulesByKey.set(key, storeRule);
+    const key = ruleBaseKey(rr.roleId, rr.type, rr.targetRoleId);
+    const arr = storeRulesByBaseKey.get(key) ?? [];
+    arr.push(storeRule);
+    storeRulesByBaseKey.set(key, arr);
   }
 
-  // Index crew-level rules by (crewId, key)
-  const crewRulesByCrewAndKey = new Map<string, Map<string, CrewRoleRuleRecord>>();
+  // Index crew-level rules by (crewId, base key) (may be multiple records per base key)
+  const crewRulesByCrewAndBaseKey = new Map<string, Map<string, CrewRoleRuleRecord[]>>();
   for (const crewRule of crewRoleRuleRecords) {
     const rr = crewRule.RoleRule;
-    const key = ruleKey(rr.roleId, rr.type, rr.targetRoleId, crewRule.valueInt);
-    
-    if (!crewRulesByCrewAndKey.has(crewRule.crewId)) {
-      crewRulesByCrewAndKey.set(crewRule.crewId, new Map());
+    const key = ruleBaseKey(rr.roleId, rr.type, rr.targetRoleId);
+
+    if (!crewRulesByCrewAndBaseKey.has(crewRule.crewId)) {
+      crewRulesByCrewAndBaseKey.set(crewRule.crewId, new Map());
     }
-    crewRulesByCrewAndKey.get(crewRule.crewId)!.set(key, crewRule);
+    const inner = crewRulesByCrewAndBaseKey.get(crewRule.crewId)!;
+    const arr = inner.get(key) ?? [];
+    arr.push(crewRule);
+    inner.set(key, arr);
   }
 
-  // Collect all unique rule keys (union of store and crew keys)
-  const allRuleKeys = new Set<string>();
-  for (const key of storeRulesByKey.keys()) allRuleKeys.add(key);
-  for (const crewMap of crewRulesByCrewAndKey.values()) {
-    for (const key of crewMap.keys()) allRuleKeys.add(key);
+  // Collect all base keys (union of store and crew base keys)
+  const allBaseKeys = new Set<string>();
+  for (const key of storeRulesByBaseKey.keys()) allBaseKeys.add(key);
+  for (const crewMap of crewRulesByCrewAndBaseKey.values()) {
+    for (const key of crewMap.keys()) allBaseKeys.add(key);
   }
 
   // Get all crew IDs from the crew records
@@ -318,47 +329,62 @@ export async function buildSolverInputV2(
 
   const roleRules: RoleRuleDescriptor[] = [];
 
-  // For each crew, resolve which rules apply
+  // For each crew, resolve which rules apply.
+  // Semantics:
+  // - If crew has ANY rules for a base key, we treat that as overriding the store rules
+  //   for that base key.
+  // - We only emit PRIORITY rules. If crew has priority rules, emit those.
+  // - If crew has no priority rules for that base key, emit nothing (i.e. crew provided
+  //   non-priority rules are ignored under this strict policy).
+  // - If crew has no rules at all for that base key, emit the store priority rules.
   for (const crewId of ruleCrewIds) {
-    const crewRulesMap = crewRulesByCrewAndKey.get(crewId);
+    const crewRulesMap = crewRulesByCrewAndBaseKey.get(crewId);
 
-    for (const key of allRuleKeys) {
-      const storeRule = storeRulesByKey.get(key);
-      const crewRule = crewRulesMap?.get(key);
+    for (const baseKey of allBaseKeys) {
+      const crewRules = crewRulesMap?.get(baseKey) ?? [];
+      const storeRules = storeRulesByBaseKey.get(baseKey) ?? [];
 
-      // Determine which rule wins based on priority
-      let winningRule: { source: 'store' | 'crew'; record: StoreRoleRuleRecord | CrewRoleRuleRecord } | null = null;
-
-      if (crewRule?.isPriority) {
-        // Crew has priority override
-        winningRule = { source: 'crew', record: crewRule };
-      } else if (storeRule?.isPriority && !crewRule) {
-        // Store has priority and crew has no rule
-        winningRule = { source: 'store', record: storeRule };
-      } else if (storeRule?.isPriority && crewRule && !crewRule.isPriority) {
-        // Store has priority, crew has rule but no priority → store wins
-        winningRule = { source: 'store', record: storeRule };
-      } else if (crewRule) {
-        // Crew has rule (no priority flags in play)
-        winningRule = { source: 'crew', record: crewRule };
-      } else if (storeRule) {
-        // Fallback to store rule
-        winningRule = { source: 'store', record: storeRule };
+      if (crewRules.length > 0) {
+        // Crew overrides store for this base key.
+        // Under strict semantics: only use priority crew rules.
+        const priorityCrewRules = crewRules.filter((r) => r.isPriority);
+        for (const rec of priorityCrewRules) {
+          const rr = rec.RoleRule;
+          roleRules.push({
+            id: rec.id,
+            roleRuleId: rr.id,
+            roleId: rr.roleId,
+            roleCode: rr.Role.code,
+            type: rr.type,
+            targetRoleId: rr.targetRoleId,
+            targetRoleCode: rr.TargetRole?.code ?? null,
+            valueInt: rec.valueInt,
+            constraintType: rr.constraintType,
+            crewId: crewId,
+            isPriority: rec.isPriority,
+            source: 'crew',
+          });
+        }
+        continue;
       }
 
-      if (winningRule) {
-        const rr = winningRule.record.RoleRule;
+      // No crew rules → apply store defaults, but only priority ones
+      const priorityStoreRules = storeRules.filter((r) => r.isPriority);
+      for (const rec of priorityStoreRules) {
+        const rr = rec.RoleRule;
         roleRules.push({
-          id: rr.id,
+          id: rec.id,
+          roleRuleId: rr.id,
           roleId: rr.roleId,
           roleCode: rr.Role.code,
           type: rr.type,
           targetRoleId: rr.targetRoleId,
           targetRoleCode: rr.TargetRole?.code ?? null,
-          valueInt: winningRule.record.valueInt,
+          valueInt: rec.valueInt,
           constraintType: rr.constraintType,
-          crewId: crewId, // Always crew-specific now
-          isPriority: winningRule.record.isPriority,
+          crewId: crewId,
+          isPriority: rec.isPriority,
+          source: 'store',
         });
       }
     }

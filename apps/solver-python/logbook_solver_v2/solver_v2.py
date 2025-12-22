@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import os
 from typing import Any, Dict, Iterable, List, Tuple
 
 from ortools.sat.python import cp_model
@@ -35,7 +36,7 @@ class AssignmentIndex:
 class SolverV2:
     """CP-SAT model that consumes the metadata-driven SolverInputV2 payload."""
 
-    def __init__(self, payload: Dict[str, Any], force_soft_mode: bool = False):
+    def __init__(self, payload: Dict[str, Any], force_soft_mode: bool = False, weights: Dict[int, float] | None = None):
         """
         Initialize the solver.
         
@@ -43,6 +44,7 @@ class SolverV2:
             payload: The solver input payload
             force_soft_mode: If True, treat all HARD constraints as SOFT for 
                             feasibility diagnosis. This is for testing only!
+            weights: Optional tuning weights for CrewRoleRules (rule_id -> weight)
         """
         self.payload = normalize_payload(payload)
         self.model = cp_model.CpModel()
@@ -54,6 +56,9 @@ class SolverV2:
         self.store = self.payload['store']
         self.roles = self.payload['roles']
         self.crew = self.payload['crew']
+        
+        # Tuning weights for CrewRoleRules (rule_id -> weight, default 1.0)
+        self.rule_weights: Dict[int, float] = weights or {}
         
         # NEW schema fields
         self.role_families = self.payload.get('roleFamilies', [])
@@ -97,8 +102,10 @@ class SolverV2:
             crew_quotas=self.crew_quotas,
         )
         self.assignment_index = AssignmentIndex(self.assignment_vars)
-        self.role_code_by_id = {role['id']: role['code'] for role in self.roles}
-        self.role_by_id = {role['id']: role for role in self.roles}
+        # Keep lookups deterministic (roles list order may not be stable across payloads)
+        roles_sorted = sorted(self.roles, key=lambda r: int(r.get('id', 0)))
+        self.role_code_by_id = {role['id']: role['code'] for role in roles_sorted}
+        self.role_by_id = {role['id']: role for role in roles_sorted}
         self.preference_map = self._build_preference_lookup()
 
         constraints.add_all(self)
@@ -129,10 +136,35 @@ class SolverV2:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def solve(self, time_limit_seconds: int | None = None) -> Dict[str, Any]:
+    def solve(
+        self,
+        time_limit_seconds: int | None = None,
+        random_seed: int | None = None,
+        num_workers: int | None = None,
+    ) -> Dict[str, Any]:
         solver = cp_model.CpSolver()
         if time_limit_seconds:
             solver.parameters.max_time_in_seconds = time_limit_seconds
+
+        # Worker configuration
+        # - If num_workers is not provided, default to portfolio search across all CPU cores.
+        # - If random_seed is provided AND caller does not override num_workers,
+        #   we still default to portfolio (because you're optimizing for speed).
+        if num_workers is None or num_workers <= 0:
+            num_workers = os.cpu_count() or 1
+
+        # OR-Tools parameter naming varies by version.
+        # In this repo's OR-Tools build, setting `num_workers` can yield MODEL_INVALID,
+        # while `num_search_workers` works as expected.
+        solver.parameters.num_search_workers = int(num_workers)
+
+        # NOTE: In some OR-Tools builds, setting random_seed alongside
+        # num_search_workers>1 can lead to MODEL_INVALID. To keep portfolio search
+        # usable, only apply random_seed in single-worker mode.
+        if random_seed is not None and int(num_workers) == 1:
+            solver.parameters.random_seed = random_seed
+            solver.parameters.interleave_search = True
+            solver.parameters.log_search_progress = False
 
         status = solver.Solve(self.model)
         success = status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
@@ -140,7 +172,10 @@ class SolverV2:
 
         if success:
             slot_minutes = self.time_grid.slot_minutes
-            for (crew_id, slot, role_id, task_slots), var in self.assignment_vars.items():
+            for (crew_id, slot, role_id, task_slots), var in sorted(
+                self.assignment_vars.items(),
+                key=lambda kv: (str(kv[0][0]), kv[0][1], kv[0][2], kv[0][3]),
+            ):
                 if solver.Value(var):
                     start_min = slot * slot_minutes
                     end_min = start_min + (task_slots * slot_minutes)
@@ -284,11 +319,69 @@ class SolverV2:
             cp_model.UNKNOWN: 'TIME_LIMIT',
         }
         return mapping.get(status_code, 'ERROR')
+    
+    def get_rule_weight(self, rule_id: int) -> float:
+        """Get the tuning weight for a rule (default 1.0)."""
+        return self.rule_weights.get(rule_id, 1.0)
+
+    def apply_solution_hint(self, assignments: List[Dict[str, Any]]) -> None:
+        """Apply a previous solution as a hint (warm start) to the solver."""
+        # Map assignments to variables
+        # assignments format: [{'crewId': '...', 'roleId': '...', 'startMinutes': 123, 'endMinutes': 456}, ...]
+        
+        # Pre-process assignments into a set of (crew_id, role_id, start_minute)
+        hint_set = set()
+        for a in assignments:
+            # Handle both startMinute and startMinutes (legacy) just in case
+            start_min = a.get('startMinute')
+            if start_min is None:
+                start_min = a.get('startMinutes')
+            
+            if start_min is not None:
+                hint_set.add((str(a['crewId']), int(a['roleId']), int(start_min)))
+            
+        # Iterate over all variables and set hints
+        for (c_id, s_idx, r_id, _), var in self.assignment_vars.items():
+            # Calculate start minute for this slot
+            start_min, _ = self.time_grid.slot_to_minutes(s_idx)
+            
+            if (str(c_id), int(r_id), start_min) in hint_set:
+                self.model.AddHint(var, 1)
+            else:
+                self.model.AddHint(var, 0)
 
 
-def solve(payload: Dict[str, Any], *, time_limit_seconds: int | None = None) -> Dict[str, Any]:
-    solver = SolverV2(payload)
-    return solver.solve(time_limit_seconds=time_limit_seconds)
+def solve(
+    payload: Dict[str, Any],
+    *,
+    time_limit_seconds: int | None = None,
+    weights: Dict[int, float] | None = None,
+    random_seed: int | None = None,
+    num_workers: int | None = None,
+    solution_hint: List[Dict[str, Any]] | None = None,
+) -> Dict[str, Any]:
+    """Solve the scheduling problem.
+    
+    Args:
+        payload: Solver input payload
+        time_limit_seconds: Optional time limit
+        weights: Optional dict mapping rule_id -> weight for tuning (default 1.0)
+        random_seed: Optional random seed for deterministic results
+        num_workers: Optional number of workers for portfolio search
+        solution_hint: Optional list of assignments to use as a warm start
+    
+    Returns:
+        Solver result with assignments
+    """
+    solver = SolverV2(payload, weights=weights)
+    if solution_hint:
+        solver.apply_solution_hint(solution_hint)
+        
+    return solver.solve(
+        time_limit_seconds=time_limit_seconds,
+        random_seed=random_seed,
+        num_workers=num_workers,
+    )
 
 
 __all__ = ["SolverV2", "solve"]

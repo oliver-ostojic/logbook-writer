@@ -383,6 +383,8 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                     slot_covered[slot] = None
             
             # 1. ADJACENCY BONUS: For each pair of adjacent slots, reward if both covered
+            # Multiply by rule weight for tuning
+            rule_weight = solver.get_rule_weight(rule.get('id', 0))
             adjacency_bonuses_added = 0
             for slot in range(shift_start, shift_end - 1):
                 curr_cov = slot_covered.get(slot)
@@ -391,7 +393,8 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                 if curr_cov is not None and next_cov is not None:
                     adj_var = m.NewBoolVar(f'maxconsec_adj_{crew_id}_{role_id}_{slot}')
                     m.AddMinEquality(adj_var, [curr_cov, next_cov])  # AND
-                    solver.soft_constraint_penalties.append(-ADJACENCY_BONUS * adj_var)
+                    weighted_bonus = int(ADJACENCY_BONUS * rule_weight)
+                    solver.soft_constraint_penalties.append(-weighted_bonus * adj_var)
                     adjacency_bonuses_added += 1
             
             # 2. FULL BLOCK BONUS: BIG reward for each complete max_slots consecutive block
@@ -411,7 +414,8 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                 if all_have_coverage and len(window_vars) == max_slots:
                     full_window = m.NewBoolVar(f'maxconsec_full_{crew_id}_{role_id}_{window_start}')
                     m.AddMinEquality(full_window, window_vars)  # AND of all vars
-                    solver.soft_constraint_penalties.append(-FULL_BLOCK_BONUS * full_window)
+                    weighted_bonus = int(FULL_BLOCK_BONUS * rule_weight)
+                    solver.soft_constraint_penalties.append(-weighted_bonus * full_window)
                     full_block_bonuses_added += 1
             
             soft_rewards_added += full_block_bonuses_added + adjacency_bonuses_added
@@ -428,17 +432,23 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
 def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bool) -> None:
     """CANNOT_BE_ASSIGNED_BEFORE / CANNOT_BE_ASSIGNED_AFTER constraints.
     
+    These are DIRECT ADJACENCY constraints (not "anywhere before/after"):
+    
     CANNOT_BE_ASSIGNED_BEFORE (before=True):
-      - roleId cannot appear BEFORE targetRoleId in a crew's schedule
-      - If crew does targetRoleId at slot T, they cannot do roleId at any slot < T
+      - roleId cannot be DIRECTLY BEFORE targetRoleId
+      - If role ends at slot T and target starts at slot T → violation
+      - Example: role=[8-9], target=[9-10] → VIOLATION (directly consecutive)
+      - Example: role=[8-9], other=[9-10], target=[10-11] → OK (not directly consecutive)
       
     CANNOT_BE_ASSIGNED_AFTER (before=False):
-      - roleId cannot appear AFTER targetRoleId in a crew's schedule
-      - If crew does targetRoleId at slot T, they cannot do roleId at any slot > T
+      - roleId cannot be DIRECTLY AFTER targetRoleId  
+      - If target ends at slot T and role starts at slot T → violation
+      - Example: target=[8-9], role=[9-10] → VIOLATION (directly consecutive)
+      - Example: target=[8-9], other=[9-10], role=[10-11] → OK (not directly consecutive)
     
-    Example: CANNOT_BE_ASSIGNED_BEFORE with roleId=REGISTER, targetRoleId=GREETER
-      means "REGISTER cannot come before GREETER" - if you do GREETER, 
-      you can't have done REGISTER earlier in the day.
+    Example: CANNOT_BE_ASSIGNED_AFTER with roleId=REGISTER, targetRoleId=P_HELM
+      means "REGISTER cannot come directly after P_HELM" - no P_HELM→REG transitions,
+      but P_HELM→BRK→REG is fine.
     """
     m = solver.model
     constraints_added = 0
@@ -456,86 +466,61 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
             continue
         
         is_hard = rule['constraintType'] == 'HARD'
+        rule_weight = solver.get_rule_weight(rule.get('id', 0))
         
         for crew in _get_crew_for_rule(solver, rule):
             crew_id = crew['id']
-            shift_start = solver.time_grid.minutes_to_slot_floor(crew['shiftStartMin'])
-            shift_end = solver.time_grid.minutes_to_slot_floor(crew['shiftEndMin'])
             
-            # Build slot coverage indicators for both roles
-            role_coverage = {}  # slot -> bool var (is role_id covering this slot?)
-            target_coverage = {}  # slot -> bool var (is target_role_id covering this slot?)
+            # Collect all assignments for this crew for both roles
+            role_assignments = []  # list of (var, start_slot, end_slot)
+            target_assignments = []
             
-            for slot in range(shift_start, shift_end):
-                # Find vars covering this slot for role_id
-                role_vars = []
-                target_vars = []
-                
-                for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
-                    if var_crew != crew_id:
-                        continue
-                    # Does this assignment cover this slot?
-                    if var_slot <= slot < var_slot + task_slots:
-                        if var_role == role_id:
-                            role_vars.append(var)
-                        elif var_role == target_role_id:
-                            target_vars.append(var)
-                
-                if role_vars:
-                    cov = m.NewBoolVar(f'ord_role_{crew_id}_{role_id}_{slot}')
-                    m.AddMaxEquality(cov, role_vars)
-                    role_coverage[slot] = cov
-                
-                if target_vars:
-                    cov = m.NewBoolVar(f'ord_tgt_{crew_id}_{target_role_id}_{slot}')
-                    m.AddMaxEquality(cov, target_vars)
-                    target_coverage[slot] = cov
+            for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
+                if var_crew != crew_id:
+                    continue
+                end_slot = var_slot + task_slots
+                if var_role == role_id:
+                    role_assignments.append((var, var_slot, end_slot))
+                elif var_role == target_role_id:
+                    target_assignments.append((var, var_slot, end_slot))
             
-            # Add ordering constraints
-            # BEFORE: if target at slot T, then role cannot be at any slot < T
-            # AFTER: if target at slot T, then role cannot be at any slot > T
-            for target_slot, target_cov in target_coverage.items():
-                if before:
-                    # role cannot be BEFORE target
-                    # For all slots S < target_slot: target_cov => NOT role_coverage[S]
-                    for role_slot in range(shift_start, target_slot):
-                        role_cov = role_coverage.get(role_slot)
-                        if role_cov is not None:
+            # Check all pairs for direct adjacency violations
+            for target_var, target_start, target_end in target_assignments:
+                for role_var, role_start, role_end in role_assignments:
+                    if before:
+                        # CANNOT_BE_ASSIGNED_BEFORE: role cannot be directly BEFORE target
+                        # Violation if role ends exactly where target starts
+                        if role_end == target_start:
                             if is_hard:
-                                # HARD: target_cov => NOT role_cov
-                                # Equivalent to: target_cov + role_cov <= 1
-                                m.Add(target_cov + role_cov <= 1)
+                                # Both cannot be active: target_var + role_var <= 1
+                                m.Add(target_var + role_var <= 1)
                                 constraints_added += 1
                             else:
-                                # SOFT: Create violation indicator and add penalty
-                                # violation = 1 if both target_cov AND role_cov are 1
-                                violation = m.NewBoolVar(f'ord_viol_{crew_id}_{role_id}_{target_slot}_{role_slot}')
-                                m.AddBoolAnd([target_cov, role_cov]).OnlyEnforceIf(violation)
-                                m.AddBoolOr([target_cov.Not(), role_cov.Not()]).OnlyEnforceIf(violation.Not())
-                                # Penalty of 200 per violation (stronger than preference bonus)
+                                # SOFT: penalty if both are active
+                                violation = m.NewBoolVar(f'adj_viol_{crew_id}_{role_id}_{target_role_id}_{role_start}_{target_start}')
+                                m.AddBoolAnd([target_var, role_var]).OnlyEnforceIf(violation)
+                                m.AddBoolOr([target_var.Not(), role_var.Not()]).OnlyEnforceIf(violation.Not())
                                 ORDERING_VIOLATION_PENALTY = 200
-                                solver.soft_constraint_penalties.append(ORDERING_VIOLATION_PENALTY * violation)
+                                weighted_penalty = int(ORDERING_VIOLATION_PENALTY * rule_weight)
+                                solver.soft_constraint_penalties.append(weighted_penalty * violation)
                                 soft_penalties_added += 1
-                else:
-                    # role cannot be AFTER target
-                    # For all slots S > target_slot: target_cov => NOT role_coverage[S]
-                    for role_slot in range(target_slot + 1, shift_end):
-                        role_cov = role_coverage.get(role_slot)
-                        if role_cov is not None:
+                    else:
+                        # CANNOT_BE_ASSIGNED_AFTER: role cannot be directly AFTER target
+                        # Violation if target ends exactly where role starts
+                        if target_end == role_start:
                             if is_hard:
-                                # HARD: target_cov => NOT role_cov
-                                m.Add(target_cov + role_cov <= 1)
+                                m.Add(target_var + role_var <= 1)
                                 constraints_added += 1
                             else:
-                                # SOFT: Create violation indicator and add penalty
-                                violation = m.NewBoolVar(f'ord_viol_{crew_id}_{role_id}_{target_slot}_{role_slot}')
-                                m.AddBoolAnd([target_cov, role_cov]).OnlyEnforceIf(violation)
-                                m.AddBoolOr([target_cov.Not(), role_cov.Not()]).OnlyEnforceIf(violation.Not())
+                                violation = m.NewBoolVar(f'adj_viol_{crew_id}_{role_id}_{target_role_id}_{target_start}_{role_start}')
+                                m.AddBoolAnd([target_var, role_var]).OnlyEnforceIf(violation)
+                                m.AddBoolOr([target_var.Not(), role_var.Not()]).OnlyEnforceIf(violation.Not())
                                 ORDERING_VIOLATION_PENALTY = 200
-                                solver.soft_constraint_penalties.append(ORDERING_VIOLATION_PENALTY * violation)
+                                weighted_penalty = int(ORDERING_VIOLATION_PENALTY * rule_weight)
+                                solver.soft_constraint_penalties.append(weighted_penalty * violation)
                                 soft_penalties_added += 1
         
-        direction = "before" if before else "after"
+        direction = "directly before" if before else "directly after"
         scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
         constraint_type = "HARD" if is_hard else "SOFT"
         if DEBUG: print(f"      {constraint_type}: {role_code} cannot be {direction} {target_role_code} for {scope}", file=sys.stderr)
@@ -564,6 +549,7 @@ def _apply_timing(solver: "SolverV2", rules: List[dict]) -> None:
     timing_prefs = []
     
     for rule in rules:
+        rule_id = rule.get('id', 0)
         role_id = rule['roleId']
         role_code = rule.get('roleCode', f'role_{role_id}')
         timing_value = rule.get('valueInt', 0)
@@ -572,6 +558,7 @@ def _apply_timing(solver: "SolverV2", rules: List[dict]) -> None:
         direction = direction_map.get(timing_value, f"unknown({timing_value})")
         
         timing_prefs.append({
+            'ruleId': rule_id,  # Include rule ID for weight lookup
             'roleId': role_id,
             'roleCode': role_code,
             'preference': timing_value,  # -1=early, 0=middle, 1=late
@@ -781,6 +768,7 @@ def _apply_hour_preference(solver: "SolverV2", rules: List[dict], like: bool) ->
             # Soft constraint: store preference for objective function
             # We store the shift-relative minute; objective function will convert per-crew
             hour_prefs.append({
+                'ruleId': rule.get('id', 0),  # Include rule ID for weight lookup
                 'roleId': role_id,
                 'roleCode': role_code,
                 'shiftRelativeMin': shift_relative_min,  # Minutes from shift start
@@ -983,6 +971,7 @@ def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> 
             # Fall back to individual role balancing if no families defined
             if DEBUG: print(f"      ⚠️  Roles not in families, falling back to role-level balance", file=sys.stderr)
             solver.distribution_preferences.append({
+                'ruleId': rule.get('id', 0),  # Include rule ID for weight lookup
                 'mode': 'role',  # Individual role balance
                 'roleId': role_id,
                 'roleCode': role_code,
@@ -999,6 +988,7 @@ def _apply_distribution_between_roles(solver: "SolverV2", rules: List[dict]) -> 
             target_role_ids = list(family_to_roles.get(target_family_id, set()))
             
             solver.distribution_preferences.append({
+                'ruleId': rule.get('id', 0),  # Include rule ID for weight lookup
                 'mode': 'family',  # Family-level balance
                 'primaryFamilyId': primary_family_id,
                 'primaryFamilyName': primary_family_name,

@@ -1412,15 +1412,19 @@ def test_cannot_be_assigned_before():
 
 def test_cannot_be_assigned_after():
     """
-    TEST 19: CANNOT_BE_ASSIGNED_AFTER
+    TEST 19: CANNOT_BE_ASSIGNED_AFTER (Direct Adjacency)
     
-    Rule: REGISTER cannot be assigned AFTER GREETER
-    Meaning: If crew does GREETER at slot T, they cannot do REGISTER at any slot > T
+    Rule: REGISTER cannot be assigned DIRECTLY AFTER GREETER
+    Meaning: No GREETER→REGISTER transitions (directly consecutive)
     
-    Setup: Both roles need coverage. With this rule, REGISTER must come before GREETER.
+    OK: GREETER at 8-9, BREAK at 9-9:30, REGISTER at 9:30-10 (not directly consecutive)
+    NOT OK: GREETER at 8-9, REGISTER at 9-10 (directly consecutive - violation!)
+    
+    Setup: Force a scenario where GREETER ends and REGISTER must start at same time.
+    This should cause the solver to use different crew OR insert something between.
     """
     print("\n" + "="*60)
-    print("TEST 19: CANNOT_BE_ASSIGNED_AFTER - REGISTER cannot come after GREETER")
+    print("TEST 19: CANNOT_BE_ASSIGNED_AFTER - REGISTER cannot come DIRECTLY after GREETER")
     print("="*60)
     
     payload = create_test_payload(role_rules=[
@@ -1438,10 +1442,10 @@ def test_cannot_be_assigned_after():
         }
     ])
     
-    # Coverage: 1 hour of each role
+    # Coverage: GREETER 8-9am, then REGISTER 9-10am (directly adjacent windows)
     payload['coverageWindows'] = [
-        {"roleId": 1, "startMin": 540, "endMin": 600, "crewPerTaskLength": 1},  # REGISTER 9-10am
         {"roleId": 2, "startMin": 480, "endMin": 540, "crewPerTaskLength": 1},  # GREETER 8-9am
+        {"roleId": 1, "startMin": 540, "endMin": 600, "crewPerTaskLength": 1},  # REGISTER 9-10am
     ]
     
     result = solve(payload, time_limit_seconds=10)
@@ -1469,36 +1473,40 @@ def test_cannot_be_assigned_after():
         for s in schedule:
             print(f"    {s['role']}: {s['start']}-{s['end']}")
         
-        # Check constraint: REGISTER cannot come after GREETER for this crew
-        register_slots = [s for s in schedule if s['role'] == 'REGISTER']
-        greeter_slots = [s for s in schedule if s['role'] == 'GREETER']
+        # Check constraint: REGISTER cannot come DIRECTLY after GREETER
+        # Violation = GREETER.end == REGISTER.start for same crew
+        register_tasks = [s for s in schedule if s['role'] == 'REGISTER']
+        greeter_tasks = [s for s in schedule if s['role'] == 'GREETER']
         
-        for r in register_slots:
-            for g in greeter_slots:
-                if r['start'] > g['start']:
-                    print(f"  ❌ REGISTER at {r['start']} comes after GREETER at {g['start']}!")
+        for r in register_tasks:
+            for g in greeter_tasks:
+                if g['end'] == r['start']:
+                    print(f"  ❌ REGISTER at {r['start']} comes DIRECTLY after GREETER ending at {g['end']}!")
                     all_valid = False
     
     if not all_valid:
-        print("\n❌ TEST 19 FAILED: Constraint violated\n")
+        print("\n❌ TEST 19 FAILED: Direct adjacency constraint violated\n")
         return False
     
-    print("\n✅ TEST 19 PASSED: CANNOT_BE_ASSIGNED_AFTER works\n")
+    # Note: With new semantics, GREETER at 8-9 and REGISTER at 9:30-10 for SAME crew is OK
+    # as long as they're not directly consecutive
+    print("\n✅ TEST 19 PASSED: CANNOT_BE_ASSIGNED_AFTER (direct adjacency) works\n")
     return True
 
 
 def test_cannot_be_assigned_before_forces_different_crew():
     """
-    TEST 20: CANNOT_BE_ASSIGNED_BEFORE forces assignment to different crew
+    TEST 20: CANNOT_BE_ASSIGNED_BEFORE (Direct Adjacency)
     
-    Scenario: REGISTER coverage 8-9am, GREETER coverage 9-10am
-    Rule: REGISTER cannot come before GREETER
+    Rule: REGISTER cannot come DIRECTLY BEFORE GREETER
+    Meaning: No REGISTER→GREETER transitions (directly consecutive)
     
-    This means no single crew can do both (REGISTER first, then GREETER would violate).
-    So the roles must be split between different crew members.
+    Scenario: REGISTER coverage 8-9am, GREETER coverage 9-10am (directly adjacent)
+    With this rule, same crew can't do REGISTER ending at 9am then GREETER starting at 9am.
+    So the roles must be split between different crew OR have a gap.
     """
     print("\n" + "="*60)
-    print("TEST 20: CANNOT_BE_ASSIGNED_BEFORE forces different crew")
+    print("TEST 20: CANNOT_BE_ASSIGNED_BEFORE - REGISTER cannot come DIRECTLY before GREETER")
     print("="*60)
     
     payload = create_test_payload(role_rules=[
@@ -1516,8 +1524,7 @@ def test_cannot_be_assigned_before_forces_different_crew():
         }
     ])
     
-    # Set up so REGISTER is earlier than GREETER in coverage windows
-    # This should force them to be on different crew since same crew can't do REGISTER then GREETER
+    # REGISTER ends at 9am, GREETER starts at 9am - directly adjacent
     payload['coverageWindows'] = [
         {"roleId": 1, "startMin": 480, "endMin": 540, "crewPerTaskLength": 1},  # REGISTER 8-9am
         {"roleId": 2, "startMin": 540, "endMin": 600, "crewPerTaskLength": 1},  # GREETER 9-10am
@@ -1528,38 +1535,42 @@ def test_cannot_be_assigned_before_forces_different_crew():
     
     assignments = result['assignments']
     
-    # Find who does REGISTER and who does GREETER
-    register_crew = set()
-    greeter_crew = set()
-    
+    # Group by crew
+    crew_schedule = {}
     for a in assignments:
-        if a['taskType'] == 'REGISTER':
-            register_crew.add(a['crewId'])
-        elif a['taskType'] == 'GREETER':
-            greeter_crew.add(a['crewId'])
+        crew = a['crewId']
+        if crew not in crew_schedule:
+            crew_schedule[crew] = []
+        crew_schedule[crew].append({
+            'role': a['taskType'],
+            'start': a['startMinute'],
+            'end': a['startMinute'] + a['durationMin']
+        })
     
-    print(f"REGISTER assigned to: {register_crew}")
-    print(f"GREETER assigned to: {greeter_crew}")
+    print(f"\nSchedule by crew:")
+    all_valid = True
+    for crew, schedule in crew_schedule.items():
+        schedule.sort(key=lambda x: x['start'])
+        print(f"  {crew}:")
+        for s in schedule:
+            print(f"    {s['role']}: {s['start']}-{s['end']}")
+        
+        # Check constraint: REGISTER cannot come DIRECTLY before GREETER
+        # Violation = REGISTER.end == GREETER.start for same crew
+        register_tasks = [s for s in schedule if s['role'] == 'REGISTER']
+        greeter_tasks = [s for s in schedule if s['role'] == 'GREETER']
+        
+        for r in register_tasks:
+            for g in greeter_tasks:
+                if r['end'] == g['start']:
+                    print(f"  ❌ REGISTER ending at {r['end']} is DIRECTLY before GREETER starting at {g['start']}!")
+                    all_valid = False
     
-    # Check that no crew does both roles (since REGISTER comes before GREETER in time)
-    overlap = register_crew & greeter_crew
-    if overlap:
-        print(f"⚠️  Crew {overlap} does both roles - checking order...")
-        # This is actually OK if the crew only does GREETER first or only does REGISTER after
-        # Let's verify the actual ordering
-        for crew in overlap:
-            crew_assignments = [a for a in assignments if a['crewId'] == crew]
-            reg = [a for a in crew_assignments if a['taskType'] == 'REGISTER']
-            grt = [a for a in crew_assignments if a['taskType'] == 'GREETER']
-            
-            for r in reg:
-                for g in grt:
-                    if r['startMinute'] < g['startMinute']:
-                        print(f"❌ Crew {crew} has REGISTER before GREETER!")
-                        print("\n❌ TEST 20 FAILED\n")
-                        return False
+    if not all_valid:
+        print("\n❌ TEST 20 FAILED: Direct adjacency constraint violated\n")
+        return False
     
-    print("\n✅ TEST 20 PASSED: Constraint correctly applied\n")
+    print("\n✅ TEST 20 PASSED: CANNOT_BE_ASSIGNED_BEFORE (direct adjacency) works\n")
     return True
 
 
@@ -1679,6 +1690,7 @@ def test_dislike_role_for_hour_x_hard():
     TEST 23: DISLIKE_ROLE_FOR_HOUR_X (HARD) - Forbid REGISTER at 8am
     
     This is a HARD constraint that completely forbids assignments at the disliked hour.
+    valueInt is shift-relative minutes (0 = first minute of shift = 8am for this test).
     """
     print("\n" + "="*60)
     print("TEST 23: DISLIKE_ROLE_FOR_HOUR_X (HARD) - Forbid REGISTER at 8am")
@@ -1692,17 +1704,17 @@ def test_dislike_role_for_hour_x_hard():
             "type": "DISLIKE_ROLE_FOR_HOUR_X",
             "targetRoleId": None,
             "targetRoleCode": None,
-            "valueInt": 8,  # Hour 8 = 8:00-8:59 AM
+            "valueInt": 0,  # Shift-relative minute 0 = 8:00 AM (first hour of shift)
             "constraintType": "HARD",
             "crewId": None,
             "isPriority": False,
         }
     ])
     
-    # Coverage: REGISTER for 2 hours (8-10am) - but hour 8 is forbidden
-    # So all REGISTER must be at hour 9
+    # Coverage: REGISTER for 2 hours (9-11am) - hour 8 is forbidden by rule
+    # So all REGISTER must be at hour 9 or later
     payload['coverageWindows'] = [
-        {"roleId": 1, "startMin": 540, "endMin": 600, "crewPerTaskLength": 1},  # REGISTER 9-10am only
+        {"roleId": 1, "startMin": 540, "endMin": 660, "crewPerTaskLength": 1},  # REGISTER 9-11am
         {"roleId": 2, "startMin": 480, "endMin": 720, "crewPerTaskLength": 1},  # GREETER 8-12pm
     ]
     

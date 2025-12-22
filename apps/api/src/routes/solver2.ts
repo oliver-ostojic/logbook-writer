@@ -14,6 +14,7 @@ const API_SRC_DIR = path.resolve(CURRENT_DIR, '..');
 const PROJECT_ROOT = path.resolve(API_SRC_DIR, '../../..');
 // Use the refactored solver in apps/solver-python/
 const PYTHON_MODULE = 'logbook_solver_v2.cli';
+const TUNING_MODULE = 'tuning_engine';  // For tuning engine CLI
 const PYTHON_SOURCE_DIR = path.join(PROJECT_ROOT, 'apps', 'solver-python');
 const DEFAULT_PYTHON_BIN = path.join(PROJECT_ROOT, '.venv', 'bin', 'python');
 const PYTHON_FALLBACK_BIN = 'python3';
@@ -25,6 +26,20 @@ type SolveRequestBody = {
   lookbackDays?: number;
   timeLimitSeconds?: number;
   includeInput?: boolean;
+};
+
+type TuneRequestBody = {
+  storeId: number | string;
+  date: string;
+  lookbackDays?: number;
+  includeInput?: boolean;
+  tuningConfig?: {
+    numRegions?: number;        // Number of parallel regions (default: CPU count, max 10)
+    shotsPerRegion?: number;    // Ladder iterations per region (default: 3)
+    timeLimitPerShot?: number;  // Seconds per solve (default: 15)
+    workersPerRegion?: number;  // Solver workers per region (default: 1)
+    fairnessWeight?: number;    // Weight for fairness in scoring (default: 0.5)
+  };
 };
 
 export interface PythonSolverAssignment {
@@ -169,6 +184,99 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
       return reply.code(500).send({ success: false, error: (error as Error).message });
     }
   });
+
+  // =========================================================================
+  // TUNING ENDPOINT - Uses parallel region search for optimized schedules
+  // =========================================================================
+  app.post('/solver/v2/tune', async (request, reply) => {
+    const body = request.body as TuneRequestBody | undefined;
+    if (!body) {
+      return reply.code(400).send({ success: false, error: 'storeId and date are required' });
+    }
+
+    const storeId = Number(body.storeId);
+    if (!body.date || Number.isNaN(storeId)) {
+      return reply.code(400).send({ success: false, error: 'storeId (number) and date are required' });
+    }
+
+    let lookbackDays: number | undefined;
+    if (body.lookbackDays !== undefined) {
+      lookbackDays = Number(body.lookbackDays);
+      if (!Number.isFinite(lookbackDays) || lookbackDays <= 0) {
+        return reply.code(400).send({ success: false, error: 'lookbackDays must be a positive number when provided' });
+      }
+    }
+
+    try {
+      const solverInput = await buildSolverInputV2({
+        storeId,
+        date: body.date,
+        lookbackDays,
+      });
+
+      // Run the tuning engine with parallel region search
+      const tuningConfig = body.tuningConfig ?? {};
+      const pythonResult = await runPythonTuningEngine(solverInput, tuningConfig);
+      const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
+
+      const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(
+        (assignment) => ({
+          crewId: assignment.crewId,
+          roleId: assignment.roleId,
+          startMinute: assignment.startMinute,
+          endMinute: assignment.endMinute,
+        })
+      );
+
+      let constraintAnalysis = analyzeSolverResult({
+        solverInput,
+        assignments: assignmentRecords,
+      });
+
+      let violations = constraintAnalysis.violations;
+      if (!pythonResult.success && violations.length === 0) {
+        violations = [
+          {
+            severity: 'error',
+            category: 'other',
+            message: `Tuning returned ${pythonResult.status}. Inspect inputs for infeasibility.`,
+          },
+        ];
+        constraintAnalysis = {
+          ...constraintAnalysis,
+          violations,
+        };
+      }
+
+      const formattedViolations = violations
+        .slice(0, VIOLATION_METADATA_LIMIT)
+        .map(formatViolationMessage);
+
+      const response: Record<string, unknown> = {
+        success: pythonResult.success,
+        status: pythonResult.status,
+        objectiveValue: pythonResult.objectiveValue,
+        metadata: {
+          ...pythonResult.metadata,
+          constraintAnalysis,
+          violations: formattedViolations,
+          tuningEngine: true,
+        },
+        assignments,
+        constraintAnalysis,
+        violations: formattedViolations,
+      };
+
+      if (body.includeInput) {
+        response.input = solverInput;
+      }
+
+      return response;
+    } catch (error) {
+      request.log.error({ err: error }, 'solver/v2/tune execution failed');
+      return reply.code(500).send({ success: false, error: (error as Error).message });
+    }
+  });
 }
 
 function resolvePythonBinary(): string {
@@ -256,6 +364,93 @@ export async function runPythonSolverV2(
     });
 
     const payload = JSON.stringify({ solverInput, timeLimitSeconds });
+    child.stdin?.write(payload);
+    child.stdin?.end();
+  });
+}
+
+/**
+ * Configuration for the tuning engine
+ */
+export interface TuningConfig {
+  numRegions?: number;        // Number of parallel regions (default: CPU count, max 10)
+  shotsPerRegion?: number;    // Ladder iterations per region (default: 3)
+  timeLimitPerShot?: number;  // Seconds per solve (default: 15)
+  workersPerRegion?: number;  // Solver workers per region (default: 1)
+  fairnessWeight?: number;    // Weight for fairness in scoring (default: 0.5)
+}
+
+/**
+ * Run the Python tuning engine with parallel region search
+ * 
+ * Best configuration for 10-core machines:
+ * - numRegions=10 (one per core)
+ * - shotsPerRegion=3 (quick ladder iterations)
+ * - timeLimitPerShot=15 (fast but thorough)
+ * - workersPerRegion=1 (deterministic within region)
+ * - fairnessWeight=0.5 (balanced)
+ */
+export async function runPythonTuningEngine(
+  solverInput: SolverInputV2,
+  tuningConfig: TuningConfig = {}
+): Promise<PythonSolverResult> {
+  const pythonBin = resolvePythonBinary();
+  const pythonPath = buildPythonPathEnv();
+
+  return new Promise<PythonSolverResult>((resolve, reject) => {
+    const child = spawn(pythonBin, ['-m', TUNING_MODULE], {
+      cwd: PROJECT_ROOT,
+      env: {
+        ...process.env,
+        PYTHONPATH: pythonPath,
+      },
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr?.on('data', (chunk) => {
+      const text = chunk.toString();
+      stderr += text;
+      // Print Python stderr in real-time for debugging
+      process.stderr.write(text);
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+
+    child.on('close', (code) => {
+      let parsed: PythonSolverResult | undefined;
+      if (stdout.trim()) {
+        try {
+          parsed = JSON.parse(stdout) as PythonSolverResult;
+        } catch (parseError) {
+          return reject(
+            new Error(
+              `Failed to parse tuning output: ${(parseError as Error).message}\nRaw: ${stdout}`
+            )
+          );
+        }
+      }
+
+      if (code !== 0) {
+        const message = parsed?.error || stderr || `Tuning process exited with code ${code}`;
+        return reject(new Error(message));
+      }
+
+      if (!parsed) {
+        return reject(new Error('Tuning engine returned empty output'));
+      }
+
+      resolve(parsed);
+    });
+
+    const payload = JSON.stringify({ solverInput, tuningConfig });
     child.stdin?.write(payload);
     child.stdin?.end();
   });

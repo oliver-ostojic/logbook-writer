@@ -419,6 +419,7 @@ enum AssignmentModel {
 enum AssignmentOrigin {
   ENGINE
   MANUAL
+  ML_ADJUSTED
 }
 
 enum BankingStatus {

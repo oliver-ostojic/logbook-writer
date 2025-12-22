@@ -56,7 +56,9 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
     constraints_added = 0
     slots_with_no_vars = []
     
-    for crew in solver.crew:
+    # IMPORTANT: Keep constraint creation order deterministic.
+    # (crew + slot loops, and any iteration over assignment_vars) should be stable.
+    for crew in sorted(solver.crew, key=lambda c: str(c.get('id', ''))):
         crew_id = crew['id']
         crew_name = crew.get('name', crew_id)
         shift_start_slot = solver.time_grid.minutes_to_slot_floor(crew['shiftStartMin'])
@@ -66,7 +68,10 @@ def _one_task_per_slot(solver: "SolverV2") -> None:
             # Get all variables that COVER this slot (not just start at it)
             covering_vars = []
             
-            for (var_crew_id, var_slot, role_id, task_slots), var in solver.assignment_vars.items():
+            for (var_crew_id, var_slot, role_id, task_slots), var in sorted(
+                solver.assignment_vars.items(),
+                key=lambda kv: (str(kv[0][0]), kv[0][1], kv[0][2], kv[0][3]),
+            ):
                 if var_crew_id != crew_id:
                     continue
                 # Check if this variable's task covers the current slot
@@ -128,7 +133,10 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
 
     # Index variables by role for faster lookup
     vars_by_role: Dict[int, List[Tuple[int, int, int, object]]] = defaultdict(list)
-    for (crew_id, slot, role_id, task_slots), var in solver.assignment_vars.items():
+    for (crew_id, slot, role_id, task_slots), var in sorted(
+        solver.assignment_vars.items(),
+        key=lambda kv: (kv[0][2], kv[0][1], str(kv[0][0]), kv[0][3]),
+    ):
         vars_by_role[role_id].append((slot, task_slots, crew_id, var))
 
     if DEBUG: print(f"   Coverage windows: {len(solver.coverage_windows)}", file=sys.stderr)
@@ -137,7 +145,10 @@ def _coverage_window_constraints(solver: "SolverV2") -> None:
     constraints_added = 0
     impossible_constraints = []
 
-    for window in solver.coverage_windows:
+    for window in sorted(
+        solver.coverage_windows,
+        key=lambda w: (w.get('roleId', 0), w.get('startMin', 0), w.get('endMin', 0)),
+    ):
         role_id = window['roleId']
         start_min = window['startMin']
         end_min = window['endMin']
