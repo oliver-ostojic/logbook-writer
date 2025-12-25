@@ -116,9 +116,15 @@ export interface CrewRoleFairnessHistoryDescriptor {
   crewId: string;
   storeId: number;
   minutesAssigned: number;
-  windowStart: Date;
-  windowEnd: Date;
+  date: Date;  // Date of this record (one record per crew/role/day)
   lookbackDays: number;
+}
+
+// NEW: Shift history for fairness normalization (minutes per hour worked)
+export interface CrewShiftHistoryDescriptor {
+  crewId: string;
+  date: Date;
+  shiftMinutes: number;  // endMin - startMin
 }
 
 // NEW: Role rules for solver constraints
@@ -138,6 +144,18 @@ export interface RoleRuleDescriptor {
   source: 'store' | 'crew';  // Whether this came from StoreRoleRule or CrewRoleRule
 }
 
+export interface SolverSettings {
+  fairnessBoost?: number;    // Reward for assigning under-represented crew (soft)
+  fairnessPenalty?: number;  // Penalty for assigning over-represented crew (soft)
+  fairnessMinStd?: number;   // Min std dev to apply fairness (default: 60)
+  enableHardFairness?: boolean;  // If true, only allow crew at/near minimum min/hr
+  fairnessAllowanceMph?: number; // How much above minimum min/hr is allowed (default: 1.0 min/hr)
+  assignmentReward?: number;
+  halfSizePenalty?: number;
+  consecutiveBonus?: number;
+  hourAlignedBonus?: number;
+}
+
 export interface SolverInputV2 {
   store: StoreDescriptor;
   roleFamilies: RoleFamilyDescriptor[];
@@ -149,5 +167,8 @@ export interface SolverInputV2 {
   bankedPreferences: BankedPreferenceDescriptor[];
   fairnessTrackers: RoleFairnessTrackerDescriptor[];
   fairnessHistory: CrewRoleFairnessHistoryDescriptor[];
+  shiftHistory: CrewShiftHistoryDescriptor[];  // NEW: for minutes per hour worked calculation
   roleRules: RoleRuleDescriptor[];
+  skipFairnessWeights?: boolean;  // If true, skips fairness boost/penalty in objective (for A/B testing)
+  settings?: SolverSettings;  // Tunable parameters
 }

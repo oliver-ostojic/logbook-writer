@@ -3,11 +3,17 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { PrismaClient } from '@prisma/client';
 
 import { buildSolverInputV2 } from '../solver2/builder';
 import type { RoleDescriptor, SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
 import type { ConstraintViolation } from '@logbook-writer/shared-types/src/constraint-analysis';
+import { SolverStatus } from '@logbook-writer/shared-types/src/solver';
+import { saveLogbookWithMetadata, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
+import { startOfDay } from '../utils';
+
+const prisma = new PrismaClient();
 
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const API_SRC_DIR = path.resolve(CURRENT_DIR, '..');
@@ -25,7 +31,15 @@ type SolveRequestBody = {
   date: string;
   lookbackDays?: number;
   timeLimitSeconds?: number;
+  numWorkers?: number;  // Number of parallel search workers (default: CPU count)
   includeInput?: boolean;
+  saveLogbook?: boolean;  // If true, saves logbook and triggers fairness tracking
+  skipFairnessWeights?: boolean;  // If true, skips fairness boost/penalty in objective (for A/B testing)
+  settings?: {  // Tunable solver parameters
+    fairnessBoost?: number;
+    fairnessPenalty?: number;
+    enableHardFairness?: boolean;  // If true, uses tiered rotation boost for tracked roles (default: true)
+  };
 };
 
 type TuneRequestBody = {
@@ -122,9 +136,20 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         date: body.date,
         lookbackDays,
       });
+      
+      // Set skipFairnessWeights flag for A/B testing (default: false)
+      solverInput.skipFairnessWeights = body.skipFairnessWeights ?? false;
+      
+      // Pass through settings (fairnessBoost, fairnessPenalty, etc.)
+      // Default enableHardFairness to true for production (tiered rotation boost)
+      solverInput.settings = {
+        enableHardFairness: true,  // Enable tiered rotation boost by default
+        ...body.settings,
+      };
 
       const timeLimitSeconds = body.timeLimitSeconds ?? 120; // Default to 120 seconds
-      const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
+      const numWorkers = body.numWorkers;  // undefined = use default (os.cpu_count())
+      const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds, numWorkers);
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
       const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(
@@ -160,10 +185,49 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         .slice(0, VIOLATION_METADATA_LIMIT)
         .map(formatViolationMessage);
 
+      // Optionally save logbook (triggers fairness tracking)
+      let logbookId: string | undefined;
+      if (body.saveLogbook && pythonResult.success && pythonResult.assignments && pythonResult.assignments.length > 0) {
+        const normalizedDate = startOfDay(body.date);
+        
+        // Convert to SolverOutputV2 format expected by saveLogbookWithMetadata
+        const solverOutput: SolverOutputV2 = {
+          success: pythonResult.success,
+          metadata: {
+            status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+            objectiveScore: pythonResult.objectiveValue,
+            runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+            mipGap: pythonResult.metadata?.mipGap as number | undefined,
+            numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
+            numHours: (pythonResult.metadata?.numHours as number) ?? 0,
+            numAssignments: pythonResult.assignments?.length ?? 0,
+            violations: formattedViolations,
+            constraintAnalysis,
+          },
+          assignments: pythonResult.assignments.map(a => ({
+            crewId: a.crewId,
+            roleId: a.roleId,
+            startMinute: a.startMinute,
+            endMinute: a.endMinute,
+          })),
+        };
+
+        logbookId = await saveLogbookWithMetadata(prisma, {
+          storeId,
+          date: normalizedDate,
+          solverOutput,
+          solverInput,
+          status: 'DRAFT',
+        });
+        
+        request.log.info({ logbookId, date: body.date }, 'Logbook saved with fairness tracking');
+      }
+
       const response: Record<string, unknown> = {
         success: pythonResult.success,
         status: pythonResult.status,
         objectiveValue: pythonResult.objectiveValue,
+        logbookId,  // Include logbook ID if saved
         metadata: {
           ...pythonResult.metadata,
           constraintAnalysis,
@@ -305,7 +369,8 @@ function buildPythonPathEnv(): string {
 
 export async function runPythonSolverV2(
   solverInput: SolverInputV2,
-  timeLimitSeconds?: number
+  timeLimitSeconds?: number,
+  numWorkers?: number
 ): Promise<PythonSolverResult> {
   const pythonBin = resolvePythonBinary();
   const pythonPath = buildPythonPathEnv();
@@ -345,7 +410,7 @@ export async function runPythonSolverV2(
         } catch (parseError) {
           return reject(
             new Error(
-              `Failed to parse solver output: ${(parseError as Error).message}\nRaw: ${stdout}`
+              `Failed to parse solver output: ${(parseError as Error).message}\nRaw output: ${stdout}`
             )
           );
         }
@@ -363,7 +428,7 @@ export async function runPythonSolverV2(
       resolve(parsed);
     });
 
-    const payload = JSON.stringify({ solverInput, timeLimitSeconds });
+    const payload = JSON.stringify({ solverInput, timeLimitSeconds, numWorkers });
     child.stdin?.write(payload);
     child.stdin?.end();
   });
@@ -432,7 +497,7 @@ export async function runPythonTuningEngine(
         } catch (parseError) {
           return reject(
             new Error(
-              `Failed to parse tuning output: ${(parseError as Error).message}\nRaw: ${stdout}`
+              `Failed to parse tuning output: ${(parseError as Error).message}\nRaw output: ${stdout}`
             )
           );
         }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Tuple
@@ -16,6 +17,11 @@ DEFAULT_ASSIGNMENT_REWARD = 100  # Reward for each assignment (fills slots) - HI
 DEFAULT_HALF_SIZE_PENALTY = 70   # Half-segment = 30 net reward (still positive, but 2 halves = 60 < 1 full = 100)
 DEFAULT_CONSECUTIVE_BONUS = 10  # Bonus for adjacent same-role assignments (PREFERRED policy)
 DEFAULT_HOUR_ALIGNED_BONUS = 15  # Bonus for starting 60min tasks at :00 (not :30)
+
+# Fairness objective parameters (tuned via weight testing - 300/300 gives best balance)
+DEFAULT_FAIRNESS_BOOST = 300   # Boost for under-assigned crew (positive z-score)
+DEFAULT_FAIRNESS_PENALTY = 300 # Penalty for over-assigned crew (negative z-score)
+DEFAULT_FAIRNESS_MIN_STD = 60  # Minimum std dev in minutes to apply fairness (avoid div by zero)
 
 
 def apply(solver: "SolverV2") -> None:
@@ -77,6 +83,15 @@ def apply(solver: "SolverV2") -> None:
     # Add distribution between roles preferences
     distribution_terms = _distribution_preference_bonus(solver)
     
+    # Add fairness boost/penalty based on historical data
+    fairness_terms = _fairness_objective_terms(solver)
+    
+    # Fairness rotation terms from constraint builder (tiered boost for low min/hr crew)
+    fairness_rotation_terms = []
+    if hasattr(solver, 'fairness_rotation_terms') and solver.fairness_rotation_terms:
+        for var, boost in solver.fairness_rotation_terms:
+            fairness_rotation_terms.append(boost * var)
+    
     # Soft constraint penalties from role rules (e.g., soft MAX_CONSECUTIVE_MINUTES)
     soft_penalties = solver.soft_constraint_penalties
     
@@ -95,11 +110,13 @@ def apply(solver: "SolverV2") -> None:
     timing_bonus = sum(timing_bonus_terms) if timing_bonus_terms else 0
     hour_pref_bonus = sum(hour_pref_terms) if hour_pref_terms else 0
     distribution_bonus = sum(distribution_terms) if distribution_terms else 0
+    fairness_bonus = sum(fairness_terms) if fairness_terms else 0  # Can be positive or negative
+    fairness_rotation = sum(fairness_rotation_terms) if fairness_rotation_terms else 0  # Tiered boost
     gap_penalties = sum(gap_filler_penalties) if gap_filler_penalties else 0
     soft_constraint_penalties = sum(soft_penalties) if soft_penalties else 0
     quota_penalties = sum(quota_shortfall_penalties) if quota_shortfall_penalties else 0
     
-    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus - gap_penalties - soft_constraint_penalties - quota_penalties)
+    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus + fairness_bonus + fairness_rotation - gap_penalties - soft_constraint_penalties - quota_penalties)
 
 
 def _consecutive_role_bonus(solver: "SolverV2") -> List:
@@ -516,6 +533,127 @@ def _distribution_preference_bonus(solver: "SolverV2") -> List:
         if DEBUG: print(f"    [Objective] Added {len(bonus_terms)} distribution preference terms", file=sys.stderr)
     
     return bonus_terms
+
+
+def _fairness_objective_terms(solver: "SolverV2") -> List:
+    """
+    Create fairness boost/penalty terms based on historical role assignment data.
+    
+    This implements symmetric fairness:
+    - Crew with BELOW average role minutes per hour → BOOST (encourage assignment)
+    - Crew with ABOVE average role minutes per hour → PENALTY (discourage assignment)
+    
+    The weight is proportional to the z-score (how far from mean in std devs).
+    """
+    # Check if fairness weights should be skipped (for A/B testing)
+    if solver.payload.get('skipFairnessWeights', False):
+        if DEBUG: print("    [Objective] Skipping fairness weights (skipFairnessWeights=true)", file=sys.stderr)
+        return []
+    
+    fairness_trackers = solver.payload.get('fairnessTrackers', [])
+    fairness_history = solver.payload.get('fairnessHistory', [])
+    shift_history = solver.payload.get('shiftHistory', [])
+    
+    if not fairness_trackers or not fairness_history:
+        return []
+    
+    # Only consider enabled trackers
+    enabled_role_ids = {t['roleId'] for t in fairness_trackers if t.get('enabled', True)}
+    if not enabled_role_ids:
+        return []
+    
+    # Get lookback days (use max from trackers)
+    lookback_days = max((t.get('lookbackDays', 31) for t in fairness_trackers), default=31)
+    
+    slot_minutes = solver.time_grid.slot_minutes
+    
+    # Build shift hours map: crewId -> total shift minutes in lookback period
+    crew_shift_minutes: Dict[str, float] = defaultdict(float)
+    for shift in shift_history:
+        crew_id = shift.get('crewId')
+        start_min = shift.get('startMin', 0)
+        end_min = shift.get('endMin', 0)
+        crew_shift_minutes[crew_id] += max(0, end_min - start_min)
+    
+    # Build history map: (roleId, crewId) -> total minutes assigned
+    history_map: Dict[Tuple[int, str], float] = defaultdict(float)
+    for record in fairness_history:
+        role_id = record.get('roleId')
+        crew_id = record.get('crewId')
+        minutes = record.get('minutesAssigned', 0)
+        history_map[(role_id, crew_id)] += minutes
+    
+    # Get eligible crew for each tracked role
+    crew_roles: Dict[str, set] = defaultdict(set)
+    for crew in solver.crew:
+        crew_id = crew.get('id')
+        for role_id in crew.get('eligibleRoleIds', []):
+            crew_roles[crew_id].add(role_id)
+    
+    fairness_terms = []
+    fairness_boost = solver.settings.get('fairnessBoost', DEFAULT_FAIRNESS_BOOST)
+    fairness_penalty = solver.settings.get('fairnessPenalty', DEFAULT_FAIRNESS_PENALTY)
+    fairness_min_std = solver.settings.get('fairnessMinStd', DEFAULT_FAIRNESS_MIN_STD)
+    
+    for role_id in enabled_role_ids:
+        # Get all eligible crew for this role
+        eligible_crew = [c['id'] for c in solver.crew if role_id in crew_roles.get(c['id'], set())]
+        if len(eligible_crew) < 2:
+            continue  # Need at least 2 crew for fairness comparison
+        
+        # Calculate minutes per hour for each eligible crew
+        mph_values: Dict[str, float] = {}
+        for crew_id in eligible_crew:
+            role_minutes = history_map.get((role_id, crew_id), 0)
+            shift_minutes = crew_shift_minutes.get(crew_id, 1)  # Avoid div by zero
+            if shift_minutes > 0:
+                # Minutes of this role per hour worked
+                mph_values[crew_id] = (role_minutes / shift_minutes) * 60
+            else:
+                mph_values[crew_id] = 0
+        
+        if not mph_values:
+            continue
+        
+        # Calculate mean and std dev
+        values = list(mph_values.values())
+        mean_mph = sum(values) / len(values)
+        variance = sum((v - mean_mph) ** 2 for v in values) / len(values)
+        std_dev = math.sqrt(variance) if variance > 0 else 0
+        
+        if std_dev < fairness_min_std / 60:  # Convert to mph scale
+            # Not enough variation to apply fairness
+            continue
+        
+        # Calculate z-scores and apply weights
+        for crew_id in eligible_crew:
+            mph = mph_values.get(crew_id, 0)
+            z_score = (mph - mean_mph) / std_dev if std_dev > 0 else 0
+            
+            # Get all assignment vars for this crew+role
+            for key, var in solver.assignment_vars.items():
+                var_crew, slot, var_role, task_slots = key
+                if var_crew != crew_id or var_role != role_id:
+                    continue
+                
+                # Symmetric fairness:
+                # z < 0 (below avg) → boost assignment
+                # z > 0 (above avg) → penalize assignment
+                if z_score < 0:
+                    # Under-assigned: boost (add to objective)
+                    weight = int(abs(z_score) * fairness_boost * task_slots)
+                    if weight > 0:
+                        fairness_terms.append(weight * var)
+                elif z_score > 0:
+                    # Over-assigned: penalty (subtract from objective)
+                    weight = int(z_score * fairness_penalty * task_slots)
+                    if weight > 0:
+                        fairness_terms.append(-weight * var)
+    
+    if DEBUG and fairness_terms:
+        print(f"    [Objective] Added {len(fairness_terms)} fairness terms", file=sys.stderr)
+    
+    return fairness_terms
 
 
 __all__ = ["apply"]

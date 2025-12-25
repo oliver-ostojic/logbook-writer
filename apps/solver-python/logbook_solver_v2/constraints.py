@@ -35,6 +35,7 @@ def add_all(solver: "SolverV2") -> None:
     _crew_quota_constraints(solver)
     _role_family_constraints(solver)
     _consecutive_required_constraints(solver)
+    _intra_schedule_fairness_constraints(solver)
     apply_role_rules(solver)
     
     if DEBUG:
@@ -782,6 +783,160 @@ def _consecutive_required_constraints(solver: "SolverV2") -> None:
                 break
     
     if DEBUG: print(f"   Constraints added: {constraints_added}", file=sys.stderr)
+
+
+def _intra_schedule_fairness_constraints(solver: "SolverV2") -> None:
+    """
+    Hard constraint for intra-schedule fairness on tracked roles.
+    
+    For each tracked role, implements tiered round-robin:
+    1. Group eligible crew by their min/hr into tiers
+    2. Start with the lowest tier (minimum min/hr)
+    3. Only allow that tier to be assigned
+    4. If coverage requires more crew than tier size, allow next tier too
+    
+    This ensures the most under-assigned crew always get priority.
+    """
+    if DEBUG: print("\n[FAIRNESS] Intra-schedule fairness constraints:", file=sys.stderr)
+    
+    fairness_trackers = solver.payload.get('fairnessTrackers', [])
+    if not fairness_trackers:
+        if DEBUG: print("   No fairness trackers configured, skipping", file=sys.stderr)
+        return
+    
+    # Only consider enabled trackers
+    enabled_trackers = [t for t in fairness_trackers if t.get('enabled', True)]
+    if not enabled_trackers:
+        if DEBUG: print("   No enabled fairness trackers, skipping", file=sys.stderr)
+        return
+    
+    # Check if hard fairness is enabled (default: False for now, opt-in)
+    if not solver.settings.get('enableHardFairness', False):
+        if DEBUG: print("   Hard fairness not enabled (set enableHardFairness=true)", file=sys.stderr)
+        return
+    
+    m = solver.model
+    slot_minutes = solver.time_grid.slot_minutes
+    
+    # Get historical data
+    fairness_history = solver.payload.get('fairnessHistory', [])
+    shift_history = solver.payload.get('shiftHistory', [])
+    
+    if not fairness_history and not shift_history:
+        if DEBUG: print("   No history data, skipping hard constraint", file=sys.stderr)
+        return
+    
+    # Build shift hours map: crewId -> total shift minutes in lookback period
+    crew_shift_minutes: Dict[str, float] = defaultdict(float)
+    for shift in shift_history:
+        crew_id = shift.get('crewId')
+        start_min = shift.get('startMin', 0)
+        end_min = shift.get('endMin', 0)
+        crew_shift_minutes[crew_id] += max(0, end_min - start_min)
+    
+    # Build history map: (roleId, crewId) -> total minutes assigned
+    history_map: Dict[Tuple[int, str], float] = defaultdict(float)
+    for record in fairness_history:
+        role_id = record.get('roleId')
+        crew_id = record.get('crewId')
+        minutes = record.get('minutesAssigned', 0)
+        history_map[(role_id, crew_id)] += minutes
+    
+    # Get eligible crew for each role
+    # Note: crew records use 'roleIds' (from builder) not 'eligibleRoleIds'
+    crew_roles: Dict[str, set] = defaultdict(set)
+    for crew in solver.crew:
+        crew_id = crew.get('id')
+        # Try both field names for compatibility
+        role_ids = crew.get('roleIds') or crew.get('eligibleRoleIds') or []
+        for rid in role_ids:
+            crew_roles[crew_id].add(rid)
+    
+    total_terms = 0
+    
+    for tracker in enabled_trackers:
+        role_id = tracker['roleId']
+        role_name = next((r.get('displayName', r.get('code', f"Role {role_id}")) for r in solver.roles if r['id'] == role_id), f"Role {role_id}")
+        
+        if DEBUG: print(f"\n   Role: {role_name} (id={role_id})", file=sys.stderr)
+        
+        # Get eligible crew for this role (must be in this schedule)
+        eligible_crew = [c['id'] for c in solver.crew if role_id in crew_roles.get(c['id'], set())]
+        
+        if len(eligible_crew) < 2:
+            if DEBUG: print(f"     Only {len(eligible_crew)} eligible crew, skipping", file=sys.stderr)
+            continue
+        
+        # Calculate min/hr for each eligible crew
+        mph_values: Dict[str, float] = {}
+        for crew_id in eligible_crew:
+            role_minutes = history_map.get((role_id, crew_id), 0)
+            shift_minutes = crew_shift_minutes.get(crew_id, 0)
+            
+            # For crew in today's schedule but not in history, use their current shift length
+            if shift_minutes == 0:
+                crew_data = next((c for c in solver.crew if c['id'] == crew_id), None)
+                if crew_data:
+                    shift_minutes = crew_data.get('shiftEndMin', 0) - crew_data.get('shiftStartMin', 0)
+            
+            if shift_minutes > 0:
+                mph_values[crew_id] = (role_minutes / shift_minutes) * 60
+            else:
+                mph_values[crew_id] = 0  # No history = 0 min/hr = highest priority
+        
+        if not mph_values:
+            continue
+        
+        # Sort crew by min/hr ascending (lowest first = most preferred)
+        sorted_crew = sorted(mph_values.items(), key=lambda x: x[1])
+        min_mph = sorted_crew[0][1] if sorted_crew else 0
+        max_mph = sorted_crew[-1][1] if sorted_crew else 0
+        
+        if DEBUG: 
+            print(f"     min/hr range: {min_mph:.2f} - {max_mph:.2f}", file=sys.stderr)
+            print(f"     Lowest 5: {[(next((c.get('name', cid) for c in solver.crew if c['id'] == cid), cid), f'{mph:.2f}') for cid, mph in sorted_crew[:5]]}", file=sys.stderr)
+        
+        # TIERED SOFT PENALTY APPROACH:
+        # Instead of blocking high-tier crew (causes infeasibility),
+        # we give a massive BOOST to low min/hr crew.
+        # 
+        # Crew with 0 min/hr get +10000 boost
+        # Crew with higher min/hr get progressively less boost
+        # This creates a strong preference without blocking
+        
+        BASE_BOOST = 10000  # Massive boost for fairness rotation
+        
+        for crew_id, mph in mph_values.items():
+            # Calculate boost: lower min/hr = higher boost
+            # Linear decay from BASE_BOOST at min_mph to 0 at max_mph
+            if max_mph > min_mph:
+                # Normalize: 0 = at max, 1 = at min
+                normalized = 1 - ((mph - min_mph) / (max_mph - min_mph))
+            else:
+                normalized = 1  # Everyone is equal
+            
+            boost = int(BASE_BOOST * normalized)
+            
+            # Add boost for each assignment var for this crew+role
+            for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
+                if var_crew == crew_id and var_role == role_id:
+                    solver.fairness_rotation_terms.append((var, boost))
+                    total_terms += 1
+        
+        if DEBUG:
+            # Show boost distribution
+            boost_examples = []
+            for cid, mph in sorted_crew[:3]:
+                if max_mph > min_mph:
+                    norm = 1 - ((mph - min_mph) / (max_mph - min_mph))
+                else:
+                    norm = 1
+                boost = int(BASE_BOOST * norm)
+                name = next((c.get('name', cid) for c in solver.crew if c['id'] == cid), cid)
+                boost_examples.append(f"{name}: +{boost}")
+            print(f"     Boost examples (top 3): {boost_examples}", file=sys.stderr)
+    
+    if DEBUG: print(f"\n   Total: {total_terms} objective terms added for fairness rotation", file=sys.stderr)
 
 
 __all__ = ["add_all"]

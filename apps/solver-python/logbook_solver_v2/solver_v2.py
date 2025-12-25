@@ -69,6 +69,9 @@ class SolverV2:
         # Soft constraint penalties - populated by constraint builders, used by objective
         self.soft_constraint_penalties: List = []
         
+        # Fairness rotation terms - populated by fairness constraint, used by objective
+        self.fairness_rotation_terms: List = []
+        
         # Quota shortfall vars - populated by quota constraints, used by objective and result reporting
         self.quota_shortfall_vars: List = []
         
