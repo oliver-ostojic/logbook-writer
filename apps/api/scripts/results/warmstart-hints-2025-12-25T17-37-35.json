@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-12-25T17:37:35.136Z",
+  "config": {
+    "storeId": 768,
+    "timeLimit": 60,
+    "numWorkers": 10
+  },
+  "results": {
+    "coldHintSource": [
+      {
+        "success": true,
+        "timeMs": 31633,
+        "satisfaction": 58.19690725940724,
+        "numAssignments": 557
+      },
+      {
+        "success": true,
+        "timeMs": 49600,
+        "satisfaction": 62.67257048507047,
+        "numAssignments": 556
+      },
+      {
+        "success": true,
+        "timeMs": 11684,
+        "satisfaction": 58.98362054612054,
+        "numAssignments": 556
+      }
+    ],
+    "coldBaseline": [
+      {
+        "success": true,
+        "timeMs": 60020,
+        "satisfaction": 61.41282799884659,
+        "numAssignments": 518
+      },
+      {
+        "success": true,
+        "timeMs": 60019,
+        "satisfaction": 61.34212202037676,
+        "numAssignments": 517
+      },
+      {
+        "success": true,
+        "timeMs": 60028,
+        "satisfaction": 60.25203647635524,
+        "numAssignments": 517
+      }
+    ],
+    "warmStart": [
+      {
+        "success": true,
+        "timeMs": 60021,
+        "satisfaction": 62.12643574586697,
+        "numAssignments": 518
+      },
+      {
+        "success": true,
+        "timeMs": 60019,
+        "satisfaction": 60.92260188389079,
+        "numAssignments": 518
+      },
+      {
+        "success": true,
+        "timeMs": 60279,
+        "satisfaction": 61.34212202037676,
+        "numAssignments": 517
+      }
+    ]
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "config": {
+    "numRegions": 10,
+    "shotsPerRegion": 3,
+    "timeLimitPerShot": 10,
+    "workersPerRegion": 1,
+    "fairnessWeight": 0.5
+  },
+  "trials": 10,
+  "warm_start": {
+    "label": "Warm Start (ML Oracle)",
+    "n": 10,
+    "satisfaction": {
+      "mean": 70.91163534586165,
+      "stdev": 0.5261044899771887,
+      "min": 69.91869918699187,
+      "max": 71.54471544715447,
+      "median": 70.9349593495935
+    },
+    "fairness": {
+      "mean": 82.73219852174834,
+      "stdev": 0.5952263400256373,
+      "min": 82.02120002617286,
+      "max": 84.00582863804158,
+      "median": 82.6761836001968
+    },
+    "combined_score": {
+      "mean": 215.66609926087418,
+      "stdev": 1.4752295052908606,
+      "min": 213.32824377024258,
+      "max": 218.0029143190208
+    },
+    "solve_time": {
+      "mean": 39.0577425666,
+      "stdev": 1.1229393599620148,
+      "min": 37.695002208000005,
+      "max": 41.11629870799999
+    }
+  },
+  "cold_start": {
+    "label": "Cold Start (Uniform Weights)",
+    "n": 10,
+    "satisfaction": {
+      "mean": 71.00336192053791,
+      "stdev": 0.574755799687191,
+      "min": 70.20408163265306,
+      "max": 71.83673469387755,
+      "median": 71.01992536318807
+    },
+    "fairness": {
+      "mean": 82.70775448214414,
+      "stdev": 0.39969985302414873,
+      "min": 82.13750492967003,
+      "max": 83.40803739531259,
+      "median": 82.57713796972939
+    },
+    "combined_score": {
+      "mean": 215.45387724107206,
+      "stdev": 1.6333103570568852,
+      "min": 213.25831856664698,
+      "max": 217.7040186976563
+    },
+    "solve_time": {
+      "mean": 39.68816163319999,
+      "stdev": 0.7603697705116133,
+      "min": 38.29982016600002,
+      "max": 40.764242207999985
+    }
+  },
+  "raw_warm": [
+    {
+      "satisfied": 175,
+      "eligible": 246,
+      "satisfaction_pct": 71.13821138211382,
+      "fairness_index": 82.74621584430902,
+      "combined_score": 216.3731079221545,
+      "solve_time": 37.841850792
+    },
+    {
+      "satisfied": 174,
+      "eligible": 246,
+      "satisfaction_pct": 70.73170731707317,
+      "fairness_index": 82.69587965990843,
+      "combined_score": 215.3479398299542,
+      "solve_time": 39.110433083
+    },
+    {
+      "satisfied": 173,
+      "eligible": 246,
+      "satisfaction_pct": 70.32520325203252,
+      "fairness_index": 82.05749163221107,
+      "combined_score": 214.02874581610553,
+      "solve_time": 38.450613917
+    },
+    {
+      "satisfied": 174,
+      "eligible": 246,
+      "satisfaction_pct": 70.73170731707317,
+      "fairness_index": 82.5416748639255,
+      "combined_score": 215.27083743196275,
+      "solve_time": 37.908365667
+    },
+    {
+      "satisfied": 174,
+      "eligible": 246,
+      "satisfaction_pct": 70.73170731707317,
+      "fairness_index": 82.02120002617286,
+      "combined_score": 215.01060001308645,
+      "solve_time": 37.695002208000005
+    },
+    {
+      "satisfied": 172,
+      "eligible": 246,
+      "satisfaction_pct": 69.91869918699187,
+      "fairness_index": 82.65648754048516,
+      "combined_score": 213.32824377024258,
+      "solve_time": 38.847514665999995
+    },
+    {
+      "satisfied": 174,
+      "eligible": 244,
+      "satisfaction_pct": 71.31147540983606,
+      "fairness_index": 82.28436631551735,
+      "combined_score": 215.14218315775867,
+      "solve_time": 39.97964266599999
+    },
+    {
+      "satisfied": 176,
+      "eligible": 246,
+      "satisfaction_pct": 71.54471544715447,
+      "fairness_index": 84.00582863804158,
+      "combined_score": 218.0029143190208,
+      "solve_time": 39.96531249999998
+    },
+    {
+      "satisfied": 175,
+      "eligible": 246,
+      "satisfaction_pct": 71.13821138211382,
+      "fairness_index": 83.12693578695004,
+      "combined_score": 216.56346789347504,
+      "solve_time": 41.11629870799999
+    },
+    {
+      "satisfied": 176,
+      "eligible": 246,
+      "satisfaction_pct": 71.54471544715447,
+      "fairness_index": 83.18590490996243,
+      "combined_score": 217.59295245498123,
+      "solve_time": 39.66239145899999
+    }
+  ],
+  "raw_cold": [
+    {
+      "satisfied": 176,
+      "eligible": 245,
+      "satisfaction_pct": 71.83673469387755,
+      "fairness_index": 83.01236966517712,
+      "combined_score": 217.50618483258856,
+      "solve_time": 40.764242207999985
+    },
+    {
+      "satisfied": 173,
+      "eligible": 246,
+      "satisfaction_pct": 70.32520325203252,
+      "fairness_index": 82.52645398450834,
+      "combined_score": 214.26322699225418,
+      "solve_time": 40.0283235
+    },
+    {
+      "satisfied": 173,
+      "eligible": 244,
+      "satisfaction_pct": 70.90163934426229,
+      "fairness_index": 82.13750492967003,
+      "combined_score": 214.06875246483503,
+      "solve_time": 40.433857666999984
+    },
+    {
+      "satisfied": 172,
+      "eligible": 245,
+      "satisfaction_pct": 70.20408163265306,
+      "fairness_index": 82.51663713329395,
+      "combined_score": 213.25831856664698,
+      "solve_time": 40.179343332999906
+    },
+    {
+      "satisfied": 174,
+      "eligible": 244,
+      "satisfaction_pct": 71.31147540983606,
+      "fairness_index": 82.32409215150331,
+      "combined_score": 215.16204607575165,
+      "solve_time": 39.56376283299994
+    },
+    {
+      "satisfied": 176,
+      "eligible": 246,
+      "satisfaction_pct": 71.54471544715447,
+      "fairness_index": 83.40803739531259,
+      "combined_score": 217.7040186976563,
+      "solve_time": 38.29982016600002
+    },
+    {
+      "satisfied": 175,
+      "eligible": 246,
+      "satisfaction_pct": 71.13821138211382,
+      "fairness_index": 82.58462140481315,
+      "combined_score": 216.29231070240658,
+      "solve_time": 39.62173270900007
+    },
+    {
+      "satisfied": 176,
+      "eligible": 246,
+      "satisfaction_pct": 71.54471544715447,
+      "fairness_index": 82.76574828612081,
+      "combined_score": 217.3828741430604,
+      "solve_time": 39.819145875000004
+    },
+    {
+      "satisfied": 173,
+      "eligible": 246,
+      "satisfaction_pct": 70.32520325203252,
+      "fairness_index": 82.56965453464562,
+      "combined_score": 214.2848272673228,
+      "solve_time": 38.615583958
+    },
+    {
+      "satisfied": 173,
+      "eligible": 244,
+      "satisfaction_pct": 70.90163934426229,
+      "fairness_index": 83.23242533639646,
+      "combined_score": 214.61621266819822,
+      "solve_time": 39.555804083
+    }
+  ]
+}

@@ -108,16 +108,48 @@ model CrewRoleFairnessHistory {
   storeId         Int
   roleId          Int
   crewId          String   @db.Char(7)
-  windowStart     DateTime
-  windowEnd       DateTime
-  minutesAssigned Int      @default(0)
+  date            DateTime // The specific date this record is for
+  minutesAssigned Int      @default(0) // Minutes assigned on this date
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   Crew            Crew     @relation(fields: [crewId], references: [id])
   Role            Role     @relation(fields: [roleId], references: [id])
   Store           Store    @relation(fields: [storeId], references: [id])
 
-  @@index([storeId, roleId, crewId, windowEnd])
+  @@unique([storeId, roleId, crewId, date]) // One record per crew per role per day
+  @@index([storeId, roleId, date])
+}
+
+// Snapshot of role fairness metrics per day (for graphing trends)
+model RoleFairnessSnapshot {
+  id               Int      @id @default(autoincrement())
+  storeId          Int
+  roleId           Int
+  date             DateTime
+  
+  // Fairness metrics (normalized by days worked)
+  giniCoefficient  Float    @default(0) // 0 = perfect equality, 1 = max inequality
+  fairnessIndex    Float    @default(0) // 100 - (gini * 100), so 100 = perfect
+  fairnessGrade    String   @default("F") // A+, A, B+, B, C+, C, D, F
+  
+  // Distribution stats (minutes per day worked)
+  minMinutesPerDay Float    @default(0)
+  maxMinutesPerDay Float    @default(0)
+  avgMinutesPerDay Float    @default(0)
+  stdDeviation     Float    @default(0)
+  
+  // Counts
+  eligibleCrew     Int      @default(0) // Crew who CAN do this role
+  crewWithMinutes  Int      @default(0) // Crew who got minutes in lookback
+  lookbackDays     Int      @default(14)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  Role             Role     @relation(fields: [roleId], references: [id])
+  Store            Store    @relation(fields: [storeId], references: [id])
+
+  @@unique([storeId, roleId, date])
+  @@index([storeId, roleId, date])
 }
 
 model CrewRoleQuota {
@@ -228,6 +260,7 @@ model Role {
   RoleFamily                  RoleFamily                @relation(fields: [familyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   Store                       Store                     @relation(fields: [storeId], references: [id])
   RoleCoverageWindow          RoleCoverageWindow[]
+  RoleFairnessSnapshot        RoleFairnessSnapshot[]
   RoleFairnessTracker         RoleFairnessTracker?
   RolePreference              RolePreference[]
   RoleRules                   RoleRule[]                @relation("RoleToRoleRules")
@@ -391,6 +424,7 @@ model Store {
   Logbook                  Logbook[]
   Role                     Role[]
   RoleCoverageWindow       RoleCoverageWindow[]
+  RoleFairnessSnapshot     RoleFairnessSnapshot[]
   RoleFairnessTracker      RoleFairnessTracker[]
   RolePreference           RolePreference[]
   Run                      Run[]

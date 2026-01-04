@@ -5,6 +5,7 @@ import type {
   CrewDescriptor,
   RoleDescriptor,
   CrewRoleFairnessHistoryDescriptor,
+  CrewShiftHistoryDescriptor,
   AssignmentModelValue,
 } from './types';
 import type { RoleSlotVariable } from './role-slot-variables';
@@ -34,6 +35,8 @@ export interface BuildObjectiveParams {
   roles: RoleDescriptor[];
   grid: TimeGrid;
   fairnessHistory: CrewRoleFairnessHistoryDescriptor[];
+  shiftHistory: CrewShiftHistoryDescriptor[];  // NEW: for minutes per hour worked
+  skipFairnessWeights?: boolean;  // If true, skips fairness boost/penalty in objective
 }
 
 export interface ObjectiveBuildResult {
@@ -58,6 +61,8 @@ export function buildObjective({
   roles,
   grid,
   fairnessHistory,
+  shiftHistory,
+  skipFairnessWeights = false,
 }: BuildObjectiveParams): ObjectiveBuildResult {
   const groupedVariables = groupRoleSlotVariables(roleSlotVariables);
   const crewShiftMap = buildCrewShiftSlotMap(crew, grid);
@@ -85,12 +90,14 @@ export function buildObjective({
     ...preferencePenalties,
   ]);
 
-  const fairnessTerms = buildFairnessObjectiveTerms({
+  // Skip fairness weights if flag is set (for A/B testing)
+  const fairnessTerms = skipFairnessWeights ? [] : buildFairnessObjectiveTerms({
     modelResult,
     roleSlotVariables,
     roles,
     crew,
     fairnessHistory,
+    shiftHistory,
   });
 
   return { preferenceTerms, consecutiveTerms, fairnessTerms };
@@ -185,12 +192,13 @@ interface BuildFairnessObjectiveTermParams {
   roles: RoleDescriptor[];
   crew: CrewDescriptor[];
   fairnessHistory: CrewRoleFairnessHistoryDescriptor[];
+  shiftHistory: CrewShiftHistoryDescriptor[];  // NEW: for minutes per hour worked
 }
 
 interface FairnessPenaltyDescriptor {
-  coefficient: number;
-  surplusMinutes: number;
-  averageMinutes: number;
+  coefficient: number;  // Can be positive (penalty) or negative (boost)
+  minutesPerHour: number;  // Role minutes per hour worked
+  averageMinutesPerHour: number;
   lookbackDays: number;
   zScore: number;
 }
@@ -203,11 +211,14 @@ function buildFairnessObjectiveTerms({
   roles,
   crew,
   fairnessHistory,
+  shiftHistory,
 }: BuildFairnessObjectiveTermParams): ObjectiveTerm[] {
-  if (!fairnessHistory.length || FAIRNESS_SURPLUS_PENALTY <= 0) {
+  // Even with no history, we can still apply fairness if we have shift history
+  if (FAIRNESS_SURPLUS_PENALTY <= 0) {
     return [];
   }
 
+  // Build map of crew who can do each role
   const roleCrewMap = new Map<number, Set<string>>();
   for (const crewMember of crew) {
     for (const roleId of crewMember.roleIds) {
@@ -216,6 +227,13 @@ function buildFairnessObjectiveTerms({
       }
       roleCrewMap.get(roleId)!.add(crewMember.id);
     }
+  }
+
+  // Step 1: Calculate total shift minutes per crew (for normalization)
+  const totalShiftMinutesByCrew = new Map<string, number>();
+  for (const shift of shiftHistory) {
+    const current = totalShiftMinutesByCrew.get(shift.crewId) ?? 0;
+    totalShiftMinutesByCrew.set(shift.crewId, current + shift.shiftMinutes);
   }
 
   const penalties = new Map<string, FairnessPenaltyDescriptor>();
@@ -229,7 +247,8 @@ function buildFairnessObjectiveTerms({
       continue;
     }
 
-    const minutesByCrew = new Map<string, number>();
+    // Step 2: Sum role minutes per crew
+    const roleMinutesByCrew = new Map<string, number>();
     for (const entry of fairnessHistory) {
       if (entry.roleId !== role.id) {
         continue;
@@ -237,9 +256,26 @@ function buildFairnessObjectiveTerms({
       if (!eligibleCrew.has(entry.crewId)) {
         continue;
       }
-      const current = minutesByCrew.get(entry.crewId) ?? 0;
-      const updated = current + entry.minutesAssigned;
-      minutesByCrew.set(entry.crewId, updated);
+      const current = roleMinutesByCrew.get(entry.crewId) ?? 0;
+      roleMinutesByCrew.set(entry.crewId, current + entry.minutesAssigned);
+    }
+
+    // Step 3: Calculate minutes per hour worked for each eligible crew
+    const minutesPerHourByCrew = new Map<string, number>();
+    const minutesPerHourValues: number[] = [];
+    
+    for (const crewId of eligibleCrew) {
+      const roleMinutes = roleMinutesByCrew.get(crewId) ?? 0;
+      const totalShiftMinutes = totalShiftMinutesByCrew.get(crewId) ?? 0;
+      const totalHoursWorked = totalShiftMinutes / 60;
+      
+      // If crew hasn't worked any shifts in lookback, treat as 0 min/hr
+      const minutesPerHour = totalHoursWorked > 0 
+        ? roleMinutes / totalHoursWorked 
+        : 0;
+      
+      minutesPerHourByCrew.set(crewId, minutesPerHour);
+      minutesPerHourValues.push(minutesPerHour);
     }
 
     const crewCount = eligibleCrew.size;
@@ -247,42 +283,43 @@ function buildFairnessObjectiveTerms({
       continue;
     }
 
-    let totalMinutes = 0;
-    const crewMinutes: number[] = [];
-    for (const crewId of eligibleCrew) {
-      const minutes = minutesByCrew.get(crewId) ?? 0;
-      crewMinutes.push(minutes);
-      totalMinutes += minutes;
-    }
-
-    const averageMinutes = crewCount > 0 ? totalMinutes / crewCount : 0;
-    if (averageMinutes <= 0) {
+    // Step 4: Calculate average and std dev of minutes per hour
+    const totalMinPerHour = minutesPerHourValues.reduce((sum, v) => sum + v, 0);
+    const averageMinPerHour = crewCount > 0 ? totalMinPerHour / crewCount : 0;
+    
+    // Skip if no one has any role time (nothing to balance)
+    if (averageMinPerHour <= 0 && totalMinPerHour <= 0) {
       continue;
     }
 
-    const variance =
-      crewMinutes.reduce((sum, value) => sum + Math.pow(value - averageMinutes, 2), 0) /
-      crewCount;
+    const variance = minutesPerHourValues.reduce(
+      (sum, value) => sum + Math.pow(value - averageMinPerHour, 2), 
+      0
+    ) / crewCount;
     const stdDev = Math.sqrt(variance);
-    const effectiveStdDev = Math.max(stdDev, FAIRNESS_MIN_STD_DEV);
+    const effectiveStdDev = Math.max(stdDev, FAIRNESS_MIN_STD_DEV / 60); // Adjust min std dev for hourly scale
 
+    // Step 5: Apply SYMMETRIC boost/penalty based on z-score
     for (const crewId of eligibleCrew) {
-      const minutes = minutesByCrew.get(crewId) ?? 0;
-      const zScore = (minutes - averageMinutes) / effectiveStdDev;
-      if (zScore <= 0) {
+      const minutesPerHour = minutesPerHourByCrew.get(crewId) ?? 0;
+      const zScore = effectiveStdDev > 0 
+        ? (minutesPerHour - averageMinPerHour) / effectiveStdDev 
+        : 0;
+      
+      // Skip if exactly at average (no adjustment needed)
+      if (Math.abs(zScore) < 0.01) {
         continue;
       }
-      const surplus = Math.max(0, minutes - averageMinutes);
+      
+      // SYMMETRIC: positive z-score = penalty, negative z-score = boost (negative penalty)
       const coefficient = FAIRNESS_SURPLUS_PENALTY * zScore;
-      if (coefficient <= 0) {
-        continue;
-      }
+      
       penalties.set(
         fairnessKey(role.id, crewId),
         {
           coefficient,
-          surplusMinutes: surplus,
-          averageMinutes,
+          minutesPerHour,
+          averageMinutesPerHour: averageMinPerHour,
           lookbackDays: role.fairnessTracking.lookbackDays ?? 0,
           zScore,
         }
@@ -307,8 +344,8 @@ function buildFairnessObjectiveTerms({
       metadata: {
         crewId: variable.crewId,
         roleId: variable.roleId,
-        surplusMinutes: penalty.surplusMinutes,
-        averageMinutes: penalty.averageMinutes,
+        surplusMinutes: penalty.minutesPerHour,  // Now represents min/hr
+        averageMinutes: penalty.averageMinutesPerHour,
         lookbackDays: penalty.lookbackDays,
         zScore: penalty.zScore,
       },

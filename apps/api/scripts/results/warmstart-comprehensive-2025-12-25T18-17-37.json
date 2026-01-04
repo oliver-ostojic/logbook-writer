@@ -1,0 +1,544 @@
+{
+  "timestamp": "2025-12-25T18:17:37.327Z",
+  "config": {
+    "storeId": 768,
+    "numWorkers": 10,
+    "testDates": [
+      "2025-11-25",
+      "2025-12-13",
+      "2025-12-15",
+      "2025-12-16",
+      "2025-12-17"
+    ]
+  },
+  "section1_sameDayResolve": {
+    "coldBaseline": [
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30020,
+        "satisfaction": 62.40748750480584,
+        "numAssignments": 516
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30010,
+        "satisfaction": 60.23821967512495,
+        "numAssignments": 517
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30016,
+        "satisfaction": 61.69381968473664,
+        "numAssignments": 517
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30016,
+        "satisfaction": 60.58409025374855,
+        "numAssignments": 519
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30015,
+        "satisfaction": 63.57188341022684,
+        "numAssignments": 517
+      }
+    ],
+    "warmResolve": [
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30017,
+        "satisfaction": 61.01045871780083,
+        "numAssignments": 517
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30015,
+        "satisfaction": 62.05137447135716,
+        "numAssignments": 517
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30013,
+        "satisfaction": 60.67299836601305,
+        "numAssignments": 516
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30016,
+        "satisfaction": 61.12144367550941,
+        "numAssignments": 514
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30014,
+        "satisfaction": 60.56366541714724,
+        "numAssignments": 516
+      }
+    ]
+  },
+  "section2_timeConstrained": {
+    "results15s": {
+      "cold": [
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15013,
+          "satisfaction": 59.54427516927516,
+          "numAssignments": 555
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15014,
+          "satisfaction": 58.33846708846707,
+          "numAssignments": 554
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15014,
+          "satisfaction": 58.55117105117104,
+          "numAssignments": 554
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15011,
+          "satisfaction": 58.15781440781439,
+          "numAssignments": 554
+        }
+      ],
+      "warm": [
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15014,
+          "satisfaction": 59.31887556887555,
+          "numAssignments": 558
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15012,
+          "satisfaction": 58.93717393717392,
+          "numAssignments": 555
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15015,
+          "satisfaction": 58.89006826506825,
+          "numAssignments": 558
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 15,
+          "success": true,
+          "timeMs": 15014,
+          "satisfaction": 58.93814518814517,
+          "numAssignments": 558
+        }
+      ]
+    },
+    "results30s": {
+      "cold": [
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 14026,
+          "satisfaction": 58.55117105117104,
+          "numAssignments": 554
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 24341,
+          "satisfaction": 58.55117105117104,
+          "numAssignments": 554
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 16299,
+          "satisfaction": 58.69103119103119,
+          "numAssignments": 554
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "cold",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 28857,
+          "satisfaction": 58.69103119103119,
+          "numAssignments": 554
+        }
+      ],
+      "warm": [
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 30017,
+          "satisfaction": 58.61034798534798,
+          "numAssignments": 558
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 30013,
+          "satisfaction": 58.96291208791207,
+          "numAssignments": 558
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 30012,
+          "satisfaction": 58.61034798534798,
+          "numAssignments": 559
+        },
+        {
+          "date": "2025-12-13",
+          "mode": "warm",
+          "timeLimit": 30,
+          "success": true,
+          "timeMs": 37240,
+          "satisfaction": 58.77497502497501,
+          "numAssignments": 558
+        }
+      ]
+    }
+  },
+  "section3_multiDateStatistical": {
+    "allCold": [
+      {
+        "date": "2025-11-25",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30022,
+        "satisfaction": 60.06697108719167,
+        "numAssignments": 632
+      },
+      {
+        "date": "2025-11-25",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30319,
+        "satisfaction": 60.67054217248853,
+        "numAssignments": 634
+      },
+      {
+        "date": "2025-11-25",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30893,
+        "satisfaction": 60.01424411404949,
+        "numAssignments": 634
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30016,
+        "satisfaction": 59.22320734820733,
+        "numAssignments": 556
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30013,
+        "satisfaction": 59.60733710733709,
+        "numAssignments": 556
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30012,
+        "satisfaction": 58.98913586413585,
+        "numAssignments": 555
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30449,
+        "satisfaction": 60.47723531814685,
+        "numAssignments": 519
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 28318,
+        "satisfaction": 60.84488237697038,
+        "numAssignments": 520
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30015,
+        "satisfaction": 60.82037257304881,
+        "numAssignments": 520
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30053,
+        "satisfaction": 59.90358683926645,
+        "numAssignments": 537
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30017,
+        "satisfaction": 60.09506472491909,
+        "numAssignments": 537
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30050,
+        "satisfaction": 59.62311218985976,
+        "numAssignments": 537
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "cold",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      }
+    ],
+    "allWarm": [
+      {
+        "date": "2025-11-25",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 156037,
+        "satisfaction": 58.94161815252862,
+        "numAssignments": 632
+      },
+      {
+        "date": "2025-11-25",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30017,
+        "satisfaction": 58.28600686326681,
+        "numAssignments": 631
+      },
+      {
+        "date": "2025-11-25",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30385,
+        "satisfaction": 58.39247324946935,
+        "numAssignments": 630
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 19431,
+        "satisfaction": 60.23434898434898,
+        "numAssignments": 556
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30012,
+        "satisfaction": 59.86430236430236,
+        "numAssignments": 556
+      },
+      {
+        "date": "2025-12-13",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30020,
+        "satisfaction": 60.32321844821844,
+        "numAssignments": 557
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30016,
+        "satisfaction": 62.60629925990004,
+        "numAssignments": 518
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30018,
+        "satisfaction": 62.848513792772,
+        "numAssignments": 518
+      },
+      {
+        "date": "2025-12-15",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30021,
+        "satisfaction": 62.82553585159553,
+        "numAssignments": 518
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 21240,
+        "satisfaction": 62.62270765911543,
+        "numAssignments": 536
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30023,
+        "satisfaction": 62.49190938511327,
+        "numAssignments": 536
+      },
+      {
+        "date": "2025-12-16",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 30014,
+        "satisfaction": 62.23435814455232,
+        "numAssignments": 536
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      },
+      {
+        "date": "2025-12-17",
+        "mode": "warm",
+        "timeLimit": 30,
+        "success": true,
+        "timeMs": 2,
+        "satisfaction": 0,
+        "numAssignments": 0
+      }
+    ]
+  }
+}

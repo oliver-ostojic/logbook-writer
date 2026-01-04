@@ -12,6 +12,7 @@ import type {
   BankedPreferenceDescriptor,
   RoleFairnessTrackerDescriptor,
   CrewRoleFairnessHistoryDescriptor,
+  CrewShiftHistoryDescriptor,
   RoleRuleDescriptor,
 } from './types';
 import type { PreferenceType } from '@logbook-writer/shared-types';
@@ -153,8 +154,19 @@ export async function buildSolverInputV2(
       crewId: true,
       storeId: true,
       minutesAssigned: true,
-      windowStart: true,
-      windowEnd: true,
+      date: true,
+    },
+  });
+
+  // NEW: Fetch shift history for fairness normalization (minutes per hour worked)
+  // We'll filter by lookback window after we know the max lookback from trackers
+  const shiftHistoryPromise = prisma.shift.findMany({
+    where: { storeId },
+    select: {
+      crewId: true,
+      date: true,
+      startMin: true,
+      endMin: true,
     },
   });
 
@@ -200,6 +212,7 @@ export async function buildSolverInputV2(
 
   type FairnessTrackerRecord = Awaited<typeof fairnessTrackersPromise>[number];
   type FairnessHistoryRecord = Awaited<typeof fairnessHistoryPromise>[number];
+  type ShiftHistoryRecord = Awaited<typeof shiftHistoryPromise>[number];
   type RoleFamilyRecord = Awaited<typeof roleFamiliesPromise>[number];
   type CoverageWindowRecord = Awaited<typeof coverageWindowsPromise>[number];
   type CrewQuotaRecord = Awaited<typeof crewQuotasPromise>[number];
@@ -215,6 +228,7 @@ export async function buildSolverInputV2(
     crewQuotaRecords,
     fairnessTrackerRecords,
     fairnessHistoryRecords,
+    shiftHistoryRecords,
     storeRoleRuleRecords,
     crewRoleRuleRecords,
   ] = (await Promise.all([
@@ -226,6 +240,7 @@ export async function buildSolverInputV2(
     crewQuotasPromise,
     fairnessTrackersPromise,
     fairnessHistoryPromise,
+    shiftHistoryPromise,
     roleRulesPromise,
     crewRoleRulesPromise,
   ])) as [
@@ -237,6 +252,7 @@ export async function buildSolverInputV2(
     Awaited<typeof crewQuotasPromise>,
     Awaited<typeof fairnessTrackersPromise>,
     Awaited<typeof fairnessHistoryPromise>,
+    Awaited<typeof shiftHistoryPromise>,
     Awaited<typeof roleRulesPromise>,
     Awaited<typeof crewRoleRulesPromise>,
   ];
@@ -258,20 +274,22 @@ export async function buildSolverInputV2(
 
   const fairnessHistory: CrewRoleFairnessHistoryDescriptor[] = fairnessHistoryRecords.map((record: FairnessHistoryRecord) => {
     const tracker = fairnessTrackerLookup.get(record.roleId);
-    const windowDurationDays = Math.max(
-      1,
-      Math.round((record.windowEnd.getTime() - record.windowStart.getTime()) / MS_PER_DAY)
-    );
     return {
       roleId: record.roleId,
       crewId: record.crewId,
       storeId: record.storeId,
       minutesAssigned: record.minutesAssigned,
-      windowStart: record.windowStart,
-      windowEnd: record.windowEnd,
-      lookbackDays: tracker?.lookbackDays ?? windowDurationDays,
+      date: record.date,
+      lookbackDays: tracker?.lookbackDays ?? 14,  // Default to 14 days if no tracker
     } satisfies CrewRoleFairnessHistoryDescriptor;
   });
+
+  // Build shift history for fairness normalization (minutes per hour worked)
+  const shiftHistory: CrewShiftHistoryDescriptor[] = shiftHistoryRecords.map((record: ShiftHistoryRecord) => ({
+    crewId: record.crewId,
+    date: record.date,
+    shiftMinutes: record.endMin - record.startMin,
+  }));
 
   // Build role rules with priority resolution
   // Priority order:
@@ -596,6 +614,7 @@ export async function buildSolverInputV2(
     bankedPreferences,
     fairnessTrackers,
     fairnessHistory,
+    shiftHistory,
     roleRules,
   } satisfies SolverInputV2;
 }

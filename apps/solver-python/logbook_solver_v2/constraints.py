@@ -815,6 +815,10 @@ def _intra_schedule_fairness_constraints(solver: "SolverV2") -> None:
         if DEBUG: print("   Hard fairness not enabled (set enableHardFairness=true)", file=sys.stderr)
         return
     
+    # Get configurable BASE_BOOST
+    base_boost_value = solver.settings.get('fairnessBaseBoost', 10000)
+    if DEBUG: print(f"   BASE_BOOST = {base_boost_value}", file=sys.stderr)
+    
     m = solver.model
     slot_minutes = solver.time_grid.slot_minutes
     
@@ -900,11 +904,12 @@ def _intra_schedule_fairness_constraints(solver: "SolverV2") -> None:
         # Instead of blocking high-tier crew (causes infeasibility),
         # we give a massive BOOST to low min/hr crew.
         # 
-        # Crew with 0 min/hr get +10000 boost
+        # Crew with 0 min/hr get +BASE_BOOST boost
         # Crew with higher min/hr get progressively less boost
         # This creates a strong preference without blocking
         
-        BASE_BOOST = 10000  # Massive boost for fairness rotation
+        # Get BASE_BOOST from settings (configurable) or use default
+        BASE_BOOST = solver.settings.get('fairnessBaseBoost', 10000)
         
         for crew_id, mph in mph_values.items():
             # Calculate boost: lower min/hr = higher boost

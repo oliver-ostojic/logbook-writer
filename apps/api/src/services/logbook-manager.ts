@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import type { PrismaClient, LogbookStatus, RunStatus } from '@prisma/client';
 import type { SolverStatus } from '@logbook-writer/shared-types';
 import type { SolverInputV2 } from '../solver2/types';
+import { updateRoleFairnessData, type AssignmentForFairness } from './role-fairness.service';
 
 /**
  * V2 assignment format - directly from Python solver
@@ -418,6 +419,23 @@ export async function saveLogbookWithMetadata(
     logbook.id,
     fullCrewRuleStats
   );
+
+  // =========================================================================
+  // Role Fairness Tracking
+  // =========================================================================
+  // Update fairness history and snapshots for tracked roles
+  const fairnessAssignments: AssignmentForFairness[] = (solverOutput.assignments || []).map(a => ({
+    crewId: a.crewId,
+    roleId: a.roleId,
+    startMinute: a.startMinute,
+    endMinute: a.endMinute,
+  }));
+
+  await updateRoleFairnessData(prisma, {
+    storeId,
+    date,
+    assignments: fairnessAssignments,
+  });
 
   console.log('\n✅ Logbook saved successfully:');
   console.log(`   ID: ${logbook.id}`);

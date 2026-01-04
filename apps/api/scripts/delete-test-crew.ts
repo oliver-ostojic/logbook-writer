@@ -2,22 +2,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Check crew
-async function checkCrew() {
-  const crew = await prisma.crew.findUnique({ 
-    where: { id: '1290542' },
-    include: { CrewRole: { include: { Role: true } } }
-  });
-  console.log('Crew:', JSON.stringify(crew, null, 2));
-  
-  // Also count total crew for store 768
-  const count = await prisma.crew.count({ where: { storeId: 768 } });
-  console.log('Total crew in store 768:', count);
-}
-
-checkCrew()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+// Test/duplicate crew members to delete
+const CREW_IDS_TO_DELETE = ['TCREW93', '1286822', '1284237', '1284686'];
 
 async function deleteTestCrew() {
   console.log('Deleting test crew members:', CREW_IDS_TO_DELETE);
@@ -69,6 +55,14 @@ async function deleteTestCrew() {
   console.log('\n✅ Done!');
 }
 
-deleteTestCrew()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+async function main() {
+  await deleteTestCrew();
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

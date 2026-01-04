@@ -49,11 +49,18 @@ const callsToAction = [
   { name: 'View all products', href: '#', icon: RectangleGroupIcon },
 ]
 
-export default function Header() {
+interface HeaderProps {
+  dark?: boolean;
+}
+
+export default function Header({ dark = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="relative z-[60] bg-white shadow-sm">
+    <header 
+      className={`relative z-[60] ${dark ? 'border-b' : 'bg-white shadow-sm'}`} 
+      style={dark ? { backgroundColor: '#141414', borderColor: '#1C1A28' } : undefined}
+    >
       <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8">
         <div className="flex lg:flex-1">
           <a href="#" className="-m-1.5 p-1.5">
@@ -69,7 +76,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
+            className={`-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 ${dark ? 'text-gray-300' : 'text-gray-700'}`}
           >
             <span className="sr-only">Open main menu</span>
             <Bars3Icon aria-hidden="true" className="size-6" />
@@ -77,9 +84,9 @@ export default function Header() {
         </div>
         <PopoverGroup className="hidden lg:flex lg:gap-x-12">
           <Popover>
-            <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-900 outline-none focus:outline-none">
+            <PopoverButton className={`flex items-center gap-x-1 text-sm/6 font-semibold outline-none focus:outline-none ${dark ? 'text-white' : 'text-gray-900'}`}>
               Product
-              <ChevronDownIcon aria-hidden="true" className="size-5 flex-none text-gray-400" />
+              <ChevronDownIcon aria-hidden="true" className={`size-5 flex-none ${dark ? 'text-gray-500' : 'text-gray-400'}`} />
             </PopoverButton>
 
             <PopoverPanel
@@ -123,18 +130,18 @@ export default function Header() {
             </PopoverPanel>
           </Popover>
 
-          <a href="#" className="text-sm/6 font-semibold text-gray-900">
+          <a href="#" className={`text-sm/6 font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
             Features
           </a>
-          <a href="#" className="text-sm/6 font-semibold text-gray-900">
+          <a href="#" className={`text-sm/6 font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
             Marketplace
           </a>
-          <a href="#" className="text-sm/6 font-semibold text-gray-900">
+          <a href="#" className={`text-sm/6 font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
             Company
           </a>
         </PopoverGroup>
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          <a href="#" className="text-sm/6 font-semibold text-gray-900">
+          <a href="#" className={`text-sm/6 font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
             Log in <span aria-hidden="true">&rarr;</span>
           </a>
         </div>

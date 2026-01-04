@@ -352,6 +352,13 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
                     # Penalize violations heavily
                     SOFT_VIOLATION_PENALTY = 10000
                     solver.soft_constraint_penalties.append(SOFT_VIOLATION_PENALTY * violation_var)
+                    # Track raw penalty info for quadratic mode
+                    solver.raw_penalty_info.append({
+                        'weight': SOFT_VIOLATION_PENALTY,
+                        'var': violation_var,
+                        'max_value': len(total_violations),
+                        'type': 'MAX_CONSECUTIVE'
+                    })
                     
                     # Register for reporting
                     solver.register_soft_violation(
@@ -503,6 +510,13 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
                                 ORDERING_VIOLATION_PENALTY = 200
                                 weighted_penalty = int(ORDERING_VIOLATION_PENALTY * rule_weight)
                                 solver.soft_constraint_penalties.append(weighted_penalty * violation)
+                                # Track raw for quadratic mode (boolean, max_value=1)
+                                solver.raw_penalty_info.append({
+                                    'weight': weighted_penalty,
+                                    'var': violation,
+                                    'max_value': 1,
+                                    'type': 'ORDERING'
+                                })
                                 soft_penalties_added += 1
                     else:
                         # CANNOT_BE_ASSIGNED_AFTER: role cannot be directly AFTER target
@@ -518,6 +532,13 @@ def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bo
                                 ORDERING_VIOLATION_PENALTY = 200
                                 weighted_penalty = int(ORDERING_VIOLATION_PENALTY * rule_weight)
                                 solver.soft_constraint_penalties.append(weighted_penalty * violation)
+                                # Track raw for quadratic mode (boolean, max_value=1)
+                                solver.raw_penalty_info.append({
+                                    'weight': weighted_penalty,
+                                    'var': violation,
+                                    'max_value': 1,
+                                    'type': 'ORDERING'
+                                })
                                 soft_penalties_added += 1
         
         direction = "directly before" if before else "directly after"

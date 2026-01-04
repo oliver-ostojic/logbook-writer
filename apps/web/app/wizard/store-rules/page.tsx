@@ -152,7 +152,7 @@ export default function WizardStoreRulesPage() {
         throw new Error(`Failed to save rules: ${await saveRes.text()}`);
       }
       
-      // Step 2: Call solver endpoint
+      // Step 2: Call solver endpoint with tuning engine
       const solverRes = await fetch(`${API_URL}/solve-logbook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,7 +164,14 @@ export default function WizardStoreRulesPage() {
             start: s.start,
             end: s.end,
           })),
-          time_limit_seconds: 60,
+          useTuningEngine: true,
+          tuningConfig: {
+            numRegions: 10,
+            shotsPerRegion: 3,
+            timeLimitPerShot: 10,
+            workersPerRegion: 1,
+            fairnessWeight: 0.5,
+          },
         }),
       });
       

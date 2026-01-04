@@ -561,6 +561,8 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
       // shiftsData already fetched above for crewQuotas
 
+      // Use tuning engine with parallel region search for optimal schedules
+      // Config: 10 parallel regions, 3 ladder shots each, 15s per shot, fairness weight 0.5
       const solverResponse = await fetch(`${API_URL}/solve-logbook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -572,7 +574,14 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
             start: shift.start,
             end: shift.end,
           })),
-          time_limit_seconds: 30,
+          useTuningEngine: true,
+          tuningConfig: {
+            numRegions: 10,       // Use all CPU cores (capped at 10)
+            shotsPerRegion: 3,    // 3 ladder iterations per region
+            timeLimitPerShot: 10, // 10s per shot for ~30s total
+            workersPerRegion: 1,  // Deterministic within each region
+            fairnessWeight: 0.5,  // Balance satisfaction + fairness
+          },
         }),
       });
 

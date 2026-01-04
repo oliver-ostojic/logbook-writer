@@ -12,7 +12,7 @@ import { buildSolverInputV2, type ShiftOverrideDescriptor } from '../solver2/bui
 import type { SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
 import { analyzeFeasibility, generateUnknownInfeasibilityMessage } from '../services/feasibility-analyzer';
-import { runPythonSolverV2, type PythonSolverResult } from './solver2';
+import { runPythonSolverV2, runPythonTuningEngine, type PythonSolverResult, type TuningConfig } from './solver2';
 import { startOfDay } from '../utils';
 const prisma = new PrismaClient();
 
@@ -37,6 +37,9 @@ type SolveLogbookRequest = {
   }>;
   coverage_windows?: Array<{ roleCode: string; startMin: number; endMin: number; requiredCrew: number }>;
   demo_windows?: Array<{ startMin: number; endMin: number; type: 'demo' | 'wine_demo' }>;
+  // Tuning engine options (parallel region search with fairness scoring)
+  useTuningEngine?: boolean;
+  tuningConfig?: TuningConfig;
 };
 
 const ROLE_CODE_TO_TASK_TYPE: Record<string, TaskType> = {
@@ -249,6 +252,8 @@ async function runSolverV2ForLogbook(options: {
   lookbackDays?: number;
   timeLimitSeconds?: number;
   shiftOverrides?: ShiftOverrideDescriptor[];
+  useTuningEngine?: boolean;
+  tuningConfig?: TuningConfig;
 }) {
   console.log(`[SOLVER DEBUG] runSolverV2ForLogbook called with:`, {
     storeId: options.storeId,
@@ -256,6 +261,7 @@ async function runSolverV2ForLogbook(options: {
     lookbackDays: options.lookbackDays,
     hasShiftOverrides: !!options.shiftOverrides,
     shiftOverridesLength: options.shiftOverrides?.length,
+    useTuningEngine: options.useTuningEngine,
   });
   
   const solverInput = await buildSolverInputV2({
@@ -297,9 +303,18 @@ async function runSolverV2ForLogbook(options: {
     return { solverInput, solverOutput };
   }
 
-  console.log(`[SOLVER DEBUG] Feasibility passed, running Python solver...`);
-  const timeLimitSeconds = options.timeLimitSeconds ?? 60; // Default to 60 seconds
-  const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
+  // Use tuning engine (parallel regions with fairness scoring) or standard single solver
+  let pythonResult: PythonSolverResult;
+  
+  if (options.useTuningEngine) {
+    console.log(`[SOLVER DEBUG] Feasibility passed, running tuning engine (parallel regions)...`);
+    pythonResult = await runPythonTuningEngine(solverInput, options.tuningConfig ?? {});
+  } else {
+    console.log(`[SOLVER DEBUG] Feasibility passed, running Python solver...`);
+    const timeLimitSeconds = options.timeLimitSeconds ?? 60; // Default to 60 seconds
+    pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds);
+  }
+  
   console.log(`[SOLVER DEBUG] Python solver returned: success=${pythonResult.success}, status=${pythonResult.status}`);
   const constraintCounts = pythonResult.metadata?.constraintCounts as Record<string, unknown> | undefined;
   const infeasibilityWarnings = constraintCounts?.infeasibility_warnings as string[] | undefined;
@@ -356,7 +371,7 @@ export function registerSolverRoutes(app: FastifyInstance) {
    * Main endpoint to generate a daily logbook schedule using MILP solver
    */
   app.post<{ Body: SolveLogbookRequest }>('/solve-logbook', async (request, reply) => {
-    const { date, store_id, shifts, time_limit_seconds, lookback_days, lookbackDays } = request.body;
+    const { date, store_id, shifts, time_limit_seconds, lookback_days, lookbackDays, useTuningEngine, tuningConfig } = request.body;
 
     if (!date || !store_id) {
       return reply.status(400).send({ ok: false, error: 'store_id and date are required' });
@@ -378,6 +393,8 @@ export function registerSolverRoutes(app: FastifyInstance) {
         lookbackDays: lookbackDaysValue,
         timeLimitSeconds,
         shiftOverrides: shiftOverrides.length ? shiftOverrides : undefined,
+        useTuningEngine,
+        tuningConfig,
       });
 
       let logbookId: string | undefined;

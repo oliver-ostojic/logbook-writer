@@ -1,0 +1,709 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fairness Distribution - Store 768</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    .role-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .role-section h2 { margin-top: 0; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+    .stats-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+    .stat-box { background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; min-width: 120px; }
+    .stat-value { font-size: 24px; font-weight: bold; color: #1e40af; }
+    .stat-label { font-size: 12px; color: #64748b; margin-top: 5px; }
+    .stat-note { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+    .charts-row { display: flex; gap: 20px; margin-bottom: 20px; }
+    .chart-container { flex: 1; min-width: 300px; }
+    .chart-container h3 { margin-top: 0; color: #475569; }
+    .tables-row { display: flex; gap: 20px; }
+    .table-container { flex: 1; }
+    .table-container h3 { margin-top: 0; color: #475569; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; }
+    tr:hover { background: #f8fafc; }
+    .generated { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>📊 Fairness Distribution - Store 768</h1>
+  <p>Lookback period: 31 days | Generated: 12/24/2025, 2:28:56 PM</p>
+  
+  
+      <div class="role-section">
+        <h2>Parking Helms</h2>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">0.532</div>
+            <div class="stat-label">Gini Coefficient</div>
+            <div class="stat-note">❌ High inequality</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">55/88</div>
+            <div class="stat-label">Crew with Assignments</div>
+            <div class="stat-note">63% participation</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">32.7 min</div>
+            <div class="stat-label">Mean per Crew</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">30.0 min</div>
+            <div class="stat-label">Median</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">120 min</div>
+            <div class="stat-label">Max</div>
+          </div>
+        </div>
+        
+        <div class="charts-row">
+          <div class="chart-container">
+            <h3>Distribution (Histogram)</h3>
+            <canvas id="histogram-29"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>Lorenz Curve (Inequality)</h3>
+            <canvas id="lorenz-29"></canvas>
+          </div>
+        </div>
+        
+        <div class="tables-row">
+          <div class="table-container">
+            <h3>Top 10 Assigned</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Minutes</th><th>Hours Worked</th><th>Min/Hour</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Gabriella Cammarata</td>
+                    <td>120</td>
+                    <td>33.0</td>
+                    <td>3.64</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Dan Smith</td>
+                    <td>90</td>
+                    <td>25.0</td>
+                    <td>3.60</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Savannah Fraijo</td>
+                    <td>90</td>
+                    <td>33.0</td>
+                    <td>2.73</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Garet Reimann</td>
+                    <td>90</td>
+                    <td>24.0</td>
+                    <td>3.75</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Kacey Nakasen</td>
+                    <td>90</td>
+                    <td>33.0</td>
+                    <td>2.73</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Kayla Girouard</td>
+                    <td>90</td>
+                    <td>32.0</td>
+                    <td>2.81</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Andre Chance</td>
+                    <td>90</td>
+                    <td>26.0</td>
+                    <td>3.46</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Nine Payne</td>
+                    <td>90</td>
+                    <td>33.0</td>
+                    <td>2.73</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Taylor Yackulics</td>
+                    <td>90</td>
+                    <td>32.0</td>
+                    <td>2.81</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Abby Stapleton</td>
+                    <td>90</td>
+                    <td>33.0</td>
+                    <td>2.73</td>
+                  </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="table-container">
+            <h3>Crew with 0 Minutes (33 total)</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Hours Worked</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Cheri Reimann</td>
+                    <td>25.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Alyssa Jenkins</td>
+                    <td>25.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Esteban Espinosa</td>
+                    <td>16.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Marcela Soto</td>
+                    <td>16.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Roger Gomez</td>
+                    <td>33.0</td>
+                  </tr>
+                
+                <tr><td colspan="2">...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        // Histogram
+        new Chart(document.getElementById('histogram-29'), {
+          type: 'bar',
+          data: {
+            labels: ["0-15","15-30","30-45","45-60","60-75","75-90","90-105","105-120","120-135"],
+            datasets: [{
+              label: 'Number of Crew',
+              data: [33,0,27,0,16,0,11,0,1],
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { title: { display: true, text: 'Minutes Assigned' } },
+              y: { title: { display: true, text: 'Number of Crew' }, beginAtZero: true }
+            }
+          }
+        });
+        
+        // Lorenz Curve
+        new Chart(document.getElementById('lorenz-29'), {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Perfect Equality',
+                data: [{ x: 0, y: 0 }, { x: 100, y: 100 }],
+                borderColor: 'rgba(200, 200, 200, 1)',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Actual Distribution',
+                data: [{"x":0,"y":0},{"x":1.1363636363636365,"y":0},{"x":2.272727272727273,"y":0},{"x":3.4090909090909087,"y":0},{"x":4.545454545454546,"y":0},{"x":5.681818181818182,"y":0},{"x":6.8181818181818175,"y":0},{"x":7.954545454545454,"y":0},{"x":9.090909090909092,"y":0},{"x":10.227272727272728,"y":0},{"x":11.363636363636363,"y":0},{"x":12.5,"y":0},{"x":13.636363636363635,"y":0},{"x":14.772727272727273,"y":0},{"x":15.909090909090908,"y":0},{"x":17.045454545454543,"y":0},{"x":18.181818181818183,"y":0},{"x":19.318181818181817,"y":0},{"x":20.454545454545457,"y":0},{"x":21.59090909090909,"y":0},{"x":22.727272727272727,"y":0},{"x":23.863636363636363,"y":0},{"x":25,"y":0},{"x":26.136363636363637,"y":0},{"x":27.27272727272727,"y":0},{"x":28.40909090909091,"y":0},{"x":29.545454545454547,"y":0},{"x":30.681818181818183,"y":0},{"x":31.818181818181817,"y":0},{"x":32.95454545454545,"y":0},{"x":34.090909090909086,"y":0},{"x":35.22727272727273,"y":0},{"x":36.36363636363637,"y":0},{"x":37.5,"y":0},{"x":38.63636363636363,"y":1.0416666666666665},{"x":39.77272727272727,"y":2.083333333333333},{"x":40.909090909090914,"y":3.125},{"x":42.04545454545455,"y":4.166666666666666},{"x":43.18181818181818,"y":5.208333333333334},{"x":44.31818181818182,"y":6.25},{"x":45.45454545454545,"y":7.291666666666667},{"x":46.590909090909086,"y":8.333333333333332},{"x":47.72727272727273,"y":9.375},{"x":48.86363636363637,"y":10.416666666666668},{"x":50,"y":11.458333333333332},{"x":51.13636363636363,"y":12.5},{"x":52.27272727272727,"y":13.541666666666666},{"x":53.40909090909091,"y":14.583333333333334},{"x":54.54545454545454,"y":15.625},{"x":55.68181818181818,"y":16.666666666666664},{"x":56.81818181818182,"y":17.708333333333336},{"x":57.95454545454546,"y":18.75},{"x":59.09090909090909,"y":19.791666666666664},{"x":60.22727272727273,"y":20.833333333333336},{"x":61.36363636363637,"y":21.875},{"x":62.5,"y":22.916666666666664},{"x":63.63636363636363,"y":23.958333333333336},{"x":64.77272727272727,"y":25},{"x":65.9090909090909,"y":26.041666666666668},{"x":67.04545454545455,"y":27.083333333333332},{"x":68.18181818181817,"y":28.125},{"x":69.31818181818183,"y":30.208333333333332},{"x":70.45454545454545,"y":32.29166666666667},{"x":71.5909090909091,"y":34.375},{"x":72.72727272727273,"y":36.45833333333333},{"x":73.86363636363636,"y":38.54166666666667},{"x":75,"y":40.625},{"x":76.13636363636364,"y":42.70833333333333},{"x":77.27272727272727,"y":44.79166666666667},{"x":78.4090909090909,"y":46.875},{"x":79.54545454545455,"y":48.95833333333333},{"x":80.68181818181817,"y":51.041666666666664},{"x":81.81818181818183,"y":53.125},{"x":82.95454545454545,"y":55.208333333333336},{"x":84.0909090909091,"y":57.291666666666664},{"x":85.22727272727273,"y":59.375},{"x":86.36363636363636,"y":61.458333333333336},{"x":87.5,"y":64.58333333333334},{"x":88.63636363636364,"y":67.70833333333334},{"x":89.77272727272727,"y":70.83333333333334},{"x":90.9090909090909,"y":73.95833333333334},{"x":92.04545454545455,"y":77.08333333333334},{"x":93.18181818181817,"y":80.20833333333334},{"x":94.31818181818183,"y":83.33333333333334},{"x":95.45454545454545,"y":86.45833333333334},{"x":96.5909090909091,"y":89.58333333333334},{"x":97.72727272727273,"y":92.70833333333334},{"x":98.86363636363636,"y":95.83333333333334},{"x":100,"y":100}],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                pointRadius: 0,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}% of minutes to ${ctx.parsed.x.toFixed(1)}% of crew`
+                }
+              }
+            },
+            scales: {
+              x: { type: 'linear', min: 0, max: 100, title: { display: true, text: '% of Crew (sorted by assignment)' } },
+              y: { min: 0, max: 100, title: { display: true, text: '% of Total Minutes' } }
+            }
+          }
+        });
+      </script>
+    
+
+      <div class="role-section">
+        <h2>Wine Demo</h2>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">0.547</div>
+            <div class="stat-label">Gini Coefficient</div>
+            <div class="stat-note">❌ High inequality</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">14/29</div>
+            <div class="stat-label">Crew with Assignments</div>
+            <div class="stat-note">48% participation</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">31.0 min</div>
+            <div class="stat-label">Mean per Crew</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">0.0 min</div>
+            <div class="stat-label">Median</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">120 min</div>
+            <div class="stat-label">Max</div>
+          </div>
+        </div>
+        
+        <div class="charts-row">
+          <div class="chart-container">
+            <h3>Distribution (Histogram)</h3>
+            <canvas id="histogram-37"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>Lorenz Curve (Inequality)</h3>
+            <canvas id="lorenz-37"></canvas>
+          </div>
+        </div>
+        
+        <div class="tables-row">
+          <div class="table-container">
+            <h3>Top 10 Assigned</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Minutes</th><th>Hours Worked</th><th>Min/Hour</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Kenny Brooke</td>
+                    <td>120</td>
+                    <td>24.0</td>
+                    <td>5.00</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Shushan Royer</td>
+                    <td>60</td>
+                    <td>33.0</td>
+                    <td>1.82</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Dan Smith</td>
+                    <td>60</td>
+                    <td>25.0</td>
+                    <td>2.40</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Denise Madrid</td>
+                    <td>60</td>
+                    <td>23.0</td>
+                    <td>2.61</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Gary Medina</td>
+                    <td>60</td>
+                    <td>32.0</td>
+                    <td>1.88</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Savannah Fraijo</td>
+                    <td>60</td>
+                    <td>33.0</td>
+                    <td>1.82</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Tracy Hopkins</td>
+                    <td>60</td>
+                    <td>24.0</td>
+                    <td>2.50</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Xander Faber</td>
+                    <td>60</td>
+                    <td>24.0</td>
+                    <td>2.50</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Alice De Simoni</td>
+                    <td>60</td>
+                    <td>16.0</td>
+                    <td>3.75</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Alyssa Jenkins</td>
+                    <td>60</td>
+                    <td>25.0</td>
+                    <td>2.40</td>
+                  </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="table-container">
+            <h3>Crew with 0 Minutes (15 total)</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Hours Worked</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Carolyn Shephard</td>
+                    <td>33.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Justin Bennett</td>
+                    <td>32.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Randy Guardado</td>
+                    <td>8.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Cheri Reimann</td>
+                    <td>25.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Elder De Leon</td>
+                    <td>32.5</td>
+                  </tr>
+                
+                <tr><td colspan="2">...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        // Histogram
+        new Chart(document.getElementById('histogram-37'), {
+          type: 'bar',
+          data: {
+            labels: ["0-15","15-30","30-45","45-60","60-75","75-90","90-105","105-120","120-135"],
+            datasets: [{
+              label: 'Number of Crew',
+              data: [15,0,0,0,13,0,0,0,1],
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { title: { display: true, text: 'Minutes Assigned' } },
+              y: { title: { display: true, text: 'Number of Crew' }, beginAtZero: true }
+            }
+          }
+        });
+        
+        // Lorenz Curve
+        new Chart(document.getElementById('lorenz-37'), {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Perfect Equality',
+                data: [{ x: 0, y: 0 }, { x: 100, y: 100 }],
+                borderColor: 'rgba(200, 200, 200, 1)',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Actual Distribution',
+                data: [{"x":0,"y":0},{"x":3.4482758620689653,"y":0},{"x":6.896551724137931,"y":0},{"x":10.344827586206897,"y":0},{"x":13.793103448275861,"y":0},{"x":17.24137931034483,"y":0},{"x":20.689655172413794,"y":0},{"x":24.137931034482758,"y":0},{"x":27.586206896551722,"y":0},{"x":31.03448275862069,"y":0},{"x":34.48275862068966,"y":0},{"x":37.93103448275862,"y":0},{"x":41.37931034482759,"y":0},{"x":44.827586206896555,"y":0},{"x":48.275862068965516,"y":0},{"x":51.724137931034484,"y":0},{"x":55.172413793103445,"y":6.666666666666667},{"x":58.620689655172406,"y":13.333333333333334},{"x":62.06896551724138,"y":20},{"x":65.51724137931035,"y":26.666666666666668},{"x":68.96551724137932,"y":33.33333333333333},{"x":72.41379310344827,"y":40},{"x":75.86206896551724,"y":46.666666666666664},{"x":79.3103448275862,"y":53.333333333333336},{"x":82.75862068965517,"y":60},{"x":86.20689655172413,"y":66.66666666666666},{"x":89.65517241379311,"y":73.33333333333333},{"x":93.10344827586206,"y":80},{"x":96.55172413793103,"y":86.66666666666667},{"x":100,"y":100}],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                pointRadius: 0,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}% of minutes to ${ctx.parsed.x.toFixed(1)}% of crew`
+                }
+              }
+            },
+            scales: {
+              x: { type: 'linear', min: 0, max: 100, title: { display: true, text: '% of Crew (sorted by assignment)' } },
+              y: { min: 0, max: 100, title: { display: true, text: '% of Total Minutes' } }
+            }
+          }
+        });
+      </script>
+    
+
+      <div class="role-section">
+        <h2>Food Demo</h2>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">0.709</div>
+            <div class="stat-label">Gini Coefficient</div>
+            <div class="stat-note">❌ High inequality</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">16/38</div>
+            <div class="stat-label">Crew with Assignments</div>
+            <div class="stat-note">42% participation</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">42.6 min</div>
+            <div class="stat-label">Mean per Crew</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">0.0 min</div>
+            <div class="stat-label">Median</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">240 min</div>
+            <div class="stat-label">Max</div>
+          </div>
+        </div>
+        
+        <div class="charts-row">
+          <div class="chart-container">
+            <h3>Distribution (Histogram)</h3>
+            <canvas id="histogram-38"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>Lorenz Curve (Inequality)</h3>
+            <canvas id="lorenz-38"></canvas>
+          </div>
+        </div>
+        
+        <div class="tables-row">
+          <div class="table-container">
+            <h3>Top 10 Assigned</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Minutes</th><th>Hours Worked</th><th>Min/Hour</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Kayla Girouard</td>
+                    <td>240</td>
+                    <td>32.0</td>
+                    <td>7.50</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Kaylyn Pipitone</td>
+                    <td>240</td>
+                    <td>24.0</td>
+                    <td>10.00</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Hannah Reshel</td>
+                    <td>240</td>
+                    <td>16.0</td>
+                    <td>15.00</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Savannah Fraijo</td>
+                    <td>120</td>
+                    <td>33.0</td>
+                    <td>3.64</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Roger Gomez</td>
+                    <td>120</td>
+                    <td>33.0</td>
+                    <td>3.64</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Rachel Haverstock</td>
+                    <td>60</td>
+                    <td>24.0</td>
+                    <td>2.50</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Jodie Cordato</td>
+                    <td>60</td>
+                    <td>9.0</td>
+                    <td>6.67</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Elder De Leon</td>
+                    <td>60</td>
+                    <td>32.5</td>
+                    <td>1.85</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Juan Caceres</td>
+                    <td>60</td>
+                    <td>23.0</td>
+                    <td>2.61</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Kenny Brooke</td>
+                    <td>60</td>
+                    <td>24.0</td>
+                    <td>2.50</td>
+                  </tr>
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="table-container">
+            <h3>Crew with 0 Minutes (22 total)</h3>
+            <table>
+              <thead><tr><th>Crew</th><th>Hours Worked</th></tr></thead>
+              <tbody>
+                
+                  <tr>
+                    <td>Alyssa Jenkins</td>
+                    <td>25.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Esteban Espinosa</td>
+                    <td>16.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Smith Jean Jacques</td>
+                    <td>25.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Ashley Andrejko</td>
+                    <td>16.0</td>
+                  </tr>
+                
+                  <tr>
+                    <td>Talye DeMaio</td>
+                    <td>32.0</td>
+                  </tr>
+                
+                <tr><td colspan="2">...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        // Histogram
+        new Chart(document.getElementById('histogram-38'), {
+          type: 'bar',
+          data: {
+            labels: ["0-15","15-30","30-45","45-60","60-75","75-90","90-105","105-120","120-135","135-150","150-165","165-180","180-195","195-210","210-225","225-240","240-255"],
+            datasets: [{
+              label: 'Number of Crew',
+              data: [22,0,0,0,11,0,0,0,2,0,0,0,0,0,0,0,3],
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { title: { display: true, text: 'Minutes Assigned' } },
+              y: { title: { display: true, text: 'Number of Crew' }, beginAtZero: true }
+            }
+          }
+        });
+        
+        // Lorenz Curve
+        new Chart(document.getElementById('lorenz-38'), {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Perfect Equality',
+                data: [{ x: 0, y: 0 }, { x: 100, y: 100 }],
+                borderColor: 'rgba(200, 200, 200, 1)',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+              },
+              {
+                label: 'Actual Distribution',
+                data: [{"x":0,"y":0},{"x":2.631578947368421,"y":0},{"x":5.263157894736842,"y":0},{"x":7.894736842105263,"y":0},{"x":10.526315789473683,"y":0},{"x":13.157894736842104,"y":0},{"x":15.789473684210526,"y":0},{"x":18.421052631578945,"y":0},{"x":21.052631578947366,"y":0},{"x":23.684210526315788,"y":0},{"x":26.31578947368421,"y":0},{"x":28.947368421052634,"y":0},{"x":31.57894736842105,"y":0},{"x":34.21052631578947,"y":0},{"x":36.84210526315789,"y":0},{"x":39.473684210526315,"y":0},{"x":42.10526315789473,"y":0},{"x":44.73684210526316,"y":0},{"x":47.368421052631575,"y":0},{"x":50,"y":0},{"x":52.63157894736842,"y":0},{"x":55.26315789473685,"y":0},{"x":57.89473684210527,"y":0},{"x":60.526315789473685,"y":3.7037037037037033},{"x":63.1578947368421,"y":7.4074074074074066},{"x":65.78947368421053,"y":11.11111111111111},{"x":68.42105263157895,"y":14.814814814814813},{"x":71.05263157894737,"y":18.51851851851852},{"x":73.68421052631578,"y":22.22222222222222},{"x":76.31578947368422,"y":25.925925925925924},{"x":78.94736842105263,"y":29.629629629629626},{"x":81.57894736842105,"y":33.33333333333333},{"x":84.21052631578947,"y":37.03703703703704},{"x":86.8421052631579,"y":40.74074074074074},{"x":89.47368421052632,"y":48.148148148148145},{"x":92.10526315789474,"y":55.55555555555556},{"x":94.73684210526315,"y":70.37037037037037},{"x":97.36842105263158,"y":85.18518518518519},{"x":100,"y":100}],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                pointRadius: 0,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}% of minutes to ${ctx.parsed.x.toFixed(1)}% of crew`
+                }
+              }
+            },
+            scales: {
+              x: { type: 'linear', min: 0, max: 100, title: { display: true, text: '% of Crew (sorted by assignment)' } },
+              y: { min: 0, max: 100, title: { display: true, text: '% of Total Minutes' } }
+            }
+          }
+        });
+      </script>
+    
+  
+  <div class="generated">
+    <p><strong>How to read the Lorenz Curve:</strong></p>
+    <p>The diagonal dashed line represents perfect equality (everyone gets equal minutes).</p>
+    <p>The red area between the curve and the diagonal represents inequality - larger area = more unequal.</p>
+    <p>Gini coefficient = 2 × (area between curve and diagonal). Range: 0 (perfect equality) to 1 (maximum inequality).</p>
+  </div>
+</body>
+</html>
+  

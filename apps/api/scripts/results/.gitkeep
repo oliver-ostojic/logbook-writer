@@ -1,0 +1,2 @@
+# This directory stores raw test results from solver optimization experiments.
+# All .jsonl and .json result files should be committed for reproducibility.

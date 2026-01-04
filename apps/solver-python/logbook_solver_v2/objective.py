@@ -24,6 +24,47 @@ DEFAULT_FAIRNESS_PENALTY = 300 # Penalty for over-assigned crew (negative z-scor
 DEFAULT_FAIRNESS_MIN_STD = 60  # Minimum std dev in minutes to apply fairness (avoid div by zero)
 
 
+def _compute_quadratic_penalty_terms(model, solver, use_quadratic: bool) -> List:
+    """
+    Compute penalty terms, optionally using quadratic scaling.
+    
+    For linear (default): penalty = weight * violation_count
+    For quadratic: penalty = weight * violation_count² (more heavily punishes large violations)
+    
+    Args:
+        model: The CP-SAT model
+        solver: The solver instance with raw_penalty_info
+        use_quadratic: If True, apply quadratic scaling
+        
+    Returns:
+        List of penalty terms to sum in objective
+    """
+    if not use_quadratic:
+        # Linear mode - just return the existing soft_constraint_penalties
+        return solver.soft_constraint_penalties
+    
+    # Quadratic mode: replace linear penalties with quadratic ones
+    quadratic_terms = []
+    
+    for info in solver.raw_penalty_info:
+        weight = info['weight']
+        var = info['var']
+        max_value = info['max_value']
+        
+        if max_value == 1:
+            # Boolean var: x² = x, no change needed
+            quadratic_terms.append(weight * var)
+        else:
+            # Integer var: compute x² using multiplication
+            # Create squared variable: sq = var * var
+            squared_var = model.NewIntVar(0, max_value * max_value, f'sq_{var.Name()}')
+            model.AddMultiplicationEquality(squared_var, [var, var])
+            quadratic_terms.append(weight * squared_var)
+    
+    # Return the quadratic terms (replaces soft_constraint_penalties)
+    return quadratic_terms
+
+
 def apply(solver: "SolverV2") -> None:
     model = solver.model
     slot_minutes = solver.time_grid.slot_minutes
@@ -93,7 +134,15 @@ def apply(solver: "SolverV2") -> None:
             fairness_rotation_terms.append(boost * var)
     
     # Soft constraint penalties from role rules (e.g., soft MAX_CONSECUTIVE_MINUTES)
-    soft_penalties = solver.soft_constraint_penalties
+    # Check if quadratic penalty mode is enabled
+    use_quadratic = solver.settings.get('useQuadraticPenalties', False)
+    
+    if use_quadratic and hasattr(solver, 'raw_penalty_info') and solver.raw_penalty_info:
+        # Use quadratic penalties for tracked violations
+        soft_penalties = _compute_quadratic_penalty_terms(model, solver, use_quadratic)
+    else:
+        # Linear mode (default)
+        soft_penalties = solver.soft_constraint_penalties
     
     # Add quota shortfall penalties (crew couldn't get full quota amount)
     quota_shortfall_penalties = []

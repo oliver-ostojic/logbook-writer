@@ -84,17 +84,25 @@ def main() -> int:
         payload = _read_payload()
         solver_input = payload.get("solverInput") or payload
         time_limit = payload.get("timeLimitSeconds")
+        num_workers = payload.get("numWorkers")  # None = use default (os.cpu_count())
         diagnose_infeasibility = payload.get("diagnoseInfeasibility", False)
+        solution_hint = payload.get("solutionHint")  # Optional warmstart hint
 
         # First try with normal HARD constraints
         solver = SolverV2(solver_input, force_soft_mode=False)
-        result = solver.solve(time_limit_seconds=time_limit)
+        
+        # Apply warmstart hints if provided
+        if solution_hint and isinstance(solution_hint, list) and len(solution_hint) > 0:
+            solver.apply_solution_hint(solution_hint)
+            print(f"✓ Applied {len(solution_hint)} warmstart hints", file=sys.stderr)
+        
+        result = solver.solve(time_limit_seconds=time_limit, num_workers=num_workers)
 
         # If infeasible and diagnose flag is set, re-run with force_soft_mode
         if not result.get("success") and diagnose_infeasibility:
             print("⚠️ INFEASIBLE - Re-running with force_soft_mode for diagnosis...", file=sys.stderr)
             solver_soft = SolverV2(solver_input, force_soft_mode=True)
-            result = solver_soft.solve(time_limit_seconds=time_limit)
+            result = solver_soft.solve(time_limit_seconds=time_limit, num_workers=num_workers)
             result["metadata"]["diagnosisMode"] = True
 
         # Record training data for ML (non-blocking)

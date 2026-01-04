@@ -12,6 +12,11 @@ import type { ConstraintViolation } from '@logbook-writer/shared-types/src/const
 import { SolverStatus } from '@logbook-writer/shared-types/src/solver';
 import { saveLogbookWithMetadata, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
 import { startOfDay } from '../utils';
+import { 
+  PRODUCTION_SOLVER_SETTINGS, 
+  PRODUCTION_TUNING_CONFIG,
+  SOLVER_CONFIG,
+} from '../config/solver.config';
 
 const prisma = new PrismaClient();
 
@@ -35,6 +40,7 @@ type SolveRequestBody = {
   includeInput?: boolean;
   saveLogbook?: boolean;  // If true, saves logbook and triggers fairness tracking
   skipFairnessWeights?: boolean;  // If true, skips fairness boost/penalty in objective (for A/B testing)
+  solutionHint?: PythonSolverAssignment[];  // Optional warmstart hint from previous solution
   settings?: {  // Tunable solver parameters
     fairnessBoost?: number;
     fairnessPenalty?: number;
@@ -47,6 +53,13 @@ type TuneRequestBody = {
   date: string;
   lookbackDays?: number;
   includeInput?: boolean;
+  saveLogbook?: boolean;  // Save the result as a logbook (triggers fairness tracking)
+  settings?: {  // Tunable solver parameters (same as solve endpoint)
+    fairnessBoost?: number;
+    fairnessPenalty?: number;
+    fairnessBaseBoost?: number;  // Base boost for tiered rotation (default: 7500)
+    enableHardFairness?: boolean;  // If true, uses tiered rotation boost for tracked roles (default: true)
+  };
   tuningConfig?: {
     numRegions?: number;        // Number of parallel regions (default: CPU count, max 10)
     shotsPerRegion?: number;    // Ladder iterations per region (default: 3)
@@ -140,16 +153,16 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
       // Set skipFairnessWeights flag for A/B testing (default: false)
       solverInput.skipFairnessWeights = body.skipFairnessWeights ?? false;
       
-      // Pass through settings (fairnessBoost, fairnessPenalty, etc.)
-      // Default enableHardFairness to true for production (tiered rotation boost)
+      // Apply production fairness settings, allow overrides from request
       solverInput.settings = {
-        enableHardFairness: true,  // Enable tiered rotation boost by default
+        ...PRODUCTION_SOLVER_SETTINGS,
         ...body.settings,
       };
 
-      const timeLimitSeconds = body.timeLimitSeconds ?? 120; // Default to 120 seconds
-      const numWorkers = body.numWorkers;  // undefined = use default (os.cpu_count())
-      const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds, numWorkers);
+      const timeLimitSeconds = body.timeLimitSeconds ?? SOLVER_CONFIG.timeLimitSeconds;
+      const numWorkers = body.numWorkers ?? SOLVER_CONFIG.numWorkers;
+      const solutionHint = body.solutionHint;  // Optional warmstart hint
+      const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds, numWorkers, solutionHint);
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
       const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(
@@ -278,8 +291,18 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         lookbackDays,
       });
 
-      // Run the tuning engine with parallel region search
-      const tuningConfig = body.tuningConfig ?? {};
+      // Apply production fairness settings, then request overrides
+      solverInput.settings = {
+        ...PRODUCTION_SOLVER_SETTINGS,
+        ...solverInput.settings,
+        ...body.settings,  // Allow request to override (e.g., for A/B testing BASE_BOOST)
+      };
+
+      // Merge production tuning config with request overrides
+      const tuningConfig = {
+        ...PRODUCTION_TUNING_CONFIG,
+        ...body.tuningConfig,
+      };
       const pythonResult = await runPythonTuningEngine(solverInput, tuningConfig);
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
@@ -316,10 +339,48 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         .slice(0, VIOLATION_METADATA_LIMIT)
         .map(formatViolationMessage);
 
+      // Optionally save logbook (triggers fairness tracking)
+      let logbookId: string | undefined;
+      if (body.saveLogbook && pythonResult.success && pythonResult.assignments && pythonResult.assignments.length > 0) {
+        const normalizedDate = startOfDay(body.date);
+        
+        const solverOutput: SolverOutputV2 = {
+          success: pythonResult.success,
+          metadata: {
+            status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+            objectiveScore: pythonResult.objectiveValue,
+            runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+            mipGap: pythonResult.metadata?.mipGap as number | undefined,
+            numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
+            numHours: (pythonResult.metadata?.numHours as number) ?? 0,
+            numAssignments: pythonResult.assignments?.length ?? 0,
+            violations: formattedViolations,
+            constraintAnalysis,
+          },
+          assignments: pythonResult.assignments.map(a => ({
+            crewId: a.crewId,
+            roleId: a.roleId,
+            startMinute: a.startMinute,
+            endMinute: a.endMinute,
+          })),
+        };
+
+        logbookId = await saveLogbookWithMetadata(prisma, {
+          storeId,
+          date: normalizedDate,
+          solverOutput,
+          solverInput,
+          status: 'DRAFT',
+        });
+        
+        request.log.info({ logbookId, date: body.date }, 'Tuned logbook saved with fairness tracking');
+      }
+
       const response: Record<string, unknown> = {
         success: pythonResult.success,
         status: pythonResult.status,
         objectiveValue: pythonResult.objectiveValue,
+        logbookId,
         metadata: {
           ...pythonResult.metadata,
           constraintAnalysis,
@@ -370,7 +431,8 @@ function buildPythonPathEnv(): string {
 export async function runPythonSolverV2(
   solverInput: SolverInputV2,
   timeLimitSeconds?: number,
-  numWorkers?: number
+  numWorkers?: number,
+  solutionHint?: PythonSolverAssignment[]
 ): Promise<PythonSolverResult> {
   const pythonBin = resolvePythonBinary();
   const pythonPath = buildPythonPathEnv();
@@ -428,7 +490,7 @@ export async function runPythonSolverV2(
       resolve(parsed);
     });
 
-    const payload = JSON.stringify({ solverInput, timeLimitSeconds, numWorkers });
+    const payload = JSON.stringify({ solverInput, timeLimitSeconds, numWorkers, solutionHint });
     child.stdin?.write(payload);
     child.stdin?.end();
   });
@@ -438,7 +500,7 @@ export async function runPythonSolverV2(
  * Configuration for the tuning engine
  */
 export interface TuningConfig {
-  numRegions?: number;        // Number of parallel regions (default: CPU count, max 10)
+  numRegions?: number;        // Number of parallel regions (default: 14 - optimal)
   shotsPerRegion?: number;    // Ladder iterations per region (default: 3)
   timeLimitPerShot?: number;  // Seconds per solve (default: 15)
   workersPerRegion?: number;  // Solver workers per region (default: 1)
@@ -448,8 +510,8 @@ export interface TuningConfig {
 /**
  * Run the Python tuning engine with parallel region search
  * 
- * Best configuration for 10-core machines:
- * - numRegions=10 (one per core)
+ * OPTIMAL CONFIGURATION (tested December 25, 2025):
+ * - numRegions=14 (best speed/quality balance)
  * - shotsPerRegion=3 (quick ladder iterations)
  * - timeLimitPerShot=15 (fast but thorough)
  * - workersPerRegion=1 (deterministic within region)

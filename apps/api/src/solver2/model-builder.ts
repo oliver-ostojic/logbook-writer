@@ -50,6 +50,8 @@ export function buildAssignmentModel(input: SolverInputV2): BuildAssignmentModel
     roles: input.roles,
     grid,
     fairnessHistory: input.fairnessHistory,
+    shiftHistory: input.shiftHistory,
+    skipFairnessWeights: input.skipFairnessWeights,
   });
 
   return {

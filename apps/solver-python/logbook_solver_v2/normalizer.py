@@ -84,7 +84,7 @@ def normalize_payload(raw_payload: Dict[str, Any]) -> Dict[str, Any]:
         'preferences': preferences,
     }
 
-    for passthrough_key in ('date', 'timeLimitSeconds'):
+    for passthrough_key in ('date', 'timeLimitSeconds', 'settings', 'fairnessTrackers', 'fairnessHistory', 'shiftHistory'):
         if passthrough_key in payload:
             normalized[passthrough_key] = payload[passthrough_key]
 

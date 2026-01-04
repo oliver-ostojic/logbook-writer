@@ -69,6 +69,9 @@ class SolverV2:
         # Soft constraint penalties - populated by constraint builders, used by objective
         self.soft_constraint_penalties: List = []
         
+        # Raw penalty info for quadratic mode: list of {'weight': int, 'var': IntVar, 'max_value': int}
+        self.raw_penalty_info: List[Dict] = []
+        
         # Fairness rotation terms - populated by fairness constraint, used by objective
         self.fairness_rotation_terms: List = []
         
@@ -160,6 +163,10 @@ class SolverV2:
         # In this repo's OR-Tools build, setting `num_workers` can yield MODEL_INVALID,
         # while `num_search_workers` works as expected.
         solver.parameters.num_search_workers = int(num_workers)
+        
+        # Enable Large Neighborhood Search (LNS) for better optimization
+        # LNS iteratively destroys and repairs parts of the solution to escape local optima
+        solver.parameters.use_lns = True
 
         # NOTE: In some OR-Tools builds, setting random_seed alongside
         # num_search_workers>1 can lead to MODEL_INVALID. To keep portfolio search
