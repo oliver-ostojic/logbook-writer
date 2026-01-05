@@ -1,12 +1,227 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronDownIcon, PlusIcon } from '@heroicons/react/20/solid';
-import Header from '../../../../components/Header';
+import { ChevronDownIcon, PlusIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import Footer from '../../../../components/Footer';
 import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, CrewQuickLookCarousel, RoleQuickLookCarousel, CrewQuickLookCardStatic, RoleQuickLookCardStatic, defaultCrewCards, defaultRoleCards, CrewCardData, RoleCardData, RoleHeatmap, CrewFairnessTable } from './components';
+
+// =============================================================================
+// AI Glass Style Template - Reusable glass effect with border
+// =============================================================================
+
+// Border style - just sets up positioning for the pseudo-element border
+// borderColor: RGB values as string e.g. "255, 255, 255" for white, "100, 150, 255" for blue
+// borderOpacity: 0-1 value for border visibility
+const aiGlassBorderStyle = (
+  borderRadius: string | number = '1rem',
+  borderColor?: string,
+  borderOpacity?: number
+): React.CSSProperties => ({
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+  position: 'relative' as const,
+  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
+  ...(borderColor && { '--border-color': borderColor } as React.CSSProperties),
+  ...(borderOpacity !== undefined && { '--border-opacity': borderOpacity } as React.CSSProperties),
+});
+
+// Inner content styles (translucent with backdrop blur)
+// opacity parameter: lower = more transparent/lighter, higher = more opaque/darker
+const aiGlassContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.85): React.CSSProperties => ({
+  width: '100%',
+  height: '100%',
+  background: `rgba(28, 27, 31, ${opacity})`,
+  backdropFilter: 'blur(5px)',
+  WebkitBackdropFilter: 'blur(5px)',
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+});
+
+// Wrapper component for easy reuse
+interface AiGlassCardProps {
+  children: React.ReactNode;
+  borderRadius?: string | number;
+  className?: string;
+  style?: React.CSSProperties;
+  contentStyle?: React.CSSProperties;
+}
+
+const AiGlassCard: React.FC<AiGlassCardProps> = ({ 
+  children, 
+  borderRadius = '1rem', 
+  className = '',
+  style = {},
+  contentStyle = {},
+}) => (
+  <div className="ai-glass-border" style={{ ...aiGlassBorderStyle(borderRadius), ...style }} data-radius={typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius}>
+    <div 
+      className={className}
+      style={{ ...aiGlassContentStyle(borderRadius), ...contentStyle }}
+    >
+      {children}
+    </div>
+  </div>
+);
+
+// =============================================================================
+
+// Flowing gradient animation - colors morph into each other
+const blobAnimationStyles = `
+  .ai-glass-border {
+    position: relative;
+    --border-color: 255, 255, 255; /* Default: white, can be overridden inline */
+    --border-opacity: 0.11;
+  }
+  .ai-glass-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes flowingGradient {
+    0% {
+      background-position: 0% 50%;
+      filter: hue-rotate(0deg);
+    }
+    25% {
+      background-position: 50% 100%;
+    }
+    50% {
+      background-position: 100% 50%;
+      filter: hue-rotate(15deg);
+    }
+    75% {
+      background-position: 50% 0%;
+    }
+    100% {
+      background-position: 0% 50%;
+      filter: hue-rotate(0deg);
+    }
+  }
+  @keyframes flowingGradientReverse {
+    0% {
+      background-position: 100% 50%;
+      filter: hue-rotate(0deg);
+    }
+    25% {
+      background-position: 50% 0%;
+    }
+    50% {
+      background-position: 0% 50%;
+      filter: hue-rotate(-15deg);
+    }
+    75% {
+      background-position: 50% 100%;
+    }
+    100% {
+      background-position: 100% 50%;
+      filter: hue-rotate(0deg);
+    }
+  }
+  @keyframes flowDiagonal {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    100% {
+      background-position: 0% 0%;
+    }
+  }
+  @keyframes flowDiagonalReverse {
+    0% {
+      background-position: 100% 0%;
+    }
+    50% {
+      background-position: 0% 100%;
+    }
+    100% {
+      background-position: 100% 0%;
+    }
+  }
+  @keyframes flowVertical {
+    0% {
+      background-position: 50% 0%;
+    }
+    50% {
+      background-position: 50% 100%;
+    }
+    100% {
+      background-position: 50% 0%;
+    }
+  }
+  @keyframes flowCircular {
+    0% {
+      background-position: 50% 0%;
+    }
+    25% {
+      background-position: 100% 50%;
+    }
+    50% {
+      background-position: 50% 100%;
+    }
+    75% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 50% 0%;
+    }
+  }
+  @keyframes floatFree1 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    20% { transform: translate(15%, -25%) scale(1.2); }
+    40% { transform: translate(-10%, 20%) scale(0.8); }
+    60% { transform: translate(25%, 10%) scale(1.1); }
+    80% { transform: translate(-20%, -15%) scale(0.9); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes floatFree2 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    25% { transform: translate(-20%, 15%) scale(0.9); }
+    50% { transform: translate(10%, -20%) scale(1.3); }
+    75% { transform: translate(20%, 25%) scale(0.7); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes floatFree3 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    15% { transform: translate(20%, 20%) scale(1.1); }
+    35% { transform: translate(-15%, -10%) scale(0.85); }
+    55% { transform: translate(-25%, 15%) scale(1.25); }
+    75% { transform: translate(10%, -25%) scale(0.95); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes floatFree4 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    30% { transform: translate(-10%, -20%) scale(1.15); }
+    50% { transform: translate(25%, 5%) scale(0.8); }
+    70% { transform: translate(-5%, 25%) scale(1.2); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes floatFree5 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    20% { transform: translate(10%, 15%) scale(0.9); }
+    45% { transform: translate(-20%, -5%) scale(1.3); }
+    65% { transform: translate(15%, -20%) scale(0.85); }
+    85% { transform: translate(-15%, 10%) scale(1.1); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes floatFree6 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    25% { transform: translate(-25%, -15%) scale(1.2); }
+    55% { transform: translate(20%, 20%) scale(0.75); }
+    80% { transform: translate(5%, -25%) scale(1.15); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+`;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -243,8 +458,16 @@ function ListRowItem({
           />
         )}
       </div>
-      <div className="flex-1">
-        {children}
+      <div 
+        className="flex-1 ai-glass-border"
+        style={{
+          ...aiGlassBorderStyle('1rem', '180, 170, 200', 0.15),
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ ...aiGlassContentStyle('1rem', 0.75), position: 'relative', zIndex: 0 }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -262,8 +485,227 @@ export default function FairnessDashboardPage() {
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolePage, setRolePage] = useState(1);
+  const [crewSearchQuery, setCrewSearchQuery] = useState('');
+  const [roleSearchQuery, setRoleSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [timeSelectionIndex, setTimeSelectionIndex] = useState(0); // Month index within selected year
+  const [yearSelectionIndex, setYearSelectionIndex] = useState(0); // Year carousel index
+  const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>({}); // "year-monthIndex" -> Set of selected day numbers
+  const [selectedMonths, setSelectedMonths] = useState<Record<number, Set<number>>>({}); // yearIndex -> Set of selected month numbers (0-11)
+  const [hoveredDay, setHoveredDay] = useState<{ month: number; day: number } | null>(null);
+  const [hoveredMonth, setHoveredMonth] = useState<{ year: number; month: number } | null>(null);
+  const [hoveredMonthCardIndex, setHoveredMonthCardIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ month: number; day: number } | null>(null);
+  const [dragStartMonth, setDragStartMonth] = useState<{ year: number; month: number } | null>(null);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select'); // Whether drag is selecting or deselecting
+  
+  // Mock disabled days (no logbook data) - monthIndex -> Set of disabled day numbers
+  // For testing: sporadic random disabled days
+  const [disabledDays] = useState<Record<number, Set<number>>>(() => {
+    const disabled: Record<number, Set<number>> = {};
+    // Sporadic disabled days across months
+    disabled[0] = new Set([3, 7, 11, 18, 24, 29]);
+    disabled[1] = new Set([2, 9, 14, 22, 27]);
+    disabled[2] = new Set([1, 6, 13, 17, 23, 28, 31]);
+    disabled[3] = new Set([4, 10, 16, 21, 26]);
+    disabled[4] = new Set([5, 8, 15, 19, 25, 30]);
+    disabled[5] = new Set([2, 7, 12, 20, 24, 29]);
+    disabled[6] = new Set([1, 9, 14, 18, 23, 27]);
+    disabled[7] = new Set([3, 11, 16, 22, 28]);
+    disabled[8] = new Set([4, 8, 13, 19, 25]);
+    disabled[9] = new Set([2, 6, 15, 21, 27, 31]);
+    disabled[10] = new Set([1, 7, 12, 18, 24, 29]);
+    disabled[11] = new Set([5, 10, 16, 22, 27]);
+    return disabled;
+  });
+  
+  // Mock disabled months (no logbook data for entire month) - yearIndex -> Set of disabled month numbers (1-12)
+  // For testing: sporadic disabled months
+  const [disabledMonths] = useState<Record<number, Set<number>>>(() => {
+    const disabled: Record<number, Set<number>> = {};
+    // Year 0 (2026): disable Feb, May, Sep
+    disabled[0] = new Set([2, 5, 9]);
+    // Year 1 (2027): disable Mar, Jul, Nov
+    disabled[1] = new Set([3, 7, 11]);
+    return disabled;
+  });
+  
   const CREW_CARDS_PER_PAGE = 7;
   const ROLE_CARDS_PER_PAGE = 6;
+  
+  // Helper to get the starting day of week for a given month/year
+  // Returns 0=Sunday, 1=Monday, ..., 6=Saturday
+  const getMonthStartDay = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+  
+  // Helper to get days in a month (handles leap years)
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+  
+  // Available years for the year carousel
+  const availableYears = [2026, 2027];
+  const yearCardCount = availableYears.length;
+  
+  // Generate month options for the selected year
+  const generateMonthOptions = (year: number) => {
+    return [
+      { value: 'Jan', label: '', days: getDaysInMonth(year, 0), startDay: getMonthStartDay(year, 0) },
+      { value: 'Feb', label: '', days: getDaysInMonth(year, 1), startDay: getMonthStartDay(year, 1) },
+      { value: 'Mar', label: '', days: getDaysInMonth(year, 2), startDay: getMonthStartDay(year, 2) },
+      { value: 'Apr', label: '', days: getDaysInMonth(year, 3), startDay: getMonthStartDay(year, 3) },
+      { value: 'May', label: '', days: getDaysInMonth(year, 4), startDay: getMonthStartDay(year, 4) },
+      { value: 'Jun', label: '', days: getDaysInMonth(year, 5), startDay: getMonthStartDay(year, 5) },
+      { value: 'Jul', label: '', days: getDaysInMonth(year, 6), startDay: getMonthStartDay(year, 6) },
+      { value: 'Aug', label: '', days: getDaysInMonth(year, 7), startDay: getMonthStartDay(year, 7) },
+      { value: 'Sep', label: '', days: getDaysInMonth(year, 8), startDay: getMonthStartDay(year, 8) },
+      { value: 'Oct', label: '', days: getDaysInMonth(year, 9), startDay: getMonthStartDay(year, 9) },
+      { value: 'Nov', label: '', days: getDaysInMonth(year, 10), startDay: getMonthStartDay(year, 10) },
+      { value: 'Dec', label: '', days: getDaysInMonth(year, 11), startDay: getMonthStartDay(year, 11) },
+    ];
+  };
+  
+  const selectedYear = availableYears[yearSelectionIndex] || 2026;
+  const monthOptions = generateMonthOptions(selectedYear);
+  const monthCardCount = monthOptions.length;
+  
+  // Helper to create a composite key for year-month selection
+  const getSelectionKey = (year: number, monthIndex: number) => `${year}-${monthIndex}`;
+  
+  // Toggle day selection (single click)
+  const toggleDaySelection = (monthIndex: number, day: number) => {
+    const key = getSelectionKey(selectedYear, monthIndex);
+    setSelectedDays(prev => {
+      const monthDays = new Set(prev[key] || []);
+      if (monthDays.has(day)) {
+        monthDays.delete(day);
+      } else {
+        monthDays.add(day);
+      }
+      return { ...prev, [key]: monthDays };
+    });
+  };
+  
+  // Handle drag start
+  const handleDragStart = (monthIndex: number, day: number) => {
+    const key = getSelectionKey(selectedYear, monthIndex);
+    const monthDays = selectedDays[key] || new Set();
+    const isCurrentlySelected = monthDays.has(day);
+    setIsDragging(true);
+    setDragStart({ month: monthIndex, day });
+    setDragMode(isCurrentlySelected ? 'deselect' : 'select');
+    // Immediately toggle the starting day
+    toggleDaySelection(monthIndex, day);
+  };
+  
+  // Handle drag over a day
+  const handleDragOver = (monthIndex: number, day: number) => {
+    if (!isDragging || !dragStart) return;
+    // Only allow drag within same month
+    if (monthIndex !== dragStart.month) return;
+    
+    const key = getSelectionKey(selectedYear, monthIndex);
+    setSelectedDays(prev => {
+      const monthDays = new Set(prev[key] || []);
+      if (dragMode === 'select') {
+        monthDays.add(day);
+      } else {
+        monthDays.delete(day);
+      }
+      return { ...prev, [key]: monthDays };
+    });
+  };
+  
+  // Toggle month selection for yearly view
+  const toggleMonthSelection = (yearIndex: number, month: number) => {
+    setSelectedMonths(prev => {
+      const yearMonths = new Set(prev[yearIndex] || []);
+      if (yearMonths.has(month)) {
+        yearMonths.delete(month);
+      } else {
+        yearMonths.add(month);
+      }
+      return { ...prev, [yearIndex]: yearMonths };
+    });
+  };
+  
+  // Handle drag start for yearly view
+  const handleMonthDragStart = (yearIndex: number, month: number) => {
+    const yearMonths = selectedMonths[yearIndex] || new Set();
+    const isCurrentlySelected = yearMonths.has(month);
+    setIsDragging(true);
+    setDragStartMonth({ year: yearIndex, month });
+    setDragMode(isCurrentlySelected ? 'deselect' : 'select');
+    toggleMonthSelection(yearIndex, month);
+  };
+  
+  // Handle drag over a month for yearly view
+  const handleMonthDragOver = (yearIndex: number, month: number) => {
+    if (!isDragging || !dragStartMonth) return;
+    if (yearIndex !== dragStartMonth.year) return;
+    
+    setSelectedMonths(prev => {
+      const yearMonths = new Set(prev[yearIndex] || []);
+      if (dragMode === 'select') {
+        yearMonths.add(month);
+      } else {
+        yearMonths.delete(month);
+      }
+      return { ...prev, [yearIndex]: yearMonths };
+    });
+  };
+  
+  // Track if we just finished dragging (to prevent card click after drag)
+  const justFinishedDraggingRef = useRef(false);
+  
+  // Handle drag end
+  const handleDragEnd = () => {
+    if (isDragging) {
+      justFinishedDraggingRef.current = true;
+      // Reset the flag after a short delay (after click event would have fired)
+      setTimeout(() => {
+        justFinishedDraggingRef.current = false;
+      }, 50);
+    }
+    setIsDragging(false);
+    setDragStart(null);
+    setDragStartMonth(null);
+  };
+  
+  // Global mouse up listener for drag end
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging) {
+        handleDragEnd();
+      }
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isDragging]);
+  
+  // Reset selection index if it exceeds card count
+  useEffect(() => {
+    if (timeSelectionIndex >= monthCardCount) {
+      setTimeSelectionIndex(0);
+    }
+  }, [monthCardCount, timeSelectionIndex]);
+  
+  // Time deck ref and dimensions
+  const timeDeckRef = useRef<HTMLDivElement>(null);
+  const [timeDeckWidth, setTimeDeckWidth] = useState(0);
+  
+  useEffect(() => {
+    const updateWidth = () => {
+      if (timeDeckRef.current) {
+        setTimeDeckWidth(timeDeckRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, [expandedPanel]);
   
   // Carousel navigation state
   const [carouselNav, setCarouselNav] = useState<{
@@ -333,6 +775,7 @@ export default function FairnessDashboardPage() {
 
   // Fetch store info
   useEffect(() => {
+    // Fetch store details
     async function fetchStore() {
       if (!API_URL || !storeId) return;
       try {
@@ -349,10 +792,81 @@ export default function FairnessDashboardPage() {
   }, [storeId]);
 
   return (
-    <main>
-      <Header dark />
+    <main className="bg-black min-h-screen">
+      <style dangerouslySetInnerHTML={{ __html: blobAnimationStyles }} />
       <div className="bg-black min-h-screen">
-        <div className="px-6 lg:px-8 py-9">
+        {/* Floating pill header - positioned to align with dashboard content */}
+        <div className="fixed top-4 left-0 right-0 px-6 lg:px-8" style={{ zIndex: 200 }}>
+          {/* Flex container: empty left spacer, centered nav, right-aligned user button */}
+          <div className="flex items-center justify-between">
+            {/* Left spacer - same width as user button for centering */}
+            <div style={{ width: 48, height: 48 }} />
+            
+            {/* Centered nav menu */}
+            <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px') }}>
+              <nav
+                style={{
+                  ...aiGlassContentStyle('9999px'),
+                  padding: '12px 36px',
+                }}
+              >
+                <div className="flex items-center gap-9">
+                  <a
+                    href="#"
+                    className="text-base transition-colors"
+                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
+                  >
+                    Home
+                  </a>
+                  <a
+                    href="#"
+                    className="text-base transition-colors"
+                    style={{ fontFamily: 'var(--font-open-sans)', color: '#FFFFFF', fontWeight: 500 }}
+                  >
+                    Dashboard
+                  </a>
+                  <a
+                    href="#"
+                    className="text-base transition-colors"
+                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
+                  >
+                    Settings
+                  </a>
+                </div>
+              </nav>
+            </div>
+          
+            {/* User account circle - right side */}
+            <div
+              className="ai-glass-border"
+              style={{
+                ...aiGlassBorderStyle('9999px'),
+                width: 48,
+                height: 48,
+              }}
+            >
+              <button
+                className="flex items-center justify-center transition-all"
+                style={{
+                  ...aiGlassContentStyle('9999px'),
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'background 0.2s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <UserIcon className="w-5 h-5" style={{ color: '#9A999E' }} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 lg:px-8 pt-20 pb-9">
           {/* Main content area */}
           <div className="flex flex-col min-[1200px]:flex-row gap-3">
             {/* Left card - dashboard (full width when stacked, 60% when side-by-side) */}
@@ -364,94 +878,110 @@ export default function FairnessDashboardPage() {
                 border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              <div className="relative flex items-center justify-center mb-4" style={{ zIndex: 20 }}>
-                {/* Left: Dropdown for view selection */}
-                <Menu as="div" className="absolute left-0">
-                  <MenuButton 
-                    className="inline-flex items-center gap-1 text-med focus:outline-none"
-                    style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6A70', fontWeight: 350 }}
-                  >
-                    <ChevronDownIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
-                    {DASHBOARD_VIEWS.find(v => v.id === activeView)?.name || 'Overview'}
-                  </MenuButton>
-                  <MenuItems
-                    transition
-                    className="absolute left-0 z-10 mt-2 w-40 origin-top-left rounded-md shadow-lg outline outline-1 outline-black/5 transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none"
-                    style={{ backgroundColor: '#262628' }}
-                  >
-                    <div className="py-1">
-                      {DASHBOARD_VIEWS.map((view) => (
-                        <MenuItem key={view.id}>
-                          <div className="flex items-center justify-between px-4 py-2">
-                            <button
-                              onClick={() => {
-                                setActiveView(view.id);
-                                setSelectedCrew(null); // Clear individual crew selection
-                                setSelectedRole(null); // Clear individual role selection
-                                // Link crew/roles to expanded Quick Looks
-                                if (view.id === 'crew') {
-                                  setCrewPage(1);
-                                  setExpandedQuickLook('crew');
-                                } else if (view.id === 'roles') {
-                                  setRolePage(1);
-                                  setExpandedQuickLook('roles');
-                                } else {
-                                  setExpandedQuickLook('none');
-                                }
-                              }}
-                              className="text-left text-sm focus:outline-none flex-1"
-                              style={{ 
-                                fontFamily: 'var(--font-open-sans)',
-                                color: activeView === view.id ? '#DBDADB' : '#7C7F82',
-                                backgroundColor: 'transparent',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = '#3D3C3F'}
-                              onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                            >
-                              {view.name}
-                            </button>
-                            {view.hasExpand && (
+              {/* Header card - Dashboard title, dropdown, and date */}
+              <div 
+                className="flex flex-col mb-4 ai-glass-border"
+                style={{ 
+                  ...aiGlassBorderStyle('1rem', '180, 170, 200', 0.15),
+                  ...aiGlassContentStyle('1rem'),
+                  height: 'auto',
+                  padding: 16,
+                  zIndex: 50,
+                }}
+              >
+                <div className="relative flex items-center justify-center">
+                  {/* Left: Dropdown for view selection */}
+                  <Menu as="div" className="absolute left-0" style={{ zIndex: 100 }}>
+                    <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px') }}>
+                      <MenuButton 
+                        className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
+                        style={{ 
+                          position: 'relative' as const,
+                          zIndex: 0,
+                          width: '100%',
+                          height: '100%',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          backdropFilter: 'blur(5px)',
+                          WebkitBackdropFilter: 'blur(5px)',
+                          borderRadius: '9999px',
+                          fontFamily: 'var(--font-open-sans)', 
+                          color: '#DBDADB', 
+                          fontWeight: 400,
+                          padding: '6px 14px',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                      >
+                        {DASHBOARD_VIEWS.find(v => v.id === activeView)?.name || 'Overview'}
+                      </MenuButton>
+                    </div>
+                    <MenuItems
+                      anchor="bottom start"
+                      portal={false}
+                      transition
+                      className="w-40 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                      style={{ 
+                        zIndex: 100,
+                        ...aiGlassBorderStyle('0.75rem'),
+                        marginTop: 8,
+                      }}
+                    >
+                      <div 
+                        className="py-1"
+                        style={{
+                          ...aiGlassContentStyle('0.75rem'),
+                        }}
+                      >
+                        {DASHBOARD_VIEWS.map((view) => (
+                          <MenuItem key={view.id}>
+                            <div className="flex items-center justify-between px-4 py-2">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                onClick={() => {
                                   setActiveView(view.id);
-                                  setSelectedCrew(null); // Clear individual crew selection
-                                  setSelectedRole(null); // Clear individual role selection
-                                  // Set expanded quick look for crew/roles
+                                  setSelectedCrew(null);
+                                  setSelectedRole(null);
                                   if (view.id === 'crew') {
                                     setCrewPage(1);
                                     setExpandedQuickLook('crew');
                                   } else if (view.id === 'roles') {
                                     setRolePage(1);
                                     setExpandedQuickLook('roles');
+                                  } else {
+                                    setExpandedQuickLook('none');
                                   }
-                                  togglePanel(view.id as ExpandedPanel);
                                 }}
-                                className="focus:outline-none ml-2"
+                                className="text-left text-sm focus:outline-none flex-1"
+                                style={{ 
+                                  fontFamily: 'var(--font-open-sans)',
+                                  color: activeView === view.id ? '#DBDADB' : '#7C7F82',
+                                  backgroundColor: 'transparent',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = '#3D3C3F'}
+                                onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
                               >
-                                <PlusIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+                                {view.name}
                               </button>
-                            )}
-                          </div>
-                        </MenuItem>
-                      ))}
-                    </div>
-                  </MenuItems>
-                </Menu>
+                            </div>
+                          </MenuItem>
+                        ))}
+                      </div>
+                    </MenuItems>
+                  </Menu>
 
-                {/* Center: Dashboard title */}
-                <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                  {selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
-                </h2>
+                  {/* Center: Dashboard title */}
+                  <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
+                    {selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
+                  </h2>
 
-                {/* Right: Date with plus */}
-                <div className="absolute right-0 flex items-center gap-1">
-                  <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6A70', fontWeight: 350 }}>
-                    20-27 Jun, 25
-                  </span>
-                  <button onClick={() => togglePanel('date')} className="focus:outline-none">
-                    <PlusIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
-                  </button>
+                  {/* Right: Date */}
+                  <div className="absolute right-0 flex items-center">
+                    <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6A70', fontWeight: 350 }}>
+                      20-27 Jun, 25
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -462,53 +992,74 @@ export default function FairnessDashboardPage() {
                   className="animate-in fade-in slide-in-from-bottom-4 duration-300"
                   style={{ animationFillMode: 'both' }}
                 >
-                  {/* 2 Mini cards in a row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <StatGraphCard 
-                      data={{
-                        type: 'bar',
-                        title: 'Time per shift',
-                        value: 1.3,
-                        unit: 'hrs',
-                        status: 'Roles',
-                        barData: [
-                          { role: 'Register', hours: 1.3 },
-                          { role: 'Floor', hours: 1.1 },
-                          { role: 'Stock', hours: 0.9 },
-                          { role: 'Drive-thru', hours: 1.2 },
-                          { role: 'Kitchen', hours: 0.8 },
-                          { role: 'Manager', hours: 1.0 },
-                        ],
-                        icon: (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
-                          </svg>
-                        ),
-                      }}
-                    />
-                    <StatGraphCard 
-                      data={{
-                        type: 'pie',
-                        title: 'Preferences met',
-                        value: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5,
-                        unit: '%',
-                        status: 'Crew',
-                        pieData: { 
-                          met: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5, 
-                          notMet: 100 - (selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5) 
-                        },
-                        icon: (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clipRule="evenodd" />
-                            <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
-                          </svg>
-                        ),
-                      }}
-                    />
+                  {/* 2 Mini cards in a row - wrapped in translucent card */}
+                  <div 
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <StatGraphCard 
+                        data={{
+                          type: 'bar',
+                          title: 'Time per shift',
+                          value: 1.3,
+                          unit: 'hrs',
+                          status: 'Roles',
+                          barData: [
+                            { role: 'Register', hours: 1.3 },
+                            { role: 'Floor', hours: 1.1 },
+                            { role: 'Stock', hours: 0.9 },
+                            { role: 'Drive-thru', hours: 1.2 },
+                            { role: 'Kitchen', hours: 0.8 },
+                            { role: 'Manager', hours: 1.0 },
+                          ],
+                          icon: (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
+                            </svg>
+                          ),
+                        }}
+                      />
+                      <StatGraphCard 
+                        data={{
+                          type: 'pie',
+                          title: 'Preferences met',
+                          value: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5,
+                          unit: '%',
+                          status: 'Crew',
+                          pieData: { 
+                            met: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5, 
+                            notMet: 100 - (selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5) 
+                          },
+                          icon: (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clipRule="evenodd" />
+                              <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
+                            </svg>
+                          ),
+                        }}
+                      />
+                    </div>
                   </div>
                   
-                  {/* Satisfaction distribution box plot */}
-                  <div className="mt-5">
+                  {/* Satisfaction distribution box plot - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <GraphCardWithStatsTransparent 
                       title="Shift satisfaction spread"
                       boxPlotData={{
@@ -522,8 +1073,18 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                   
-                  {/* Satisfaction over shifts line graph */}
-                  <div className="-mt-2">
+                  {/* Satisfaction over shifts line graph - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <SatisfactionLineGraph 
                       title="Satisfaction over shifts"
                       data={[
@@ -539,8 +1100,18 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                   
-                  {/* Preferences Met graph - individual crew level */}
-                  <div className="-mt-2">
+                  {/* Preferences Met graph - individual crew level - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <GraphCardSimple 
                       title="Preferences met"
                       preferenceData={[
@@ -555,8 +1126,18 @@ export default function FairnessDashboardPage() {
               ) : selectedRole ? (
                 /* Individual Role Dashboard */
                 <>
-                  {/* 3 Mini cards in a row, stacks to 1 column on narrow screens */}
-                  <div className="grid grid-cols-1 min-[900px]:grid-cols-3 gap-3">
+                  {/* 3 Mini cards in a row - wrapped in translucent card */}
+                  <div 
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
+                    <div className="grid grid-cols-1 min-[900px]:grid-cols-3 gap-3">
                     <StatGraphCard 
                       data={{
                         type: 'sparkline',
@@ -611,10 +1192,21 @@ export default function FairnessDashboardPage() {
                         ),
                       }}
                     />
+                    </div>
                   </div>
                   
-                  {/* Crew mins distribution box plot */}
-                  <div className="mt-5">
+                  {/* Crew mins distribution box plot - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <GraphCardWithStatsTransparent 
                       title="Crew mins/shift spread"
                       boxPlotData={{
@@ -628,8 +1220,18 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                   
-                  {/* Role assignment heatmap */}
-                  <div className="-mt-2">
+                  {/* Role assignment heatmap - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <RoleHeatmap 
                       title="Avg hours/crew by day"
                       weeks={['6-13 Jun, 25', '13-20 Jun, 25', '20-27 Jun, 25', '27 Jun-4 Jul, 25', '4-11 Jul, 25', '11-18 Jul, 25']}
@@ -680,8 +1282,18 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                   
-                  {/* Crew fairness details table */}
-                  <div className="-mt-2">
+                  {/* Crew fairness details table - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <CrewFairnessTable 
                       title="Assignment info"
                       data={[
@@ -703,15 +1315,36 @@ export default function FairnessDashboardPage() {
                 </>
               ) : expandedQuickLook === 'none' ? (
                 <>
-                  {/* Mini cards grid (4 cards) */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {currentDashboard.miniCards.map((cardData, index) => (
-                      <StatGraphCard key={index} data={cardData} />
-                    ))}
+                  {/* Mini cards grid (4 cards) - wrapped in translucent card */}
+                  <div 
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      {currentDashboard.miniCards.map((cardData, index) => (
+                        <StatGraphCard key={index} data={cardData} />
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Large graph card */}
-                  <div className="mt-5">
+                  {/* Large graph card - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <GraphCardWithStatsTransparent 
                       title="Satisfaction distribution"
                       boxPlotData={{
@@ -727,8 +1360,18 @@ export default function FairnessDashboardPage() {
                     </GraphCardWithStatsTransparent>
                   </div>
 
-                  {/* Preferences Met graph */}
-                  <div className="mt-5">
+                  {/* Preferences Met graph - wrapped in translucent card */}
+                  <div 
+                    className="mt-4"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
                     <GraphCardSimple 
                       title="Crew preferences met"
                       preferenceData={[
@@ -745,31 +1388,165 @@ export default function FairnessDashboardPage() {
                 </>
               ) : (
                 /* Expanded Quick Looks - Single Column with Pagination */
-                <div className="flex flex-col flex-1">
+                <div 
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                    borderRadius: '1rem',
+                    padding: 16,
+                    overflow: 'hidden',
+                  }}
+                >
+                <div className="flex flex-col flex-1 relative">
+                  {/* Search Button and Bar - Positioned in left corner above number circles */}
+                  <div 
+                    style={{ 
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 4,
+                      zIndex: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                    }}
+                  >
+                    {/* Search button - width matches number column (24px) for alignment */}
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassBorderStyle('9999px'),
+                        width: 26,
+                        height: 26,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <button
+                        onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                        className="flex items-center justify-center transition-all"
+                        style={{
+                          ...aiGlassContentStyle('9999px'),
+                          cursor: 'pointer',
+                          border: 'none',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                      >
+                        <MagnifyingGlassIcon style={{ width: 14, height: 12, color: '#9A999E' }} />
+                      </button>
+                    </div>
+                    
+                    {/* Expanded search pill - appears next to button */}
+                    {isSearchExpanded && (
+                      <div
+                        className="ai-glass-border"
+                        style={{
+                          ...aiGlassBorderStyle('9999px'),
+                          flex: 1,
+                          height: 30,
+                        }}
+                      >
+                        <div
+                          className="flex items-center"
+                          style={{
+                            ...aiGlassContentStyle('9999px'),
+                            padding: '0 16px',
+                          }}
+                        >
+                          <input
+                            type="text"
+                            placeholder="Search"
+                            value={expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery}
+                            onChange={(e) => {
+                              if (expandedQuickLook === 'crew') {
+                                setCrewSearchQuery(e.target.value);
+                                setCrewPage(1);
+                              } else {
+                                setRoleSearchQuery(e.target.value);
+                                setRolePage(1);
+                              }
+                            }}
+                            onBlur={() => {
+                              const query = expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery;
+                              if (!query.trim()) {
+                                setIsSearchExpanded(false);
+                              }
+                            }}
+                            autoFocus
+                            className="focus:outline-none focus:ring-0 flex-1"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#FFFFFF',
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              width: '100%',
+                            }}
+                          />
+                          {(expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery) && (
+                            <button
+                              onClick={() => {
+                                if (expandedQuickLook === 'crew') {
+                                  setCrewSearchQuery('');
+                                  setCrewPage(1);
+                                } else {
+                                  setRoleSearchQuery('');
+                                  setRolePage(1);
+                                }
+                                setIsSearchExpanded(false);
+                              }}
+                              className="transition-all hover:brightness-125"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#9A999E',
+                                cursor: 'pointer',
+                                padding: 0,
+                                marginLeft: 12,
+                                fontSize: '16px',
+                                lineHeight: 1,
+                              }}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div 
                     className="flex flex-col gap-3 flex-1"
                     style={{ 
                       paddingRight: '4px',
+                      paddingTop: '46px',
                     }}
                   >
                     {expandedQuickLook === 'crew' && (
                       <>
-                        {defaultCrewCards
-                          .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
-                          .map((card, index, arr) => {
-                            const itemNumber = (crewPage - 1) * CREW_CARDS_PER_PAGE + index + 1;
-                            const isFirst = index === 0;
-                            const isLast = index === arr.length - 1;
-                            return (
-                              <ListRowItem
-                                key={card.id}
-                                itemNumber={itemNumber}
-                                isFirst={isFirst}
-                                isLast={isLast}
-                                onClick={() => {
-                                  setSelectedCrew(card);
-                                  setSelectedRole(null); // Clear any selected role
-                                  setExpandedQuickLook('none'); // Reset so expand button shows "expand"
+                        {(() => {
+                          const filteredCrewCards = defaultCrewCards.filter(card =>
+                            card.title.toLowerCase().includes(crewSearchQuery.toLowerCase())
+                          );
+                          return filteredCrewCards
+                            .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
+                            .map((card, index, arr) => {
+                              const itemNumber = (crewPage - 1) * CREW_CARDS_PER_PAGE + index + 1;
+                              const isFirst = index === 0;
+                              const isLast = index === arr.length - 1;
+                              return (
+                                <ListRowItem
+                                  key={card.id}
+                                  itemNumber={itemNumber}
+                                  isFirst={isFirst}
+                                  isLast={isLast}
+                                  onClick={() => {
+                                    setSelectedCrew(card);
+                                    setSelectedRole(null); // Clear any selected role
+                                    setExpandedQuickLook('none'); // Reset so expand button shows "expand"
                                   setActiveView('crew'); // Sync dropdown to show "Crew"
                                 }}
                               >
@@ -784,42 +1561,48 @@ export default function FairnessDashboardPage() {
                                 />
                               </ListRowItem>
                             );
-                          })}
+                          });
+                        })()}
                       </>
                     )}
                     {expandedQuickLook === 'roles' && (
                       <>
-                        {defaultRoleCards
-                          .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
-                          .map((card, index, arr) => {
-                            const itemNumber = (rolePage - 1) * ROLE_CARDS_PER_PAGE + index + 1;
-                            const isFirst = index === 0;
-                            const isLast = index === arr.length - 1;
-                            return (
-                              <ListRowItem 
-                                key={card.id} 
-                                itemNumber={itemNumber} 
-                                isFirst={isFirst} 
-                                isLast={isLast}
-                                onClick={() => {
-                                  setSelectedRole(card);
-                                  setSelectedCrew(null);
-                                  setExpandedQuickLook('none');
-                                  setActiveView('roles');
-                                }}
-                              >
-                                <RoleQuickLookCardStatic 
-                                  card={card} 
+                        {(() => {
+                          const filteredRoleCards = defaultRoleCards.filter(card =>
+                            card.name.toLowerCase().includes(roleSearchQuery.toLowerCase())
+                          );
+                          return filteredRoleCards
+                            .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
+                            .map((card, index, arr) => {
+                              const itemNumber = (rolePage - 1) * ROLE_CARDS_PER_PAGE + index + 1;
+                              const isFirst = index === 0;
+                              const isLast = index === arr.length - 1;
+                              return (
+                                <ListRowItem 
+                                  key={card.id} 
+                                  itemNumber={itemNumber} 
+                                  isFirst={isFirst} 
+                                  isLast={isLast}
                                   onClick={() => {
                                     setSelectedRole(card);
                                     setSelectedCrew(null);
                                     setExpandedQuickLook('none');
                                     setActiveView('roles');
                                   }}
-                                />
-                              </ListRowItem>
-                            );
-                          })}
+                                >
+                                  <RoleQuickLookCardStatic 
+                                    card={card} 
+                                    onClick={() => {
+                                      setSelectedRole(card);
+                                      setSelectedCrew(null);
+                                      setExpandedQuickLook('none');
+                                      setActiveView('roles');
+                                    }}
+                                  />
+                                </ListRowItem>
+                              );
+                            });
+                        })()}
                       </>
                     )}
                   </div>
@@ -845,7 +1628,10 @@ export default function FairnessDashboardPage() {
                     />
                     {(() => {
                       const cardsPerPage = expandedQuickLook === 'crew' ? CREW_CARDS_PER_PAGE : ROLE_CARDS_PER_PAGE;
-                      const totalCards = expandedQuickLook === 'crew' ? defaultCrewCards.length : defaultRoleCards.length;
+                      const filteredCards = expandedQuickLook === 'crew' 
+                        ? defaultCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
+                        : defaultRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
+                      const totalCards = filteredCards.length;
                       const totalPages = Math.ceil(totalCards / cardsPerPage);
                       const currentPage = expandedQuickLook === 'crew' ? crewPage : rolePage;
                       const setPage = expandedQuickLook === 'crew' ? setCrewPage : setRolePage;
@@ -904,6 +1690,7 @@ export default function FairnessDashboardPage() {
                     })()}
                   </div>
                 </div>
+                </div>
               )}
             </div>
 
@@ -916,136 +1703,543 @@ export default function FairnessDashboardPage() {
                 border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              {/* Header - left aligned */}
-              <div className="mb-4">
-                <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                  {expandedPanel === 'date' && 'Time Selection'}
-                  {expandedPanel === 'roles' && 'Roles'}
-                  {expandedPanel === 'crew' && 'Crew'}
-                  {expandedPanel === 'none' && 'Selection'}
-                </h2>
-              </div>
-
-              {/* Content area - height matches 2 rows of mini cards + gap (120px + 12px + 120px) */}
-              <div style={{ height: '252px' }}>
-                {/* Date Picker Panel */}
-                {expandedPanel === 'date' && (
-                  <div className="h-full">
-                    <div className="p-4 h-full" style={{ 
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                      borderRadius: '1rem' 
-                    }}>
-                      <p className="text-sm" style={{ fontFamily: 'var(--font-open-sans)', color: '#7C7F82', fontWeight: 350 }}>
-                        Date picker component will go here
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Roles Search Panel */}
-                {expandedPanel === 'roles' && (
-                  <div className="h-full flex flex-col p-4" style={{ 
-                    background: 'rgba(255, 255, 255, 0.05)',
+              {/* Time Selection - always visible */}
+              <div className="flex flex-col" style={{ 
+                    background: 'rgba(255, 255, 255, 0.02)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                    borderRadius: '1rem' 
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                    borderRadius: '1rem',
+                    overflow: 'visible',
+                    paddingTop: 16,
+                    paddingLeft: 16,
+                    paddingRight: 16,
+                    paddingBottom: 22,
+                    gap: 16,
                   }}>
-                    <input
-                      type="text"
-                      placeholder="Search roles..."
-                      className="w-full px-3 py-2 text-sm focus:outline-none"
-                      style={{ 
-                        fontFamily: 'var(--font-open-sans)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-                        borderRadius: '0.5rem',
-                        color: '#DBDADB',
-                        fontWeight: 350,
-                      }}
-                    />
-                    <div className="mt-3 space-y-2 flex-1 overflow-auto">
-                      {['Cashier', 'Manager', 'Stock Room', 'Customer Service'].map((role) => (
-                        <div 
-                          key={role}
-                          className="px-3 py-2 cursor-pointer transition-colors"
-                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-                        >
-                          <span className="text-sm" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                            {role}
-                          </span>
-                        </div>
-                      ))}
+                    {/* Title inside container */}
+                    <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
+                      Time Selection
+                    </span>
+                    
+                    {/* Year carousel row */}
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        className="flex items-center justify-center transition-all"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.25)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          opacity: yearSelectionIndex > 0 ? 1 : 0.3,
+                        }}
+                        onClick={() => {
+                          setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1));
+                          // Keep month selection the same when year changes
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                        disabled={yearSelectionIndex === 0}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M7.5 9L4.5 6L7.5 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      
+                      {/* Year cards */}
+                      <div className="flex gap-2">
+                        {availableYears.map((year, index) => {
+                          const isSelected = index === yearSelectionIndex;
+                          
+                          // Check if all days in all months of this year are selected
+                          const yearMonthOptions = generateMonthOptions(year);
+                          let allDaysSelectedInYear = true;
+                          for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
+                            const key = getSelectionKey(year, monthIdx);
+                            const monthDays = yearMonthOptions[monthIdx].days;
+                            const monthDisabled = disabledDays[monthIdx] || new Set();
+                            const monthSelected = selectedDays[key] || new Set();
+                            for (let d = 1; d <= monthDays; d++) {
+                              if (!monthDisabled.has(d) && !monthSelected.has(d)) {
+                                allDaysSelectedInYear = false;
+                                break;
+                              }
+                            }
+                            if (!allDaysSelectedInYear) break;
+                          }
+                          
+                          return (
+                            <button
+                              key={year}
+                              onClick={() => {
+                                if (index === yearSelectionIndex) {
+                                  // Toggle all days in all months of this year
+                                  const yearMonths = generateMonthOptions(year);
+                                  const newSelectedDays = { ...selectedDays };
+                                  
+                                  if (allDaysSelectedInYear) {
+                                    // Deselect all days in all months
+                                    for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                      const key = getSelectionKey(year, monthIdx);
+                                      const monthDays = yearMonths[monthIdx].days;
+                                      const monthDisabled = disabledDays[monthIdx] || new Set();
+                                      const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                      for (let d = 1; d <= monthDays; d++) {
+                                        if (!monthDisabled.has(d)) {
+                                          newMonthSelected.delete(d);
+                                        }
+                                      }
+                                      newSelectedDays[key] = newMonthSelected;
+                                    }
+                                  } else {
+                                    // Select all days in all months
+                                    for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                      const key = getSelectionKey(year, monthIdx);
+                                      const monthDays = yearMonths[monthIdx].days;
+                                      const monthDisabled = disabledDays[monthIdx] || new Set();
+                                      const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                      for (let d = 1; d <= monthDays; d++) {
+                                        if (!monthDisabled.has(d)) {
+                                          newMonthSelected.add(d);
+                                        }
+                                      }
+                                      newSelectedDays[key] = newMonthSelected;
+                                    }
+                                  }
+                                  
+                                  setSelectedDays(newSelectedDays);
+                                } else {
+                                  setYearSelectionIndex(index);
+                                }
+                              }}
+                              className="px-4 py-1.5 rounded-lg transition-all duration-200"
+                              style={{
+                                background: allDaysSelectedInYear && isSelected 
+                                  ? 'rgb(239, 68, 68)' 
+                                  : isSelected ? 'rgb(39, 38, 41)' : 'rgb(28, 27, 31)',
+                                color: allDaysSelectedInYear && isSelected ? '#FFFFFF' : isSelected ? '#DBDADB' : '#7C7F82',
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '13px',
+                                fontWeight: 400,
+                                border: 'none',
+                                cursor: 'pointer',
+                                transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                                boxShadow: isSelected 
+                                  ? '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
+                                  : '0 2px 6px rgba(0, 0, 0, 0.15)',
+                              }}
+                            >
+                              {year}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      <button 
+                        className="flex items-center justify-center transition-all"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.25)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.3,
+                        }}
+                        onClick={() => {
+                          setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1));
+                          // Keep month selection the same when year changes
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                        disabled={yearSelectionIndex >= yearCardCount - 1}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M4.5 3L7.5 6L4.5 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Month carousel with side arrows */}
+                    <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
+                      <button 
+                        className="flex items-center justify-center transition-all"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.25)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          opacity: timeSelectionIndex > 0 ? 1 : 0.3,
+                          flexShrink: 0,
+                        }}
+                        onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
+                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                        disabled={timeSelectionIndex === 0}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M7.5 9L4.5 6L7.5 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+
+                      {/* Horizontal deck of overlapping cards */}
+                      <div className="flex-1 relative">
+                        {(() => {
+                      // Calculate card dimensions at container level
+                      const cardPadding = 12;
+                      const titleHeight = 16;
+                      
+                      // Monthly view dimensions
+                      const monthlyCircleSize = 24;
+                      const monthlyCircleGap = 5;
+                      const monthlyMaxRows = 6;
+                      const monthlyCols = 7;
+                      const monthlyGridHeight = (monthlyCircleSize * monthlyMaxRows) + (monthlyCircleGap * (monthlyMaxRows - 1));
+                      const monthlyCardHeight = cardPadding + titleHeight + cardPadding + monthlyGridHeight + cardPadding;
+                      const monthlyCardWidth = (monthlyCircleSize * monthlyCols) + (monthlyCircleGap * (monthlyCols - 1)) + (cardPadding * 2);
+                      
+                      // Yearly view dimensions (2 rows of 6 months)
+                      const yearlyBubbleWidth = 40;
+                      const yearlyBubbleHeight = 28;
+                      const yearlyGapX = 8;
+                      const yearlyGapY = 8;
+                      const yearlyCols = 6;
+                      const yearlyRows = 2;
+                      const yearlyGridWidth = (yearlyBubbleWidth * yearlyCols) + (yearlyGapX * (yearlyCols - 1));
+                      const yearlyGridHeight = (yearlyBubbleHeight * yearlyRows) + (yearlyGapY * (yearlyRows - 1));
+                      const yearlyCardHeight = cardPadding + titleHeight + cardPadding + yearlyGridHeight + cardPadding;
+                      const yearlyCardWidth = yearlyGridWidth + (cardPadding * 2);
+                      
+                      // Use monthly dimensions only now (yearly is in separate carousel)
+                      const cardHeight = monthlyCardHeight;
+                      const cardWidth = monthlyCardWidth;
+                      const cardCount = monthCardCount;
+                      
+                      return (
+                        <div ref={timeDeckRef} className="relative" style={{ overflow: 'visible', height: cardHeight }}>
+                          {timeDeckWidth > 0 && (() => {
+                            const containerWidth = timeDeckWidth;
+                            const minOverlap = 20;
+                            let overlap = minOverlap;
+                            
+                            // Recalculate overlap to fit container
+                            if (cardCount > 1) {
+                              const totalWidthNeeded = cardWidth * cardCount;
+                              const overlapNeeded = (totalWidthNeeded - containerWidth) / (cardCount - 1);
+                              overlap = Math.max(minOverlap, overlapNeeded);
+                            }
+
+                            // Calculate total width of the deck with the chosen overlap
+                            const totalDeckWidth = cardWidth + (cardCount - 1) * (cardWidth - overlap);
+                            // Calculate centering offset
+                            const centeringOffset = Math.max(0, (containerWidth - totalDeckWidth) / 2);
+                            
+                            return (
+                              <div 
+                                className="absolute inset-0 flex items-center"
+                                style={{ width: '100%' }}
+                              >
+                                {monthOptions.map((option, index) => {
+                                  const isSelected = index === timeSelectionIndex;
+                                  // Position cards left to right with computed overlap, centered in container
+                                  const leftOffset = centeringOffset + index * (cardWidth - overlap);
+                              
+                              // Z-index: selected card on top (100), others based on distance from selected
+                              const zIndex = isSelected 
+                                ? 100 
+                                : cardCount - Math.abs(index - timeSelectionIndex);
+                              
+                              // Calculate gradient colors based on distance from selected
+                              const distanceFromSelected = Math.abs(index - timeSelectionIndex);
+                              const maxDistance = Math.max(timeSelectionIndex, cardCount - 1 - timeSelectionIndex);
+
+                              // Background gradient: lerp from selected (#272629) toward container bg (lighter now)
+                              const t = maxDistance > 0 ? distanceFromSelected / maxDistance : 0;
+                              
+                              // Hover effect for selected card
+                              const isHovered = index === hoveredMonthCardIndex;
+                              const baseR = (isSelected && isHovered) ? 50 : 39;
+                              const baseG = (isSelected && isHovered) ? 49 : 38;
+                              const baseB = (isSelected && isHovered) ? 55 : 41;
+                              
+                              const bgR = isSelected ? baseR : Math.round(39 - t * (39 - 28));
+                              const bgG = isSelected ? baseG : Math.round(38 - t * (38 - 27));
+                              const bgB = isSelected ? baseB : Math.round(41 - t * (41 - 31));
+                              const bgColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
+                              
+                              // Text gradient: lerp toward muted (but still visible)
+                              const textR = isSelected ? 219 : Math.round(219 - t * (219 - 100));
+                              const textG = isSelected ? 218 : Math.round(218 - t * (218 - 99));
+                              const textB = isSelected ? 219 : Math.round(219 - t * (219 - 100));
+                              const textColor = `rgb(${textR}, ${textG}, ${textB})`;
+                              
+                              // Label gradient: lerp toward muted
+                              const labelR = isSelected ? 124 : Math.round(124 - t * (124 - 70));
+                              const labelG = isSelected ? 127 : Math.round(127 - t * (127 - 72));
+                              const labelB = isSelected ? 130 : Math.round(130 - t * (130 - 74));
+                              const labelColor = `rgb(${labelR}, ${labelG}, ${labelB})`;
+                              
+                              // Scale: selected is full size, shrinks by 1.5% per distance
+                              const cardScale = isSelected ? 1.02 : 1 - (distanceFromSelected * 0.015);
+                              
+                              // All monthly cards use the same max height (6 rows), top-aligned
+                              const thisCardHeight = cardHeight;
+                              const topOffset = 0;
+                              
+                              return (
+                                <div
+                                  key={index}
+                                  className="absolute flex flex-col"
+                                  style={{
+                                    width: cardWidth,
+                                    height: thisCardHeight,
+                                    left: leftOffset,
+                                    top: topOffset,
+                                    background: bgColor,
+                                    boxShadow: isSelected
+                                      ? '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
+                                      : '0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.02)',
+                                    borderRadius: '1rem',
+                                    zIndex,
+                                    transform: `scale(${cardScale})`,
+                                    transformOrigin: 'center center',
+                                    transition: 'background 250ms ease-out, transform 250ms ease-out, box-shadow 250ms ease-out, height 250ms ease-out, top 250ms ease-out',
+                                    padding: cardPadding,
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={(e) => {
+                                    // If we just finished dragging, don't trigger card click
+                                    if (justFinishedDraggingRef.current) return;
+                                    
+                                    // Don't trigger if clicking on a day circle
+                                    const target = e.target as HTMLElement;
+                                    if (target.tagName === 'BUTTON' && target !== e.currentTarget) return;
+                                    
+                                    if (index === timeSelectionIndex) {
+                                      // Toggle all days
+                                      const days = option.days;
+                                      const key = getSelectionKey(selectedYear, index);
+                                      const currentSelected = selectedDays[key] || new Set();
+                                      const disabled = disabledDays[index] || new Set();
+                                      
+                                      // Check if all available days are selected
+                                      let allSelected = true;
+                                      for (let d = 1; d <= days; d++) {
+                                        if (!disabled.has(d) && !currentSelected.has(d)) {
+                                          allSelected = false;
+                                          break;
+                                        }
+                                      }
+                                      
+                                      const newSelected = new Set(currentSelected);
+                                      if (allSelected) {
+                                        // Deselect all available
+                                        for (let d = 1; d <= days; d++) {
+                                          if (!disabled.has(d)) {
+                                            newSelected.delete(d);
+                                          }
+                                        }
+                                      } else {
+                                        // Select all available
+                                        for (let d = 1; d <= days; d++) {
+                                          if (!disabled.has(d)) {
+                                            newSelected.add(d);
+                                          }
+                                        }
+                                      }
+                                      
+                                      setSelectedDays(prev => ({
+                                        ...prev,
+                                        [key]: newSelected
+                                      }));
+                                    } else {
+                                      setTimeSelectionIndex(index);
+                                    }
+                                  }}
+                                  onMouseEnter={() => setHoveredMonthCardIndex(index)}
+                                  onMouseLeave={() => setHoveredMonthCardIndex(null)}
+                                >
+                                  {/* Month label at top */}
+                                  <span 
+                                    className="month-label" 
+                                    style={{ 
+                                      fontFamily: 'var(--font-open-sans)', 
+                                      color: textColor,
+                                      fontSize: 14,
+                                      fontWeight: 350,
+                                      transition: 'color 250ms ease-out',
+                                      height: titleHeight,
+                                      lineHeight: `${titleHeight}px`,
+                                      marginBottom: cardPadding,
+                                    }}
+                                  >
+                                    {option.value}
+                                  </span>
+                                  
+                                  {/* Day circles grid - 7 columns (calendar layout) */}
+                                  {(() => {
+                                    const days = option.days;
+                                    const startDay = option.startDay;
+                                    const totalCells = startDay + days;
+                                    const rows = Math.ceil(totalCells / monthlyCols);
+                                    
+                                    const fontSize = Math.max(8, Math.min(12, monthlyCircleSize * 0.4));
+                                    
+                                    const key = getSelectionKey(selectedYear, index);
+                                    const monthSelectedDays = selectedDays[key] || new Set();
+                                    const isAnyHoveredInMonth = hoveredDay?.month === index;
+                                    
+                                    return (
+                                      <div 
+                                        style={{ 
+                                          display: 'grid',
+                                          gridTemplateColumns: `repeat(${monthlyCols}, ${monthlyCircleSize}px)`,
+                                          gridTemplateRows: `repeat(${rows}, ${monthlyCircleSize}px)`,
+                                          gap: `${monthlyCircleGap}px`,
+                                          pointerEvents: isSelected ? 'auto' : 'none',
+                                        }}
+                                        onMouseEnter={() => {
+                                          // When entering the calendar grid, clear card hover
+                                          if (isSelected) setHoveredMonthCardIndex(null);
+                                        }}
+                                        onMouseLeave={() => {
+                                          if (isSelected) {
+                                            setHoveredDay(null);
+                                            // Re-enable card hover when leaving grid back to card
+                                            setHoveredMonthCardIndex(index);
+                                          }
+                                        }}
+                                      >
+                                        {/* Empty cells for startDay offset */}
+                                        {Array.from({ length: startDay }, (_, i) => (
+                                          <div key={`empty-${i}`} style={{ width: monthlyCircleSize, height: monthlyCircleSize }} />
+                                        ))}
+                                        
+                                        {/* Day circles */}
+                                        {Array.from({ length: days }, (_, dayIdx) => {
+                                          const dayNum = dayIdx + 1;
+                                          const isDayDisabled = disabledDays[index]?.has(dayNum) ?? false;
+                                          const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
+                                          const isDayHovered = !isDayDisabled && hoveredDay?.month === index && hoveredDay?.day === dayNum;
+                                          
+                                          // Base circle colors (bright when card is selected)
+                                          // Disabled days use colors very close to card bg
+                                          const baseCircleR = isDayDisabled ? bgR + 8 : isDaySelected ? 239 : 79;
+                                          const baseCircleG = isDayDisabled ? bgG + 8 : isDaySelected ? 68 : 78;
+                                          const baseCircleB = isDayDisabled ? bgB + 10 : isDaySelected ? 68 : 83;
+                                          
+                                          // Fade circles toward card bg based on card's distance (t)
+                                          const circleR = Math.round(baseCircleR - t * (baseCircleR - bgR));
+                                          const circleG = Math.round(baseCircleG - t * (baseCircleG - bgG));
+                                          const circleB = Math.round(baseCircleB - t * (baseCircleB - bgB));
+                                          
+                                          const finalCircleColor = `rgb(${circleR}, ${circleG}, ${circleB})`;
+                                          
+                                          // Text color - also fade based on t, disabled days are very dim
+                                          const baseTextBrightness = isDayDisabled ? 50 : isDaySelected ? 255 : 180;
+                                          const fadedTextBrightness = Math.round(baseTextBrightness - t * (baseTextBrightness - (isDayDisabled ? 30 : 60)));
+                                          const circleTextColor = `rgb(${fadedTextBrightness}, ${fadedTextBrightness}, ${fadedTextBrightness})`;
+                                          
+                                          return (
+                                            <button
+                                              key={dayNum}
+                                              className="flex items-center justify-center transition-all duration-150"
+                                              disabled={isDayDisabled}
+                                              style={{
+                                                width: monthlyCircleSize,
+                                                height: monthlyCircleSize,
+                                                borderRadius: '50%',
+                                                background: finalCircleColor,
+                                                boxShadow: isDayDisabled
+                                                  ? 'none'
+                                                  : isDaySelected
+                                                    ? 'inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2)'
+                                                    : 'inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
+                                                border: 'none',
+                                                cursor: isDayDisabled ? 'not-allowed' : isSelected ? 'pointer' : 'default',
+                                                transform: isDayHovered && !isDayDisabled ? 'scale(1.2)' : 'scale(1)',
+                                                zIndex: isDayHovered ? 10 : 1,
+                                                userSelect: 'none',
+                                                fontSize: `${fontSize}px`,
+                                                fontFamily: 'var(--font-open-sans)',
+                                                fontWeight: 400,
+                                                color: circleTextColor,
+                                              }}
+                                              onMouseDown={(e) => {
+                                                if (!isSelected || isDayDisabled) return;
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleDragStart(index, dayNum);
+                                              }}
+                                              onMouseEnter={() => {
+                                                if (!isSelected || isDayDisabled) return;
+                                                setHoveredDay({ month: index, day: dayNum });
+                                                if (isDragging) {
+                                                  handleDragOver(index, dayNum);
+                                                }
+                                              }}
+                                            >
+                                              {dayNum}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
+                      </div>
+
+                      <button 
+                        className="flex items-center justify-center transition-all"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.25)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.3,
+                          flexShrink: 0,
+                        }}
+                        onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
+                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                        disabled={timeSelectionIndex >= monthCardCount - 1}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M4.5 3L7.5 6L4.5 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                )}
 
-                {/* Crew Search Panel */}
-                {expandedPanel === 'crew' && (
-                  <div className="h-full flex flex-col p-4" style={{ 
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                    borderRadius: '1rem' 
-                  }}>
-                    <input
-                      type="text"
-                      placeholder="Search crew members..."
-                      className="w-full px-3 py-2 text-sm focus:outline-none"
-                      style={{ 
-                        fontFamily: 'var(--font-open-sans)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-                        borderRadius: '0.5rem',
-                        color: '#DBDADB',
-                        fontWeight: 350,
-                      }}
-                    />
-                    <div className="mt-3 space-y-2 flex-1 overflow-auto">
-                      {['Alice Johnson', 'Bob Smith', 'Carol Williams', 'David Brown'].map((member) => (
-                        <div 
-                          key={member}
-                          className="px-3 py-2 cursor-pointer transition-colors"
-                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-                        >
-                          <span className="text-sm" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                            {member}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Default state when no panel is expanded */}
-                {expandedPanel === 'none' && (
-                  <div className="h-full flex items-center justify-center" style={{ 
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                    borderRadius: '1rem' 
-                  }}>
-                    <p className="text-sm" style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6A70', fontWeight: 350 }}>
-                      Click + to expand a panel
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Looks title */}
+              {/* Quick Looks container */}
               <div 
-                className="mb-4"
-                style={{ marginTop: '1.2rem', paddingTop: '1.2rem' }}
+                className="flex flex-col p-4"
+                style={{ 
+                  marginTop: '1.2rem',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                  borderRadius: '1rem',
+                }}
               >
+                {/* Quick Looks title */}
                 <span 
-                  className="text-med" 
+                  className="text-med mb-4" 
                   style={{ 
                     fontFamily: 'var(--font-open-sans)', 
                     color: '#DBDADB', 
@@ -1054,12 +2248,11 @@ export default function FairnessDashboardPage() {
                 >
                   Quick Looks
                 </span>
-              </div>
 
-              {/* Two-column layout for Quick Looks content */}
-              <div className="flex gap-4">
-                {/* Left column - fixed width for buttons/circles */}
-                <div className="flex flex-col items-center" style={{ width: 24 }}>
+                {/* Two-column layout for Quick Looks content */}
+                <div className="flex gap-4">
+                  {/* Left column - fixed width for buttons/circles */}
+                  <div className="flex flex-col items-center" style={{ width: 24 }}>
                   {/* Crew icon button */}
                   <button
                     className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
@@ -1395,7 +2588,7 @@ export default function FairnessDashboardPage() {
                     />
 
                     {/* Role Expand/Collapse button */}
-                    <div className="flex items-center justify-start gap-2" style={{ marginTop: '40px' }}>
+                    <div className="flex items-center justify-start gap-2 mt-3">
                       <button
                         onClick={() => {
                           setRolePage(1);
@@ -1442,6 +2635,7 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>

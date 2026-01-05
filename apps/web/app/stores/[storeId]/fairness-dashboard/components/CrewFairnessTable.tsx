@@ -249,7 +249,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
   return (
     <div style={{ padding: '8px 0', paddingRight: '4%' }}>
       {/* Title with circle indicator and connecting line */}
-      <div className="flex items-start" style={{ gap: 16 }}>
+      <div className="flex items-center" style={{ gap: 16 }}>
         {/* Circle indicator with vertical line going down */}
         <div className="flex flex-col items-center">
           <div 
@@ -263,7 +263,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#DBDADB" style={{ width: 12, height: 12 }}>
-              <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v.756a49.106 49.106 0 0 1 9.152 1 .75.75 0 0 1-.152 1.485h-1.918l2.474 10.124a.75.75 0 0 1-.375.84A6.723 6.723 0 0 1 18.75 18a6.723 6.723 0 0 1-3.181-.795.75.75 0 0 1-.375-.84l2.474-10.124H12.75v13.28c1.293.076 2.534.343 3.697.776a.75.75 0 0 1-.262 1.453h-8.37a.75.75 0 0 1-.262-1.453c1.162-.433 2.404-.7 3.697-.775V6.24H6.332l2.474 10.124a.75.75 0 0 1-.375.84A6.723 6.723 0 0 1 5.25 18a6.723 6.723 0 0 1-3.181-.795.75.75 0 0 1-.375-.84L4.168 6.241H2.25a.75.75 0 0 1-.152-1.485 49.105 49.105 0 0 1 9.152-1V3a.75.75 0 0 1 .75-.75Zm4.878 13.543 1.872-7.662 1.872 7.662h-3.744Zm-9.756 0L5.25 8.131l-1.872 7.662h3.744Z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 0 1 .67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 1 1-.671-1.34l.041-.022ZM12 9a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
             </svg>
           </div>
         </div>
@@ -273,7 +273,6 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
             fontFamily: 'var(--font-open-sans)', 
             color: '#DBDADB', 
             fontWeight: 350,
-            paddingTop: '2px',
           }}
         >
           {title}

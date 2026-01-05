@@ -109,6 +109,8 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
   const [scrollPosition, setScrollPosition] = useState(0);
   const [targetPosition, setTargetPosition] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState(120);
+  const mainCardRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(scrollPosition);
   const targetPositionRef = useRef(0);
   const isAnimatingRef = useRef(false);
@@ -342,8 +344,24 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
   const maxCardsBehind = visibleStackCount - 1;
   const reservedTopSpace = maxCardsAbove * stackOffset;
   const reservedBottomSpace = maxCardsBehind * stackOffset;
-  const baseCardHeight = 120; // match crew card height
+  const baseCardHeight = Math.max(120, measuredCardHeight); // use measured height or minimum
   const totalHeight = baseCardHeight + reservedTopSpace + reservedBottomSpace;
+
+  // Measure main card height on resize
+  useEffect(() => {
+    const measureHeight = () => {
+      if (mainCardRef.current) {
+        const height = mainCardRef.current.offsetHeight;
+        if (height > 0) {
+          setMeasuredCardHeight(height);
+        }
+      }
+    };
+    
+    measureHeight();
+    window.addEventListener('resize', measureHeight);
+    return () => window.removeEventListener('resize', measureHeight);
+  }, []);
 
   const canGoUp = targetPosition > 0;
   const canGoDown = targetPosition < allCards.length - 1;
@@ -429,9 +447,9 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
           const isMain = Math.abs(relativePosition) < 0.5;
 
           const getCardColor = () => {
-            const mainR = 37, mainG = 36, mainB = 41;
-            const hoverR = 48, hoverG = 47, hoverB = 53;
-            const darkR = 24, darkG = 23, darkB = 27;
+            const mainR = 39, mainG = 38, mainB = 41;
+            const hoverR = 50, hoverG = 49, hoverB = 55;
+            const darkR = 28, darkG = 27, darkB = 31;
             const colorFade = Math.min(distance, 2) / 2;
             const baseR = (isMain && isHovered) ? hoverR : mainR;
             const baseG = (isMain && isHovered) ? hoverG : mainG;
@@ -445,6 +463,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
           return (
             <div
               key={card.id}
+              ref={isMain ? mainCardRef : undefined}
               className="absolute w-full"
               style={{
                 borderRadius: '1rem',

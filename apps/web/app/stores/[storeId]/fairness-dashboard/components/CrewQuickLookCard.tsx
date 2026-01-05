@@ -21,6 +21,8 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
   const [scrollPosition, setScrollPosition] = useState(0);
   const [targetPosition, setTargetPosition] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState(120);
+  const mainCardRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(scrollPosition);
   const targetPositionRef = useRef(0);
   const isAnimatingRef = useRef(false);
@@ -111,8 +113,24 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
   const maxCardsBehind = visibleStackCount - 1;
   const reservedTopSpace = maxCardsAbove * stackOffset;
   const reservedBottomSpace = maxCardsBehind * stackOffset;
-  const baseCardHeight = 120; // minimum card height
+  const baseCardHeight = Math.max(120, measuredCardHeight); // use measured height or minimum
   const totalHeight = baseCardHeight + reservedTopSpace + reservedBottomSpace;
+
+  // Measure main card height on resize
+  useEffect(() => {
+    const measureHeight = () => {
+      if (mainCardRef.current) {
+        const height = mainCardRef.current.offsetHeight;
+        if (height > 0) {
+          setMeasuredCardHeight(height);
+        }
+      }
+    };
+    
+    measureHeight();
+    window.addEventListener('resize', measureHeight);
+    return () => window.removeEventListener('resize', measureHeight);
+  }, []);
 
   // Use targetPosition (state) for immediate disabled state - no lag
   const canGoUp = targetPosition > 0;
@@ -203,12 +221,12 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
           // All cards fade from bright (distance=0) to dark (distance=2)
           // This makes the scroll animation smooth as colors transition continuously
           const getCardColor = () => {
-            // Main card colors (distance = 0)
-            const mainR = 37, mainG = 36, mainB = 41;  // #252429
-            const hoverR = 48, hoverG = 47, hoverB = 53;  // #302F35
+            // Main card colors (distance = 0) - Updated to match Month/Year cards
+            const mainR = 39, mainG = 38, mainB = 41;  // #272629
+            const hoverR = 50, hoverG = 49, hoverB = 55;  // Slightly lighter for hover
             
-            // Darkest stacked color (distance = 2) - slightly lighter for visibility
-            const darkR = 24, darkG = 23, darkB = 27;  // #18171B
+            // Darkest stacked color (distance = 2) - Updated to match Month/Year cards
+            const darkR = 28, darkG = 27, darkB = 31;  // #1C1B1F
             
             // Clamp distance to 0-2 range for color calculation
             const colorFade = Math.min(distance, 2) / 2;  // 0 to 1
@@ -229,6 +247,7 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
           return (
             <div
               key={card.id}
+              ref={isMain ? mainCardRef : undefined}
               className="absolute w-full"
               style={{
                 borderRadius: '1rem',
