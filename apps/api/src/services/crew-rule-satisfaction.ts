@@ -69,23 +69,46 @@ export interface RoleRuleBreakdown {
   percentMet: number;
 }
 
+export interface CrewBreakdown {
+  crewId: string;
+  total: number;
+  met: number;
+  avgSatisfaction: number;
+  satisfactionPct: number;
+}
+
+// Per-crew, per-rule-type breakdown for individual crew preferences graphs
+export interface CrewRuleTypeBreakdown {
+  crewId: string;
+  ruleType: RoleRuleType;
+  total: number;
+  met: number;
+  percentMet: number;
+}
+
 export interface AggregatedSatisfactionStats {
   // Core metrics
   eligiblePreferences: number;
   preferencesMet: number;
   percentMet: number;
   avgSatisfaction: number;
-  
+
   // Crew metrics
   eligibleCrew: number;
   avgSatisfactionPerCrew: number;
-  
+
   // Fairness
   fairnessIndex: number;
   fairnessGrade: SatisfactionGrade;
-  
+
   // Per-RoleRule breakdown
   breakdownByRoleRule: RoleRuleBreakdown[];
+
+  // Per-Crew breakdown
+  breakdownByCrew: CrewBreakdown[];
+
+  // Per-Crew per-RuleType breakdown (for crew preferences graphs)
+  breakdownByCrewAndRuleType: CrewRuleTypeBreakdown[];
 }
 
 /**
@@ -947,6 +970,8 @@ export function aggregateSatisfactionStats(
       fairnessIndex: 100,
       fairnessGrade: 'A+',
       breakdownByRoleRule: [],
+      breakdownByCrew: [],
+      breakdownByCrewAndRuleType: [],
     };
   }
 
@@ -1006,6 +1031,47 @@ export function aggregateSatisfactionStats(
     });
   });
 
+  // Breakdown by Crew ID
+  const breakdownByCrew: CrewBreakdown[] = [];
+  satisfactionByCrew.forEach((sats, crewId) => {
+    const total = sats.length;
+    const met = sats.filter(s => s >= 0.5).length;
+    const avgSatisfaction = (sats.reduce((sum, s) => sum + s, 0) / total) * 100;
+    const satisfactionPct = (met / total) * 100;
+
+    breakdownByCrew.push({
+      crewId,
+      total,
+      met,
+      avgSatisfaction,
+      satisfactionPct,
+    });
+  });
+
+  // Breakdown by Crew ID AND RuleType (for crew preferences graphs)
+  const byCrewAndRuleType = new Map<string, { total: number; met: number }>();
+  for (const r of results) {
+    const key = `${r.crewId}::${r.ruleType}`;
+    if (!byCrewAndRuleType.has(key)) {
+      byCrewAndRuleType.set(key, { total: 0, met: 0 });
+    }
+    const stats = byCrewAndRuleType.get(key)!;
+    stats.total++;
+    if (r.met) stats.met++;
+  }
+
+  const breakdownByCrewAndRuleType: CrewRuleTypeBreakdown[] = [];
+  byCrewAndRuleType.forEach((stats, key) => {
+    const [crewId, ruleType] = key.split('::');
+    breakdownByCrewAndRuleType.push({
+      crewId,
+      ruleType: ruleType as RoleRuleType,
+      total: stats.total,
+      met: stats.met,
+      percentMet: stats.total > 0 ? (stats.met / stats.total) * 100 : 0,
+    });
+  });
+
   return {
     eligiblePreferences,
     preferencesMet,
@@ -1016,6 +1082,8 @@ export function aggregateSatisfactionStats(
     fairnessIndex,
     fairnessGrade,
     breakdownByRoleRule,
+    breakdownByCrew,
+    breakdownByCrewAndRuleType,
   };
 }
 
@@ -1046,6 +1114,8 @@ export async function saveLogPreferenceMetadata(
       fairnessIndex: stats.fairnessIndex,
       fairnessGrade: stats.fairnessGrade,
       breakdownByRoleRule: stats.breakdownByRoleRule,
+      breakdownByCrew: stats.breakdownByCrew,
+      breakdownByCrewAndRuleType: stats.breakdownByCrewAndRuleType,
     }
   });
 }

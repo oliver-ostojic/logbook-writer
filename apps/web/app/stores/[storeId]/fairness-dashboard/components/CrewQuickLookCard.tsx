@@ -2,11 +2,39 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
+interface SatisfactionByDate {
+  date: string;
+  satisfactionPct: number;
+}
+
+interface RoleMinutes {
+  roleId: string;
+  roleName: string;
+  avgMinutes: number;
+}
+
+interface PreferenceRuleBreakdown {
+  ruleType: string;
+  total: number;
+  met: number;
+  percentMet: number;
+}
+
 interface CardData {
   id: string;
   title: string;
   content?: React.ReactNode;
-  satisfactionHistory?: number[];  // 10-day lookback satisfaction scores (0-100)
+  satisfactionHistory?: number[];  // 10-day lookback satisfaction scores (0-100) - DEPRECATED, use satisfactionByDate
+  // New fields from dashboard builder
+  satisfactionScore?: number;      // Average satisfaction percentage (0-100)
+  vsCrewAvg?: number;              // Delta from crew average (percentage points, can be negative)
+  preferencesTotal?: number;       // Total crew role rules count
+  preferencesMetCount?: number;    // Total preferences met across selection
+  satisfactionRank?: number;       // Rank by satisfaction (1 = highest, supports ties)
+  totalRankedCrew?: number;        // Total crew in the ranking (for x/total format)
+  satisfactionByDate?: SatisfactionByDate[];  // For sparkline graph with dates
+  avgMinutesPerRole?: RoleMinutes[];  // For bar chart: avg minutes per role per shift
+  preferenceBreakdownByRuleType?: PreferenceRuleBreakdown[];  // For preferences met graph
 }
 
 interface CrewQuickLookCarouselProps {
@@ -32,15 +60,15 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
   }, [scrollPosition]);
 
   const defaultCards: CardData[] = [
-    { id: '1', title: 'Alice Johnson', satisfactionHistory: [72, 75, 68, 80, 85, 78, 82, 79, 88, 85] },
-    { id: '2', title: 'Bob Smith', satisfactionHistory: [65, 62, 70, 68, 72, 75, 71, 74, 76, 78] },
-    { id: '3', title: 'Carol Williams', satisfactionHistory: [88, 85, 90, 87, 82, 85, 88, 91, 89, 92] },
-    { id: '4', title: 'David Brown', satisfactionHistory: [55, 60, 58, 65, 62, 68, 70, 65, 72, 71] },
-    { id: '5', title: 'Emma Davis', satisfactionHistory: [78, 82, 80, 76, 79, 83, 85, 88, 84, 87] },
-    { id: '6', title: 'Frank Miller', satisfactionHistory: [68, 70, 72, 75, 73, 78, 80, 82, 85, 83] },
-    { id: '7', title: 'Grace Lee', satisfactionHistory: [90, 88, 92, 89, 91, 93, 90, 94, 92, 95] },
-    { id: '8', title: 'Henry Wilson', satisfactionHistory: [62, 58, 65, 60, 63, 67, 70, 68, 72, 74] },
-    { id: '9', title: 'Ivy Chen', satisfactionHistory: [75, 78, 76, 80, 82, 79, 84, 86, 83, 88] },
+    { id: '1', title: 'Alice Johnson', satisfactionScore: 85, vsCrewAvg: 10, preferencesTotal: 8, satisfactionRank: 2, totalRankedCrew: 9, satisfactionHistory: [72, 75, 68, 80, 85, 78, 82, 79, 88, 85] },
+    { id: '2', title: 'Bob Smith', satisfactionScore: 72, vsCrewAvg: -3, preferencesTotal: 6, satisfactionRank: 5, totalRankedCrew: 9, satisfactionHistory: [65, 62, 70, 68, 72, 75, 71, 74, 76, 78] },
+    { id: '3', title: 'Carol Williams', satisfactionScore: 89, vsCrewAvg: 14, preferencesTotal: 10, satisfactionRank: 1, totalRankedCrew: 9, satisfactionHistory: [88, 85, 90, 87, 82, 85, 88, 91, 89, 92] },
+    { id: '4', title: 'David Brown', satisfactionScore: 65, vsCrewAvg: -10, preferencesTotal: 5, satisfactionRank: 8, totalRankedCrew: 9, satisfactionHistory: [55, 60, 58, 65, 62, 68, 70, 65, 72, 71] },
+    { id: '5', title: 'Emma Davis', satisfactionScore: 82, vsCrewAvg: 7, preferencesTotal: 7, satisfactionRank: 3, totalRankedCrew: 9, satisfactionHistory: [78, 82, 80, 76, 79, 83, 85, 88, 84, 87] },
+    { id: '6', title: 'Frank Miller', satisfactionScore: 77, vsCrewAvg: 2, preferencesTotal: 9, satisfactionRank: 4, totalRankedCrew: 9, satisfactionHistory: [68, 70, 72, 75, 73, 78, 80, 82, 85, 83] },
+    { id: '7', title: 'Grace Lee', satisfactionScore: 92, vsCrewAvg: 17, preferencesTotal: 12, satisfactionRank: 1, totalRankedCrew: 9, satisfactionHistory: [90, 88, 92, 89, 91, 93, 90, 94, 92, 95] },
+    { id: '8', title: 'Henry Wilson', satisfactionScore: 66, vsCrewAvg: -9, preferencesTotal: 4, satisfactionRank: 7, totalRankedCrew: 9, satisfactionHistory: [62, 58, 65, 60, 63, 67, 70, 68, 72, 74] },
+    { id: '9', title: 'Ivy Chen', satisfactionScore: 81, vsCrewAvg: 6, preferencesTotal: 8, satisfactionRank: 4, totalRankedCrew: 9, satisfactionHistory: [75, 78, 76, 80, 82, 79, 84, 86, 83, 88] },
   ];
 
   const allCards = cards.length > 0 ? cards : defaultCards;
@@ -151,7 +179,7 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
           <button
             onClick={goUp}
             disabled={!canGoUp}
-            className="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200"
+            className="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 circle-button-glass-border"
             style={{
               background: canGoUp ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(12px)',
@@ -177,7 +205,7 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
           <button
             onClick={goDown}
             disabled={!canGoDown}
-            className="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200"
+            className="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 circle-button-glass-border"
             style={{
               background: canGoDown ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(12px)',
@@ -248,11 +276,11 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
             <div
               key={card.id}
               ref={isMain ? mainCardRef : undefined}
-              className="absolute w-full"
+              className="absolute w-full quick-card-glass-border"
               style={{
                 borderRadius: '1rem',
                 minHeight: 120,
-                overflow: 'hidden',
+                overflow: 'visible',
                 background: getCardColor(),
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
@@ -273,6 +301,8 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
                 style={{
                   opacity: isMain ? 1 : 0,
                   pointerEvents: isMain ? 'auto' : 'none',
+                  borderRadius: '1rem',
+                  overflow: 'hidden',
                 }}
               >
                 {/* Crew name - top */}
@@ -312,7 +342,7 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
                         fontWeight: 350,
                       }}
                     >
-                      78%
+                      {card.satisfactionScore !== undefined ? `${Math.round(card.satisfactionScore)}%` : '—'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
@@ -330,11 +360,11 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
                       className="text-[13px] text-right"
                       style={{
                         fontFamily: 'var(--font-open-sans)',
-                        color: '#4ADE80',
+                        color: card.vsCrewAvg === undefined ? '#7C7F82' : (card.vsCrewAvg >= 0 ? '#4ADE80' : '#F87171'),
                         fontWeight: 350,
                       }}
                     >
-                      +12%
+                      {card.vsCrewAvg !== undefined ? `${card.vsCrewAvg >= 0 ? '+' : ''}${Math.round(card.vsCrewAvg)}%` : '—'}
                     </span>
                   </div>
                 </div>
@@ -370,7 +400,7 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
                         fontWeight: 350,
                       }}
                     >
-                      12
+                      {card.preferencesTotal ?? '—'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
@@ -392,7 +422,9 @@ export function CrewQuickLookCarousel({ cards = [], children, onNavigationChange
                         fontWeight: 350,
                       }}
                     >
-                      3
+                      {card.satisfactionRank !== undefined && card.totalRankedCrew !== undefined
+                        ? `${card.satisfactionRank}/${card.totalRankedCrew}`
+                        : '—'}
                     </span>
                   </div>
                 </div>
@@ -509,15 +541,15 @@ export function CrewQuickLookCard({ children }: { children?: React.ReactNode }) 
 
 // Export default cards data for use in expanded view
 export const defaultCrewCards: CardData[] = [
-  { id: '1', title: 'Alice Johnson', satisfactionHistory: [72, 75, 68, 80, 85, 78, 82, 79, 88, 85] },
-  { id: '2', title: 'Bob Smith', satisfactionHistory: [65, 62, 70, 68, 72, 75, 71, 74, 76, 78] },
-  { id: '3', title: 'Carol Williams', satisfactionHistory: [88, 85, 90, 87, 82, 85, 88, 91, 89, 92] },
-  { id: '4', title: 'David Brown', satisfactionHistory: [55, 60, 58, 65, 62, 68, 70, 65, 72, 71] },
-  { id: '5', title: 'Emma Davis', satisfactionHistory: [78, 82, 80, 76, 79, 83, 85, 88, 84, 87] },
-  { id: '6', title: 'Frank Miller', satisfactionHistory: [68, 70, 72, 75, 73, 78, 80, 82, 85, 83] },
-  { id: '7', title: 'Grace Lee', satisfactionHistory: [90, 88, 92, 89, 91, 93, 90, 94, 92, 95] },
-  { id: '8', title: 'Henry Wilson', satisfactionHistory: [62, 58, 65, 60, 63, 67, 70, 68, 72, 74] },
-  { id: '9', title: 'Ivy Chen', satisfactionHistory: [75, 78, 76, 80, 82, 79, 84, 86, 83, 88] },
+  { id: '1', title: 'Alice Johnson', satisfactionScore: 85, vsCrewAvg: 10, preferencesTotal: 8, satisfactionRank: 2, totalRankedCrew: 9, satisfactionHistory: [72, 75, 68, 80, 85, 78, 82, 79, 88, 85] },
+  { id: '2', title: 'Bob Smith', satisfactionScore: 72, vsCrewAvg: -3, preferencesTotal: 6, satisfactionRank: 5, totalRankedCrew: 9, satisfactionHistory: [65, 62, 70, 68, 72, 75, 71, 74, 76, 78] },
+  { id: '3', title: 'Carol Williams', satisfactionScore: 89, vsCrewAvg: 14, preferencesTotal: 10, satisfactionRank: 1, totalRankedCrew: 9, satisfactionHistory: [88, 85, 90, 87, 82, 85, 88, 91, 89, 92] },
+  { id: '4', title: 'David Brown', satisfactionScore: 65, vsCrewAvg: -10, preferencesTotal: 5, satisfactionRank: 8, totalRankedCrew: 9, satisfactionHistory: [55, 60, 58, 65, 62, 68, 70, 65, 72, 71] },
+  { id: '5', title: 'Emma Davis', satisfactionScore: 82, vsCrewAvg: 7, preferencesTotal: 7, satisfactionRank: 3, totalRankedCrew: 9, satisfactionHistory: [78, 82, 80, 76, 79, 83, 85, 88, 84, 87] },
+  { id: '6', title: 'Frank Miller', satisfactionScore: 77, vsCrewAvg: 2, preferencesTotal: 9, satisfactionRank: 4, totalRankedCrew: 9, satisfactionHistory: [68, 70, 72, 75, 73, 78, 80, 82, 85, 83] },
+  { id: '7', title: 'Grace Lee', satisfactionScore: 92, vsCrewAvg: 17, preferencesTotal: 12, satisfactionRank: 1, totalRankedCrew: 9, satisfactionHistory: [90, 88, 92, 89, 91, 93, 90, 94, 92, 95] },
+  { id: '8', title: 'Henry Wilson', satisfactionScore: 66, vsCrewAvg: -9, preferencesTotal: 4, satisfactionRank: 7, totalRankedCrew: 9, satisfactionHistory: [62, 58, 65, 60, 63, 67, 70, 68, 72, 74] },
+  { id: '9', title: 'Ivy Chen', satisfactionScore: 81, vsCrewAvg: 6, preferencesTotal: 8, satisfactionRank: 4, totalRankedCrew: 9, satisfactionHistory: [75, 78, 76, 80, 82, 79, 84, 86, 83, 88] },
 ];
 
 // Standalone card component for expanded grid view - EXACT SAME as carousel card
@@ -572,7 +604,7 @@ export function CrewQuickLookCardStatic({ card, onClick }: { card: CardData; onC
                 fontWeight: 350,
               }}
             >
-              78%
+              {card.satisfactionScore !== undefined ? `${Math.round(card.satisfactionScore)}%` : '—'}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -590,11 +622,11 @@ export function CrewQuickLookCardStatic({ card, onClick }: { card: CardData; onC
               className="text-[13px] text-right"
               style={{
                 fontFamily: 'var(--font-open-sans)',
-                color: '#4ADE80',
+                color: card.vsCrewAvg === undefined ? '#7C7F82' : (card.vsCrewAvg >= 0 ? '#4ADE80' : '#F87171'),
                 fontWeight: 350,
               }}
             >
-              +12%
+              {card.vsCrewAvg !== undefined ? `${card.vsCrewAvg >= 0 ? '+' : ''}${Math.round(card.vsCrewAvg)}%` : '—'}
             </span>
           </div>
         </div>
@@ -630,7 +662,7 @@ export function CrewQuickLookCardStatic({ card, onClick }: { card: CardData; onC
                 fontWeight: 350,
               }}
             >
-              12
+              {card.preferencesTotal ?? '—'}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -652,7 +684,9 @@ export function CrewQuickLookCardStatic({ card, onClick }: { card: CardData; onC
                 fontWeight: 350,
               }}
             >
-              3
+              {card.satisfactionRank !== undefined && card.totalRankedCrew !== undefined
+                ? `${card.satisfactionRank}/${card.totalRankedCrew}`
+                : '—'}
             </span>
           </div>
         </div>

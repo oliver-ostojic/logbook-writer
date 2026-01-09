@@ -19,3 +19,5 @@ export * from './constraint-testing';
 
 // Export constraint analysis types
 export * from './constraint-analysis';
+// Export dashboard types
+export * from './dashboard';

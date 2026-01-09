@@ -25,29 +25,6 @@ model Assignment {
   @@index([crewId, startTime])
 }
 
-model BankedPreference {
-  id               Int            @id @default(autoincrement())
-  crewId           String         @db.Char(7)
-  preferenceType   PreferenceType
-  preferenceValue  String
-  weight           Int
-  originalDate     DateTime
-  expiresAt        DateTime
-  usedDate         DateTime?
-  status           BankingStatus  @default(ACTIVE)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  storeId          Int
-  rolePreferenceId Int
-  Crew             Crew           @relation(fields: [crewId], references: [id])
-  RolePreference   RolePreference @relation(fields: [rolePreferenceId], references: [id])
-  Store            Store          @relation(fields: [storeId], references: [id])
-
-  @@unique([crewId, rolePreferenceId, status])
-  @@index([crewId, expiresAt])
-  @@index([crewId, status])
-}
-
 model Company {
   id         Int          @id @default(autoincrement())
   name       String
@@ -64,30 +41,12 @@ model Crew {
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   Assignment              Assignment[]
-  BankedPreference        BankedPreference[]
   Store                   Store                     @relation(fields: [storeId], references: [id])
-  CrewPreference          CrewPreference[]
   CrewRole                CrewRole[]
   CrewRoleFairnessHistory CrewRoleFairnessHistory[]
   CrewRoleQuota           CrewRoleQuota[]
   CrewRoleRule            CrewRoleRule[]
-  PreferenceSatisfaction  PreferenceSatisfaction[]
   Shift                   Shift[]
-}
-
-model CrewPreference {
-  id               Int            @id @default(autoincrement())
-  crewId           String         @db.Char(7)
-  rolePreferenceId Int
-  crewWeight       Int            @default(1)
-  intValue         Int?
-  enabled          Boolean        @default(true)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  Crew             Crew           @relation(fields: [crewId], references: [id])
-  RolePreference   RolePreference @relation(fields: [rolePreferenceId], references: [id])
-
-  @@index([crewId, rolePreferenceId])
 }
 
 model CrewRole {
@@ -193,6 +152,14 @@ model LogPreferenceMetadata {
   // Each entry: { roleRuleId, ruleType, eligible, met, avgSatisfaction, percentMet }
   breakdownByRoleRule    Json     @default("[]")
 
+  // Per-Crew Breakdown (JSON array)
+  // Each entry: { crewId, total, met, avgSatisfaction, satisfactionPct }
+  breakdownByCrew        Json     @default("[]")
+
+  // Per-Crew per-RuleType Breakdown (JSON array) - for crew preferences graphs
+  // Each entry: { crewId, ruleType, total, met, percentMet }
+  breakdownByCrewAndRuleType Json @default("[]")
+
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   Logbook                Logbook  @relation(fields: [logbookId], references: [id])
@@ -211,31 +178,9 @@ model Logbook {
   Assignment             Assignment[]
   LogPreferenceMetadata  LogPreferenceMetadata?
   Store                  Store                    @relation(fields: [storeId], references: [id])
-  PreferenceSatisfaction PreferenceSatisfaction[]
   Run                    Run[]
 
   @@unique([storeId, date, status])
-}
-
-model PreferenceSatisfaction {
-  id                 Int            @id @default(autoincrement())
-  crewId             String         @db.Char(7)
-  date               DateTime
-  logbookId          String         @db.Uuid
-  adaptiveBoost      Float          @default(1.0)
-  fairnessAdjustment Float          @default(0)
-  createdAt          DateTime       @default(now())
-  met                Boolean        @default(false)
-  rolePreferenceId   Int
-  satisfaction       Float          @default(0)
-  weightApplied      Float          @default(0)
-  Crew               Crew           @relation(fields: [crewId], references: [id])
-  Logbook            Logbook        @relation(fields: [logbookId], references: [id])
-  RolePreference     RolePreference @relation(fields: [rolePreferenceId], references: [id])
-
-  @@unique([logbookId, crewId, rolePreferenceId])
-  @@index([crewId, date])
-  @@index([logbookId])
 }
 
 model Role {
@@ -262,7 +207,6 @@ model Role {
   RoleCoverageWindow          RoleCoverageWindow[]
   RoleFairnessSnapshot        RoleFairnessSnapshot[]
   RoleFairnessTracker         RoleFairnessTracker?
-  RolePreference              RolePreference[]
   RoleRules                   RoleRule[]                @relation("RoleToRoleRules")
   TargetedByRules             RoleRule[]                @relation("TargetRoleToRoleRules")
 }
@@ -355,25 +299,6 @@ model RoleFamily {
   Company    Company @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model RolePreference {
-  id                     Int                      @id @default(autoincrement())
-  storeId                Int
-  roleId                 Int?
-  preferenceType         PreferenceType
-  baseWeight             Int                      @default(1)
-  allowBanking           Boolean                  @default(true)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  BankedPreference       BankedPreference[]
-  CrewPreference         CrewPreference[]
-  PreferenceSatisfaction PreferenceSatisfaction[]
-  Role                   Role?                    @relation(fields: [roleId], references: [id])
-  Store                  Store                    @relation(fields: [storeId], references: [id])
-
-  @@unique([storeId, roleId, preferenceType])
-  @@index([storeId, preferenceType])
-}
-
 model Run {
   id             String    @id @db.Uuid
   date           DateTime
@@ -417,7 +342,6 @@ model Store {
   openMinutesFromMidnight  Int                       @default(480)
   closeMinutesFromMidnight Int                       @default(1260)
   companyId                Int
-  BankedPreference         BankedPreference[]
   Crew                     Crew[]
   CrewRoleFairnessHistory  CrewRoleFairnessHistory[]
   CrewRoleQuota            CrewRoleQuota[]
@@ -426,7 +350,6 @@ model Store {
   RoleCoverageWindow       RoleCoverageWindow[]
   RoleFairnessSnapshot     RoleFairnessSnapshot[]
   RoleFairnessTracker      RoleFairnessTracker[]
-  RolePreference           RolePreference[]
   Run                      Run[]
   Shift                    Shift[]
   Company                  Company                   @relation(fields: [companyId], references: [id])
@@ -454,13 +377,6 @@ enum AssignmentOrigin {
   ENGINE
   MANUAL
   ML_ADJUSTED
-}
-
-enum BankingStatus {
-  ACTIVE
-  USED
-  EXPIRED
-  CANCELED
 }
 
 enum ConsecutivePolicy {

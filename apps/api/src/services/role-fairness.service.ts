@@ -131,8 +131,11 @@ export async function recordDailyFairnessHistory(
 }
 
 /**
- * Calculate and store fairness snapshot for tracked roles.
- * Uses lookback window to compute fairness metrics normalized by HOURS WORKED.
+ * Calculate and store fairness snapshot for ALL roles.
+ * Uses lookback window to compute fairness metrics normalized by DAYS WORKED.
+ *
+ * For roles with RoleFairnessTracker (enabled=true): Uses their configured lookback
+ * For roles without tracker: Uses default 14-day lookback
  */
 export async function calculateAndStoreFairnessSnapshot(
   prisma: PrismaClient,
@@ -140,37 +143,98 @@ export async function calculateAndStoreFairnessSnapshot(
 ): Promise<void> {
   const { storeId, date } = options;
 
-  // Get roles that have fairness tracking enabled
-  const trackedRoles = await prisma.roleFairnessTracker.findMany({
+  // Get ALL roles for this store
+  const allRoles = await prisma.role.findMany({
+    where: { storeId },
+    select: { id: true },
+  });
+
+  // Get fairness trackers for roles that have custom lookback configured
+  const trackers = await prisma.roleFairnessTracker.findMany({
     where: { storeId, enabled: true },
     select: { roleId: true, lookbackDays: true },
   });
 
-  if (trackedRoles.length === 0) return;
+  const trackerMap = new Map(trackers.map(t => [t.roleId, t.lookbackDays]));
 
-  for (const tracker of trackedRoles) {
-    const { roleId, lookbackDays } = tracker;
+  if (allRoles.length === 0) return;
+
+  for (const role of allRoles) {
+    const roleId = role.id;
+    // Use custom lookback if configured, otherwise default to 14 days
+    const lookbackDays = trackerMap.get(roleId) ?? 14;
+    const isEnforced = trackerMap.has(roleId);
 
     // Calculate lookback window
     const windowStart = new Date(date);
     windowStart.setDate(windowStart.getDate() - lookbackDays);
 
-    // Get all fairness history records in the lookback window
-    const historyRecords = await prisma.crewRoleFairnessHistory.findMany({
-      where: {
-        storeId,
-        roleId,
-        date: {
-          gte: windowStart,
-          lte: date,
+    // Get role minutes data
+    // For tracked roles: Use CrewRoleFairnessHistory
+    // For untracked roles: Query assignments from logbooks directly
+    let roleMinutesData: Array<{ crewId: string; minutesAssigned: number; date: Date }> = [];
+
+    if (isEnforced) {
+      // Tracked role: Use history records
+      roleMinutesData = await prisma.crewRoleFairnessHistory.findMany({
+        where: {
+          storeId,
+          roleId,
+          date: {
+            gte: windowStart,
+            lte: date,
+          },
         },
-      },
-      select: {
-        crewId: true,
-        minutesAssigned: true,
-        date: true,
-      },
-    });
+        select: {
+          crewId: true,
+          minutesAssigned: true,
+          date: true,
+        },
+      });
+    } else {
+      // Untracked role: Query assignments from logbooks
+      const logbooks = await prisma.logbook.findMany({
+        where: {
+          storeId,
+          date: {
+            gte: windowStart,
+            lte: date,
+          },
+          status: { in: ['DRAFT', 'PUBLISHED'] }, // Include both statuses
+        },
+        select: {
+          date: true,
+          Assignment: {
+            where: { roleId },
+            select: {
+              crewId: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
+        },
+      });
+
+      // Aggregate assignments by crew and date
+      for (const logbook of logbooks) {
+        const minutesByCrew = new Map<string, number>();
+
+        for (const assignment of logbook.Assignment) {
+          const minutes = (assignment.endTime.getTime() - assignment.startTime.getTime()) / (1000 * 60);
+          const current = minutesByCrew.get(assignment.crewId) ?? 0;
+          minutesByCrew.set(assignment.crewId, current + minutes);
+        }
+
+        // Convert to format matching history records
+        for (const [crewId, minutes] of minutesByCrew.entries()) {
+          roleMinutesData.push({
+            crewId,
+            minutesAssigned: minutes,
+            date: logbook.date,
+          });
+        }
+      }
+    }
 
     // Get shift history for all crew in the lookback window
     const shiftRecords = await prisma.shift.findMany({
@@ -183,17 +247,27 @@ export async function calculateAndStoreFairnessSnapshot(
       },
       select: {
         crewId: true,
+        date: true,
         startMin: true,
         endMin: true,
       },
     });
 
-    // Calculate total shift minutes per crew
+    // Calculate total shift minutes and days worked per crew
     const totalShiftMinutesByCrew = new Map<string, number>();
+    const daysWorkedByCrew = new Map<string, Set<string>>();
+
     for (const shift of shiftRecords) {
       const shiftMinutes = shift.endMin - shift.startMin;
       const current = totalShiftMinutesByCrew.get(shift.crewId) ?? 0;
       totalShiftMinutesByCrew.set(shift.crewId, current + shiftMinutes);
+
+      // Track unique days worked
+      const dateStr = shift.date.toISOString().split('T')[0];
+      if (!daysWorkedByCrew.has(shift.crewId)) {
+        daysWorkedByCrew.set(shift.crewId, new Set());
+      }
+      daysWorkedByCrew.get(shift.crewId)!.add(dateStr);
     }
 
     // Get eligible crew (those who can do this role)
@@ -209,43 +283,48 @@ export async function calculateAndStoreFairnessSnapshot(
 
     // Aggregate: total role minutes per crew
     const roleMinutesByCrew = new Map<string, number>();
-    
-    for (const record of historyRecords) {
+
+    for (const record of roleMinutesData) {
       if (!eligibleCrewIds.has(record.crewId)) continue;
       const current = roleMinutesByCrew.get(record.crewId) ?? 0;
       roleMinutesByCrew.set(record.crewId, current + record.minutesAssigned);
     }
 
-    // Calculate minutes per hour worked for each crew
-    const minutesPerHour: number[] = [];
-    
+    // Calculate minutes per day worked for each crew
+    // Only include crew who actually worked during the lookback window
+    const minutesPerDay: number[] = [];
+
     for (const crewId of eligibleCrewIds) {
       const roleMinutes = roleMinutesByCrew.get(crewId) ?? 0;
       const totalShiftMinutes = totalShiftMinutesByCrew.get(crewId) ?? 0;
-      const totalHoursWorked = totalShiftMinutes / 60;
-      
-      // If crew hasn't worked any shifts in lookback, treat as 0 min/hr
-      const minPerHour = totalHoursWorked > 0 
-        ? roleMinutes / totalHoursWorked 
+
+      // Skip crew who didn't work at all in lookback window
+      if (totalShiftMinutes === 0) continue;
+
+      const daysWorked = daysWorkedByCrew.get(crewId)?.size ?? 0;
+
+      // Calculate minutes per day worked
+      const minPerDay = daysWorked > 0
+        ? roleMinutes / daysWorked
         : 0;
-      
-      minutesPerHour.push(minPerHour);
+
+      minutesPerDay.push(minPerDay);
     }
 
     // Calculate fairness metrics
-    const gini = calculateGini(minutesPerHour);
+    const gini = calculateGini(minutesPerDay);
     const fairnessIndex = 100 * (1 - gini);
     const grade = giniToGrade(gini);
 
-    // Stats (now in minutes per hour instead of minutes per day)
-    const minMph = minutesPerHour.length > 0 ? Math.min(...minutesPerHour) : 0;
-    const maxMph = minutesPerHour.length > 0 ? Math.max(...minutesPerHour) : 0;
-    const avgMph = minutesPerHour.length > 0 
-      ? minutesPerHour.reduce((a, b) => a + b, 0) / minutesPerHour.length 
+    // Stats (minutes per day worked)
+    const minMpd = minutesPerDay.length > 0 ? Math.min(...minutesPerDay) : 0;
+    const maxMpd = minutesPerDay.length > 0 ? Math.max(...minutesPerDay) : 0;
+    const avgMpd = minutesPerDay.length > 0
+      ? minutesPerDay.reduce((a, b) => a + b, 0) / minutesPerDay.length
       : 0;
-    
-    const variance = minutesPerHour.length > 0
-      ? minutesPerHour.reduce((sum, v) => sum + Math.pow(v - avgMph, 2), 0) / minutesPerHour.length
+
+    const variance = minutesPerDay.length > 0
+      ? minutesPerDay.reduce((sum, v) => sum + Math.pow(v - avgMpd, 2), 0) / minutesPerDay.length
       : 0;
     const stdDev = Math.sqrt(variance);
 
@@ -267,9 +346,9 @@ export async function calculateAndStoreFairnessSnapshot(
         giniCoefficient: gini,
         fairnessIndex,
         fairnessGrade: grade,
-        minMinutesPerDay: minMph,  // Note: field name says "PerDay" but we're storing per-hour now
-        maxMinutesPerDay: maxMph,
-        avgMinutesPerDay: avgMph,
+        minMinutesPerDay: minMpd,
+        maxMinutesPerDay: maxMpd,
+        avgMinutesPerDay: avgMpd,
         stdDeviation: stdDev,
         eligibleCrew: eligibleCrewIds.size,
         crewWithMinutes,
@@ -279,9 +358,9 @@ export async function calculateAndStoreFairnessSnapshot(
         giniCoefficient: gini,
         fairnessIndex,
         fairnessGrade: grade,
-        minMinutesPerDay: minMph,
-        maxMinutesPerDay: maxMph,
-        avgMinutesPerDay: avgMph,
+        minMinutesPerDay: minMpd,
+        maxMinutesPerDay: maxMpd,
+        avgMinutesPerDay: avgMpd,
         stdDeviation: stdDev,
         eligibleCrew: eligibleCrewIds.size,
         crewWithMinutes,

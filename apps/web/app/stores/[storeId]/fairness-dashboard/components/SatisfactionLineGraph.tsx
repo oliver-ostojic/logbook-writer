@@ -13,46 +13,52 @@ interface SatisfactionLineGraphProps {
   data: ShiftSatisfactionData[];
 }
 
-function SatisfactionLineChart({ 
-  data, 
-  hoveredIndex, 
-  onHover 
-}: { 
+function SatisfactionLineChart({
+  data,
+  hoveredIndex,
+  onHover
+}: {
   data: ShiftSatisfactionData[];
   hoveredIndex: number | null;
   onHover: (index: number | null) => void;
 }) {
-  const chartHeight = 160;
+  const chartHeight = 220; // Match GraphCardSimple height
+  const viewBoxWidth = 1000;
   const pointCount = data.length;
-  
+
+  // Symmetric margins INSIDE the SVG like GraphCardSimple
+  const graphLeftEdge = 28; // Left margin inside SVG
+  const graphRightEdge = viewBoxWidth - 28; // Right margin inside SVG (symmetric)
+  const chartWidth = graphRightEdge - graphLeftEdge;
+
   // Use same spacing logic as GraphCardSimple bars
   const gapRatio = 0.3;
-  const pointWidthPercent = 100 / ((pointCount + 2) + (pointCount - 1) * gapRatio);
-  const gapPercent = pointWidthPercent * gapRatio;
-  const sideGapPercent = pointWidthPercent;
-  
-  // Right edge for grid lines (same as bar chart)
-  const rightEdgePercent = sideGapPercent + pointCount * (pointWidthPercent + gapPercent) - gapPercent / 2;
-  
+  const pointWidth = chartWidth / ((pointCount + 2) + (pointCount - 1) * gapRatio);
+  const gap = pointWidth * gapRatio;
+  const sideGap = pointWidth;
+
+  // Right edge for average line (extends to graph right edge)
+  const rightEdge = sideGap + pointCount * (pointWidth + gap) - gap / 2;
+
   // Y-axis range: 0-100 for satisfaction percentage
   const yMin = 0;
   const yMax = 100;
   const yRange = yMax - yMin;
   const barScaleFactor = 0.9;
-  
+
   // Calculate point positions (centered in each "bar slot")
   const points = data.map((d, i) => {
-    const xPercent = sideGapPercent + i * (pointWidthPercent + gapPercent) + pointWidthPercent / 2;
+    const x = graphLeftEdge + sideGap + i * (pointWidth + gap) + pointWidth / 2;
     const y = chartHeight - ((d.satisfaction - yMin) / yRange) * chartHeight * barScaleFactor;
-    return { x: xPercent, y, data: d };
+    return { x, y, data: d };
   });
-  
+
   // Calculate average satisfaction
   const avgSatisfaction = data.reduce((sum, d) => sum + d.satisfaction, 0) / data.length;
   const avgLineY = chartHeight - (avgSatisfaction / yRange) * chartHeight * barScaleFactor;
 
   return (
-    <svg width="100%" height={chartHeight} style={{ overflow: 'visible' }}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${viewBoxWidth} ${chartHeight}`} style={{ overflow: 'visible' }}>
       <defs>
         {/* Gradient for the line */}
         <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -91,67 +97,44 @@ function SatisfactionLineChart({
         return (
           <rect
             key={`hline-${i}`}
-            x="0"
-            y={y - 0.75}
-            width="calc(100% - 50px)"
-            height={1.5}
+            x={graphLeftEdge}
+            y={y - 1.25}
+            width={chartWidth}
+            height={2.5}
             fill="url(#lineHorizontalLineGradient)"
           />
         );
       })}
       
-      {/* Y-axis labels on the right side (0, 50, 100) */}
-      {[0, 0.5, 1].map((fraction) => {
-        const y = chartHeight * (1 - fraction * barScaleFactor) - (chartHeight * (1 - barScaleFactor) / 2);
-        const labelValue = Math.round(fraction * 100);
-        return (
-          <text
-            key={`y-label-${fraction}`}
-            x="100%"
-            y={y}
-            dominantBaseline="middle"
-            textAnchor="end"
-            style={{
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '16px',
-              fontWeight: 350,
-              fill: '#7C7F82',
-            }}
-          >
-            {labelValue}
-          </text>
-        );
-      })}
-      
       {/* Vertical divider lines between points */}
       {Array.from({ length: pointCount - 1 }).map((_, i) => {
-        const lineX = sideGapPercent + (i + 1) * (pointWidthPercent + gapPercent) - gapPercent / 2;
+        const lineX = graphLeftEdge + sideGap + (i + 1) * (pointWidth + gap) - gap / 2;
         return (
           <rect
             key={`divider-${i}`}
-            x={`calc(${lineX}% - 0.75px)`}
+            x={lineX - 1.25}
             y={0}
-            width={1.5}
+            width={2.5}
             height={chartHeight}
             fill="url(#lineVerticalDividerGradient)"
           />
         );
       })}
-      
+
       {/* Vertical line to the left of first point */}
       <rect
-        x={`calc(${sideGapPercent - gapPercent / 2}% - 0.75px)`}
+        x={graphLeftEdge + sideGap - gap / 2 - 1.25}
         y={0}
-        width={1.5}
+        width={2.5}
         height={chartHeight}
         fill="url(#lineVerticalDividerGradient)"
       />
-      
+
       {/* Vertical line to the right of last point */}
       <rect
-        x="calc(100% - 50px - 0.75px)"
+        x={graphLeftEdge + sideGap + pointCount * (pointWidth + gap) - gap / 2 - 1.25}
         y={0}
-        width={1.5}
+        width={2.5}
         height={chartHeight}
         fill="url(#lineVerticalDividerGradient)"
       />
@@ -159,7 +142,7 @@ function SatisfactionLineChart({
       {/* Area fill under the line */}
       {points.length > 1 && (
         <path
-          d={`M ${points[0].x}% ${chartHeight} L ${points.map(p => `${p.x}% ${p.y}`).join(' L ')} L ${points[points.length - 1].x}% ${chartHeight} Z`}
+          d={`M ${points[0].x} ${chartHeight} L ${points.map(p => `${p.x} ${p.y}`).join(' L ')} L ${points[points.length - 1].x} ${chartHeight} Z`}
           fill="url(#areaGradient)"
         />
       )}
@@ -170,9 +153,9 @@ function SatisfactionLineChart({
         return (
           <line
             key={`segment-${i}`}
-            x1={`${p.x}%`}
+            x1={p.x}
             y1={p.y}
-            x2={`${nextP.x}%`}
+            x2={nextP.x}
             y2={nextP.y}
             stroke="#6A696D"
             strokeWidth={5}
@@ -186,13 +169,13 @@ function SatisfactionLineChart({
         <g key={`point-${i}`}>
           {/* Visible dot - hollow with border */}
           <circle
-            cx={`${p.x}%`}
+            cx={p.x}
             cy={p.y}
             r={hoveredIndex === i ? 8 : 7}
             fill="#262628"
             stroke={hoveredIndex === i ? '#FFFFFF' : '#6A696D'}
             strokeWidth={4}
-            style={{ 
+            style={{
               transition: 'all 0.15s ease',
               pointerEvents: 'none',
             }}
@@ -202,21 +185,17 @@ function SatisfactionLineChart({
       
       {/* Invisible hover columns - full height for easier hover detection */}
       {points.map((p, i) => {
-        // Calculate column boundaries (from divider to divider)
-        const leftEdge = i === 0 
-          ? sideGapPercent - gapPercent / 2 
-          : sideGapPercent + i * (pointWidthPercent + gapPercent) - gapPercent / 2;
-        const rightEdge = i === points.length - 1
-          ? sideGapPercent + (i + 1) * (pointWidthPercent + gapPercent) - gapPercent / 2
-          : sideGapPercent + (i + 1) * (pointWidthPercent + gapPercent) - gapPercent / 2;
-        const columnWidth = rightEdge - leftEdge;
-        
+        // Calculate column boundaries (from divider to divider) - all equal width
+        const leftEdge = graphLeftEdge + sideGap + i * (pointWidth + gap) - gap / 2;
+        const colRightEdge = graphLeftEdge + sideGap + (i + 1) * (pointWidth + gap) - gap / 2;
+        const columnWidth = colRightEdge - leftEdge;
+
         return (
           <rect
             key={`hover-col-${i}`}
-            x={`${leftEdge}%`}
+            x={leftEdge}
             y={0}
-            width={`${columnWidth}%`}
+            width={columnWidth}
             height={chartHeight}
             fill="transparent"
             style={{ cursor: 'pointer' }}
@@ -231,10 +210,10 @@ function SatisfactionLineChart({
         const dashWidth = 8;
         const dashHeight = 1.5;
         const numDashes = 40;
-        
+
         return Array.from({ length: numDashes }).map((_, i) => {
           const progressPercent = i / (numDashes - 1);
-          const xPercent = progressPercent * rightEdgePercent;
+          const xPos = graphLeftEdge + progressPercent * (rightEdge - graphLeftEdge);
           
           // Calculate opacity - fade in and out at edges
           let opacity = 0.6;
@@ -251,7 +230,7 @@ function SatisfactionLineChart({
           return (
             <rect
               key={`dash-${i}`}
-              x={`calc(${xPercent}% - ${dashWidth / 2}px)`}
+              x={xPos - dashWidth / 2}
               y={avgLineY - dashHeight / 2}
               width={dashWidth}
               height={dashHeight}
@@ -265,13 +244,13 @@ function SatisfactionLineChart({
       
       {/* "avg" label to the left of the average line */}
       <text
-        x="0%"
+        x="0"
         y={avgLineY}
         dominantBaseline="middle"
         textAnchor="start"
         style={{
           fontFamily: 'var(--font-open-sans)',
-          fontSize: '16px',
+          fontSize: '24px',
           fontWeight: 350,
           fill: '#7C7F82',
         }}
@@ -284,45 +263,79 @@ function SatisfactionLineChart({
 
 export function SatisfactionLineGraph({ title, data }: SatisfactionLineGraphProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  
+
   // Get hovered data point info
   const hoveredData = hoveredIndex !== null ? data[hoveredIndex] : null;
 
+  // Y-axis labels (0, 50, 100)
+  const chartHeight = 220; // Match the SVG chart height
+  const barScaleFactor = 0.9;
+  const yLabels = [0, 0.5, 1].map((fraction) => {
+    const y = chartHeight * (1 - fraction * barScaleFactor) - (chartHeight * (1 - barScaleFactor) / 2);
+    const labelValue = Math.round(fraction * 100);
+    return { y, value: labelValue };
+  });
+
   return (
-    <div 
+    <div
       className="flex flex-col relative overflow-hidden"
       style={{
         backgroundColor: 'transparent',
-        borderRadius: '1rem', 
+        borderRadius: '1rem',
         padding: '1rem',
         minHeight: 200,
       }}
     >
       {/* Title row */}
       <div className="mb-4 flex items-center">
-        <span 
-          className="text-med" 
-          style={{ 
-            fontFamily: 'var(--font-open-sans)', 
-            color: '#DBDADB', 
-            fontWeight: 350 
+        <span
+          className="text-med"
+          style={{
+            fontFamily: 'var(--font-open-sans)',
+            color: '#DBDADB',
+            fontWeight: 350
           }}
         >
           {title}
         </span>
       </div>
-      
-      {/* Chart */}
-      <div className="flex-1 flex items-center justify-center">
-        <SatisfactionLineChart 
-          data={data}
-          hoveredIndex={hoveredIndex}
-          onHover={setHoveredIndex}
-        />
+
+      {/* Chart area - two column layout like GraphCardSimple */}
+      <div className="flex-1 flex items-stretch" style={{ gap: '16px' }}>
+        {/* Left column: Graph (stretches) */}
+        <div className="flex-1">
+          <SatisfactionLineChart
+            data={data}
+            hoveredIndex={hoveredIndex}
+            onHover={setHoveredIndex}
+          />
+        </div>
+
+        {/* Right column: Y-axis labels (fixed width) - EXACTLY like GraphCardSimple */}
+        <div className="relative flex-shrink-0" style={{ width: '40px', paddingLeft: '8px', paddingRight: '8px' }}>
+          {yLabels.map((label) => (
+            <div
+              key={`y-label-${label.value}`}
+              className="absolute"
+              style={{
+                top: `${(label.y / chartHeight) * 100}%`,
+                transform: 'translateY(-50%)',
+                right: '8px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '16px',
+                fontWeight: 350,
+                color: '#7C7F82',
+                textAlign: 'right',
+              }}
+            >
+              {label.value}
+            </div>
+          ))}
+        </div>
       </div>
-      
+
       {/* Hovered point info */}
-      <div 
+      <div
         style={{
           fontFamily: 'var(--font-open-sans)',
           fontSize: '14px',

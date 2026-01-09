@@ -719,7 +719,6 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         // If there's an existing published logbook, delete it and all related records
         if (existingPublished) {
           await tx.assignment.deleteMany({ where: { logbookId: existingPublished.id } });
-          await tx.preferenceSatisfaction.deleteMany({ where: { logbookId: existingPublished.id } });
           await tx.logPreferenceMetadata.deleteMany({ where: { logbookId: existingPublished.id } });
           await tx.run.deleteMany({ where: { logbookId: existingPublished.id } });
           await tx.logbook.delete({ where: { id: existingPublished.id } });
@@ -764,7 +763,6 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       // Delete all related records in a transaction
       await prisma.$transaction(async (tx) => {
         await tx.assignment.deleteMany({ where: { logbookId } });
-        await tx.preferenceSatisfaction.deleteMany({ where: { logbookId } });
         await tx.logPreferenceMetadata.deleteMany({ where: { logbookId } });
         await tx.run.deleteMany({ where: { logbookId } });
         await tx.logbook.delete({ where: { id: logbookId } });

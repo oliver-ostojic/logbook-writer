@@ -11,6 +11,7 @@ import { registerTuningRoutes } from './routes/tuning';
 import { solverInputRoutes } from './routes/solver-input';
 import { registerShiftRoutes } from './routes/shifts';
 import { registerConstraintRoutes } from './routes/constraints';
+import { registerDashboardRoutes } from './routes/dashboard';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
@@ -28,6 +29,7 @@ export async function buildServer() {
   await app.register(solverInputRoutes);
   registerShiftRoutes(app);
   registerConstraintRoutes(app);
+  registerDashboardRoutes(app);
 
   return app;
 }

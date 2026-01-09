@@ -21,9 +21,14 @@ interface RoleCardData {
   totalCrew?: number; // total crew eligible for this role
   avgMinutes: number;
   medianHours: number;
-  maxDeviation: number; // percentage, can be positive or negative
+  vsRoleAvgPct: number | null; // simple difference from average fairness (e.g., 46% - 38% = +8%), null for untracked roles
   // Lorenz curve data (cumulative % of crew vs cumulative % of hours)
   lorenzData?: { crewPct: number; hoursPct: number }[];
+  // Additional stats for role dashboard
+  minutesWorkedOnRoleTotal?: number;       // Total minutes spent on this role across selection
+  totalMinutesWorkedSelection?: number;    // Total minutes on ALL roles in selection
+  minutesOnRoleVsTotalWorkPct?: number;    // (minutesWorkedOnRoleTotal / totalMinutesWorkedSelection) * 100
+  avgFairnessIndexPct?: number | null;     // Average fairness index across dates (0-100)
 }
 
 interface RoleQuickLookCarouselProps {
@@ -98,11 +103,27 @@ function getGiniColor(gini: number): string {
   return '#F87171'; // red
 }
 
-function getDeviationColor(deviation: number): string {
-  const abs = Math.abs(deviation);
-  if (abs <= 10) return '#4ADE80'; // green
-  if (abs <= 20) return '#FBBF24'; // amber
-  return '#F87171'; // red
+function getVsRoleAvgColor(vsRoleAvgPct: number): string {
+  // Positive = better than average (green), negative = worse than average (red)
+  // Using simple difference: 5% difference is significant in fairness metrics
+  if (vsRoleAvgPct >= 5) return '#4ADE80'; // green (significantly better, e.g., 46% vs 38% = +8%)
+  if (vsRoleAvgPct >= 2) return '#86EFAC'; // light green (moderately better)
+  if (vsRoleAvgPct >= -2) return '#9CA3AF'; // gray (near average, within ±2%)
+  if (vsRoleAvgPct >= -5) return '#FB923C'; // orange (moderately worse)
+  return '#F87171'; // red (significantly worse, e.g., 31% vs 38% = -7%)
+}
+
+// Format minutes to readable string (e.g., "1 hr 30 min" or "45 min")
+function formatMinutesToReadable(minutes: number): string {
+  if (minutes < 60) {
+    return `${Math.round(minutes)} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  if (mins === 0) {
+    return `${hours} hr`;
+  }
+  return `${hours} hr ${mins} min`;
 }
 
 export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderButtons = true, onCardClick }: RoleQuickLookCarouselProps) {
@@ -130,7 +151,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 12,
       avgMinutes: 185,
       medianHours: 6,
-      maxDeviation: 18.5,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 8 },
@@ -149,7 +170,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 8,
       avgMinutes: 142,
       medianHours: 4.5,
-      maxDeviation: -12.3,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 12 },
@@ -168,7 +189,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 15,
       avgMinutes: 210,
       medianHours: 7,
-      maxDeviation: 22.1,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 6 },
@@ -187,7 +208,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 10,
       avgMinutes: 95,
       medianHours: 3,
-      maxDeviation: -28.7,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 4 },
@@ -206,7 +227,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 18,
       avgMinutes: 168,
       medianHours: 5.5,
-      maxDeviation: 35.2,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 3 },
@@ -225,7 +246,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 5,
       avgMinutes: 200,
       medianHours: 6.5,
-      maxDeviation: -5.8,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 14 },
@@ -244,7 +265,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 7,
       avgMinutes: 150,
       medianHours: 5,
-      maxDeviation: 28.4,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 4 },
@@ -263,7 +284,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
       crewCount: 4,
       avgMinutes: 240,
       medianHours: 8,
-      maxDeviation: 10.3,
+      vsRoleAvgPct: null,
       lorenzData: [
         { crewPct: 0, hoursPct: 0 },
         { crewPct: 20, hoursPct: 9 },
@@ -464,11 +485,11 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
             <div
               key={card.id}
               ref={isMain ? mainCardRef : undefined}
-              className="absolute w-full"
+              className="absolute w-full quick-card-glass-border"
               style={{
                 borderRadius: '1rem',
                 minHeight: baseCardHeight,
-                overflow: 'hidden',
+                overflow: 'visible',
                 background: getCardColor(),
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
@@ -488,6 +509,8 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                 style={{
                   opacity: isMain ? 1 : 0,
                   pointerEvents: isMain ? 'auto' : 'none',
+                  borderRadius: '1rem',
+                  overflow: 'hidden',
                 }}
               >
                 {/* Role name - top */}
@@ -503,9 +526,9 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                 </span>
 
                 {/* Stats grid and Lorenz curve - responsive flex layout */}
-                <div className="flex flex-wrap items-start gap-3">
+                <div className="flex items-center gap-3" style={{ minHeight: 0 }}>
                   {/* Stats: 2 cols × 3 rows with divider */}
-                  <div className="flex-1 flex items-start gap-3" style={{ minWidth: 200 }}>
+                  <div className="flex-1 flex items-center gap-3 min-w-0">
                     {/* Column 1 */}
                     <div className="flex-1 flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-2">
@@ -539,17 +562,19 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                             fontWeight: 350,
                           }}
                         >
-                          Crew assigned
+                          Vs roles
                         </span>
                         <span
-                          className="text-[13px]"
+                          className="text-[13px] font-mono"
                           style={{
                             fontFamily: 'var(--font-open-sans)',
-                            color: '#DBDADB',
+                            color: card.vsRoleAvgPct !== null ? getVsRoleAvgColor(card.vsRoleAvgPct) : '#7C7F82',
                             fontWeight: 350,
                           }}
                         >
-                          {card.crewCount}/{card.totalCrew || card.crewCount + 2}
+                          {card.vsRoleAvgPct !== null
+                            ? `${card.vsRoleAvgPct >= 0 ? '+' : ''}${card.vsRoleAvgPct.toFixed(1)}%`
+                            : 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -561,7 +586,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                             fontWeight: 350,
                           }}
                         >
-                          Avg hrs per shift
+                          Avg shift time
                         </span>
                         <span
                           className="text-[13px]"
@@ -571,7 +596,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                             fontWeight: 350,
                           }}
                         >
-                          {card.avgMinutes}
+                          {formatMinutesToReadable(card.avgMinutes)}
                         </span>
                       </div>
                     </div>
@@ -644,17 +669,17 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                             fontWeight: 350,
                           }}
                         >
-                          Spread
+                          Crew assigned
                         </span>
                         <span
-                          className="text-[13px] font-mono"
+                          className="text-[13px]"
                           style={{
                             fontFamily: 'var(--font-open-sans)',
-                            color: getDeviationColor(card.maxDeviation),
+                            color: '#DBDADB',
                             fontWeight: 350,
                           }}
                         >
-                          {card.maxDeviation >= 0 ? '+' : ''}{card.maxDeviation.toFixed(1)}%
+                          {card.crewCount}/{card.totalCrew || card.crewCount + 2}
                         </span>
                       </div>
                     </div>
@@ -671,7 +696,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                   />
 
                   {/* Lorenz Curve Graph */}
-                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: 100, height: 80 }}>
+                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: 100, height: 72 }}>
                     {(() => {
                       const data = card.lorenzData || [
                         { crewPct: 0, hoursPct: 0 },
@@ -682,7 +707,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
                         { crewPct: 100, hoursPct: 100 },
                       ];
                       const width = 100;
-                      const height = 80;
+                      const height = 72;
                       const padding = 8;
                       const graphWidth = width - padding * 2;
                       const graphHeight = height - padding * 2;
@@ -796,7 +821,7 @@ export const defaultRoleCards: RoleCardData[] = [
     totalCrew: 15,
     avgMinutes: 180,
     medianHours: 6,
-    maxDeviation: 18.5,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 8 },
@@ -815,7 +840,7 @@ export const defaultRoleCards: RoleCardData[] = [
     crewCount: 8,
     avgMinutes: 142,
     medianHours: 4.5,
-    maxDeviation: -12.3,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 12 },
@@ -834,7 +859,7 @@ export const defaultRoleCards: RoleCardData[] = [
     crewCount: 15,
     avgMinutes: 210,
     medianHours: 7,
-    maxDeviation: 22.1,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 6 },
@@ -853,7 +878,7 @@ export const defaultRoleCards: RoleCardData[] = [
     crewCount: 6,
     avgMinutes: 95,
     medianHours: 3,
-    maxDeviation: -8.7,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 5 },
@@ -873,7 +898,7 @@ export const defaultRoleCards: RoleCardData[] = [
     totalCrew: 12,
     avgMinutes: 165,
     medianHours: 5.5,
-    maxDeviation: 15.2,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 10 },
@@ -892,7 +917,7 @@ export const defaultRoleCards: RoleCardData[] = [
     crewCount: 5,
     avgMinutes: 200,
     medianHours: 6.5,
-    maxDeviation: -5.8,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 14 },
@@ -912,7 +937,7 @@ export const defaultRoleCards: RoleCardData[] = [
     totalCrew: 10,
     avgMinutes: 150,
     medianHours: 5,
-    maxDeviation: 28.4,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 4 },
@@ -931,7 +956,7 @@ export const defaultRoleCards: RoleCardData[] = [
     crewCount: 4,
     avgMinutes: 240,
     medianHours: 8,
-    maxDeviation: 10.3,
+    vsRoleAvgPct: null,
     lorenzData: [
       { crewPct: 0, hoursPct: 0 },
       { crewPct: 20, hoursPct: 9 },
@@ -973,9 +998,9 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
       </span>
 
       {/* Stats grid and Lorenz curve - responsive flex layout */}
-      <div className="flex flex-wrap items-start gap-3">
+      <div className="flex items-center gap-3" style={{ minHeight: 0 }}>
         {/* Stats: 2 cols × 3 rows with divider */}
-        <div className="flex-1 flex items-start gap-3" style={{ minWidth: 200 }}>
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           {/* Column 1 */}
           <div className="flex-1 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
@@ -1009,17 +1034,19 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
                   fontWeight: 350,
                 }}
               >
-                Crew assigned
+                Vs roles
               </span>
               <span
-                className="text-[13px]"
+                className="text-[13px] font-mono"
                 style={{
                   fontFamily: 'var(--font-open-sans)',
-                  color: '#DBDADB',
+                  color: card.vsRoleAvgPct !== null ? getVsRoleAvgColor(card.vsRoleAvgPct) : '#7C7F82',
                   fontWeight: 350,
                 }}
               >
-                {card.crewCount}/{card.totalCrew || card.crewCount + 2}
+                {card.vsRoleAvgPct !== null
+                  ? `${card.vsRoleAvgPct >= 0 ? '+' : ''}${card.vsRoleAvgPct.toFixed(1)}%`
+                  : 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">
@@ -1031,7 +1058,7 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
                   fontWeight: 350,
                 }}
               >
-                Avg hrs per shift
+                Avg shift time
               </span>
               <span
                 className="text-[13px]"
@@ -1041,7 +1068,7 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
                   fontWeight: 350,
                 }}
               >
-                {card.avgMinutes}
+                {formatMinutesToReadable(card.avgMinutes)}
               </span>
             </div>
           </div>
@@ -1114,17 +1141,17 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
                   fontWeight: 350,
                 }}
               >
-                Spread
+                Crew assigned
               </span>
               <span
-                className="text-[13px] font-mono"
+                className="text-[13px]"
                 style={{
                   fontFamily: 'var(--font-open-sans)',
-                  color: getDeviationColor(card.maxDeviation),
+                  color: '#DBDADB',
                   fontWeight: 350,
                 }}
               >
-                {card.maxDeviation >= 0 ? '+' : ''}{card.maxDeviation.toFixed(1)}%
+                {card.crewCount}/{card.totalCrew || card.crewCount + 2}
               </span>
             </div>
           </div>
@@ -1141,7 +1168,7 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
         />
 
         {/* Lorenz Curve Graph */}
-        <div className="flex items-center justify-center flex-shrink-0" style={{ width: 100, height: 80 }}>
+        <div className="flex items-center justify-center flex-shrink-0" style={{ width: 100, height: 72 }}>
           {(() => {
             const data = card.lorenzData || [
               { crewPct: 0, hoursPct: 0 },
@@ -1152,7 +1179,7 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
               { crewPct: 100, hoursPct: 100 },
             ];
             const width = 100;
-            const height = 80;
+            const height = 72;
             const padding = 8;
             const graphWidth = width - padding * 2;
             const graphHeight = height - padding * 2;

@@ -1,11 +1,57 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon, PlusIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import Footer from '../../../../components/Footer';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, CrewQuickLookCarousel, RoleQuickLookCarousel, CrewQuickLookCardStatic, RoleQuickLookCardStatic, defaultCrewCards, defaultRoleCards, CrewCardData, RoleCardData, RoleHeatmap, CrewFairnessTable } from './components';
+import { StatGraphCard, statGraphCardStyles, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, CrewQuickLookCarousel, RoleQuickLookCarousel, CrewQuickLookCardStatic, RoleQuickLookCardStatic, defaultCrewCards, defaultRoleCards, CrewCardData, RoleCardData, RoleHeatmap, CrewFairnessTable } from './components';
+import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
+import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
+import type { DashboardSnapshot } from '../../../../src/dashboard/types';
+
+// =============================================================================
+// Dashboard API Response Types
+// =============================================================================
+
+interface LogbookSummary {
+  id: string;
+  date: string;
+  status: string;
+  metadata: {
+    solver?: {
+      status: string;
+      runtimeMs: number;
+      objectiveScore: number;
+      numCrew: number;
+      numAssignments: number;
+    };
+    schedule?: {
+      totalAssignments: number;
+      crewScheduled: number;
+      totalHours: number;
+    };
+    preferences?: {
+      total: number;
+      met: number;
+      averageSatisfaction: number;
+    };
+  } | null;
+  preferenceMetadata: {
+    eligiblePreferences: number;
+    preferencesMet: number;
+    percentMet: number;
+    avgSatisfaction: number;
+    fairnessIndex: number;
+    fairnessGrade: string;
+  } | null;
+}
+
+interface DashboardApiResponse {
+  panel: DashboardPanel;
+  sidePanel: SidePanel;
+  logbooks: LogbookSummary[];
+}
 
 // =============================================================================
 // AI Glass Style Template - Reusable glass effect with border
@@ -221,6 +267,33 @@ const blobAnimationStyles = `
     80% { transform: translate(5%, -25%) scale(1.15); }
     100% { transform: translate(0%, 0%) scale(1); }
   }
+  @keyframes iosWiggle {
+    0% { transform: rotate(-1deg); }
+    25% { transform: rotate(1deg); }
+    50% { transform: rotate(-1deg); }
+    75% { transform: rotate(1deg); }
+    100% { transform: rotate(-1deg); }
+  }
+  .ios-wiggle {
+    animation: iosWiggle 0.3s ease-in-out infinite;
+  }
+  @keyframes settleDown {
+    0% {
+      transform: rotate(-1deg) scale(1.02);
+      filter: brightness(1.1);
+    }
+    50% {
+      transform: rotate(0deg) scale(1.05);
+      filter: brightness(1.15);
+    }
+    100% {
+      transform: rotate(0deg) scale(1);
+      filter: brightness(1);
+    }
+  }
+  .settle-animation {
+    animation: settleDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
 `;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -407,7 +480,7 @@ function ListRowItem({
         )}
         {/* Number badge - centered */}
         <div 
-          className="flex items-center justify-center rounded-full transition-all duration-200"
+          className="flex items-center justify-center rounded-full transition-all duration-200 circle-button-glass-border"
           style={{
             width: 24,
             height: 24,
@@ -488,9 +561,35 @@ export default function FairnessDashboardPage() {
   const [crewSearchQuery, setCrewSearchQuery] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  
+  // Dashboard API data state
+  const [dashboardApiData, setDashboardApiData] = useState<DashboardApiResponse | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardSnapshot | null>(null);
+  
   const [timeSelectionIndex, setTimeSelectionIndex] = useState(0); // Month index within selected year
   const [yearSelectionIndex, setYearSelectionIndex] = useState(0); // Year carousel index
-  const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>({}); // "year-monthIndex" -> Set of selected day numbers
+  const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>(() => {
+    // Load from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('calendar-selected-days');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Convert arrays back to Sets
+          const result: Record<string, Set<number>> = {};
+          for (const [key, value] of Object.entries(parsed)) {
+            result[key] = new Set(value as number[]);
+          }
+          return result;
+        } catch (e) {
+          console.error('Failed to parse saved selections:', e);
+        }
+      }
+    }
+    return {};
+  });
   const [selectedMonths, setSelectedMonths] = useState<Record<number, Set<number>>>({}); // yearIndex -> Set of selected month numbers (0-11)
   const [hoveredDay, setHoveredDay] = useState<{ month: number; day: number } | null>(null);
   const [hoveredMonth, setHoveredMonth] = useState<{ year: number; month: number } | null>(null);
@@ -499,38 +598,16 @@ export default function FairnessDashboardPage() {
   const [dragStart, setDragStart] = useState<{ month: number; day: number } | null>(null);
   const [dragStartMonth, setDragStartMonth] = useState<{ year: number; month: number } | null>(null);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select'); // Whether drag is selecting or deselecting
-  
-  // Mock disabled days (no logbook data) - monthIndex -> Set of disabled day numbers
-  // For testing: sporadic random disabled days
-  const [disabledDays] = useState<Record<number, Set<number>>>(() => {
-    const disabled: Record<number, Set<number>> = {};
-    // Sporadic disabled days across months
-    disabled[0] = new Set([3, 7, 11, 18, 24, 29]);
-    disabled[1] = new Set([2, 9, 14, 22, 27]);
-    disabled[2] = new Set([1, 6, 13, 17, 23, 28, 31]);
-    disabled[3] = new Set([4, 10, 16, 21, 26]);
-    disabled[4] = new Set([5, 8, 15, 19, 25, 30]);
-    disabled[5] = new Set([2, 7, 12, 20, 24, 29]);
-    disabled[6] = new Set([1, 9, 14, 18, 23, 27]);
-    disabled[7] = new Set([3, 11, 16, 22, 28]);
-    disabled[8] = new Set([4, 8, 13, 19, 25]);
-    disabled[9] = new Set([2, 6, 15, 21, 27, 31]);
-    disabled[10] = new Set([1, 7, 12, 18, 24, 29]);
-    disabled[11] = new Set([5, 10, 16, 22, 27]);
-    return disabled;
-  });
-  
-  // Mock disabled months (no logbook data for entire month) - yearIndex -> Set of disabled month numbers (1-12)
-  // For testing: sporadic disabled months
-  const [disabledMonths] = useState<Record<number, Set<number>>>(() => {
-    const disabled: Record<number, Set<number>> = {};
-    // Year 0 (2026): disable Feb, May, Sep
-    disabled[0] = new Set([2, 5, 9]);
-    // Year 1 (2027): disable Mar, Jul, Nov
-    disabled[1] = new Set([3, 7, 11]);
-    return disabled;
-  });
-  
+
+  // Available dates from API (logbook dates)
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+
+  // Edit mode for calendar
+  const [isCalendarEditMode, setIsCalendarEditMode] = useState(false);
+  const [calendarHasChanges, setCalendarHasChanges] = useState(false);
+  const [isSettling, setIsSettling] = useState(false);
+  const initialSelectionRef = useRef<string>('');
+
   const CREW_CARDS_PER_PAGE = 7;
   const ROLE_CARDS_PER_PAGE = 6;
   
@@ -545,10 +622,21 @@ export default function FairnessDashboardPage() {
     return new Date(year, month + 1, 0).getDate();
   };
   
-  // Available years for the year carousel
-  const availableYears = [2026, 2027];
+  // Compute available years from logbook dates
+  const availableYears = React.useMemo(() => {
+    if (availableDates.length === 0) {
+      return [new Date().getFullYear()]; // Default to current year if no dates
+    }
+    const years = new Set<number>();
+    availableDates.forEach(dateStr => {
+      const year = new Date(dateStr).getFullYear();
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => a - b);
+  }, [availableDates]);
+
   const yearCardCount = availableYears.length;
-  
+
   // Generate month options for the selected year
   const generateMonthOptions = (year: number) => {
     return [
@@ -567,15 +655,40 @@ export default function FairnessDashboardPage() {
     ];
   };
   
-  const selectedYear = availableYears[yearSelectionIndex] || 2026;
+  const selectedYear = availableYears[yearSelectionIndex] || new Date().getFullYear();
   const monthOptions = generateMonthOptions(selectedYear);
   const monthCardCount = monthOptions.length;
+
+  // Compute disabled days for the selected year (days without logbooks)
+  // Map: monthIndex (0-11) -> Set of day numbers (1-31)
+  const disabledDays = React.useMemo(() => {
+    const availableDatesSet = new Set(availableDates);
+    const disabled: Record<number, Set<number>> = {};
+
+    // For each month in the selected year, mark days as disabled if not in availableDates
+    for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+      const daysInMonth = getDaysInMonth(selectedYear, monthIdx);
+      const disabledDaysInMonth = new Set<number>();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${selectedYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (!availableDatesSet.has(dateStr)) {
+          disabledDaysInMonth.add(day);
+        }
+      }
+
+      disabled[monthIdx] = disabledDaysInMonth;
+    }
+
+    return disabled;
+  }, [availableDates, selectedYear]);
   
   // Helper to create a composite key for year-month selection
   const getSelectionKey = (year: number, monthIndex: number) => `${year}-${monthIndex}`;
   
   // Toggle day selection (single click)
   const toggleDaySelection = (monthIndex: number, day: number) => {
+    if (!isCalendarEditMode) return; // Only allow selection in edit mode
     const key = getSelectionKey(selectedYear, monthIndex);
     setSelectedDays(prev => {
       const monthDays = new Set(prev[key] || []);
@@ -584,12 +697,14 @@ export default function FairnessDashboardPage() {
       } else {
         monthDays.add(day);
       }
+      setCalendarHasChanges(true);
       return { ...prev, [key]: monthDays };
     });
   };
   
   // Handle drag start
   const handleDragStart = (monthIndex: number, day: number) => {
+    if (!isCalendarEditMode) return; // Only allow dragging in edit mode
     const key = getSelectionKey(selectedYear, monthIndex);
     const monthDays = selectedDays[key] || new Set();
     const isCurrentlySelected = monthDays.has(day);
@@ -614,6 +729,7 @@ export default function FairnessDashboardPage() {
       } else {
         monthDays.delete(day);
       }
+      setCalendarHasChanges(true);
       return { ...prev, [key]: monthDays };
     });
   };
@@ -770,8 +886,515 @@ export default function FairnessDashboardPage() {
     setExpandedPanel(prev => prev === panel ? 'none' : panel);
   };
 
+  // Compute dashboard data from snapshot (replaces placeholder)
+  const computedDashboardData: DashboardData = React.useMemo(() => {
+    if (!dashboardSnapshot) {
+      // Return placeholder data if snapshot not loaded
+      return dashboardData;
+    }
+
+    const snapshot = dashboardSnapshot;
+    const firstLogbook = snapshot.selection.logbooks[0];
+    const aggregates = snapshot.selection.selectionAggregates;
+
+    // Transform snapshot data to miniCards format
+    const overviewMiniCards: MiniCardData[] = [
+      // Fairness index (avg across enforced roles)
+      {
+        type: 'sparkline',
+        title: 'Fairness index',
+        value: Math.round((aggregates.roleAveragesPerStore.fairnessIndexPctAvgEnforcedOnly || 0) * 100) / 100,
+        unit: '%',
+        status: 'Enforced roles',
+        sparklineData: snapshot.selection.logbooks.map(lb => {
+          const enforcedRoles = lb.roleStats.filter(r => r.isEnforced && r.fairnessScore !== null);
+          if (enforcedRoles.length === 0) return 0;
+          const avgFairness = enforcedRoles.reduce((sum, r) => sum + (r.giniCoefficient ? (1 - r.giniCoefficient) * 100 : 0), 0) / enforcedRoles.length;
+          return Math.round(avgFairness * 100) / 100;
+        }),
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v.756a49.106 49.106 0 0 1 9.152 1 .75.75 0 0 1-.152 1.485h-1.918l2.474 10.124a.75.75 0 0 1-.375.84A6.723 6.723 0 0 1 18.75 18a6.723 6.723 0 0 1-3.181-.795.75.75 0 0 1-.375-.84l2.474-10.124H12.75v13.28c1.293.076 2.534.343 3.697.776a.75.75 0 0 1-.262 1.453h-8.37a.75.75 0 0 1-.262-1.453c1.162-.433 2.404-.7 3.697-.775V6.24H6.332l2.474 10.124a.75.75 0 0 1-.375.84A6.723 6.723 0 0 1 5.25 18a6.723 6.723 0 0 1-3.181-.795.75.75 0 0 1-.375-.84L4.168 6.241H2.25a.75.75 0 0 1-.152-1.485 49.105 49.105 0 0 1 9.152-1V3a.75.75 0 0 1 .75-.75Zm4.878 13.543 1.872-7.662 1.872 7.662h-3.744Zm-9.756 0L5.25 8.131l-1.872 7.662h3.744Z" clipRule="evenodd" />
+          </svg>
+        ),
+      },
+      // Avg shift time
+      (() => {
+        if (!firstLogbook) {
+          return {
+            type: 'bar' as const,
+            title: 'Avg shift time',
+            value: 0,
+            unit: 'min',
+            status: 'Roles',
+            barData: [],
+          };
+        }
+
+        const avgMinutes = Math.round(firstLogbook.roleStats.reduce((sum, r) => sum + r.avgMinutesPerAssignment, 0) / firstLogbook.roleStats.length);
+
+        return {
+          type: 'bar' as const,
+          title: 'Avg shift time',
+          value: avgMinutes,
+          unit: 'min',
+          status: 'Roles',
+          barData: firstLogbook.roleStats.map(r => ({
+            role: r.roleName,
+            hours: Math.round(r.avgMinutesPerAssignment),
+          })),
+          barUnit: 'min',
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
+            </svg>
+          ),
+        };
+      })(),
+      // Fairness status by role
+      {
+        type: 'statusBar',
+        title: 'Fairness status',
+        status: 'All roles',
+        barData: firstLogbook ? firstLogbook.roleStats
+          .filter(r => r.isEnforced)
+          .map(r => ({
+            role: r.roleName,
+            value: r.giniCoefficient ? (1 - r.giniCoefficient) * 100 : 0,
+            status: (r.fairnessStatus || 'ok').charAt(0).toUpperCase() + (r.fairnessStatus || 'ok').slice(1),
+          })) : [],
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-2.625 6c-.54 0-.828.419-.936.634a1.96 1.96 0 0 0-.189.866c0 .298.059.605.189.866.108.215.395.634.936.634.54 0 .828-.419.936-.634.13-.26.189-.568.189-.866 0-.298-.059-.605-.189-.866-.108-.215-.395-.634-.936-.634Zm4.314.634c.108-.215.395-.634.936-.634.54 0 .828.419.936.634.13.26.189.568.189.866 0 .298-.059.605-.189.866-.108.215-.395.634-.936.634-.54 0-.828-.419-.936-.634a1.96 1.96 0 0 1-.189-.866c0-.298.059-.605.189-.866Zm2.023 6.828a.75.75 0 1 0-1.06-1.06 3.75 3.75 0 0 1-5.304 0 .75.75 0 0 0-1.06 1.06 5.25 5.25 0 0 0 7.424 0Z" clipRule="evenodd" />
+          </svg>
+        ),
+      },
+      // Preferences met
+      {
+        type: 'pie',
+        title: 'Preferences met',
+        value: Math.round((aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0) * 100) / 100,
+        unit: '%',
+        status: 'Crew',
+        pieData: {
+          met: Math.round((aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0) * 100) / 100,
+          notMet: Math.round((100 - (aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0)) * 100) / 100,
+        },
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clipRule="evenodd" />
+            <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
+          </svg>
+        ),
+      },
+    ];
+
+    return {
+      expandedDashboards: {
+        Overview: {
+          name: 'Overview',
+          miniCards: overviewMiniCards,
+        },
+      },
+    };
+  }, [dashboardSnapshot]);
+
+  // Compute crew cards from snapshot - uses selectionCrewRollups for multi-day data
+  const computedCrewCards: CrewCardData[] = React.useMemo(() => {
+    console.log('🔄 computedCrewCards useMemo triggered', {
+      hasSnapshot: !!dashboardSnapshot,
+      hasCrewRollups: !!dashboardSnapshot?.selection?.selectionCrewRollups?.length,
+      crewRollupCount: dashboardSnapshot?.selection?.selectionCrewRollups?.length,
+    });
+
+    if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionCrewRollups?.length) {
+      console.log('📊 Using default crew cards (no snapshot data)');
+      return defaultCrewCards;
+    }
+
+    const crewRollups = dashboardSnapshot.selection.selectionCrewRollups;
+    
+    // Build roleId → roleName map from first logbook
+    const roleNameMap: Record<string, string> = {};
+    if (dashboardSnapshot.selection.logbooks[0]) {
+      dashboardSnapshot.selection.logbooks[0].roleStats.forEach(role => {
+        roleNameMap[role.roleId] = role.roleName;
+      });
+    }
+    
+    console.log('📊 Computing crew cards from selectionCrewRollups:', {
+      crewCount: crewRollups.length,
+      firstCrew: crewRollups[0]?.crewName,
+    });
+
+    // Separate crew with preferences from those without
+    const crewWithPrefs = crewRollups.filter(c => c.preferencesTotalSelection > 0);
+    const crewWithoutPrefs = crewRollups.filter(c => c.preferencesTotalSelection === 0);
+
+    // Sort crew WITH preferences by satisfaction descending for ranking
+    const sortedWithPrefs = [...crewWithPrefs].sort((a, b) => 
+      b.avgSatisfactionPctOverSelection - a.avgSatisfactionPctOverSelection
+    );
+
+    // Compute ranks with ties (same satisfaction = same rank)
+    // Round to nearest integer for tie comparison
+    const getRoundedSatisfaction = (crew: typeof sortedWithPrefs[0]) => 
+      Math.round(crew.avgSatisfactionPctOverSelection);
+    
+    let currentRank = 1;
+    let previousSatisfaction: number | null = null;
+    const ranksMap = new Map<string, number>();
+    
+    sortedWithPrefs.forEach((crew, index) => {
+      const roundedSat = getRoundedSatisfaction(crew);
+      if (previousSatisfaction !== null && roundedSat < previousSatisfaction) {
+        // Different satisfaction than previous, get new rank based on position
+        currentRank = index + 1;
+      }
+      ranksMap.set(crew.crewId, currentRank);
+      previousSatisfaction = roundedSat;
+    });
+
+    // Get total unique rank tiers (number of distinct ranks, not highest rank number)
+    const uniqueRanks = new Set(ranksMap.values());
+    const totalRanks = uniqueRanks.size;
+
+    // Create cards for crew WITH preferences (they get ranks)
+    const cardsWithPrefs = sortedWithPrefs.map((crew) => ({
+      title: crew.crewName,
+      id: crew.crewId,
+      satisfactionScore: Math.round(crew.avgSatisfactionPctOverSelection * 100) / 100,
+      satisfactionRank: ranksMap.get(crew.crewId) || 1,
+      totalRankedCrew: totalRanks, // Total unique rank tiers
+      preferencesTotal: crew.preferencesTotalSelection,
+      preferencesMetCount: crew.preferencesMetSelection,
+      vsCrewAvg: Math.round(crew.avgVsCrewAvgDeltaOverSelection * 100) / 100,
+      satisfactionByDate: crew.satisfactionByDate || [],
+      satisfactionHistory: crew.satisfactionByDate?.map(d => d.satisfactionPct) || [],
+      avgMinutesPerRole: Object.entries(crew.avgMinutesPerAssignmentByRoleSelection || {}).map(([roleId, avgMinutes]) => ({
+        roleId,
+        roleName: roleNameMap[roleId] || roleId,
+        avgMinutes: Math.round(avgMinutes),
+      })),
+      preferenceBreakdownByRuleType: crew.preferenceBreakdownByRuleType || [],
+    }));
+
+    // Create cards for crew WITHOUT preferences (no ranks, dashes for satisfaction metrics)
+    const cardsWithoutPrefs = crewWithoutPrefs.map((crew) => ({
+      title: crew.crewName,
+      id: crew.crewId,
+      satisfactionScore: undefined, // Will show as dash
+      satisfactionRank: undefined,  // Will show as dash
+      totalRankedCrew: undefined,   // Will show as dash
+      preferencesTotal: 0,
+      preferencesMetCount: 0,
+      vsCrewAvg: undefined,         // Will show as dash
+      satisfactionByDate: crew.satisfactionByDate || [],
+      satisfactionHistory: crew.satisfactionByDate?.map(d => d.satisfactionPct) || [],
+      avgMinutesPerRole: Object.entries(crew.avgMinutesPerAssignmentByRoleSelection || {}).map(([roleId, avgMinutes]) => ({
+        roleId,
+        roleName: roleNameMap[roleId] || roleId,
+        avgMinutes: Math.round(avgMinutes),
+      })),
+      preferenceBreakdownByRuleType: [],
+    }));
+
+    // Combine: crew with prefs first (sorted by satisfaction), then crew without prefs (sorted alphabetically)
+    return [
+      ...cardsWithPrefs,
+      ...cardsWithoutPrefs.sort((a, b) => a.title.localeCompare(b.title)),
+    ];
+  }, [dashboardSnapshot]);
+
+  // Helper function to format minutes to "1 hr 30 min" or "30 min"
+  const formatMinutesToReadable = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${Math.round(minutes)} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (mins === 0) {
+      return `${hours} hr`;
+    }
+    return `${hours} hr ${mins} min`;
+  };
+
+  // Helper function to format rule type to human-readable label
+  const formatRuleTypeLabel = (ruleType: string): string => {
+    const labels: Record<string, string> = {
+      'FIRST_HOUR': 'First Hour',
+      'FAVORITE': 'Favorite',
+      'CONSECUTIVE': 'Consecutive',
+      'POSITION_IN_SHIFT': 'Position',
+      'FORBID_ROLE': 'Avoid Role',
+      'TIME_ON_ROLE': 'Time On Role',
+      'MAX_TIME_ON_ROLE': 'Max Time',
+      'MIN_TIME_ON_ROLE': 'Min Time',
+    };
+    return labels[ruleType] || ruleType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  // Helper function to calculate fairness trend based on stability
+  const calculateFairnessTrend = (byDateAverages: any[]): 'significantly_improving' | 'improving' | 'stable' | 'worsening' | 'significantly_worsening' => {
+    if (!byDateAverages || byDateAverages.length < 2) {
+      return 'stable';
+    }
+
+    // Get fairness values (we'll use avgMinutesPerCrewOnRole as a proxy for fairness distribution)
+    const values = byDateAverages.map(d => d.avgMinutesPerCrewOnRole);
+    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+    const coefficientOfVariation = mean > 0 ? (stdDev / mean) * 100 : 0;
+
+    // Also check if recent values are trending up or down
+    const firstHalf = values.slice(0, Math.floor(values.length / 2));
+    const secondHalf = values.slice(Math.floor(values.length / 2));
+    const firstHalfAvg = firstHalf.reduce((sum, val) => sum + val, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, val) => sum + val, 0) / secondHalf.length;
+    const percentChange = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+
+    // Determine trend based on stability (CV) and direction
+    if (coefficientOfVariation < 5) {
+      return 'stable'; // Very stable
+    } else if (coefficientOfVariation < 10) {
+      if (percentChange > 10) return 'improving';
+      if (percentChange < -10) return 'worsening';
+      return 'stable';
+    } else if (coefficientOfVariation < 20) {
+      if (percentChange > 15) return 'improving';
+      if (percentChange < -15) return 'worsening';
+      return 'stable';
+    } else {
+      if (percentChange > 20) return 'significantly_improving';
+      if (percentChange < -20) return 'significantly_worsening';
+      return 'stable';
+    }
+  };
+
+  // Compute role cards from snapshot selection rollups
+  const computedRoleCards: RoleCardData[] = React.useMemo(() => {
+    if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionRoleRollups) {
+      console.log('📊 Using default role cards (no snapshot data)');
+      return defaultRoleCards;
+    }
+
+    const roleRollups = dashboardSnapshot.selection.selectionRoleRollups;
+    const logbooks = dashboardSnapshot.selection.logbooks;
+
+    console.log('📊 Computing role cards from selection rollups:', {
+      roleCount: roleRollups.length,
+      firstRole: roleRollups[0]?.roleName,
+    });
+
+    // Calculate average fairness across all roles for vsRoleAvgPct
+    const fairnessValues = roleRollups
+      .map(r => r.avgFairnessIndexPct)
+      .filter((f): f is number => f !== null);
+    const avgFairnessAcrossRoles = fairnessValues.length > 0
+      ? fairnessValues.reduce((sum, f) => sum + f, 0) / fairnessValues.length
+      : 0;
+
+    return roleRollups.map(role => {
+      // Map role codes to emojis (fallback to default)
+      const roleEmojis: Record<string, string> = {
+        'REGISTER': '🛒',
+        'PRODUCT': '📦',
+        'DEMO': '🎤',
+        'BREAK': '☕',
+        'OFFICE': '💼',
+        'PARKING HELMS': '🅿️',
+        'SECTION LEADER': '👔',
+        'ART': '🎨',
+        'WINE DEMO': '🍷',
+        'FOOD DEMO': '🍴',
+      };
+      const emoji = roleEmojis[role.roleName.toUpperCase()] || '⭐';
+
+      // Get avg minutes from first logbook's role stats (for display purposes)
+      let avgMinutesPerDay = 0;
+
+      if (logbooks[0]) {
+        const roleStats = logbooks[0].roleStats.find((r: any) => r.roleId === role.roleId);
+        if (roleStats) {
+          avgMinutesPerDay = roleStats.avgMinutesPerAssignment || 0;
+        }
+      }
+
+      // Get total eligible crew who worked during the interval
+      // This is crew who HAVE this role capability (CrewRole) AND worked on any shift during the interval
+      // Use the max eligibleCrew across all dates (this is relatively stable)
+      // Note: eligibleCrew from snapshot represents crew with CrewRole for this role
+      const eligibleCrewCounts = logbooks
+        .map(lb => lb.roleStats.find((r: any) => r.roleId === role.roleId)?.eligibleCrew || 0)
+        .filter(count => count > 0);
+      const totalEligibleCrew = eligibleCrewCounts.length > 0
+        ? Math.max(...eligibleCrewCounts)
+        : 0;
+
+      // Use crewWorkedOnRoleCount from selection rollup - this is the count of unique
+      // crew who actually worked this role across all selected logbooks (minutes > 0)
+      const crewWhoWorkedRole = role.crewWorkedOnRoleCount || 0;
+
+      // Calculate vsRoleAvgPct (simple difference from average fairness, displayed as %)
+      // Example: If role is 46% and avg is 38%, shows +8%
+      // Only calculate for tracked roles where we have meaningful fairness data
+      const vsRoleAvgPct = role.avgFairnessIndexPct !== null && avgFairnessAcrossRoles > 0
+        ? role.avgFairnessIndexPct - avgFairnessAcrossRoles
+        : null;
+
+      // Calculate trend
+      const trend = calculateFairnessTrend(role.byDateAverages || []);
+
+      // Transform lorenz curve data
+      const lorenzData = role.lorenzCurveData?.map(point => ({
+        crewPct: point.populationShare * 100,
+        hoursPct: point.workShare * 100,
+      })) || [];
+
+      return {
+        id: role.roleId,
+        name: role.roleName,
+        emoji,
+        giniCoefficient: role.avgGiniCoefficient || 0,
+        trend,
+        crewCount: crewWhoWorkedRole,
+        totalCrew: totalEligibleCrew,
+        avgMinutes: avgMinutesPerDay,
+        medianHours: role.minutesWorkedOnRoleTotal ? role.minutesWorkedOnRoleTotal / 60 : 0,
+        vsRoleAvgPct,
+        lorenzData,
+        // Additional stats for role dashboard
+        minutesWorkedOnRoleTotal: role.minutesWorkedOnRoleTotal,
+        totalMinutesWorkedSelection: role.totalMinutesWorkedSelection,
+        minutesOnRoleVsTotalWorkPct: role.minutesOnRoleVsTotalWorkPct,
+        avgFairnessIndexPct: role.avgFairnessIndexPct,
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [dashboardSnapshot]);
+
+  // Compute satisfaction by date graph data
+  const computedSatisfactionByDate = React.useMemo(() => {
+    if (!dashboardSnapshot) return [];
+
+    return dashboardSnapshot.selection.logbooks.map((lb, index) => {
+      // Parse date string manually to avoid timezone issues
+      // Date format is "YYYY-MM-DD"
+      const [year, month, day] = lb.logbook.date.split('-').map(Number);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
+      const yearShort = String(year).slice(-2);
+
+      return {
+        shiftNumber: index + 1,
+        shiftDate: `${day} ${monthName}, ${yearShort}`,
+        satisfaction: Math.round(lb.dayAggregate.satisfactionPct * 100) / 100,
+      };
+    });
+  }, [dashboardSnapshot]);
+
+  // Compute satisfaction distribution box plot data
+  const computedSatisfactionBoxPlot = React.useMemo(() => {
+    if (!dashboardSnapshot) {
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+    }
+
+    // Gather all crew satisfaction scores from all logbooks
+    // Only include crew who have preferences (total > 0)
+    const allSatisfactionScores = dashboardSnapshot.selection.logbooks.flatMap(lb =>
+      lb.crewStats
+        .filter(cs => cs.preferencesTotal > 0) // Only crew with preferences
+        .map(cs => {
+          console.log(`Crew ${cs.crewName}: ${cs.preferencesMet}/${cs.preferencesTotal} = ${cs.satisfactionPct}%`);
+          return cs.satisfactionPct;
+        })
+    );
+
+    console.log('📊 Total crew with preferences:', allSatisfactionScores.length);
+    console.log('📊 Raw satisfaction scores:', allSatisfactionScores);
+
+    if (allSatisfactionScores.length === 0) {
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+    }
+
+    // Sort scores
+    const sorted = [...allSatisfactionScores].sort((a, b) => a - b);
+
+    // Calculate quartiles
+    const q1Index = Math.floor(sorted.length * 0.25);
+    const q2Index = Math.floor(sorted.length * 0.5);
+    const q3Index = Math.floor(sorted.length * 0.75);
+
+    const minVal = sorted[0];
+    const q1 = sorted[q1Index];
+    const median = sorted[q2Index];
+    const q3 = sorted[q3Index];
+    const maxVal = sorted[sorted.length - 1];
+
+    // Calculate IQR and outliers
+    const iqr = q3 - q1;
+    const lowerBound = q1 - 1.5 * iqr;
+    const upperBound = q3 + 1.5 * iqr;
+
+    const outliers = sorted.filter(val => val < lowerBound || val > upperBound);
+
+    // For box plot: min/max should be the whiskers (non-outlier extremes)
+    const nonOutliers = sorted.filter(val => val >= lowerBound && val <= upperBound);
+    const whiskerMin = nonOutliers.length > 0 ? nonOutliers[0] : minVal;
+    const whiskerMax = nonOutliers.length > 0 ? nonOutliers[nonOutliers.length - 1] : maxVal;
+
+    const result = {
+      min: Math.round(whiskerMin * 100) / 100,
+      q1: Math.round(q1 * 100) / 100,
+      median: Math.round(median * 100) / 100,
+      q3: Math.round(q3 * 100) / 100,
+      max: Math.round(whiskerMax * 100) / 100,
+      outliers: outliers.map(o => Math.round(o * 100) / 100),
+    };
+
+    console.log('📊 Box plot data:', result);
+    console.log('📊 All satisfaction scores:', sorted);
+
+    return result;
+  }, [dashboardSnapshot]);
+
+  // Store role rules fetched from API
+  const [roleRules, setRoleRules] = React.useState<any[]>([]);
+
+  // Compute preference data for GraphCardSimple
+  const computedPreferenceData = React.useMemo(() => {
+    if (!dashboardSnapshot) return [];
+
+    const firstLogbook = dashboardSnapshot.selection.logbooks[0];
+    if (!firstLogbook) return [];
+
+    // Transform breakdownByRuleType into GraphCardSimple format
+    return firstLogbook.dayAggregate.breakdownByRuleType.map(breakdown => {
+      // Find the corresponding role rule and use its description
+      const rule = roleRules.find(r => r.id === breakdown.roleRuleId);
+      const label = rule?.type || `Rule ${breakdown.roleRuleId}`;
+      const description = rule?.description;
+
+      return {
+        label,
+        description,
+        totalCount: breakdown.eligible,
+        satisfiedCount: breakdown.met,
+      };
+    });
+  }, [dashboardSnapshot, roleRules]);
+
   // Get current dashboard data
-  const currentDashboard = dashboardData.expandedDashboards[activeDashboard];
+  const currentDashboard = computedDashboardData.expandedDashboards[activeDashboard];
+
+  // Format time interval for display (e.g., "7-13 Jan, 26")
+  const formatTimeInterval = (interval: TimeInterval | undefined): string => {
+    if (!interval) return 'Loading...';
+    return `${interval.startDay}-${interval.endDay} ${interval.month}, ${interval.year}`;
+  };
+
+  // Get the time interval string from API data
+  const timeIntervalDisplay = formatTimeInterval(dashboardApiData?.panel.header.timeInterval);
 
   // Fetch store info
   useEffect(() => {
@@ -791,9 +1414,183 @@ export default function FairnessDashboardPage() {
     fetchStore();
   }, [storeId]);
 
+  // Fetch available logbook dates
+  useEffect(() => {
+    async function fetchAvailableDates() {
+      if (!API_URL || !storeId) return;
+      try {
+        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/dates`);
+        if (!res.ok) throw new Error(await res.text());
+        const { dates } = await res.json();
+        setAvailableDates(dates);
+      } catch (e) {
+        console.error('Failed to load available dates:', e);
+      }
+    }
+    fetchAvailableDates();
+  }, [storeId]);
+
+  // Auto-navigate to most recent month with shifts when dates load
+  useEffect(() => {
+    if (availableDates.length === 0) return;
+
+    // Find the most recent date (dates are sorted descending from API)
+    const mostRecentDate = availableDates[0];
+    const date = new Date(mostRecentDate);
+    const year = date.getFullYear();
+    const month = date.getMonth(); // 0-11
+
+    // Find the year index
+    const yearIdx = availableYears.findIndex(y => y === year);
+    if (yearIdx !== -1) {
+      setYearSelectionIndex(yearIdx);
+      setTimeSelectionIndex(month);
+    }
+  }, [availableDates, availableYears]);
+
+  // Fetch dashboard data from API
+  useEffect(() => {
+    console.log('🔄 Dashboard fetch effect triggered', {
+      storeId,
+      availableDatesCount: availableDates.length,
+      selectedDaysKeys: Object.keys(selectedDays).length,
+      timestamp: new Date().toISOString(),
+    });
+
+    async function fetchDashboardData() {
+      if (!API_URL || !storeId) return;
+
+      // Wait for available dates to load first
+      if (availableDates.length === 0 && Object.keys(selectedDays).length === 0) {
+        console.log('📊 Waiting for available dates to load...');
+        return;
+      }
+
+      console.log('📊 Starting dashboard fetch...');
+      setDashboardLoading(true);
+      setDashboardError(null);
+
+      try {
+        // Build array of selected dates from calendar
+        const selectedDateStrings: string[] = [];
+        for (const [key, daysSet] of Object.entries(selectedDays)) {
+          // Key format is "year-monthIndex"
+          const [yearStr, monthIndexStr] = key.split('-');
+          const year = parseInt(yearStr, 10);
+          const monthIndex = parseInt(monthIndexStr, 10);
+
+          // Add each selected day
+          for (const day of Array.from(daysSet)) {
+            const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            selectedDateStrings.push(dateStr);
+          }
+        }
+
+        // If no dates selected, use available dates (all logbook dates)
+        const datesToFetch = selectedDateStrings.length > 0 ? selectedDateStrings : availableDates;
+
+        console.log('📊 Fetching data for dates:', {
+          selectedCount: selectedDateStrings.length,
+          availableCount: availableDates.length,
+          usingDates: datesToFetch.length,
+          sampleDates: datesToFetch.slice(0, 3),
+        });
+
+        // Skip if no dates to fetch
+        if (datesToFetch.length === 0) {
+          console.log('📊 No dates to fetch, skipping');
+          setDashboardLoading(false);
+          return;
+        }
+
+        // Fetch logbook data from NEW endpoint
+        const datesParam = datesToFetch.join(',');
+        console.log('📊 Fetching from URL:', `${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}&status=PUBLISHED`);
+        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}&status=PUBLISHED`);
+        if (!res.ok) throw new Error(await res.text());
+
+        const { logbooks, roleRules } = await res.json();
+
+        console.log('📊 Logbook data fetched:', {
+          logbookCount: logbooks.length,
+          datesRequested: datesToFetch.length,
+          roleRulesCount: roleRules?.length || 0,
+        });
+
+        // Store role rules for preference sentence generation
+        if (roleRules) {
+          setRoleRules(roleRules);
+        }
+
+        // Transform roleRules to match the expected format for builder
+        // The API returns roleRules with crewId as an array, we need to flatten
+        const flattenedRoleRules = (roleRules || []).flatMap((rule: any) => {
+          // If crewId is an array, create one entry per crew
+          if (Array.isArray(rule.crewIds)) {
+            return rule.crewIds.map((crewId: string) => ({
+              crewId,
+              roleId: String(rule.roleId),
+              type: rule.type,
+            }));
+          }
+          // Single crewId
+          return [{
+            crewId: rule.crewId,
+            roleId: String(rule.roleId),
+            type: rule.type,
+          }];
+        });
+
+        // Build dashboard snapshot
+        const snapshot = buildDashboardSnapshot({
+          storeId,
+          timezone: 'America/New_York', // TODO: get from store
+          selectionId: 'dashboard-view',
+          selectionLabel: 'Fairness Dashboard',
+          selectedDates: datesToFetch,
+          logbooks,
+          roleRules: flattenedRoleRules,
+        });
+
+        console.log('✅ Setting dashboard snapshot with data:', {
+          logbookCount: snapshot.selection.logbooks.length,
+          crewCount: snapshot.selection.selectionCrewRollups.length,
+          roleCount: snapshot.selection.selectionRoleRollups.length,
+        });
+
+        setDashboardSnapshot(snapshot);
+
+        console.log('📊 Dashboard snapshot state updated');
+
+        // Also fetch legacy dashboard API for compatibility (for now)
+        if (datesToFetch.length > 0) {
+          const sortedDates = [...datesToFetch].sort();
+          const legacyParams = new URLSearchParams({
+            startDate: sortedDates[0],
+            endDate: sortedDates[sortedDates.length - 1],
+            title: 'Fairness Dashboard',
+          });
+
+          const legacyRes = await fetch(`${API_URL}/api/stores/${storeId}/dashboard?${legacyParams}`);
+          if (legacyRes.ok) {
+            const legacyData = await legacyRes.json() as DashboardApiResponse;
+            setDashboardApiData(legacyData);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load dashboard data:', e);
+        setDashboardError(e instanceof Error ? e.message : 'Failed to load dashboard');
+      } finally {
+        setDashboardLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [storeId, selectedDays, availableDates]);
+
   return (
     <main className="bg-black min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: blobAnimationStyles }} />
+      <style dangerouslySetInnerHTML={{ __html: blobAnimationStyles + statGraphCardStyles }} />
       <div className="bg-black min-h-screen">
         {/* Floating pill header - positioned to align with dashboard content */}
         <div className="fixed top-4 left-0 right-0 px-6 lg:px-8" style={{ zIndex: 200 }}>
@@ -869,9 +1666,9 @@ export default function FairnessDashboardPage() {
         <div className="px-6 lg:px-8 pt-20 pb-9">
           {/* Main content area */}
           <div className="flex flex-col min-[1200px]:flex-row gap-3">
-            {/* Left card - dashboard (full width when stacked, 60% when side-by-side) */}
-            <div 
-              className="w-full min-[1200px]:w-[60%] rounded-2xl px-4 py-4 relative"
+            {/* Left card - dashboard (full width when stacked, 55% when side-by-side) */}
+            <div
+              className="w-full min-[1200px]:w-[55%] rounded-2xl px-4 py-4 relative"
               style={{ 
                 background: '#141318',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
@@ -975,13 +1772,6 @@ export default function FairnessDashboardPage() {
                   <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
                     {selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
                   </h2>
-
-                  {/* Right: Date */}
-                  <div className="absolute right-0 flex items-center">
-                    <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6A70', fontWeight: 350 }}>
-                      20-27 Jun, 25
-                    </span>
-                  </div>
                 </div>
               </div>
               
@@ -994,6 +1784,7 @@ export default function FairnessDashboardPage() {
                 >
                   {/* 2 Mini cards in a row - wrapped in translucent card */}
                   <div 
+                    className="graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1004,38 +1795,46 @@ export default function FairnessDashboardPage() {
                     }}
                   >
                     <div className="grid grid-cols-2 gap-3">
-                      <StatGraphCard 
-                        data={{
-                          type: 'bar',
-                          title: 'Time per shift',
-                          value: 1.3,
-                          unit: 'hrs',
-                          status: 'Roles',
-                          barData: [
-                            { role: 'Register', hours: 1.3 },
-                            { role: 'Floor', hours: 1.1 },
-                            { role: 'Stock', hours: 0.9 },
-                            { role: 'Drive-thru', hours: 1.2 },
-                            { role: 'Kitchen', hours: 0.8 },
-                            { role: 'Manager', hours: 1.0 },
-                          ],
-                          icon: (
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
-                            </svg>
-                          ),
-                        }}
-                      />
+                      {/* Time per shift bar chart - uses avgMinutesPerRole (matches overview format) */}
+                      {(() => {
+                        const roleData = selectedCrew.avgMinutesPerRole || [];
+                        const avgMinutes = roleData.length > 0 
+                          ? Math.round(roleData.reduce((sum, r) => sum + r.avgMinutes, 0) / roleData.length)
+                          : 0;
+                        
+                        return (
+                          <StatGraphCard 
+                            data={{
+                              type: 'bar',
+                              title: 'Avg shift time',
+                              value: avgMinutes,
+                              unit: 'min',
+                              status: 'Roles',
+                              barData: roleData.map(r => ({
+                                role: r.roleName,
+                                hours: Math.round(r.avgMinutes),
+                              })),
+                              barUnit: 'min',
+                              icon: (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
+                                </svg>
+                              ),
+                            }}
+                          />
+                        );
+                      })()}
+                      {/* Preferences met pie chart - uses satisfactionScore */}
                       <StatGraphCard 
                         data={{
                           type: 'pie',
                           title: 'Preferences met',
-                          value: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5,
+                          value: selectedCrew.satisfactionScore ?? 67.5,
                           unit: '%',
-                          status: 'Crew',
+                          status: `${selectedCrew.preferencesMetCount ?? 0}/${selectedCrew.preferencesTotal ?? 0}`,
                           pieData: { 
-                            met: selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5, 
-                            notMet: 100 - (selectedCrew.satisfactionHistory?.[selectedCrew.satisfactionHistory.length - 1] ?? 67.5) 
+                            met: selectedCrew.satisfactionScore ?? 67.5, 
+                            notMet: 100 - (selectedCrew.satisfactionScore ?? 67.5) 
                           },
                           icon: (
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -1048,34 +1847,9 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
                   
-                  {/* Satisfaction distribution box plot - wrapped in translucent card */}
-                  <div 
-                    className="mt-4"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
-                      padding: 16,
-                    }}
-                  >
-                    <GraphCardWithStatsTransparent 
-                      title="Shift satisfaction spread"
-                      boxPlotData={{
-                        min: 58,
-                        q1: 65.2,
-                        median: 72.5,
-                        q3: 79.8,
-                        max: 88,
-                        outliers: [45.3],
-                      }}
-                    />
-                  </div>
-                  
                   {/* Satisfaction over shifts line graph - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1087,22 +1861,114 @@ export default function FairnessDashboardPage() {
                   >
                     <SatisfactionLineGraph 
                       title="Satisfaction over shifts"
-                      data={[
-                        { shiftNumber: 1, shiftDate: '1 Jun, 25', satisfaction: 72.5 },
-                        { shiftNumber: 2, shiftDate: '3 Jun, 25', satisfaction: 68.3 },
-                        { shiftNumber: 3, shiftDate: '5 Jun, 25', satisfaction: 75.1 },
-                        { shiftNumber: 4, shiftDate: '8 Jun, 25', satisfaction: 71.8 },
-                        { shiftNumber: 5, shiftDate: '10 Jun, 25', satisfaction: 79.2 },
-                        { shiftNumber: 6, shiftDate: '12 Jun, 25', satisfaction: 65.4 },
-                        { shiftNumber: 7, shiftDate: '15 Jun, 25', satisfaction: 82.0 },
-                        { shiftNumber: 8, shiftDate: '17 Jun, 25', satisfaction: 77.6 },
-                      ]}
+                      data={(() => {
+                        const satByDate = selectedCrew.satisfactionByDate || [];
+                        if (satByDate.length === 0) {
+                          // Fallback to placeholder data
+                          return [
+                            { shiftNumber: 1, shiftDate: '—', satisfaction: 70 },
+                          ];
+                        }
+                        return satByDate.map((d, index) => {
+                          // Parse date string manually to avoid timezone issues
+                          // Date format is "YYYY-MM-DD"
+                          const [year, month, day] = d.date.split('-').map(Number);
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
+                          const yearShort = String(year).slice(-2);
+                          return {
+                            shiftNumber: index + 1,
+                            shiftDate: `${day} ${monthName}, ${yearShort}`,
+                            satisfaction: Math.round(d.satisfactionPct * 100) / 100,
+                          };
+                        });
+                      })()}
                     />
                   </div>
                   
+                  {/* Satisfaction distribution box plot - wrapped in translucent card - only show if there's variance */}
+                  {(() => {
+                    // Check if there's variance before rendering the entire section
+                    const values = (selectedCrew.satisfactionByDate || [])
+                      .map(d => d.satisfactionPct)
+                      .sort((a, b) => a - b);
+
+                    // Don't show box plot if no data or no variance
+                    if (values.length === 0 || values[0] === values[values.length - 1]) {
+                      return null;
+                    }
+
+                    return (
+                      <div
+                        className="mt-4 graph-container-glass-border"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                          borderRadius: '1rem',
+                          padding: 16,
+                        }}
+                      >
+                        {(() => {
+                          // Compute box plot stats from satisfactionByDate
+                          console.log('📊 Box plot - selectedCrew.satisfactionByDate:', selectedCrew.satisfactionByDate);
+                          console.log('📊 Box plot - values after sort:', values);
+
+                          const min = values[0];
+                          const max = values[values.length - 1];
+
+                          const median = values.length % 2 === 0
+                            ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
+                            : values[Math.floor(values.length / 2)];
+
+                          // Q1: median of lower half
+                          const lowerHalf = values.slice(0, Math.floor(values.length / 2));
+                          const q1 = lowerHalf.length > 0
+                            ? (lowerHalf.length % 2 === 0
+                              ? (lowerHalf[lowerHalf.length / 2 - 1] + lowerHalf[lowerHalf.length / 2]) / 2
+                              : lowerHalf[Math.floor(lowerHalf.length / 2)])
+                            : min;
+
+                          // Q3: median of upper half
+                          const upperHalf = values.slice(Math.ceil(values.length / 2));
+                          const q3 = upperHalf.length > 0
+                            ? (upperHalf.length % 2 === 0
+                              ? (upperHalf[upperHalf.length / 2 - 1] + upperHalf[upperHalf.length / 2]) / 2
+                              : upperHalf[Math.floor(upperHalf.length / 2)])
+                            : max;
+
+                          // Outliers: values outside 1.5 * IQR
+                          const iqr = q3 - q1;
+                          const lowerBound = q1 - 1.5 * iqr;
+                          const upperBound = q3 + 1.5 * iqr;
+                          const outliers = values.filter(v => v < lowerBound || v > upperBound);
+
+                          // Adjust min/max to exclude outliers for whiskers
+                          const whiskerMin = values.find(v => v >= lowerBound) ?? min;
+                          const whiskerMax = [...values].reverse().find(v => v <= upperBound) ?? max;
+
+                          return (
+                            <GraphCardWithStatsTransparent
+                              title="Shift satisfaction spread"
+                              boxPlotData={{
+                                min: Math.round(whiskerMin * 100) / 100,
+                                q1: Math.round(q1 * 100) / 100,
+                                median: Math.round(median * 100) / 100,
+                                q3: Math.round(q3 * 100) / 100,
+                                max: Math.round(whiskerMax * 100) / 100,
+                                outliers: outliers.map(o => Math.round(o * 100) / 100),
+                              }}
+                            />
+                          );
+                        })()}
+                      </div>
+                    );
+                  })()}
+                  
                   {/* Preferences Met graph - individual crew level - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1112,22 +1978,27 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <GraphCardSimple 
+                    <GraphCardSimple
                       title="Preferences met"
-                      preferenceData={[
-                        { label: 'No Mondays', totalCount: 4, satisfiedCount: 3 },
-                        { label: 'Morning Only', totalCount: 5, satisfiedCount: 4 },
-                        { label: 'Max 6 hrs', totalCount: 8, satisfiedCount: 7 },
-                        { label: 'No Doubles', totalCount: 3, satisfiedCount: 2 },
-                      ]}
+                      preferenceData={(selectedCrew.preferenceBreakdownByRuleType || []).map(b => {
+                        // Find a roleRule of this type to get its description
+                        const rule = roleRules.find(r => r.type === b.ruleType);
+                        return {
+                          label: formatRuleTypeLabel(b.ruleType),
+                          description: rule?.description,
+                          totalCount: b.total,
+                          satisfiedCount: b.met,
+                        };
+                      })}
                     />
                   </div>
                 </div>
               ) : selectedRole ? (
                 /* Individual Role Dashboard */
                 <>
-                  {/* 3 Mini cards in a row - wrapped in translucent card */}
+                  {/* 2 Mini cards in a row - Fairness Index and Time Share */}
                   <div 
+                    className="graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1137,15 +2008,17 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <div className="grid grid-cols-1 min-[900px]:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                     <StatGraphCard 
                       data={{
                         type: 'sparkline',
                         title: 'Fairness index',
-                        value: Math.round((1 - selectedRole.giniCoefficient) * 100),
+                        value: selectedRole.avgFairnessIndexPct !== null && selectedRole.avgFairnessIndexPct !== undefined
+                          ? Math.round(selectedRole.avgFairnessIndexPct * 100) / 100
+                          : Math.round((1 - selectedRole.giniCoefficient) * 10000) / 100,
                         unit: '%',
                         status: selectedRole.trend === 'improving' ? 'Good' : selectedRole.trend === 'worsening' ? 'Alert' : 'Stable',
-                        sparklineData: [0.15, 0.18, 0.14, 0.16, 0.12, selectedRole.giniCoefficient].map(g => Math.round((1 - g) * 100)),
+                        sparklineData: [0.15, 0.18, 0.14, 0.16, 0.12, selectedRole.giniCoefficient].map(g => Math.round((1 - g) * 10000) / 100),
                         icon: (
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                             <path fillRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm4.5 7.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0V12Zm2.25-3a.75.75 0 0 1 .75.75v6.75a.75.75 0 0 1-1.5 0V9.75A.75.75 0 0 1 13.5 9Zm3.75-1.5a.75.75 0 0 0-1.5 0v9a.75.75 0 0 0 1.5 0v-9Z" clipRule="evenodd" />
@@ -1155,35 +2028,15 @@ export default function FairnessDashboardPage() {
                     />
                     <StatGraphCard 
                       data={{
-                        type: 'bar',
-                        title: 'Min/hr buckets',
-                        value: selectedRole.avgMinutes,
-                        unit: 'min avg',
-                        barUnit: 'crew',
-                        status: 'Distribution',
-                        barData: [
-                          { role: '0-10 min', hours: 1 },
-                          { role: '10-20 min', hours: 2 },
-                          { role: '20-30 min', hours: 4 },
-                          { role: '30-40 min', hours: 8 },
-                          { role: '40-50 min', hours: 6 },
-                          { role: '50-60 min', hours: 3 },
-                        ],
-                        icon: (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
-                          </svg>
-                        ),
-                      }}
-                    />
-                    <StatGraphCard 
-                      data={{
                         type: 'pie',
                         title: 'Time share',
-                        value: 12.4,
+                        value: Math.round((selectedRole.minutesOnRoleVsTotalWorkPct || 0) * 100) / 100,
                         unit: '%',
-                        status: 'Of total',
-                        pieData: { met: 12.4, notMet: 87.6 },
+                        status: `${Math.round(selectedRole.minutesWorkedOnRoleTotal || 0)} / ${Math.round(selectedRole.totalMinutesWorkedSelection || 0)} min`,
+                        pieData: { 
+                          met: selectedRole.minutesOnRoleVsTotalWorkPct || 0, 
+                          notMet: 100 - (selectedRole.minutesOnRoleVsTotalWorkPct || 0) 
+                        },
                         icon: (
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                             <path fillRule="evenodd" d="M2.25 13.5a8.25 8.25 0 0 1 8.25-8.25.75.75 0 0 1 .75.75v6.75H18a.75.75 0 0 1 .75.75 8.25 8.25 0 0 1-16.5 0Z" clipRule="evenodd" />
@@ -1197,7 +2050,7 @@ export default function FairnessDashboardPage() {
                   
                   {/* Crew mins distribution box plot - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1222,7 +2075,7 @@ export default function FairnessDashboardPage() {
                   
                   {/* Role assignment heatmap - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1284,7 +2137,7 @@ export default function FairnessDashboardPage() {
                   
                   {/* Crew fairness details table - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1317,6 +2170,7 @@ export default function FairnessDashboardPage() {
                 <>
                   {/* Mini cards grid (4 cards) - wrapped in translucent card */}
                   <div 
+                    className="graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1333,9 +2187,27 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
 
+                  {/* Satisfaction by date - Satisfaction line graph */}
+                  <div
+                    className="mt-4 graph-container-glass-border"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1rem',
+                      padding: 16,
+                    }}
+                  >
+                    <SatisfactionLineGraph
+                      title="Satisfaction by date"
+                      data={computedSatisfactionByDate}
+                    />
+                  </div>
+
                   {/* Large graph card - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1345,16 +2217,9 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <GraphCardWithStatsTransparent 
+                    <GraphCardWithStatsTransparent
                       title="Satisfaction distribution"
-                      boxPlotData={{
-                        min: 65,
-                        q1: 68.5,
-                        median: 71,
-                        q3: 76.2,
-                        max: 89,
-                        outliers: [42.3, 51.8, 94.1],
-                      }}
+                      boxPlotData={computedSatisfactionBoxPlot}
                     >
                       {/* Additional graph content can go here */}
                     </GraphCardWithStatsTransparent>
@@ -1362,7 +2227,7 @@ export default function FairnessDashboardPage() {
 
                   {/* Preferences Met graph - wrapped in translucent card */}
                   <div 
-                    className="mt-4"
+                    className="mt-4 graph-container-glass-border"
                     style={{ 
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
@@ -1372,23 +2237,16 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <GraphCardSimple 
+                    <GraphCardSimple
                       title="Crew preferences met"
-                      preferenceData={[
-                        { label: 'No Mondays', totalCount: 12, satisfiedCount: 10 },  // 83%
-                        { label: 'Morning Only', totalCount: 8, satisfiedCount: 6 },   // 75%
-                        { label: 'Max 3 Days', totalCount: 15, satisfiedCount: 5 },    // 33%
-                        { label: 'No Weekends', totalCount: 6, satisfiedCount: 5 },    // 83%
-                        { label: 'Afternoon Only', totalCount: 10, satisfiedCount: 9 }, // 90%
-                        { label: 'No Doubles', totalCount: 14, satisfiedCount: 6 },    // 43%
-                        { label: 'Fixed Days', totalCount: 4, satisfiedCount: 3 },     // 75%
-                      ]}
+                      preferenceData={computedPreferenceData}
                     />
                   </div>
                 </>
               ) : (
                 /* Expanded Quick Looks - Single Column with Pagination */
                 <div 
+                  className="graph-container-glass-border"
                   style={{ 
                     background: 'rgba(255, 255, 255, 0.02)',
                     backdropFilter: 'blur(12px)',
@@ -1528,7 +2386,7 @@ export default function FairnessDashboardPage() {
                     {expandedQuickLook === 'crew' && (
                       <>
                         {(() => {
-                          const filteredCrewCards = defaultCrewCards.filter(card =>
+                          const filteredCrewCards = computedCrewCards.filter(card =>
                             card.title.toLowerCase().includes(crewSearchQuery.toLowerCase())
                           );
                           return filteredCrewCards
@@ -1568,7 +2426,7 @@ export default function FairnessDashboardPage() {
                     {expandedQuickLook === 'roles' && (
                       <>
                         {(() => {
-                          const filteredRoleCards = defaultRoleCards.filter(card =>
+                          const filteredRoleCards = computedRoleCards.filter(card =>
                             card.name.toLowerCase().includes(roleSearchQuery.toLowerCase())
                           );
                           return filteredRoleCards
@@ -1628,9 +2486,9 @@ export default function FairnessDashboardPage() {
                     />
                     {(() => {
                       const cardsPerPage = expandedQuickLook === 'crew' ? CREW_CARDS_PER_PAGE : ROLE_CARDS_PER_PAGE;
-                      const filteredCards = expandedQuickLook === 'crew' 
-                        ? defaultCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
-                        : defaultRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
+                      const filteredCards = expandedQuickLook === 'crew'
+                        ? computedCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
+                        : computedRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
                       const totalCards = filteredCards.length;
                       const totalPages = Math.ceil(totalCards / cardsPerPage);
                       const currentPage = expandedQuickLook === 'crew' ? crewPage : rolePage;
@@ -1694,17 +2552,16 @@ export default function FairnessDashboardPage() {
               )}
             </div>
 
-            {/* Right card - Quick Looks (full width when stacked, 40% when side-by-side) */}
-            <div 
-              className="w-full min-[1200px]:w-[40%] rounded-2xl px-4 py-4" 
+            {/* Right card - Quick Looks (full width when stacked, 45% when side-by-side) */}
+            <div
+              className="w-full min-[1200px]:w-[45%] rounded-2xl px-4 py-4 graph-container-glass-border" 
               style={{ 
                 backgroundColor: '#141318',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
               {/* Time Selection - always visible */}
-              <div className="flex flex-col" style={{ 
+              <div className="flex flex-col graph-container-glass-border" style={{ 
                     background: 'rgba(255, 255, 255, 0.02)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
@@ -1717,15 +2574,62 @@ export default function FairnessDashboardPage() {
                     paddingBottom: 22,
                     gap: 16,
                   }}>
-                    {/* Title inside container */}
-                    <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                      Time Selection
-                    </span>
+                    {/* Title inside container with Edit button */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
+                        Time Selection
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (!isCalendarEditMode) {
+                            // Entering edit mode - store current selection
+                            initialSelectionRef.current = JSON.stringify(selectedDays);
+                            setCalendarHasChanges(false);
+                            setIsCalendarEditMode(true);
+                          } else {
+                            // Exiting edit mode - save to localStorage and trigger settle animation
+                            setIsCalendarEditMode(false);
+                            setIsSettling(true);
+
+                            // Save to localStorage before refresh
+                            if (typeof window !== 'undefined') {
+                              // Convert Sets to arrays for JSON serialization
+                              const serializable: Record<string, number[]> = {};
+                              for (const [key, value] of Object.entries(selectedDays)) {
+                                serializable[key] = Array.from(value);
+                              }
+                              localStorage.setItem('calendar-selected-days', JSON.stringify(serializable));
+                            }
+
+                            // Wait for settle animation to complete
+                            setTimeout(() => {
+                              setIsSettling(false);
+                              if (calendarHasChanges) {
+                                window.location.reload();
+                              }
+                            }, 400); // Match settleDown animation duration
+                          }
+                        }}
+                        className="text-med transition-all"
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontWeight: 350,
+                          color: isCalendarEditMode ? '#DBDADB' : '#7C7F82',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        {isCalendarEditMode ? 'Done' : 'Edit'}
+                      </button>
+                    </div>
                     
                     {/* Year carousel row */}
                     <div className="flex items-center justify-center gap-2">
                       <button 
-                        className="flex items-center justify-center transition-all"
+                        className="flex items-center justify-center transition-all circle-button-glass-border"
                         style={{
                           width: 24,
                           height: 24,
@@ -1774,8 +2678,8 @@ export default function FairnessDashboardPage() {
                             <button
                               key={year}
                               onClick={() => {
-                                if (index === yearSelectionIndex) {
-                                  // Toggle all days in all months of this year
+                                if (index === yearSelectionIndex && isCalendarEditMode) {
+                                  // Toggle all days in all months of this year (only in edit mode)
                                   const yearMonths = generateMonthOptions(year);
                                   const newSelectedDays = { ...selectedDays };
                                   
@@ -1808,16 +2712,20 @@ export default function FairnessDashboardPage() {
                                       newSelectedDays[key] = newMonthSelected;
                                     }
                                   }
-                                  
+
                                   setSelectedDays(newSelectedDays);
+                                  setCalendarHasChanges(true);
                                 } else {
                                   setYearSelectionIndex(index);
                                 }
                               }}
-                              className="px-4 py-1.5 rounded-lg transition-all duration-200"
+                              className={`px-4 py-1.5 rounded-lg transition-all duration-200 ${
+                                isCalendarEditMode ? 'ios-wiggle' : isSettling ? 'settle-animation' : ''
+                              }`}
                               style={{
-                                background: allDaysSelectedInYear && isSelected 
-                                  ? 'rgb(239, 68, 68)' 
+                                animationDelay: isCalendarEditMode ? `${index * 0.05}s` : undefined,
+                                background: allDaysSelectedInYear && isSelected
+                                  ? 'rgb(239, 68, 68)'
                                   : isSelected ? 'rgb(39, 38, 41)' : 'rgb(28, 27, 31)',
                                 color: allDaysSelectedInYear && isSelected ? '#FFFFFF' : isSelected ? '#DBDADB' : '#7C7F82',
                                 fontFamily: 'var(--font-open-sans)',
@@ -1838,7 +2746,7 @@ export default function FairnessDashboardPage() {
                       </div>
                       
                       <button 
-                        className="flex items-center justify-center transition-all"
+                        className="flex items-center justify-center transition-all circle-button-glass-border"
                         style={{
                           width: 24,
                           height: 24,
@@ -1865,7 +2773,7 @@ export default function FairnessDashboardPage() {
                     {/* Month carousel with side arrows */}
                     <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
                       <button 
-                        className="flex items-center justify-center transition-all"
+                        className="flex items-center justify-center transition-all circle-button-glass-border"
                         style={{
                           width: 24,
                           height: 24,
@@ -1993,8 +2901,11 @@ export default function FairnessDashboardPage() {
                               return (
                                 <div
                                   key={index}
-                                  className="absolute flex flex-col"
+                                  className={`absolute flex flex-col quick-card-glass-border ${
+                                    isCalendarEditMode ? 'ios-wiggle' : isSettling ? 'settle-animation' : ''
+                                  }`}
                                   style={{
+                                    animationDelay: isCalendarEditMode ? `${index * 0.05}s` : undefined,
                                     width: cardWidth,
                                     height: thisCardHeight,
                                     left: leftOffset,
@@ -2018,9 +2929,9 @@ export default function FairnessDashboardPage() {
                                     // Don't trigger if clicking on a day circle
                                     const target = e.target as HTMLElement;
                                     if (target.tagName === 'BUTTON' && target !== e.currentTarget) return;
-                                    
-                                    if (index === timeSelectionIndex) {
-                                      // Toggle all days
+
+                                    if (index === timeSelectionIndex && isCalendarEditMode) {
+                                      // Toggle all days (only in edit mode)
                                       const days = option.days;
                                       const key = getSelectionKey(selectedYear, index);
                                       const currentSelected = selectedDays[key] || new Set();
@@ -2051,11 +2962,12 @@ export default function FairnessDashboardPage() {
                                           }
                                         }
                                       }
-                                      
+
                                       setSelectedDays(prev => ({
                                         ...prev,
                                         [key]: newSelected
                                       }));
+                                      setCalendarHasChanges(true);
                                     } else {
                                       setTimeSelectionIndex(index);
                                     }
@@ -2202,7 +3114,7 @@ export default function FairnessDashboardPage() {
                       </div>
 
                       <button 
-                        className="flex items-center justify-center transition-all"
+                        className="flex items-center justify-center transition-all circle-button-glass-border"
                         style={{
                           width: 24,
                           height: 24,
@@ -2227,7 +3139,7 @@ export default function FairnessDashboardPage() {
 
               {/* Quick Looks container */}
               <div 
-                className="flex flex-col p-4"
+                className="flex flex-col p-4 graph-container-glass-border"
                 style={{ 
                   marginTop: '1.2rem',
                   background: 'rgba(255, 255, 255, 0.02)',
@@ -2255,7 +3167,7 @@ export default function FairnessDashboardPage() {
                   <div className="flex flex-col items-center" style={{ width: 24 }}>
                   {/* Crew icon button */}
                   <button
-                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
+                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125 circle-button-glass-border"
                     style={{
                       background: 'rgba(255, 255, 255, 0.25)',
                       backdropFilter: 'blur(12px)',
@@ -2288,7 +3200,7 @@ export default function FairnessDashboardPage() {
                   <button
                     onClick={carouselNav.goUp}
                     disabled={!carouselNav.canGoUp}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${carouselNav.canGoUp ? 'hover:brightness-125' : ''}`}
+                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${carouselNav.canGoUp ? 'hover:brightness-125' : ''}`}
                     style={{
                       background: carouselNav.canGoUp ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
                       backdropFilter: 'blur(12px)',
@@ -2319,7 +3231,7 @@ export default function FairnessDashboardPage() {
                   <button
                     onClick={carouselNav.goDown}
                     disabled={!carouselNav.canGoDown}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${carouselNav.canGoDown ? 'hover:brightness-125' : ''}`}
+                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${carouselNav.canGoDown ? 'hover:brightness-125' : ''}`}
                     style={{
                       background: carouselNav.canGoDown ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
                       backdropFilter: 'blur(12px)',
@@ -2502,7 +3414,8 @@ export default function FairnessDashboardPage() {
                   >
                     Crew members
                   </span>
-                  <CrewQuickLookCarousel 
+                  <CrewQuickLookCarousel
+                    cards={computedCrewCards}
                     renderButtons={false}
                     onNavigationChange={handleCarouselNavigationChange}
                     onCardClick={(card) => {
@@ -2576,7 +3489,8 @@ export default function FairnessDashboardPage() {
                       </span>
                     </div>
                     
-                    <RoleQuickLookCarousel 
+                    <RoleQuickLookCarousel
+                      cards={computedRoleCards}
                       renderButtons={false}
                       onNavigationChange={handleRoleCarouselNavigationChange}
                       onCardClick={(card) => {

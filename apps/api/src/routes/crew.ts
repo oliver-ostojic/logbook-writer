@@ -259,6 +259,17 @@ export function registerCrewRoutes(app: FastifyInstance) {
     }
   });
 
+  // GET /crew/:id - get a single crew member by ID
+  app.get<{ Params: { id: string } }>('/crew/:id', async (req, reply) => {
+    const crewId = req.params.id;
+    const crew = await prisma.crew.findUnique({
+      where: { id: crewId },
+      include: crewInclude,
+    });
+    if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+    return formatCrew(crew);
+  });
+
   // GET /crew - list or search crew
   app.get<{ Querystring: { id?: string; search?: string; storeId?: string } }>('/crew', async (req, reply) => {
     const { id, search, storeId } = req.query as any;
@@ -407,16 +418,60 @@ export function registerCrewRoutes(app: FastifyInstance) {
     return reply.code(204).send();
   });
 
-  // DELETE /crew/:id - delete a crew member
+  // DELETE /crew/:id - delete a crew member with full cleanup
   app.delete<{ Params: { id: string } }>('/crew/:id', async (req, reply) => {
     const crewId = req.params.id;
-    
+
     const existing = await prisma.crew.findUnique({ where: { id: crewId } });
     if (!existing) return reply.code(404).send({ error: 'Crew member not found' });
-    
-    // Remove role links first to avoid FK constraint violations
-    await prisma.crewRole.deleteMany({ where: { crewId } });
-    await prisma.crew.delete({ where: { id: crewId } });
-    return { ok: true, deleted: crewId };
+
+    try {
+      // Delete all related records first to avoid FK constraint violations
+      console.log(`Deleting all related records for crew ${crewId}...`);
+
+      // 1. Delete assignments
+      const assignmentsDeleted = await prisma.assignment.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${assignmentsDeleted.count} assignments`);
+
+      // 2. Delete shifts
+      const shiftsDeleted = await prisma.shift.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${shiftsDeleted.count} shifts`);
+
+      // 3. Delete crew role quotas
+      const quotasDeleted = await prisma.crewRoleQuota.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${quotasDeleted.count} role quotas`);
+
+      // 4. Delete crew role fairness history
+      const fairnessHistoryDeleted = await prisma.crewRoleFairnessHistory.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${fairnessHistoryDeleted.count} fairness history records`);
+
+      // 5. Delete crew role rules
+      const roleRulesDeleted = await prisma.crewRoleRule.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${roleRulesDeleted.count} role rules`);
+
+      // 6. Delete crew roles
+      const rolesDeleted = await prisma.crewRole.deleteMany({ where: { crewId } });
+      console.log(`  - Deleted ${rolesDeleted.count} crew roles`);
+
+      // 7. Finally delete the crew member
+      await prisma.crew.delete({ where: { id: crewId } });
+      console.log(`✅ Successfully deleted crew ${crewId}`);
+
+      return {
+        ok: true,
+        deleted: crewId,
+        cleanup: {
+          assignments: assignmentsDeleted.count,
+          shifts: shiftsDeleted.count,
+          quotas: quotasDeleted.count,
+          fairnessHistory: fairnessHistoryDeleted.count,
+          roleRules: roleRulesDeleted.count,
+          roles: rolesDeleted.count,
+        }
+      };
+    } catch (error) {
+      console.error(`Failed to delete crew ${crewId}:`, error);
+      return reply.code(500).send({ error: 'Failed to delete crew member' });
+    }
   });
 }

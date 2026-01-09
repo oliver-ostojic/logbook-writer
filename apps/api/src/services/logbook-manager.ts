@@ -56,13 +56,7 @@ export interface SolverOutputV2 {
   error?: string;
 }
 import {
-  calculateAllSatisfaction,
-  savePreferenceSatisfaction,
   type AssignmentRecord,
-  type PreferenceRecord,
-  type CrewShiftWindow,
-  type RoleTimingWindow,
-  type TimingPreferenceContext,
 } from './preference-satisfaction';
 
 import {
@@ -139,19 +133,6 @@ export async function saveLogbookWithMetadata(
     });
   }
 
-  const roleWindowMap: Map<number, RoleTimingWindow> = new Map();
-  for (const role of solverInput.roles) {
-    roleWindowMap.set(role.id, {
-      startOffsetMin: role.windowOffsets?.startOffsetMin,
-      endOffsetMin: role.windowOffsets?.endOffsetMin,
-    });
-  }
-
-  const timingContext: TimingPreferenceContext = {
-    crewShifts: crewShiftMap,
-    roleWindows: roleWindowMap,
-  };
-
   // Guard: ensure assignments exist
   if (!solverOutput.assignments || solverOutput.assignments.length === 0) {
     throw new Error('Cannot save logbook: solver output has no assignments');
@@ -164,40 +145,6 @@ export async function saveLogbookWithMetadata(
     startMinutes: a.startMinute,
     endMinutes: a.endMinute,
   }));
-
-  // Fetch RolePreferences with CrewPreferences to build PreferenceRecord array
-  // Fetch RolePreferences with CrewPreferences to build PreferenceRecord array
-  // (Legacy system - kept for backwards compatibility)
-  const rolePreferences = await prisma.rolePreference.findMany({
-    where: { storeId },
-    include: {
-      CrewPreference: {
-        where: { enabled: true }
-      }
-    }
-  });
-
-  const preferenceRecords: PreferenceRecord[] = [];
-  for (const rp of rolePreferences) {
-    for (const cp of rp.CrewPreference) {
-      preferenceRecords.push({
-        id: rp.id,
-        crewId: cp.crewId,
-        roleId: rp.roleId,
-        preferenceType: rp.preferenceType,
-        baseWeight: rp.baseWeight,
-        crewWeight: cp.crewWeight,
-        intValue: cp.intValue,
-      });
-    }
-  }
-
-  // Calculate preference satisfaction (legacy)
-  const satisfactionResults = await calculateAllSatisfaction(
-    assignmentRecords,
-    preferenceRecords,
-    timingContext
-  );
 
   // =========================================================================
   // NEW: CrewRoleRule-based preference satisfaction
@@ -379,7 +326,6 @@ export async function saveLogbookWithMetadata(
 
   // Delete existing assignments and satisfaction records for this logbook
   await prisma.assignment.deleteMany({ where: { logbookId: logbook.id } });
-  await prisma.preferenceSatisfaction.deleteMany({ where: { logbookId: logbook.id } });
   await prisma.logPreferenceMetadata.deleteMany({ where: { logbookId: logbook.id } });
 
   // Create assignments - V2 format already has roleId directly!
@@ -404,14 +350,6 @@ export async function saveLogbookWithMetadata(
   });
 
   await prisma.assignment.createMany({ data: assignmentData });
-
-  // Save preference satisfaction records (legacy - for backwards compatibility)
-  await savePreferenceSatisfaction(
-    prisma,
-    logbook.id,
-    date,
-    satisfactionResults
-  );
 
   // Save log preference metadata using NEW CrewRoleRule-based stats
   await saveCrewRuleLogPreferenceMetadata(

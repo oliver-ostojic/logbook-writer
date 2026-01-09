@@ -12,6 +12,19 @@ interface CrewFairnessRow {
 type SortField = 'name' | 'minsPerShift' | 'lastAssigned' | 'deviation';
 type SortDirection = 'asc' | 'desc';
 
+// Format minutes to readable string (e.g., "30 min", "1 hr 10 min", "2 hr")
+function formatMinutesToReadable(minutes: number): string {
+  if (minutes < 60) {
+    return `${Math.round(minutes)} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  if (mins === 0) {
+    return `${hours} hr`;
+  }
+  return `${hours} hr ${mins} min`;
+}
+
 interface CrewFairnessTableProps {
   title: string;
   data: CrewFairnessRow[];
@@ -253,7 +266,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
         {/* Circle indicator with vertical line going down */}
         <div className="flex flex-col items-center">
           <div 
-            className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
+            className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125 circle-button-glass-border"
             style={{
               background: 'rgba(255, 255, 255, 0.25)',
               backdropFilter: 'blur(12px)',
@@ -297,7 +310,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
           <button
             onClick={goUp}
             disabled={!canGoUp}
-            className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${canGoUp ? 'hover:brightness-125' : ''}`}
+            className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${canGoUp ? 'hover:brightness-125' : ''}`}
             style={{
               background: canGoUp ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(12px)',
@@ -325,7 +338,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
           <button
             onClick={goDown}
             disabled={!canGoDown}
-            className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${canGoDown ? 'hover:brightness-125' : ''}`}
+            className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${canGoDown ? 'hover:brightness-125' : ''}`}
             style={{
               background: canGoDown ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(12px)',
@@ -415,7 +428,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
                   letterSpacing: '0.5px',
                 }}
               >
-                Mins/shift
+                Time/shift
               </span>
               <SortIcon field="minsPerShift" />
             </button>
@@ -525,7 +538,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
                   </span>
                 </div>
                 
-                {/* Mins/Shift */}
+                {/* Time/Shift */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span
                     style={{
@@ -535,7 +548,7 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
                       color: rowState.isMiddle ? '#9B9A9F' : '#6B6A6F',
                     }}
                   >
-                    {row.minsPerShift}
+                    {formatMinutesToReadable(row.minsPerShift)}
                   </span>
                 </div>
                 

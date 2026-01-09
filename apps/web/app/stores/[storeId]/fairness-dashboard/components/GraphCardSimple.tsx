@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 interface PreferenceBarData {
   label: string;
+  description?: string;  // Optional description from roleRule
   totalCount: number;  // Total crew who selected this preference
   satisfiedCount: number;  // How many were satisfied
 }
@@ -25,6 +26,34 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
+// Calculate "nice" whole number ticks for y-axis
+function calculateNiceTicks(maxValue: number, targetTickCount: number = 5): number[] {
+  if (maxValue <= 0) return [0];
+
+  // Find a nice step size (1, 2, 5, 10, 20, 50, etc.)
+  const roughStep = maxValue / (targetTickCount - 1);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const residual = roughStep / magnitude;
+
+  let niceStep: number;
+  if (residual <= 1.5) niceStep = 1 * magnitude;
+  else if (residual <= 3) niceStep = 2 * magnitude;
+  else if (residual <= 7) niceStep = 5 * magnitude;
+  else niceStep = 10 * magnitude;
+
+  // Generate ticks from 0 up to (and including) a value >= maxValue
+  const ticks: number[] = [];
+  for (let tick = 0; tick <= maxValue; tick += niceStep) {
+    ticks.push(tick);
+  }
+  // Ensure we include a tick at or above maxValue
+  if (ticks[ticks.length - 1] < maxValue) {
+    ticks.push(ticks[ticks.length - 1] + niceStep);
+  }
+
+  return ticks;
+}
+
 // Stacked bar chart - each bar shows satisfied vs not satisfied for a preference
 function PreferenceStackedBars({ 
   data, 
@@ -35,32 +64,40 @@ function PreferenceStackedBars({
   hoveredIndex: number | null;
   onHover: (index: number | null) => void;
 }) {
-  const maxCount = Math.max(...data.map(d => d.totalCount));
-  const chartHeight = 160;
+  const maxCount = Math.max(...data.map(d => d.totalCount), 1); // Ensure at least 1 to avoid division by zero
+
+  // Calculate nice ticks and use tickMax for scaling
+  const ticks = calculateNiceTicks(maxCount, 4);
+  const tickMax = ticks[ticks.length - 1];
+
+  // Use viewBox for responsive scaling - all calculations in fixed coordinates
+  const viewBoxWidth = 1000;
+  const viewBoxHeight = 220;
   const barCount = data.length;
-  
+
   // Bars scale to 90% of chart height, leaving 10% gap above
   const barScaleFactor = 0.9;
-  
+
   // Calculate average of satisfied counts (bottom bars)
-  const avgSatisfiedCount = data.reduce((sum, d) => sum + d.satisfiedCount, 0) / barCount;
-  // Position as percentage of max (same scale as bars)
-  const avgLineY = chartHeight - (avgSatisfiedCount / maxCount) * chartHeight * barScaleFactor;
-  
-  // Calculate bar width and gap to fill 100% width
-  // We want: sideGap + bars + gaps between bars + sideGap = 100%
-  // Where sideGap = barWidth (gap on each side equals one bar width)
-  // So: 2*barWidth + barCount*barWidth + (barCount-1)*gap = 100%
-  // With gap as a ratio of barWidth (e.g., gap = 0.3 * barWidth):
+  const avgSatisfiedCount = data.reduce((sum, d) => sum + d.satisfiedCount, 0) / Math.max(barCount, 1);
+  // Position as percentage of tickMax (same scale as bars)
+  const avgLineY = viewBoxHeight - (avgSatisfiedCount / tickMax) * viewBoxHeight * barScaleFactor;
+
+  // Graph extends more to the right to reduce left margin
+  const graphLeftEdge = 28; // Left margin
+  const graphRightEdge = viewBoxWidth - 10; // Smaller right margin - graph extends further right
+  const chartWidth = graphRightEdge - graphLeftEdge; // Bars fill from graphLeftEdge to graphRightEdge
+
+  // Calculate bar width and gap to fill chart width
+  // We want: sideGap + bars + gaps (between bars + right side) = chartWidth
+  // Where sideGap = barWidth, and we have barCount full gaps (barCount-1 between + 1 on right)
   const gapRatio = 0.3; // gap is 30% of bar width
-  // (barCount + 2) * barWidth + (barCount - 1) * gapRatio * barWidth = 100
-  // barWidth * ((barCount + 2) + (barCount - 1) * gapRatio) = 100
-  const barWidthPercent = 100 / ((barCount + 2) + (barCount - 1) * gapRatio);
-  const gapPercent = barWidthPercent * gapRatio;
-  const sideGapPercent = barWidthPercent; // side gap equals one bar width
-  
+  const barWidth = chartWidth / ((barCount + 1) + barCount * gapRatio);
+  const gap = barWidth * gapRatio;
+  const sideGap = barWidth;
+
   return (
-    <svg width="100%" height={chartHeight} style={{ overflow: 'visible' }}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`} style={{ overflow: 'visible' }}>
       <defs>
         {/* Satisfied (bottom) - opaque, smooth gradient */}
         <linearGradient id="satisfiedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -97,84 +134,91 @@ function PreferenceStackedBars({
         </linearGradient>
       </defs>
       
-      {/* Horizontal grid lines (5 lines at 0%, 25%, 50%, 75%, 100% of chart height) */}
-      {(() => {
-        return [0, 0.25, 0.5, 0.75, 1].map((fraction, i) => {
-          const y = chartHeight * (1 - fraction);
-          return (
-            <rect
-              key={`hline-${i}`}
-              x="0"
-              y={y - 0.75}
-              width="calc(100% - 50px)"
-              height={1.5}
-              fill="url(#horizontalLineGradient)"
-            />
-          );
-        });
-      })()}
-      
-      {/* Vertical divider lines between bars */}
-      {Array.from({ length: barCount - 1 }).map((_, i) => {
-        const lineX = sideGapPercent + (i + 1) * (barWidthPercent + gapPercent) - gapPercent / 2;
+      {/* Horizontal grid lines - match y-axis tick positions */}
+      {ticks.map((tickValue, i) => {
+        const y = viewBoxHeight - (tickValue / tickMax) * viewBoxHeight * barScaleFactor;
         return (
           <rect
-            key={`divider-${i}`}
-            x={`calc(${lineX}% - 0.75px)`}
-            y={0}
-            width={1.5}
-            height={chartHeight}
-            fill="url(#verticalDividerGradient)"
+            key={`hline-${i}`}
+            x={graphLeftEdge}
+            y={y - 1.25}
+            width={chartWidth}
+            height={2.5}
+            fill="url(#horizontalLineGradient)"
           />
         );
       })}
       
+      {/* Vertical divider lines between bars */}
+      {Array.from({ length: barCount - 1 }).map((_, i) => {
+        const lineX = graphLeftEdge + sideGap + (i + 1) * (barWidth + gap) - gap / 2;
+        return (
+          <rect
+            key={`divider-${i}`}
+            x={lineX - 1.25}
+            y={viewBoxHeight * (1 - barScaleFactor)}
+            width={2.5}
+            height={viewBoxHeight * barScaleFactor}
+            fill="url(#verticalDividerGradient)"
+          />
+        );
+      })}
+
       {/* Vertical line to the left of first bar */}
       <rect
-        x={`calc(${sideGapPercent - gapPercent / 2}% - 0.75px)`}
-        y={0}
-        width={1.5}
-        height={chartHeight}
+        x={graphLeftEdge + sideGap - gap / 2 - 1.25}
+        y={viewBoxHeight * (1 - barScaleFactor)}
+        width={2.5}
+        height={viewBoxHeight * barScaleFactor}
         fill="url(#verticalDividerGradient)"
       />
-      
+
       {/* Vertical line to the right of last bar */}
       <rect
-        x="calc(100% - 50px - 0.75px)"
-        y={0}
-        width={1.5}
-        height={chartHeight}
+        x={graphRightEdge - gap / 2 - 1.25}
+        y={viewBoxHeight * (1 - barScaleFactor)}
+        width={2.5}
+        height={viewBoxHeight * barScaleFactor}
         fill="url(#verticalDividerGradient)"
       />
       
       {data.map((item, index) => {
-        const xPercent = sideGapPercent + index * (barWidthPercent + gapPercent);
-        // Scale bars using barScaleFactor (80% of chart height)
-        const totalHeight = (item.totalCount / maxCount) * chartHeight * barScaleFactor;
-        const satisfiedHeight = (item.satisfiedCount / item.totalCount) * totalHeight;
-        const notSatisfiedHeight = totalHeight - satisfiedHeight;
-        
-        // Position from bottom
-        const satisfiedY = chartHeight - satisfiedHeight;
-        const notSatisfiedY = chartHeight - totalHeight;
-        
-        // Top bar extends into the bottom bar's corner curve area
+        const x = graphLeftEdge + sideGap + index * (barWidth + gap);
+
+        // Safety check: ensure counts are non-negative and totalCount > 0
+        const totalCount = Math.max(item.totalCount, 0);
+        const satisfiedCount = Math.max(Math.min(item.satisfiedCount, totalCount), 0); // Clamp between 0 and totalCount
+
+        // Scale bars using barScaleFactor (90% of chart height) and tickMax for alignment
+        const totalHeight = totalCount > 0 ? (totalCount / tickMax) * viewBoxHeight * barScaleFactor : 0;
+        const satisfiedHeight = totalCount > 0 ? (satisfiedCount / totalCount) * totalHeight : 0;
+        const notSatisfiedHeight = Math.max(totalHeight - satisfiedHeight, 0); // Ensure non-negative
+
+        // Position from bottom - ensure we never go below the baseline
+        const satisfiedY = Math.max(0, viewBoxHeight - satisfiedHeight);
+        const notSatisfiedY = Math.max(0, viewBoxHeight - totalHeight);
+
+        // Minimum height threshold for rendering (avoid rendering tiny slivers)
+        const minRenderHeight = 2;
+        const shouldRenderSatisfied = satisfiedHeight >= minRenderHeight;
+        const shouldRenderNotSatisfied = notSatisfiedHeight >= minRenderHeight;
+
         const cornerRadius = 13;
         const clipId = `clipTop${index}`;
-        
+
         const isHovered = hoveredIndex === index;
-        
+
         // Calculate column bounds (includes half gap on each side for easier hovering)
-        const columnStart = index === 0 
-          ? sideGapPercent - gapPercent / 2 
-          : xPercent - gapPercent / 2;
+        const columnStart = index === 0
+          ? graphLeftEdge + sideGap - gap / 2
+          : x - gap / 2;
         const columnEnd = index === data.length - 1
-          ? xPercent + barWidthPercent + gapPercent / 2
-          : xPercent + barWidthPercent + gapPercent / 2;
+          ? graphRightEdge - gap / 2
+          : x + barWidth + gap / 2;
         const columnWidth = columnEnd - columnStart;
-        
+
         return (
-          <g 
+          <g
             key={index}
             onMouseEnter={() => onHover(index)}
             onMouseLeave={() => onHover(null)}
@@ -182,42 +226,38 @@ function PreferenceStackedBars({
           >
             {/* Invisible hover area covering full column */}
             <rect
-              x={`${columnStart}%`}
+              x={columnStart}
               y={0}
-              width={`${columnWidth}%`}
-              height={chartHeight}
+              width={columnWidth}
+              height={viewBoxHeight}
               fill="transparent"
             />
-            {/* Clip path - extends down to where bottom bar corners start curving */}
-            <clipPath id={clipId}>
+
+            {/* Not satisfied portion - full bar from top of total down to baseline */}
+            {totalHeight > 0 && (
               <rect
-                x={`${xPercent}%`}
+                x={x}
                 y={notSatisfiedY}
-                width={`${barWidthPercent}%`}
-                height={notSatisfiedHeight + cornerRadius}
+                width={barWidth}
+                height={viewBoxHeight - notSatisfiedY}
+                rx={13}
+                ry={13}
+                fill="url(#notSatisfiedGradient)"
               />
-            </clipPath>
-            {/* Not satisfied portion (top) - clipped so bottom is square, fills corner gap */}
-            <rect
-              x={`${xPercent}%`}
-              y={notSatisfiedY}
-              width={`${barWidthPercent}%`}
-              height={notSatisfiedHeight + cornerRadius + 13}
-              rx={13}
-              ry={13}
-              fill="url(#notSatisfiedGradient)"
-              clipPath={`url(#${clipId})`}
-            />
-            {/* Satisfied portion (bottom) */}
-            <rect
-              x={`${xPercent}%`}
-              y={satisfiedY}
-              width={`${barWidthPercent}%`}
-              height={satisfiedHeight}
-              rx={13}
-              ry={13}
-              fill="url(#satisfiedGradient)"
-            />
+            )}
+
+            {/* Satisfied portion (bottom) - render on top so it covers the not satisfied bar */}
+            {shouldRenderSatisfied && (
+              <rect
+                x={x}
+                y={satisfiedY}
+                width={barWidth}
+                height={satisfiedHeight}
+                rx={13}
+                ry={13}
+                fill="url(#satisfiedGradient)"
+              />
+            )}
           </g>
         );
       })}
@@ -227,33 +267,29 @@ function PreferenceStackedBars({
         const dashWidth = 8;
         const dashGap = 8;
         const dashHeight = 1.5;
-        const dashSpacing = dashWidth + dashGap; // 16px per dash+gap
-        
-        // Right edge line position only (left extends to 0%)
-        const rightEdgePercent = sideGapPercent + barCount * (barWidthPercent + gapPercent) - gapPercent / 2;
-        
+
         const numDashes = 40;
         return Array.from({ length: numDashes }).map((_, i) => {
-          // Position dashes from 0% to right edge
-          const progressPercent = i / (numDashes - 1);
-          const xPercent = progressPercent * rightEdgePercent;
-          
+          // Position dashes from graphLeftEdge to graphRightEdge
+          const progress = i / (numDashes - 1);
+          const xPos = graphLeftEdge + progress * chartWidth;
+
           // Calculate opacity - first 5% invisible, then fade from 5-25%, full from 25-75%, fade out 75-95%, invisible 95-100%
           let opacity = 0.6;
-          if (progressPercent < 0.05) {
+          if (progress < 0.05) {
             opacity = 0;
-          } else if (progressPercent < 0.25) {
-            opacity = ((progressPercent - 0.05) / 0.20) * 0.6;
-          } else if (progressPercent > 0.95) {
+          } else if (progress < 0.25) {
+            opacity = ((progress - 0.05) / 0.20) * 0.6;
+          } else if (progress > 0.95) {
             opacity = 0;
-          } else if (progressPercent > 0.75) {
-            opacity = ((0.95 - progressPercent) / 0.20) * 0.6;
+          } else if (progress > 0.75) {
+            opacity = ((0.95 - progress) / 0.20) * 0.6;
           }
-          
+
           return (
             <rect
               key={`dash-${i}`}
-              x={`calc(${xPercent}% - ${dashWidth / 2}px)`}
+              x={xPos - dashWidth / 2}
               y={avgLineY - dashHeight / 2}
               width={dashWidth}
               height={dashHeight}
@@ -265,50 +301,23 @@ function PreferenceStackedBars({
           );
         });
       })()}
-      
+
       {/* "avg" label to the left of the average line */}
       <text
-        x="0%"
+        x={graphLeftEdge - 8}
         y={avgLineY}
         dominantBaseline="middle"
-        textAnchor="start"
+        textAnchor="end"
         style={{
           fontFamily: 'var(--font-open-sans)',
-          fontSize: '16px',
+          fontSize: '24px',
           fontWeight: 350,
           fill: '#7C7F82',
         }}
       >
         avg
       </text>
-      
-      {/* Y-axis labels on the right side (0, middle, max) */}
-      {[0, 0.5, 1].map((chartFraction) => {
-        // Position at chart fraction (0%, 50%, 100% of chart height)
-        const y = chartHeight * (1 - chartFraction);
-        // Convert chart position to actual value on bar scale
-        // If barScaleFactor = 0.9, then 90% of chart = maxCount
-        // So chartFraction of chart = (chartFraction / barScaleFactor) * maxCount
-        const value = (chartFraction / barScaleFactor) * maxCount;
-        const displayValue = formatNumber(value);
-        return (
-          <text
-            key={`y-label-${chartFraction}`}
-            x="100%"
-            y={y}
-            dominantBaseline="middle"
-            textAnchor="end"
-            style={{
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '16px',
-              fontWeight: 350,
-              fill: '#7C7F82',
-            }}
-          >
-            {displayValue}
-          </text>
-        );
-      })}
+
     </svg>
   );
 }
@@ -319,25 +328,29 @@ interface GraphCardSimpleProps {
   children?: React.ReactNode;
 }
 
-export function GraphCardSimple({ 
-  title, 
+export function GraphCardSimple({
+  title,
   preferenceData,
-  children 
+  children
 }: GraphCardSimpleProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  
-  // Calculate right edge position for legend alignment (matches graph calculation)
-  const barCount = preferenceData?.length || 7;
-  const gapRatio = 0.3;
-  const barWidthPercent = 100 / ((barCount + 2) + (barCount - 1) * gapRatio);
-  const gapPercent = barWidthPercent * gapRatio;
-  const sideGapPercent = barWidthPercent;
-  const rightEdgePercent = sideGapPercent + barCount * (barWidthPercent + gapPercent) - gapPercent / 2;
 
-  // Get the hovered preference label
-  const hoveredLabel = hoveredIndex !== null && preferenceData 
-    ? preferenceData[hoveredIndex].label 
+  // Calculate right edge position for legend alignment
+  const viewBoxWidth = 600;
+  const viewBoxHeight = 220;
+  const barScaleFactor = 0.9;
+  const graphRightEdge = viewBoxWidth - 28; // Symmetric margins
+  const rightEdgePercent = (graphRightEdge / viewBoxWidth) * 100;
+
+  // Get the hovered preference description (or label as fallback)
+  const hoveredText = hoveredIndex !== null && preferenceData
+    ? (preferenceData[hoveredIndex].description || preferenceData[hoveredIndex].label)
     : null;
+
+  // Calculate ticks for y-axis labels
+  const maxCount = preferenceData ? Math.max(...preferenceData.map(d => d.totalCount), 1) : 1;
+  const ticks = calculateNiceTicks(maxCount, 4);
+  const tickMax = ticks[ticks.length - 1];
 
   return (
     <div 
@@ -400,20 +413,52 @@ export function GraphCardSimple({
         )}
       </div>
 
-      {/* Graph area */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* Graph area - two column layout */}
+      <div className="flex-1 flex items-stretch" style={{ gap: '16px' }}>
+        {/* Left column: Graph (stretches) */}
+        <div className="flex-1">
+          {preferenceData && (
+            <PreferenceStackedBars
+              data={preferenceData}
+              hoveredIndex={hoveredIndex}
+              onHover={setHoveredIndex}
+            />
+          )}
+          {children}
+        </div>
+
+        {/* Right column: Y-axis labels (fixed width) */}
         {preferenceData && (
-          <PreferenceStackedBars 
-            data={preferenceData} 
-            hoveredIndex={hoveredIndex}
-            onHover={setHoveredIndex}
-          />
+          <div className="relative flex-shrink-0" style={{ width: '40px', paddingLeft: '8px', paddingRight: '8px' }}>
+            {ticks.map((tickValue) => {
+              // Calculate y position (same logic as horizontal grid lines)
+              const yPercent = (1 - (tickValue / tickMax) * barScaleFactor) * 100;
+
+              return (
+                <div
+                  key={`y-label-${tickValue}`}
+                  className="absolute"
+                  style={{
+                    top: `${yPercent}%`,
+                    transform: 'translateY(-50%)',
+                    right: '8px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '15px',
+                    fontWeight: 350,
+                    color: '#7C7F82',
+                    textAlign: 'right',
+                  }}
+                >
+                  {formatNumber(tickValue)}
+                </div>
+              );
+            })}
+          </div>
         )}
-        {children}
       </div>
       
-      {/* Hovered preference label */}
-      <div 
+      {/* Hovered preference description */}
+      <div
         style={{
           fontFamily: 'var(--font-open-sans)',
           fontSize: '14px',
@@ -427,12 +472,12 @@ export function GraphCardSimple({
         <span
           style={{
             position: 'absolute',
-            opacity: hoveredLabel ? 1 : 0,
+            opacity: hoveredText ? 1 : 0,
             transition: 'opacity 0.15s ease',
             whiteSpace: 'nowrap',
           }}
         >
-          {hoveredLabel}
+          {hoveredText}
         </span>
       </div>
     </div>

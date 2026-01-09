@@ -139,7 +139,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
   // Bubble up normalized entries
   useEffect(() => {
     if (!onHourlyConstraintsChange) return;
-    const entries: Array<{ roleId: number; hour: number; requiredPerHour: number }> = [];
+    const entries: Array<{ roleId: number; hour: number; requiredPerHour: number; type: 'MIN' | 'EXACTLY' }> = [];
 
     hourlyRoles.forEach(role => {
       const values = roleValues[role.roleId] || {};
@@ -148,7 +148,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
         const parsedHour = Number(hourStr);
         if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsedHour)) return;
         if (!isRoleAllowedAtHour(role.roleId, parsedHour)) return;
-        entries.push({ roleId: role.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed) });
+        entries.push({ roleId: role.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed), type: 'MIN' });
       });
     });
 

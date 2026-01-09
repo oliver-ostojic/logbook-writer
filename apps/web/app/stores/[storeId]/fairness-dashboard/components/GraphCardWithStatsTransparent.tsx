@@ -35,15 +35,50 @@ function BoxPlot({
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
   
+  // Handle edge case: no data or all zeros - show empty state
+  if (dataMin === dataMax || (dataMin === 0 && dataMax === 0)) {
+    return (
+      <div
+        style={{
+          height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#7C7F82',
+          fontSize: '14px',
+          fontFamily: 'var(--font-open-sans)',
+          fontWeight: 350,
+        }}
+      >
+        No satisfaction data available
+      </div>
+    );
+  }
+  
   // X-axis: whole numbers, tight range around the data
   const xAxisStart = Math.floor(dataMin / 5) * 5; // Round down to nearest 5
   const xAxisEnd = Math.ceil(dataMax / 5) * 5; // Round up to nearest 5
-  const xAxisRange = xAxisEnd - xAxisStart;
-  
-  // Generate whole number ticks counting by 5s
+  const xAxisRange = xAxisEnd - xAxisStart || 1; // Prevent division by zero
+
+  // Calculate optimal step size to limit labels (aim for 5-7 labels max)
+  const targetLabelCount = 6;
+  const rawStep = xAxisRange / (targetLabelCount - 1);
+
+  // Round step to nice numbers (5, 10, 15, 20, 25, 30, etc.)
+  let step = 5;
+  if (rawStep > 5) {
+    const possibleSteps = [10, 15, 20, 25, 30, 40, 50, 60, 100, 150, 200];
+    step = possibleSteps.find(s => s >= rawStep) || 200;
+  }
+
+  // Generate whole number ticks with calculated step size
   const xLabels: number[] = [];
-  for (let i = xAxisStart; i <= xAxisEnd; i += 5) {
+  for (let i = xAxisStart; i <= xAxisEnd; i += step) {
     xLabels.push(i);
+  }
+  // Always include the end point if it's not already there
+  if (xLabels[xLabels.length - 1] !== xAxisEnd) {
+    xLabels.push(xAxisEnd);
   }
   const xTicks = xLabels.length;
   
@@ -116,9 +151,9 @@ function BoxPlot({
           <stop offset="100%" stopColor="#7C7F82" stopOpacity={0} />
         </linearGradient>
         
-        <linearGradient id="boxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#A09FA3" stopOpacity={0.15} />
-          <stop offset="100%" stopColor="#6A696D" stopOpacity={0.05} />
+        <linearGradient id="boxGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#A09FA3" stopOpacity={0.5} />
+          <stop offset="100%" stopColor="#6A696D" stopOpacity={0.3} />
         </linearGradient>
         <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
@@ -147,6 +182,13 @@ function BoxPlot({
             ry={13}
           />
         </clipPath>
+        {/* AI glass border gradient for box */}
+        <linearGradient id="aiBoxBorderGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
+          <stop offset="22%" stopColor="rgba(255, 255, 255, 0.15)" />
+          <stop offset="78%" stopColor="rgba(255, 255, 255, 0.15)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
+        </linearGradient>
       </defs>
       
       {/* Vertical grid lines at each x-axis mark */}
@@ -237,9 +279,15 @@ function BoxPlot({
         onMouseLeave={() => onHover(null)}
       />
       
-      {/* Box (Q1 to Q3) - glass-like gradient with frosted texture */}
-      <g 
-        clipPath="url(#boxClip)"
+      {/* Box (Q1 to Q3) - solid gradient matching stacked bars */}
+      <rect
+        x={`${q1Pos}%`}
+        y={8}
+        width={`${q3Pos - q1Pos}%`}
+        height={boxAreaHeight - 16}
+        rx={13}
+        ry={13}
+        fill={hoveredPart === 'box' ? 'url(#boxGradient)' : 'url(#boxGradient)'}
         style={{ 
           cursor: 'pointer',
           opacity: hoveredPart === null ? 1 : (hoveredPart === 'box' ? 1 : 0.3),
@@ -247,16 +295,7 @@ function BoxPlot({
         }}
         onMouseEnter={() => onHover('box')}
         onMouseLeave={() => onHover(null)}
-      >
-        <rect
-          x={`${q1Pos}%`}
-          y={8}
-          width={`${q3Pos - q1Pos}%`}
-          height={boxAreaHeight - 16}
-          fill={hoveredPart === 'box' ? 'rgba(255, 255, 255, 0.25)' : 'url(#boxGradient)'}
-          filter="url(#frostedGlass)"
-        />
-      </g>
+      />
       
       {/* Median line - pill shaped like whisker caps */}
       <line
@@ -311,21 +350,34 @@ export function GraphCardWithStatsTransparent({
 }: GraphCardWithStatsTransparentProps) {
   const [hoveredPart, setHoveredPart] = useState<HoveredPart>(null);
   
+  // Format minutes to readable string (e.g., "30 min", "1 hr 10 min", "2 hr")
+  const formatMinutesToReadable = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${Math.round(minutes)} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (mins === 0) {
+      return `${hours} hr`;
+    }
+    return `${hours} hr ${mins} min`;
+  };
+
   // Generate hover description for box plot parts
   const getHoverDescription = (): string | null => {
     if (!boxPlotData || hoveredPart === null) return null;
-    
+
     switch (hoveredPart) {
       case 'min':
-        return `Lowest satisfaction was ${boxPlotData.min.toFixed(1)}%`;
+        return `Shortest: ${formatMinutesToReadable(boxPlotData.min)}`;
       case 'max':
-        return `Highest satisfaction was ${boxPlotData.max.toFixed(1)}%`;
+        return `Longest: ${formatMinutesToReadable(boxPlotData.max)}`;
       case 'median':
-        return `Typical satisfaction was ${boxPlotData.median.toFixed(1)}%`;
+        return `Typical: ${formatMinutesToReadable(boxPlotData.median)}`;
       case 'box':
       case 'q1':
       case 'q3':
-        return `Most shifts ranged ${boxPlotData.q1.toFixed(1)}% – ${boxPlotData.q3.toFixed(1)}%`;
+        return `Most crew worked between ${formatMinutesToReadable(boxPlotData.q1)} and ${formatMinutesToReadable(boxPlotData.q3)}`;
       default:
         return null;
     }
