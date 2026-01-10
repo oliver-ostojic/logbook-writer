@@ -1368,14 +1368,6 @@ export default function FairnessDashboardPage() {
     const firstLogbook = dashboardSnapshot.selection.logbooks[0];
     if (!firstLogbook) return [];
 
-    console.log('🔍 Computing preference data:', {
-      breakdownCount: firstLogbook.dayAggregate.breakdownByRuleType.length,
-      roleRulesCount: roleRules.length,
-      sampleBreakdown: firstLogbook.dayAggregate.breakdownByRuleType[0],
-      allRoleRuleIds: roleRules.map(r => r.id || r.roleRuleId || r.ruleId),
-      sampleRoleRule: roleRules[0],
-    });
-
     // Transform breakdownByRuleType into GraphCardSimple format
     return firstLogbook.dayAggregate.breakdownByRuleType.map(breakdown => {
       // Find the corresponding role rule and use its description
@@ -1383,14 +1375,6 @@ export default function FairnessDashboardPage() {
       // Use formatRuleTypeLabel for human-readable label
       const label = rule?.type ? formatRuleTypeLabel(rule.type) : `Rule ${breakdown.roleRuleId}`;
       const description = rule?.description || undefined;
-
-      console.log('🔍 Breakdown mapping:', {
-        roleRuleId: breakdown.roleRuleId,
-        foundRule: !!rule,
-        ruleType: rule?.type,
-        label,
-        description,
-      });
 
       return {
         label,
@@ -1536,11 +1520,6 @@ export default function FairnessDashboardPage() {
 
         // Store role rules for preference sentence generation
         if (roleRules) {
-          console.log('🔍 Setting roleRules from API:', {
-            count: roleRules.length,
-            sample: roleRules[0],
-            ids: roleRules.map((r: any) => ({ id: r.id, type: r.type, desc: r.description?.substring(0, 50) })),
-          });
           setRoleRules(roleRules);
         }
 
@@ -2033,7 +2012,7 @@ export default function FairnessDashboardPage() {
                     }}
                   >
                     <div className="grid grid-cols-2 gap-3">
-                    <StatGraphCard 
+                    <StatGraphCard
                       data={{
                         type: 'sparkline',
                         title: 'Fairness index',
@@ -2042,7 +2021,12 @@ export default function FairnessDashboardPage() {
                           : Math.round((1 - selectedRole.giniCoefficient) * 10000) / 100,
                         unit: '%',
                         status: selectedRole.trend === 'improving' ? 'Good' : selectedRole.trend === 'worsening' ? 'Alert' : 'Stable',
-                        sparklineData: [0.15, 0.18, 0.14, 0.16, 0.12, selectedRole.giniCoefficient].map(g => Math.round((1 - g) * 10000) / 100),
+                        sparklineData: dashboardSnapshot?.selection.logbooks.map(lb => {
+                          const roleStats = lb.roleStats.find((r: any) => r.roleId === selectedRole.id);
+                          if (!roleStats || roleStats.giniCoefficient === null) return 0;
+                          const fairnessIndex = (1 - roleStats.giniCoefficient) * 100;
+                          return Math.round(fairnessIndex * 100) / 100;
+                        }) || [0],
                         icon: (
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                             <path fillRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm4.5 7.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0V12Zm2.25-3a.75.75 0 0 1 .75.75v6.75a.75.75 0 0 1-1.5 0V9.75A.75.75 0 0 1 13.5 9Zm3.75-1.5a.75.75 0 0 0-1.5 0v9a.75.75 0 0 0 1.5 0v-9Z" clipRule="evenodd" />
