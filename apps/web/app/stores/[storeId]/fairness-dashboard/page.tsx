@@ -575,17 +575,20 @@ export default function FairnessDashboardPage() {
     }
   };
 
+  // Track if component is mounted (client-side) to prevent hydration mismatches
+  const [mounted, setMounted] = useState(false);
+
   const [storeName, setStoreName] = useState<string>('');
-  const [activeDashboard, setActiveDashboard] = useState<string>(() => loadState('activeDashboard', 'Overview'));
+  const [activeDashboard, setActiveDashboard] = useState<string>('Overview');
   const [activeView, setActiveView] = useState<string>('overview');
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>('none');
-  const [expandedQuickLook, setExpandedQuickLook] = useState<'crew' | 'roles' | 'none'>(() => loadState('expandedQuickLook', 'none'));
+  const [expandedQuickLook, setExpandedQuickLook] = useState<'crew' | 'roles' | 'none'>('none');
   const [selectedCrew, setSelectedCrew] = useState<CrewCardData | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
-  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(() => loadState('selectedCrewId', null));
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(() => loadState('selectedRoleId', null));
-  const [crewPage, setCrewPage] = useState(() => loadState('crewPage', 1));
-  const [rolePage, setRolePage] = useState(() => loadState('rolePage', 1));
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [crewPage, setCrewPage] = useState(1);
+  const [rolePage, setRolePage] = useState(1);
   const [crewSearchQuery, setCrewSearchQuery] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -596,17 +599,9 @@ export default function FairnessDashboardPage() {
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardSnapshot | null>(null);
   
-  const [timeSelectionIndex, setTimeSelectionIndex] = useState(() => loadState('timeSelectionIndex', 0));
-  const [yearSelectionIndex, setYearSelectionIndex] = useState(() => loadState('yearSelectionIndex', 0));
-  const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>(() => {
-    const saved = loadState<Record<string, number[]>>('selectedDays', {});
-    // Convert arrays back to Sets
-    const result: Record<string, Set<number>> = {};
-    for (const [key, value] of Object.entries(saved)) {
-      result[key] = new Set(value);
-    }
-    return result;
-  });
+  const [timeSelectionIndex, setTimeSelectionIndex] = useState(0);
+  const [yearSelectionIndex, setYearSelectionIndex] = useState(0);
+  const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>({});
   const [selectedMonths, setSelectedMonths] = useState<Record<number, Set<number>>>({}); // yearIndex -> Set of selected month numbers (0-11)
   const [hoveredDay, setHoveredDay] = useState<{ month: number; day: number } | null>(null);
   const [hoveredMonth, setHoveredMonth] = useState<{ year: number; month: number } | null>(null);
@@ -1599,53 +1594,89 @@ export default function FairnessDashboardPage() {
   // Get the time interval string from API data
   const timeIntervalDisplay = formatTimeInterval(dashboardApiData?.panel.header.timeInterval);
 
+  // Load state from localStorage after mount to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+
+    // Load all persisted state
+    setActiveDashboard(loadState('activeDashboard', 'Overview'));
+    setExpandedQuickLook(loadState('expandedQuickLook', 'none'));
+    setCrewPage(loadState('crewPage', 1));
+    setRolePage(loadState('rolePage', 1));
+    setTimeSelectionIndex(loadState('timeSelectionIndex', 0));
+    setYearSelectionIndex(loadState('yearSelectionIndex', 0));
+    setSelectedCrewId(loadState('selectedCrewId', null));
+    setSelectedRoleId(loadState('selectedRoleId', null));
+
+    // Load selectedDays (convert arrays back to Sets)
+    const saved = loadState<Record<string, number[]>>('selectedDays', {});
+    const result: Record<string, Set<number>> = {};
+    for (const [key, value] of Object.entries(saved)) {
+      result[key] = new Set(value);
+    }
+    setSelectedDays(result);
+  }, []);
+
   // Persist state to localStorage
   useEffect(() => {
+    if (!mounted) return;
     saveState('activeDashboard', activeDashboard);
-  }, [activeDashboard]);
+  }, [activeDashboard, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     saveState('expandedQuickLook', expandedQuickLook);
-  }, [expandedQuickLook]);
+  }, [expandedQuickLook, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     saveState('crewPage', crewPage);
-  }, [crewPage]);
+  }, [crewPage, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     saveState('rolePage', rolePage);
-  }, [rolePage]);
+  }, [rolePage, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     saveState('timeSelectionIndex', timeSelectionIndex);
-  }, [timeSelectionIndex]);
+  }, [timeSelectionIndex, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     saveState('yearSelectionIndex', yearSelectionIndex);
-  }, [yearSelectionIndex]);
+  }, [yearSelectionIndex, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     // Convert Sets to arrays for JSON serialization
     const serializable: Record<string, number[]> = {};
     for (const [key, value] of Object.entries(selectedDays)) {
       serializable[key] = Array.from(value);
     }
     saveState('selectedDays', serializable);
-  }, [selectedDays]);
+  }, [selectedDays, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     if (selectedCrew) {
       saveState('selectedCrewId', selectedCrew.id);
       setSelectedCrewId(selectedCrew.id);
+    } else {
+      saveState('selectedCrewId', null);
     }
-  }, [selectedCrew]);
+  }, [selectedCrew, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     if (selectedRole) {
       saveState('selectedRoleId', selectedRole.id);
       setSelectedRoleId(selectedRole.id);
+    } else {
+      saveState('selectedRoleId', null);
     }
-  }, [selectedRole]);
+  }, [selectedRole, mounted]);
 
   // Restore selected crew/role from IDs after data loads
   useEffect(() => {
@@ -1665,6 +1696,24 @@ export default function FairnessDashboardPage() {
       setExpandedQuickLook('roles');
     }
   }, [dashboardSnapshot, selectedRoleId, selectedRole, computedRoleCards]);
+
+  // Update selected crew with fresh data when computedCrewCards changes (e.g., dates selected)
+  useEffect(() => {
+    if (!selectedCrew || !dashboardSnapshot) return;
+    const updatedCrew = computedCrewCards.find(c => c.id === selectedCrew.id);
+    if (updatedCrew) {
+      setSelectedCrew(updatedCrew);
+    }
+  }, [computedCrewCards, dashboardSnapshot]);
+
+  // Update selected role with fresh data when computedRoleCards changes (e.g., dates selected)
+  useEffect(() => {
+    if (!selectedRole || !dashboardSnapshot) return;
+    const updatedRole = computedRoleCards.find(r => r.id === selectedRole.id);
+    if (updatedRole) {
+      setSelectedRole(updatedRole);
+    }
+  }, [computedRoleCards, dashboardSnapshot]);
 
   // Fetch store info
   useEffect(() => {
@@ -1925,12 +1974,13 @@ export default function FairnessDashboardPage() {
                 className="flex items-center justify-center transition-all"
                 style={{
                   ...aiGlassContentStyle('9999px'),
+                  background: 'rgba(255, 255, 255, 0.01)',
                   cursor: 'pointer',
                   border: 'none',
                   transition: 'background 0.2s ease',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'}
               >
                 <UserIcon className="w-5 h-5" style={{ color: '#9A999E' }} />
               </button>
@@ -1965,27 +2015,27 @@ export default function FairnessDashboardPage() {
                   {/* Left: Dropdown for view selection */}
                   <Menu as="div" className="absolute left-0" style={{ zIndex: 100 }}>
                     <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px') }}>
-                      <MenuButton 
+                      <MenuButton
                         className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
-                        style={{ 
+                        style={{
                           position: 'relative' as const,
                           zIndex: 0,
                           width: '100%',
                           height: '100%',
-                          background: 'rgba(255, 255, 255, 0.08)',
+                          background: 'rgba(255, 255, 255, 0.01)',
                           backdropFilter: 'blur(5px)',
                           WebkitBackdropFilter: 'blur(5px)',
                           borderRadius: '9999px',
-                          fontFamily: 'var(--font-open-sans)', 
-                          color: '#DBDADB', 
+                          fontFamily: 'var(--font-open-sans)',
+                          color: '#DBDADB',
                           fontWeight: 400,
                           padding: '6px 14px',
                           outline: 'none',
                           cursor: 'pointer',
                           transition: 'background 0.2s ease',
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'}
                       >
                         {DASHBOARD_VIEWS.find(v => v.id === activeView)?.name || 'Overview'}
                       </MenuButton>
@@ -2015,6 +2065,8 @@ export default function FairnessDashboardPage() {
                                   setActiveView(view.id);
                                   setSelectedCrew(null);
                                   setSelectedRole(null);
+                                  setSelectedCrewId(null);
+                                  setSelectedRoleId(null);
                                   if (view.id === 'crew') {
                                     setCrewPage(1);
                                     setExpandedQuickLook('crew');
@@ -2045,7 +2097,7 @@ export default function FairnessDashboardPage() {
 
                   {/* Center: Dashboard title */}
                   <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                    {selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
+                    {!mounted ? 'Dashboard' : selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
                   </h2>
                 </div>
               </div>
@@ -2627,6 +2679,7 @@ export default function FairnessDashboardPage() {
                                   onClick={() => {
                                     setSelectedCrew(card);
                                     setSelectedRole(null); // Clear any selected role
+                                    setSelectedRoleId(null); // Clear role ID from localStorage
                                     setExpandedQuickLook('none'); // Reset so expand button shows "expand"
                                   setActiveView('crew'); // Sync dropdown to show "Crew"
                                 }}
@@ -2636,6 +2689,7 @@ export default function FairnessDashboardPage() {
                                   onClick={() => {
                                     setSelectedCrew(card);
                                     setSelectedRole(null); // Clear any selected role
+                                    setSelectedRoleId(null); // Clear role ID from localStorage
                                     setExpandedQuickLook('none'); // Reset so expand button shows "expand"
                                     setActiveView('crew'); // Sync dropdown to show "Crew"
                                   }}
@@ -2667,6 +2721,7 @@ export default function FairnessDashboardPage() {
                                   onClick={() => {
                                     setSelectedRole(card);
                                     setSelectedCrew(null);
+                                    setSelectedCrewId(null);
                                     setExpandedQuickLook('none');
                                     setActiveView('roles');
                                   }}
@@ -2676,6 +2731,7 @@ export default function FairnessDashboardPage() {
                                     onClick={() => {
                                       setSelectedRole(card);
                                       setSelectedCrew(null);
+                                      setSelectedCrewId(null);
                                       setExpandedQuickLook('none');
                                       setActiveView('roles');
                                     }}
@@ -3591,6 +3647,7 @@ export default function FairnessDashboardPage() {
                     onCardClick={(card) => {
                       setSelectedCrew(card);
                       setSelectedRole(null); // Clear any selected role
+                      setSelectedRoleId(null); // Clear role ID from localStorage
                       setExpandedQuickLook('none'); // Reset so expand button shows "expand"
                       setActiveView('crew'); // Sync dropdown to show "Crew"
                     }}
@@ -3666,6 +3723,7 @@ export default function FairnessDashboardPage() {
                       onCardClick={(card) => {
                         setSelectedRole(card);
                         setSelectedCrew(null); // Clear any selected crew
+                        setSelectedCrewId(null); // Clear crew ID from localStorage
                         setExpandedQuickLook('none'); // Reset so expand button shows "expand"
                         setActiveView('roles'); // Sync dropdown to show "Roles"
                       }}
