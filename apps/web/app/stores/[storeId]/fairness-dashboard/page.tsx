@@ -1431,6 +1431,90 @@ export default function FairnessDashboardPage() {
     };
   }, [dashboardSnapshot, selectedRole]);
 
+  // Compute role heatmap data (avg hours per crew per day for selected role)
+  const computedRoleHeatmap = React.useMemo(() => {
+    if (!dashboardSnapshot || !selectedRole) {
+      return { weeks: [], data: [] };
+    }
+
+    const logbooks = dashboardSnapshot.selection.logbooks;
+    if (logbooks.length === 0) {
+      return { weeks: [], data: [] };
+    }
+
+    // Group logbooks by week
+    const weekMap = new Map<string, { weekLabel: string; dates: { date: string; dayOfWeek: string; avgHours: number }[] }>();
+
+    logbooks.forEach(lb => {
+      const date = new Date(lb.logbook.date);
+
+      // Get the start of the week (Sunday)
+      const dayOfWeek = date.getUTCDay(); // 0 = Sunday, 6 = Saturday
+      const startOfWeek = new Date(date);
+      startOfWeek.setUTCDate(date.getUTCDate() - dayOfWeek);
+
+      // Format week label (e.g., "25 Nov-1 Dec, 25")
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6);
+
+      const startDay = startOfWeek.getUTCDate();
+      const endDay = endOfWeek.getUTCDate();
+      const startMonth = startOfWeek.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+      const endMonth = endOfWeek.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+      const year = String(startOfWeek.getUTCFullYear()).slice(-2);
+
+      const weekLabel = startMonth === endMonth
+        ? `${startDay}-${endDay} ${startMonth}, ${year}`
+        : `${startDay} ${startMonth}-${endDay} ${endMonth}, ${year}`;
+
+      const weekKey = startOfWeek.toISOString().split('T')[0];
+
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, { weekLabel, dates: [] });
+      }
+
+      // Get day of week label
+      const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayLabel = dayLabels[dayOfWeek];
+
+      // Calculate average hours for this role on this date
+      const roleStats = lb.crewStats.filter(cs => {
+        const minutes = cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0;
+        return minutes > 0;
+      });
+
+      const totalMinutes = roleStats.reduce((sum, cs) => sum + (cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0), 0);
+      const avgHours = roleStats.length > 0 ? totalMinutes / roleStats.length / 60 : 0;
+
+      weekMap.get(weekKey)!.dates.push({
+        date: lb.logbook.date,
+        dayOfWeek: dayLabel,
+        avgHours,
+      });
+    });
+
+    // Convert to weeks array and data array
+    const weeks: string[] = [];
+    const data: { week: string; dayOfWeek: string; avgHours: number }[] = [];
+
+    // Sort weeks chronologically
+    const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+    sortedWeeks.forEach(([weekKey, weekData]) => {
+      weeks.push(weekData.weekLabel);
+
+      weekData.dates.forEach(dateData => {
+        data.push({
+          week: weekData.weekLabel,
+          dayOfWeek: dateData.dayOfWeek,
+          avgHours: dateData.avgHours,
+        });
+      });
+    });
+
+    return { weeks, data };
+  }, [dashboardSnapshot, selectedRole]);
+
   // Get current dashboard data
   const currentDashboard = computedDashboardData.expandedDashboards[activeDashboard];
 
@@ -2135,53 +2219,10 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <RoleHeatmap 
+                    <RoleHeatmap
                       title="Avg hours/crew by day"
-                      weeks={['6-13 Jun, 25', '13-20 Jun, 25', '20-27 Jun, 25', '27 Jun-4 Jul, 25', '4-11 Jul, 25', '11-18 Jul, 25']}
-                      data={[
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Mon', avgHours: 2.5 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Tue', avgHours: 1.8 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Wed', avgHours: 3.0 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Thu', avgHours: 2.2 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Fri', avgHours: 2.8 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Sat', avgHours: 3.5 },
-                        { week: '6-13 Jun, 25', dayOfWeek: 'Sun', avgHours: 1.5 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Mon', avgHours: 2.3 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Tue', avgHours: 2.1 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Wed', avgHours: 2.8 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Thu', avgHours: 1.9 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Fri', avgHours: 3.2 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Sat', avgHours: 3.0 },
-                        { week: '13-20 Jun, 25', dayOfWeek: 'Sun', avgHours: 0 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Mon', avgHours: 2.7 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Tue', avgHours: 2.4 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Wed', avgHours: 3.1 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Thu', avgHours: 2.6 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Fri', avgHours: 2.9 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Sat', avgHours: 3.3 },
-                        { week: '20-27 Jun, 25', dayOfWeek: 'Sun', avgHours: 1.2 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Mon', avgHours: 2.0 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Tue', avgHours: 1.5 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Wed', avgHours: 2.5 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Thu', avgHours: 2.3 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Fri', avgHours: 3.0 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Sat', avgHours: 2.8 },
-                        { week: '27 Jun-4 Jul, 25', dayOfWeek: 'Sun', avgHours: 0 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Mon', avgHours: 2.4 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Tue', avgHours: 2.6 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Wed', avgHours: 2.9 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Thu', avgHours: 2.1 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Fri', avgHours: 3.4 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Sat', avgHours: 3.1 },
-                        { week: '4-11 Jul, 25', dayOfWeek: 'Sun', avgHours: 1.8 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Mon', avgHours: 2.2 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Tue', avgHours: 1.9 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Wed', avgHours: 2.7 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Thu', avgHours: 2.4 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Fri', avgHours: 3.1 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Sat', avgHours: 3.5 },
-                        { week: '11-18 Jul, 25', dayOfWeek: 'Sun', avgHours: 1.0 },
-                      ]}
+                      weeks={computedRoleHeatmap.weeks}
+                      data={computedRoleHeatmap.data}
                     />
                   </div>
                   
