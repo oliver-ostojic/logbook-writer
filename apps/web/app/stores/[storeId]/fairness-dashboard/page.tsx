@@ -549,15 +549,43 @@ function ListRowItem({
 export default function FairnessDashboardPage() {
   const params = useParams();
   const storeId = params.storeId as string;
+
+  // Helper to get localStorage key scoped to store
+  const getStorageKey = (key: string) => `fairness-dashboard-${storeId}-${key}`;
+
+  // Helper to load from localStorage
+  const loadState = <T,>(key: string, defaultValue: T): T => {
+    if (typeof window === 'undefined') return defaultValue;
+    try {
+      const saved = localStorage.getItem(getStorageKey(key));
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch (e) {
+      console.error(`Failed to load ${key}:`, e);
+      return defaultValue;
+    }
+  };
+
+  // Helper to save to localStorage
+  const saveState = (key: string, value: any) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(getStorageKey(key), JSON.stringify(value));
+    } catch (e) {
+      console.error(`Failed to save ${key}:`, e);
+    }
+  };
+
   const [storeName, setStoreName] = useState<string>('');
-  const [activeDashboard, setActiveDashboard] = useState<string>('Overview');
+  const [activeDashboard, setActiveDashboard] = useState<string>(() => loadState('activeDashboard', 'Overview'));
   const [activeView, setActiveView] = useState<string>('overview');
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>('none');
-  const [expandedQuickLook, setExpandedQuickLook] = useState<'crew' | 'roles' | 'none'>('none');
+  const [expandedQuickLook, setExpandedQuickLook] = useState<'crew' | 'roles' | 'none'>(() => loadState('expandedQuickLook', 'none'));
   const [selectedCrew, setSelectedCrew] = useState<CrewCardData | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
-  const [crewPage, setCrewPage] = useState(1);
-  const [rolePage, setRolePage] = useState(1);
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(() => loadState('selectedCrewId', null));
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(() => loadState('selectedRoleId', null));
+  const [crewPage, setCrewPage] = useState(() => loadState('crewPage', 1));
+  const [rolePage, setRolePage] = useState(() => loadState('rolePage', 1));
   const [crewSearchQuery, setCrewSearchQuery] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -568,27 +596,16 @@ export default function FairnessDashboardPage() {
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardSnapshot | null>(null);
   
-  const [timeSelectionIndex, setTimeSelectionIndex] = useState(0); // Month index within selected year
-  const [yearSelectionIndex, setYearSelectionIndex] = useState(0); // Year carousel index
+  const [timeSelectionIndex, setTimeSelectionIndex] = useState(() => loadState('timeSelectionIndex', 0));
+  const [yearSelectionIndex, setYearSelectionIndex] = useState(() => loadState('yearSelectionIndex', 0));
   const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>(() => {
-    // Load from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('calendar-selected-days');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          // Convert arrays back to Sets
-          const result: Record<string, Set<number>> = {};
-          for (const [key, value] of Object.entries(parsed)) {
-            result[key] = new Set(value as number[]);
-          }
-          return result;
-        } catch (e) {
-          console.error('Failed to parse saved selections:', e);
-        }
-      }
+    const saved = loadState<Record<string, number[]>>('selectedDays', {});
+    // Convert arrays back to Sets
+    const result: Record<string, Set<number>> = {};
+    for (const [key, value] of Object.entries(saved)) {
+      result[key] = new Set(value);
     }
-    return {};
+    return result;
   });
   const [selectedMonths, setSelectedMonths] = useState<Record<number, Set<number>>>({}); // yearIndex -> Set of selected month numbers (0-11)
   const [hoveredDay, setHoveredDay] = useState<{ month: number; day: number } | null>(null);
@@ -1582,6 +1599,73 @@ export default function FairnessDashboardPage() {
   // Get the time interval string from API data
   const timeIntervalDisplay = formatTimeInterval(dashboardApiData?.panel.header.timeInterval);
 
+  // Persist state to localStorage
+  useEffect(() => {
+    saveState('activeDashboard', activeDashboard);
+  }, [activeDashboard]);
+
+  useEffect(() => {
+    saveState('expandedQuickLook', expandedQuickLook);
+  }, [expandedQuickLook]);
+
+  useEffect(() => {
+    saveState('crewPage', crewPage);
+  }, [crewPage]);
+
+  useEffect(() => {
+    saveState('rolePage', rolePage);
+  }, [rolePage]);
+
+  useEffect(() => {
+    saveState('timeSelectionIndex', timeSelectionIndex);
+  }, [timeSelectionIndex]);
+
+  useEffect(() => {
+    saveState('yearSelectionIndex', yearSelectionIndex);
+  }, [yearSelectionIndex]);
+
+  useEffect(() => {
+    // Convert Sets to arrays for JSON serialization
+    const serializable: Record<string, number[]> = {};
+    for (const [key, value] of Object.entries(selectedDays)) {
+      serializable[key] = Array.from(value);
+    }
+    saveState('selectedDays', serializable);
+  }, [selectedDays]);
+
+  useEffect(() => {
+    if (selectedCrew) {
+      saveState('selectedCrewId', selectedCrew.id);
+      setSelectedCrewId(selectedCrew.id);
+    }
+  }, [selectedCrew]);
+
+  useEffect(() => {
+    if (selectedRole) {
+      saveState('selectedRoleId', selectedRole.id);
+      setSelectedRoleId(selectedRole.id);
+    }
+  }, [selectedRole]);
+
+  // Restore selected crew/role from IDs after data loads
+  useEffect(() => {
+    if (!dashboardSnapshot || !selectedCrewId || selectedCrew) return;
+    const crew = computedCrewCards.find(c => c.id === selectedCrewId);
+    if (crew) {
+      setSelectedCrew(crew);
+      setExpandedQuickLook('crew');
+    }
+  }, [dashboardSnapshot, selectedCrewId, selectedCrew, computedCrewCards]);
+
+  useEffect(() => {
+    if (!dashboardSnapshot || !selectedRoleId || selectedRole) return;
+    const role = computedRoleCards.find(r => r.id === selectedRoleId);
+    if (role) {
+      setSelectedRole(role);
+      setExpandedQuickLook('roles');
+    }
+  }, [dashboardSnapshot, selectedRoleId, selectedRole, computedRoleCards]);
+
   // Fetch store info
   useEffect(() => {
     // Fetch store details
@@ -1616,9 +1700,14 @@ export default function FairnessDashboardPage() {
     fetchAvailableDates();
   }, [storeId]);
 
-  // Auto-navigate to most recent month with shifts when dates load
+  // Auto-navigate to most recent month with shifts when dates load (only if no saved state)
   useEffect(() => {
     if (availableDates.length === 0) return;
+
+    // Check if we have saved state - if so, don't auto-navigate
+    const hasSavedYearIndex = loadState('yearSelectionIndex', null) !== null;
+    const hasSavedTimeIndex = loadState('timeSelectionIndex', null) !== null;
+    if (hasSavedYearIndex || hasSavedTimeIndex) return;
 
     // Find the most recent date (dates are sorted descending from API)
     const mostRecentDate = availableDates[0];
