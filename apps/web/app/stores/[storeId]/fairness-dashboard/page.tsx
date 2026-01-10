@@ -1515,6 +1515,61 @@ export default function FairnessDashboardPage() {
     return { weeks, data };
   }, [dashboardSnapshot, selectedRole]);
 
+  // Compute crew fairness table data for selected role
+  const computedCrewFairnessTable = React.useMemo(() => {
+    if (!dashboardSnapshot || !selectedRole) {
+      return [];
+    }
+
+    const crewRollups = dashboardSnapshot.selection.selectionCrewRollups;
+    const roleId = selectedRole.id;
+
+    // Filter crew who have been assigned to this role
+    const crewWithRole = crewRollups.filter(crew => {
+      const minutes = crew.avgMinutesPerAssignmentByRoleSelection[roleId];
+      return minutes !== undefined && minutes > 0;
+    });
+
+    if (crewWithRole.length === 0) {
+      return [];
+    }
+
+    // Calculate overall average for deviation
+    const totalMinutes = crewWithRole.reduce((sum, crew) =>
+      sum + crew.avgMinutesPerAssignmentByRoleSelection[roleId], 0
+    );
+    const overallAvg = totalMinutes / crewWithRole.length;
+
+    // Today's date for calculating days ago
+    const today = new Date();
+
+    // Map to table format
+    return crewWithRole.map(crew => {
+      const minsPerShift = crew.avgMinutesPerAssignmentByRoleSelection[roleId];
+      const lastAssignedDate = crew.lastAssignedDateByRoleSelection[roleId];
+
+      // Calculate days ago
+      let lastAssignedDays = 0;
+      if (lastAssignedDate) {
+        const lastDate = new Date(lastAssignedDate);
+        const diffTime = today.getTime() - lastDate.getTime();
+        lastAssignedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      // Calculate deviation percentage
+      const deviation = overallAvg > 0
+        ? ((minsPerShift - overallAvg) / overallAvg) * 100
+        : 0;
+
+      return {
+        name: crew.crewName,
+        minsPerShift,
+        lastAssignedDays,
+        deviation,
+      };
+    });
+  }, [dashboardSnapshot, selectedRole]);
+
   // Get current dashboard data
   const currentDashboard = computedDashboardData.expandedDashboards[activeDashboard];
 
@@ -2238,22 +2293,9 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <CrewFairnessTable 
+                    <CrewFairnessTable
                       title="Assignment info"
-                      data={[
-                        { name: 'Sarah', minsPerShift: 42, lastAssignedDays: 1, deviation: 5.2 },
-                        { name: 'Mike', minsPerShift: 38, lastAssignedDays: 2, deviation: -4.8 },
-                        { name: 'Emma', minsPerShift: 50, lastAssignedDays: 0, deviation: 18.5 },
-                        { name: 'John', minsPerShift: 40, lastAssignedDays: 3, deviation: -2.1 },
-                        { name: 'Lisa', minsPerShift: 35, lastAssignedDays: 4, deviation: -12.3 },
-                        { name: 'Alex', minsPerShift: 48, lastAssignedDays: 1, deviation: 14.7 },
-                        { name: 'Rachel', minsPerShift: 44, lastAssignedDays: 2, deviation: 8.3 },
-                        { name: 'Tom', minsPerShift: 36, lastAssignedDays: 5, deviation: -9.1 },
-                        { name: 'Olivia', minsPerShift: 52, lastAssignedDays: 0, deviation: 22.4 },
-                        { name: 'James', minsPerShift: 41, lastAssignedDays: 1, deviation: 1.5 },
-                        { name: 'Sophie', minsPerShift: 33, lastAssignedDays: 6, deviation: -15.8 },
-                        { name: 'Daniel', minsPerShift: 46, lastAssignedDays: 2, deviation: 11.2 },
-                      ]}
+                      data={computedCrewFairnessTable}
                     />
                   </div>
                 </>
