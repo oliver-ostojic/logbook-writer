@@ -1378,23 +1378,27 @@ export default function FairnessDashboardPage() {
   // Compute role dashboard box plot data (crew mins/shift spread for selected role)
   const computedRoleBoxPlot = React.useMemo(() => {
     if (!dashboardSnapshot || !selectedRole) {
-      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [], hasDistribution: false };
     }
 
-    // Gather all crew minutes for this role across all logbooks
-    // For each day, get the minutes each crew worked on this role
+    // Gather all crew minutes for this role across all logbooks (per-day granularity)
     const allCrewMinutes: number[] = dashboardSnapshot.selection.logbooks.flatMap(lb =>
       lb.crewStats
         .map(cs => cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0)
-        .filter(minutes => minutes > 0) // Only include crew who worked this role
+        .filter(minutes => minutes > 0)
     );
 
     if (allCrewMinutes.length === 0) {
-      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [], hasDistribution: false };
     }
 
-    // Sort for quantile calculation
     const sorted = allCrewMinutes.slice().sort((a, b) => a - b);
+
+    // Check if there's meaningful distribution (at least 2 unique values)
+    const uniqueValues = new Set(sorted);
+    if (uniqueValues.size < 2) {
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [], hasDistribution: false };
+    }
 
     // Compute quantiles
     const q1Index = Math.floor(sorted.length * 0.25);
@@ -1423,6 +1427,7 @@ export default function FairnessDashboardPage() {
       q3: Math.round(q3 * 100) / 100,
       max: Math.round(whiskerMax * 100) / 100,
       outliers: outliers.map(o => Math.round(o * 100) / 100),
+      hasDistribution: true,
     };
   }, [dashboardSnapshot, selectedRole]);
 
@@ -2098,7 +2103,7 @@ export default function FairnessDashboardPage() {
                   </div>
 
                   {/* Crew mins distribution box plot - wrapped in translucent card */}
-                  {computedRoleBoxPlot.max > 0 && (
+                  {computedRoleBoxPlot.hasDistribution && (
                     <div
                       className="mt-4 graph-container-glass-border"
                       style={{
