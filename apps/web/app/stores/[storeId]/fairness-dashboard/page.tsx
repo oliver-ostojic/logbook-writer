@@ -1368,12 +1368,29 @@ export default function FairnessDashboardPage() {
     const firstLogbook = dashboardSnapshot.selection.logbooks[0];
     if (!firstLogbook) return [];
 
+    console.log('🔍 Computing preference data:', {
+      breakdownCount: firstLogbook.dayAggregate.breakdownByRuleType.length,
+      roleRulesCount: roleRules.length,
+      sampleBreakdown: firstLogbook.dayAggregate.breakdownByRuleType[0],
+      allRoleRuleIds: roleRules.map(r => r.id || r.roleRuleId || r.ruleId),
+      sampleRoleRule: roleRules[0],
+    });
+
     // Transform breakdownByRuleType into GraphCardSimple format
     return firstLogbook.dayAggregate.breakdownByRuleType.map(breakdown => {
       // Find the corresponding role rule and use its description
-      const rule = roleRules.find(r => r.id === breakdown.roleRuleId);
-      const label = rule?.type || `Rule ${breakdown.roleRuleId}`;
-      const description = rule?.description;
+      const rule = roleRules.find(r => r.roleRuleId === breakdown.roleRuleId);
+      // Use formatRuleTypeLabel for human-readable label
+      const label = rule?.type ? formatRuleTypeLabel(rule.type) : `Rule ${breakdown.roleRuleId}`;
+      const description = rule?.description || undefined;
+
+      console.log('🔍 Breakdown mapping:', {
+        roleRuleId: breakdown.roleRuleId,
+        foundRule: !!rule,
+        ruleType: rule?.type,
+        label,
+        description,
+      });
 
       return {
         label,
@@ -1519,6 +1536,11 @@ export default function FairnessDashboardPage() {
 
         // Store role rules for preference sentence generation
         if (roleRules) {
+          console.log('🔍 Setting roleRules from API:', {
+            count: roleRules.length,
+            sample: roleRules[0],
+            ids: roleRules.map((r: any) => ({ id: r.id, type: r.type, desc: r.description?.substring(0, 50) })),
+          });
           setRoleRules(roleRules);
         }
 
@@ -1951,6 +1973,8 @@ export default function FairnessDashboardPage() {
                           return (
                             <GraphCardWithStatsTransparent
                               title="Shift satisfaction spread"
+                              boxPlotType="satisfaction"
+                              isSingleCrew={true}
                               boxPlotData={{
                                 min: Math.round(whiskerMin * 100) / 100,
                                 q1: Math.round(q1 * 100) / 100,
@@ -1965,7 +1989,7 @@ export default function FairnessDashboardPage() {
                       </div>
                     );
                   })()}
-                  
+
                   {/* Preferences Met graph - individual crew level - wrapped in translucent card */}
                   <div 
                     className="mt-4 graph-container-glass-border"
@@ -2220,6 +2244,7 @@ export default function FairnessDashboardPage() {
                     <GraphCardWithStatsTransparent
                       title="Satisfaction distribution"
                       boxPlotData={computedSatisfactionBoxPlot}
+                      boxPlotType="satisfaction"
                     >
                       {/* Additional graph content can go here */}
                     </GraphCardWithStatsTransparent>

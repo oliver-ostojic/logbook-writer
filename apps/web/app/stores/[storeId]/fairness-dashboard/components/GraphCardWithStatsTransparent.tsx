@@ -339,17 +339,21 @@ interface GraphCardWithStatsTransparentProps {
     unit?: string;
   }[];
   boxPlotData?: BoxPlotData;
+  boxPlotType?: 'satisfaction' | 'time'; // Type of box plot for hover descriptions
+  isSingleCrew?: boolean; // Whether this is for a single crew member (affects description wording)
   children?: React.ReactNode;
 }
 
-export function GraphCardWithStatsTransparent({ 
-  title, 
+export function GraphCardWithStatsTransparent({
+  title,
   stats = [],
   boxPlotData,
-  children 
+  boxPlotType = 'time', // Default to time-based for backward compatibility
+  isSingleCrew = false, // Default to multiple crew context
+  children
 }: GraphCardWithStatsTransparentProps) {
   const [hoveredPart, setHoveredPart] = useState<HoveredPart>(null);
-  
+
   // Format minutes to readable string (e.g., "30 min", "1 hr 10 min", "2 hr")
   const formatMinutesToReadable = (minutes: number): string => {
     if (minutes < 60) {
@@ -363,23 +367,65 @@ export function GraphCardWithStatsTransparent({
     return `${hours} hr ${mins} min`;
   };
 
+  // Format satisfaction score as percentage with 1 decimal place
+  const formatSatisfactionScore = (score: number): string => {
+    return `${score.toFixed(1)}%`;
+  };
+
   // Generate hover description for box plot parts
   const getHoverDescription = (): string | null => {
     if (!boxPlotData || hoveredPart === null) return null;
 
-    switch (hoveredPart) {
-      case 'min':
-        return `Shortest: ${formatMinutesToReadable(boxPlotData.min)}`;
-      case 'max':
-        return `Longest: ${formatMinutesToReadable(boxPlotData.max)}`;
-      case 'median':
-        return `Typical: ${formatMinutesToReadable(boxPlotData.median)}`;
-      case 'box':
-      case 'q1':
-      case 'q3':
-        return `Most crew worked between ${formatMinutesToReadable(boxPlotData.q1)} and ${formatMinutesToReadable(boxPlotData.q3)}`;
-      default:
-        return null;
+    if (boxPlotType === 'satisfaction') {
+      if (isSingleCrew) {
+        // Single crew member - use singular descriptions
+        switch (hoveredPart) {
+          case 'min':
+            return `Lowest shift: ${formatSatisfactionScore(boxPlotData.min)}`;
+          case 'max':
+            return `Highest shift: ${formatSatisfactionScore(boxPlotData.max)}`;
+          case 'median':
+            return `Typical shift: ${formatSatisfactionScore(boxPlotData.median)}`;
+          case 'box':
+          case 'q1':
+          case 'q3':
+            return `Most shifts scored between ${formatSatisfactionScore(boxPlotData.q1)} and ${formatSatisfactionScore(boxPlotData.q3)}`;
+          default:
+            return null;
+        }
+      } else {
+        // Multiple crew - use plural descriptions
+        switch (hoveredPart) {
+          case 'min':
+            return `Lowest: ${formatSatisfactionScore(boxPlotData.min)}`;
+          case 'max':
+            return `Highest: ${formatSatisfactionScore(boxPlotData.max)}`;
+          case 'median':
+            return `Typical: ${formatSatisfactionScore(boxPlotData.median)}`;
+          case 'box':
+          case 'q1':
+          case 'q3':
+            return `Most crew scored between ${formatSatisfactionScore(boxPlotData.q1)} and ${formatSatisfactionScore(boxPlotData.q3)}`;
+          default:
+            return null;
+        }
+      }
+    } else {
+      // Time-based descriptions
+      switch (hoveredPart) {
+        case 'min':
+          return `Shortest: ${formatMinutesToReadable(boxPlotData.min)}`;
+        case 'max':
+          return `Longest: ${formatMinutesToReadable(boxPlotData.max)}`;
+        case 'median':
+          return `Typical: ${formatMinutesToReadable(boxPlotData.median)}`;
+        case 'box':
+        case 'q1':
+        case 'q3':
+          return `Most crew worked between ${formatMinutesToReadable(boxPlotData.q1)} and ${formatMinutesToReadable(boxPlotData.q3)}`;
+        default:
+          return null;
+      }
     }
   };
 
