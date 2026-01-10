@@ -602,12 +602,6 @@ export default function FairnessDashboardPage() {
   // Available dates from API (logbook dates)
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
-  // Edit mode for calendar
-  const [isCalendarEditMode, setIsCalendarEditMode] = useState(false);
-  const [calendarHasChanges, setCalendarHasChanges] = useState(false);
-  const [isSettling, setIsSettling] = useState(false);
-  const initialSelectionRef = useRef<string>('');
-
   const CREW_CARDS_PER_PAGE = 7;
   const ROLE_CARDS_PER_PAGE = 6;
   
@@ -688,7 +682,6 @@ export default function FairnessDashboardPage() {
   
   // Toggle day selection (single click)
   const toggleDaySelection = (monthIndex: number, day: number) => {
-    if (!isCalendarEditMode) return; // Only allow selection in edit mode
     const key = getSelectionKey(selectedYear, monthIndex);
     setSelectedDays(prev => {
       const monthDays = new Set(prev[key] || []);
@@ -697,14 +690,12 @@ export default function FairnessDashboardPage() {
       } else {
         monthDays.add(day);
       }
-      setCalendarHasChanges(true);
       return { ...prev, [key]: monthDays };
     });
   };
-  
+
   // Handle drag start
   const handleDragStart = (monthIndex: number, day: number) => {
-    if (!isCalendarEditMode) return; // Only allow dragging in edit mode
     const key = getSelectionKey(selectedYear, monthIndex);
     const monthDays = selectedDays[key] || new Set();
     const isCurrentlySelected = monthDays.has(day);
@@ -720,7 +711,7 @@ export default function FairnessDashboardPage() {
     if (!isDragging || !dragStart) return;
     // Only allow drag within same month
     if (monthIndex !== dragStart.month) return;
-    
+
     const key = getSelectionKey(selectedYear, monthIndex);
     setSelectedDays(prev => {
       const monthDays = new Set(prev[key] || []);
@@ -729,7 +720,6 @@ export default function FairnessDashboardPage() {
       } else {
         monthDays.delete(day);
       }
-      setCalendarHasChanges(true);
       return { ...prev, [key]: monthDays };
     });
   };
@@ -1384,6 +1374,57 @@ export default function FairnessDashboardPage() {
       };
     });
   }, [dashboardSnapshot, roleRules]);
+
+  // Compute role dashboard box plot data (crew mins/shift spread for selected role)
+  const computedRoleBoxPlot = React.useMemo(() => {
+    if (!dashboardSnapshot || !selectedRole) {
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+    }
+
+    // Gather all crew minutes for this role across all logbooks
+    // For each day, get the minutes each crew worked on this role
+    const allCrewMinutes: number[] = dashboardSnapshot.selection.logbooks.flatMap(lb =>
+      lb.crewStats
+        .map(cs => cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0)
+        .filter(minutes => minutes > 0) // Only include crew who worked this role
+    );
+
+    if (allCrewMinutes.length === 0) {
+      return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
+    }
+
+    // Sort for quantile calculation
+    const sorted = allCrewMinutes.slice().sort((a, b) => a - b);
+
+    // Compute quantiles
+    const q1Index = Math.floor(sorted.length * 0.25);
+    const medianIndex = Math.floor(sorted.length * 0.5);
+    const q3Index = Math.floor(sorted.length * 0.75);
+
+    const q1 = sorted[q1Index];
+    const median = sorted[medianIndex];
+    const q3 = sorted[q3Index];
+    const iqr = q3 - q1;
+
+    // Outliers: values beyond 1.5 * IQR from quartiles
+    const lowerBound = q1 - 1.5 * iqr;
+    const upperBound = q3 + 1.5 * iqr;
+    const outliers = sorted.filter(val => val < lowerBound || val > upperBound);
+
+    // Whiskers: min/max of non-outliers
+    const nonOutliers = sorted.filter(val => val >= lowerBound && val <= upperBound);
+    const whiskerMin = nonOutliers.length > 0 ? nonOutliers[0] : sorted[0];
+    const whiskerMax = nonOutliers.length > 0 ? nonOutliers[nonOutliers.length - 1] : sorted[sorted.length - 1];
+
+    return {
+      min: Math.round(whiskerMin * 100) / 100,
+      q1: Math.round(q1 * 100) / 100,
+      median: Math.round(median * 100) / 100,
+      q3: Math.round(q3 * 100) / 100,
+      max: Math.round(whiskerMax * 100) / 100,
+      outliers: outliers.map(o => Math.round(o * 100) / 100),
+    };
+  }, [dashboardSnapshot, selectedRole]);
 
   // Get current dashboard data
   const currentDashboard = computedDashboardData.expandedDashboards[activeDashboard];
@@ -2055,32 +2096,28 @@ export default function FairnessDashboardPage() {
                     />
                     </div>
                   </div>
-                  
+
                   {/* Crew mins distribution box plot - wrapped in translucent card */}
-                  <div 
-                    className="mt-4 graph-container-glass-border"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
-                      padding: 16,
-                    }}
-                  >
-                    <GraphCardWithStatsTransparent 
-                      title="Crew mins/shift spread"
-                      boxPlotData={{
-                        min: 25,
-                        q1: 35,
-                        median: 42,
-                        q3: 50,
-                        max: 62,
-                        outliers: [18, 75],
+                  {computedRoleBoxPlot.max > 0 && (
+                    <div
+                      className="mt-4 graph-container-glass-border"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                        borderRadius: '1rem',
+                        padding: 16,
                       }}
-                    />
-                  </div>
-                  
+                    >
+                      <GraphCardWithStatsTransparent
+                        title="Crew mins/shift spread"
+                        boxPlotData={computedRoleBoxPlot}
+                        boxPlotType="time"
+                      />
+                    </div>
+                  )}
+
                   {/* Role assignment heatmap - wrapped in translucent card */}
                   <div 
                     className="mt-4 graph-container-glass-border"
@@ -2583,56 +2620,11 @@ export default function FairnessDashboardPage() {
                     paddingBottom: 22,
                     gap: 16,
                   }}>
-                    {/* Title inside container with Edit button */}
+                    {/* Title inside container */}
                     <div className="flex items-center justify-between">
                       <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
                         Time Selection
                       </span>
-                      <button
-                        onClick={() => {
-                          if (!isCalendarEditMode) {
-                            // Entering edit mode - store current selection
-                            initialSelectionRef.current = JSON.stringify(selectedDays);
-                            setCalendarHasChanges(false);
-                            setIsCalendarEditMode(true);
-                          } else {
-                            // Exiting edit mode - save to localStorage and trigger settle animation
-                            setIsCalendarEditMode(false);
-                            setIsSettling(true);
-
-                            // Save to localStorage before refresh
-                            if (typeof window !== 'undefined') {
-                              // Convert Sets to arrays for JSON serialization
-                              const serializable: Record<string, number[]> = {};
-                              for (const [key, value] of Object.entries(selectedDays)) {
-                                serializable[key] = Array.from(value);
-                              }
-                              localStorage.setItem('calendar-selected-days', JSON.stringify(serializable));
-                            }
-
-                            // Wait for settle animation to complete
-                            setTimeout(() => {
-                              setIsSettling(false);
-                              if (calendarHasChanges) {
-                                window.location.reload();
-                              }
-                            }, 400); // Match settleDown animation duration
-                          }
-                        }}
-                        className="text-med transition-all"
-                        style={{
-                          fontFamily: 'var(--font-open-sans)',
-                          fontWeight: 350,
-                          color: isCalendarEditMode ? '#DBDADB' : '#7C7F82',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                        }}
-                      >
-                        {isCalendarEditMode ? 'Done' : 'Edit'}
-                      </button>
                     </div>
                     
                     {/* Year carousel row */}
@@ -2687,11 +2679,11 @@ export default function FairnessDashboardPage() {
                             <button
                               key={year}
                               onClick={() => {
-                                if (index === yearSelectionIndex && isCalendarEditMode) {
-                                  // Toggle all days in all months of this year (only in edit mode)
+                                if (index === yearSelectionIndex) {
+                                  // Toggle all days in all months of this year
                                   const yearMonths = generateMonthOptions(year);
                                   const newSelectedDays = { ...selectedDays };
-                                  
+
                                   if (allDaysSelectedInYear) {
                                     // Deselect all days in all months
                                     for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
@@ -2723,16 +2715,12 @@ export default function FairnessDashboardPage() {
                                   }
 
                                   setSelectedDays(newSelectedDays);
-                                  setCalendarHasChanges(true);
                                 } else {
                                   setYearSelectionIndex(index);
                                 }
                               }}
-                              className={`px-4 py-1.5 rounded-lg transition-all duration-200 ${
-                                isCalendarEditMode ? 'ios-wiggle' : isSettling ? 'settle-animation' : ''
-                              }`}
+                              className="px-4 py-1.5 rounded-lg transition-all duration-200"
                               style={{
-                                animationDelay: isCalendarEditMode ? `${index * 0.05}s` : undefined,
                                 background: allDaysSelectedInYear && isSelected
                                   ? 'rgb(239, 68, 68)'
                                   : isSelected ? 'rgb(39, 38, 41)' : 'rgb(28, 27, 31)',
@@ -2743,7 +2731,7 @@ export default function FairnessDashboardPage() {
                                 border: 'none',
                                 cursor: 'pointer',
                                 transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                                boxShadow: isSelected 
+                                boxShadow: isSelected
                                   ? '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
                                   : '0 2px 6px rgba(0, 0, 0, 0.15)',
                               }}
@@ -2910,11 +2898,8 @@ export default function FairnessDashboardPage() {
                               return (
                                 <div
                                   key={index}
-                                  className={`absolute flex flex-col quick-card-glass-border ${
-                                    isCalendarEditMode ? 'ios-wiggle' : isSettling ? 'settle-animation' : ''
-                                  }`}
+                                  className="absolute flex flex-col quick-card-glass-border"
                                   style={{
-                                    animationDelay: isCalendarEditMode ? `${index * 0.05}s` : undefined,
                                     width: cardWidth,
                                     height: thisCardHeight,
                                     left: leftOffset,
@@ -2934,18 +2919,18 @@ export default function FairnessDashboardPage() {
                                   onClick={(e) => {
                                     // If we just finished dragging, don't trigger card click
                                     if (justFinishedDraggingRef.current) return;
-                                    
+
                                     // Don't trigger if clicking on a day circle
                                     const target = e.target as HTMLElement;
                                     if (target.tagName === 'BUTTON' && target !== e.currentTarget) return;
 
-                                    if (index === timeSelectionIndex && isCalendarEditMode) {
-                                      // Toggle all days (only in edit mode)
+                                    if (index === timeSelectionIndex) {
+                                      // Toggle all days in this month
                                       const days = option.days;
                                       const key = getSelectionKey(selectedYear, index);
                                       const currentSelected = selectedDays[key] || new Set();
                                       const disabled = disabledDays[index] || new Set();
-                                      
+
                                       // Check if all available days are selected
                                       let allSelected = true;
                                       for (let d = 1; d <= days; d++) {
@@ -2954,7 +2939,7 @@ export default function FairnessDashboardPage() {
                                           break;
                                         }
                                       }
-                                      
+
                                       const newSelected = new Set(currentSelected);
                                       if (allSelected) {
                                         // Deselect all available
@@ -2976,7 +2961,6 @@ export default function FairnessDashboardPage() {
                                         ...prev,
                                         [key]: newSelected
                                       }));
-                                      setCalendarHasChanges(true);
                                     } else {
                                       setTimeSelectionIndex(index);
                                     }
