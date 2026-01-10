@@ -2219,13 +2219,13 @@ export default function FairnessDashboardPage() {
                         ),
                       }}
                     />
-                    <StatGraphCard 
+                    <StatGraphCard
                       data={{
                         type: 'pie',
                         title: 'Time share',
                         value: Math.round((selectedRole.minutesOnRoleVsTotalWorkPct || 0) * 100) / 100,
                         unit: '%',
-                        status: `${Math.round(selectedRole.minutesWorkedOnRoleTotal || 0)} / ${Math.round(selectedRole.totalMinutesWorkedSelection || 0)} min`,
+                        status: `${Math.round((selectedRole.minutesWorkedOnRoleTotal || 0) / 60 * 10) / 10} / ${Math.round((selectedRole.totalMinutesWorkedSelection || 0) / 60 * 10) / 10} hr`,
                         pieData: { 
                           met: selectedRole.minutesOnRoleVsTotalWorkPct || 0, 
                           notMet: 100 - (selectedRole.minutesOnRoleVsTotalWorkPct || 0) 
