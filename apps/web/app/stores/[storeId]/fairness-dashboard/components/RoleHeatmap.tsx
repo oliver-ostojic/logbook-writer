@@ -16,8 +16,8 @@ interface RoleHeatmapProps {
 
 export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
   const [hoveredCell, setHoveredCell] = useState<{ week: string; day: string } | null>(null);
-  
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
   // Find min and max hours for opacity scaling (excluding zeros)
   const nonZeroHours = data.map(d => d.avgHours).filter(h => h > 0);
