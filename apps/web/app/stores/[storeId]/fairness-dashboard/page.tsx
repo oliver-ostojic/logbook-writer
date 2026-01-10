@@ -1933,7 +1933,7 @@ export default function FairnessDashboardPage() {
               >
                 <div className="flex items-center gap-9">
                   <a
-                    href="#"
+                    href={`/stores/${storeId}/home`}
                     className="text-base transition-colors"
                     style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
@@ -1942,14 +1942,14 @@ export default function FairnessDashboardPage() {
                     Home
                   </a>
                   <a
-                    href="#"
+                    href={`/stores/${storeId}/fairness-dashboard`}
                     className="text-base transition-colors"
                     style={{ fontFamily: 'var(--font-open-sans)', color: '#FFFFFF', fontWeight: 500 }}
                   >
                     Dashboard
                   </a>
                   <a
-                    href="#"
+                    href={`/stores/${storeId}/settings`}
                     className="text-base transition-colors"
                     style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
