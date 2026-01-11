@@ -2099,6 +2099,41 @@ export default function FairnessDashboardPage() {
                   <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
                     {!mounted ? 'Dashboard' : selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
                   </h2>
+
+                  {/* Right: Back button for non-overview views */}
+                  {activeView !== 'overview' && (
+                    <button
+                      onClick={() => {
+                        setActiveView('overview');
+                        setSelectedCrew(null);
+                        setSelectedRole(null);
+                        setSelectedCrewId(null);
+                        setSelectedRoleId(null);
+                        setExpandedQuickLook('none');
+                      }}
+                      className="absolute right-0 transition-all duration-200"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#7C7F82',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#DBDADB';
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#7C7F82';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      Back
+                    </button>
+                  )}
                 </div>
               </div>
               

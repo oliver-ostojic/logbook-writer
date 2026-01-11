@@ -6,7 +6,8 @@ import { aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } 
 
 export interface DashboardLayoutProps {
   leftPanel: React.ReactNode;
-  rightPanel: React.ReactNode;
+  rightPanel?: React.ReactNode;
+  rightPanelVisible?: boolean;
   navLinks?: NavLink[];
   activeNavItem?: string;
   onUserClick?: () => void;
@@ -16,6 +17,7 @@ export interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   leftPanel,
   rightPanel,
+  rightPanelVisible = true,
   navLinks,
   activeNavItem,
   onUserClick,
@@ -36,10 +38,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         <div className="px-6 lg:px-8 pt-20 pb-9">
           {/* Main content area */}
-          <div className="flex flex-col min-[1200px]:flex-row gap-3">
-            {/* Left panel - dashboard (full width when stacked, customizable % when side-by-side) */}
+          <div className={`flex flex-col min-[1200px]:flex-row gap-3 ${!rightPanelVisible ? 'justify-center' : ''}`}>
+            {/* Left panel - centered at 60% when alone, 55% when with right panel */}
             <div
-              className="ai-glass-border w-full min-[1200px]:w-[55%]"
+              className={`ai-glass-border w-full transition-all duration-300 ${
+                rightPanelVisible
+                  ? 'min-[1200px]:w-[55%]'
+                  : 'min-[1200px]:w-[60%]'
+              }`}
               style={aiGlassLightBorderStyle(borderRadius)}
             >
               <div
@@ -50,18 +56,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
             </div>
 
-            {/* Right panel - Quick Looks (full width when stacked, customizable % when side-by-side) */}
-            <div
-              className="ai-glass-border w-full min-[1200px]:w-[45%]"
-              style={aiGlassLightBorderStyle(borderRadius)}
-            >
+            {/* Right panel - only shown when rightPanelVisible is true */}
+            {rightPanelVisible && rightPanel && (
               <div
-                className="px-4 py-4"
-                style={aiGlassLightContentStyle(borderRadius)}
+                className="ai-glass-border w-full min-[1200px]:w-[45%] transition-all duration-300"
+                style={aiGlassLightBorderStyle(borderRadius)}
               >
-                {rightPanel}
+                <div
+                  className="px-4 py-4"
+                  style={aiGlassLightContentStyle(borderRadius)}
+                >
+                  {rightPanel}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

@@ -88,8 +88,13 @@ function ListRowItemLight({
 
   return (
     <div
-      className="flex"
-      style={{ position: 'relative', gap: 16, cursor: onView ? 'pointer' : 'default' }}
+      className="flex transition-transform duration-200"
+      style={{
+        position: 'relative',
+        gap: 16,
+        cursor: onView ? 'pointer' : 'default',
+        transform: isHovered ? 'scale(1.01)' : 'scale(1)',
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onView}
@@ -289,6 +294,8 @@ type SelectedItem = EditableItem & {
   mode: 'view' | 'edit';
 };
 
+const ITEMS_PER_PAGE = 8;
+
 export default function Home() {
   const params = useParams();
   const storeId = params.storeId as string;
@@ -297,6 +304,9 @@ export default function Home() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<EditableItem | null>(null);
+  const [crewPage, setCrewPage] = useState(1);
+  const [rolesPage, setRolesPage] = useState(1);
+  const [logbooksPage, setLogbooksPage] = useState(1);
 
   // Filter data based on search query
   const filteredCrew = crewData.filter(c =>
@@ -312,10 +322,39 @@ export default function Home() {
   // Render list view content
   const renderListView = (type: 'crew' | 'roles' | 'logbooks') => {
     const data = type === 'crew' ? filteredCrew : type === 'roles' ? filteredRoles : filteredLogbooks;
+    const currentPage = type === 'crew' ? crewPage : type === 'roles' ? rolesPage : logbooksPage;
+    const setPage = type === 'crew' ? setCrewPage : type === 'roles' ? setRolesPage : setLogbooksPage;
+
+    // Calculate pagination
+    const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedData = data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    // Reset to page 1 if current page is out of bounds
+    if (currentPage > totalPages && totalPages > 0) {
+      setPage(1);
+    }
+
+    // Generate page numbers with ellipsis
+    const getPageNumbers = (): (number | string)[] => {
+      const pages: (number | string)[] = [];
+      if (totalPages <= 5) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (currentPage > 3) pages.push('...');
+        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+          if (!pages.includes(i)) pages.push(i);
+        }
+        if (currentPage < totalPages - 2) pages.push('...');
+        if (!pages.includes(totalPages)) pages.push(totalPages);
+      }
+      return pages;
+    };
 
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        <div className="flex flex-col" style={{ height: 'calc(100vh - 180px)', minHeight: '500px' }}>
+        <div className="flex flex-col" style={{ minHeight: '400px' }}>
           {/* Search header */}
           <div className="flex items-center gap-3 mb-4" style={{ paddingTop: '4px' }}>
             {/* Search icon button */}
@@ -365,7 +404,10 @@ export default function Home() {
                     type="text"
                     placeholder="Search"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setPage(1); // Reset to page 1 on search
+                    }}
                     onBlur={() => {
                       if (!searchQuery.trim()) {
                         setIsSearchExpanded(false);
@@ -388,6 +430,7 @@ export default function Home() {
                       onClick={() => {
                         setSearchQuery('');
                         setIsSearchExpanded(false);
+                        setPage(1);
                       }}
                       className="transition-all hover:brightness-75"
                       style={{
@@ -409,24 +452,24 @@ export default function Home() {
             )}
           </div>
 
-          {/* Scrollable list */}
+          {/* Paginated list */}
           <div
-            className="flex flex-col gap-3 flex-1 overflow-y-auto"
+            className="flex flex-col gap-3 flex-1"
             style={{
-              paddingRight: '4px',
               paddingTop: '8px',
             }}
           >
-            {data.map((item, index, arr) => {
+            {paginatedData.map((item, index) => {
+              const globalIndex = startIndex + index;
               const isFirst = index === 0;
-              const isLast = index === arr.length - 1;
+              const isLast = index === paginatedData.length - 1;
               const itemName = type === 'logbooks'
                 ? formatLogbookDate((item as typeof logbooksData[0]).date)
                 : (item as typeof crewData[0]).name;
               return (
                 <ListRowItemLight
                   key={item.id}
-                  itemNumber={index + 1}
+                  itemNumber={globalIndex + 1}
                   isFirst={isFirst}
                   isLast={isLast}
                   onView={() => setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' })}
@@ -459,6 +502,74 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {/* Pagination buttons */}
+          {totalPages > 1 && (
+            <div
+              className="flex items-center justify-center gap-2 mt-4 pt-3"
+              style={{
+                position: 'relative',
+              }}
+            >
+              {/* Faded divider line */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)',
+                }}
+              />
+              {getPageNumbers().map((page, idx) =>
+                page === '...' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="text-sm px-1"
+                    style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setPage(page as number)}
+                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200"
+                    style={{
+                      background: currentPage === page ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                      cursor: 'pointer',
+                      opacity: currentPage === page ? 1 : 0.6,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== page) {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
+                        e.currentTarget.style.opacity = '0.8';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== page) {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                        e.currentTarget.style.opacity = '0.6';
+                      }
+                    }}
+                  >
+                    <span
+                      className="text-[12px]"
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        color: '#2C2C2C',
+                        fontWeight: currentPage === page ? 500 : 350,
+                      }}
+                    >
+                      {page}
+                    </span>
+                  </button>
+                )
+              )}
+            </div>
+          )}
         </div>
       </CardContainer>
     );
@@ -467,6 +578,7 @@ export default function Home() {
   return (
     <>
     <DashboardLayout
+      rightPanelVisible={!!selectedItem}
       navLinks={[
         { label: 'Home', href: `/stores/${storeId}/home` },
         { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
@@ -557,6 +669,39 @@ export default function Home() {
                   </div>
                 </MenuItems>
               </Menu>
+            }
+            rightContent={
+              activeView !== 'home' ? (
+                <button
+                  onClick={() => {
+                    setActiveView('home');
+                    setSearchQuery('');
+                    setIsSearchExpanded(false);
+                    setSelectedItem(null);
+                  }}
+                  className="transition-all duration-200"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#9A999E',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#2C2C2C';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#9A999E';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  Back
+                </button>
+              ) : undefined
             }
           />
 
@@ -882,10 +1027,10 @@ export default function Home() {
                     }}
                   >
                     <textarea
-                      rows={2}
+                      rows={4}
                       placeholder="Add a comment..."
-                      className="block w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-gray-400"
-                      style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none' }}
+                      className="block w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                      style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none', boxShadow: 'none' }}
                     />
                     <div className="flex justify-end py-2 px-3">
                       <button
