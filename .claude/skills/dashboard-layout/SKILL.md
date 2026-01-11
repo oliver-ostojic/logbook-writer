@@ -13,6 +13,61 @@ This skill teaches Claude how to create dashboard-style layouts using our establ
 - **Swappable content** - cards can be populated with different data/components
 - **Responsive design** - mobile-first with clean breakpoints
 
+## Size-Based Card Components
+
+We have pre-built size-based card components that provide empty container shells with AI glass styling. Use these as building blocks for your layouts:
+
+**Available Components** (all in `apps/web/components/ui/ai-glass/`):
+- **CardTiny** - Button-sized containers (48x48px default) - for icons, mini controls
+- **CardSmall** - Quick look cards (flexible) - for stat grids, compact metrics
+- **CardMedium** - Standard content cards (min-height 300px) - for graphs, tables
+- **CardLarge** - Large sections (min-height 500px) - for sidebars, hero sections
+- **CardContainer** - Container for multiple cards - for grouping, nested layouts
+- **Carousel** - Adjustable carousel with navigation, indicators, and connecting lines
+
+**Quick Start:**
+```tsx
+import { CardTiny, CardSmall, CardMedium, CardLarge, CardContainer, Carousel } from '@/components/ui/ai-glass';
+
+// Button-sized card
+<CardTiny onClick={handleClick}>
+  <PlusIcon size={20} />
+</CardTiny>
+
+// Quick stat card
+<CardSmall>
+  <div>Your stat content</div>
+</CardSmall>
+
+// Graph card
+<CardMedium minHeight={400}>
+  <div>Your graph</div>
+</CardMedium>
+
+// Sidebar
+<CardLarge style={{ width: '380px' }}>
+  <div>Sidebar widgets</div>
+</CardLarge>
+
+// Container with grid
+<CardContainer>
+  <div className="grid grid-cols-2 gap-3">
+    <CardSmall>Item 1</CardSmall>
+    <CardSmall>Item 2</CardSmall>
+  </div>
+</CardContainer>
+
+// Carousel
+<Carousel
+  items={[
+    { id: 1, title: 'Page 1', content: <div>Content 1</div> },
+    { id: 2, title: 'Page 2', content: <div>Content 2</div> },
+  ]}
+/>
+```
+
+For detailed documentation on all size-based components, see **components-reference.md** in this skill directory.
+
 ## Core Principles
 
 ### 1. Layout Structure

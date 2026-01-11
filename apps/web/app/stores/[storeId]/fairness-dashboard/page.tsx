@@ -2174,10 +2174,10 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
                   
-                  {/* Satisfaction over shifts line graph - wrapped in translucent card */}
-                  <div 
+                  {/* Crew preferences met by date line graph - wrapped in translucent card */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2186,8 +2186,8 @@ export default function FairnessDashboardPage() {
                       padding: 16,
                     }}
                   >
-                    <SatisfactionLineGraph 
-                      title="Satisfaction over shifts"
+                    <SatisfactionLineGraph
+                      title="Crew preferences met by date"
                       data={(() => {
                         const satByDate = selectedCrew.satisfactionByDate || [];
                         if (satByDate.length === 0) {
@@ -2461,7 +2461,7 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Satisfaction by date - Satisfaction line graph */}
+                  {/* Crew preferences met by date line graph */}
                   <div
                     className="mt-4 graph-container-glass-border"
                     style={{
@@ -2474,7 +2474,7 @@ export default function FairnessDashboardPage() {
                     }}
                   >
                     <SatisfactionLineGraph
-                      title="Satisfaction by date"
+                      title="Crew preferences met by date"
                       data={computedSatisfactionByDate}
                     />
                   </div>

@@ -26,3 +26,27 @@ export const aiGlassContentStyle = (borderRadius: string | number = '1rem', opac
   WebkitBackdropFilter: 'blur(5px)',
   borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
 });
+
+// Light mode border container styles (for light backgrounds)
+export const aiGlassLightBorderStyle = (
+  borderRadius: string | number = '1rem',
+  borderColor: string = '0, 0, 0',
+  borderOpacity: number = 0.08
+): React.CSSProperties => ({
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+  position: 'relative' as const,
+  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+  '--border-color': borderColor,
+  '--border-opacity': borderOpacity,
+} as React.CSSProperties);
+
+// Light mode inner content styles (white/light background)
+// opacity parameter: lower = more transparent, higher = more opaque (default 0.6)
+export const aiGlassLightContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.6): React.CSSProperties => ({
+  width: '100%',
+  height: '100%',
+  background: `rgba(255, 255, 255, ${opacity})`,
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+});

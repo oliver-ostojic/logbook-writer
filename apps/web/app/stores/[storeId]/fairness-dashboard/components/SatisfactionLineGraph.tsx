@@ -328,7 +328,7 @@ export function SatisfactionLineGraph({ title, data }: SatisfactionLineGraphProp
                 textAlign: 'right',
               }}
             >
-              {label.value}
+              {label.value}%
             </div>
           ))}
         </div>
