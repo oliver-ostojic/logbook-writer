@@ -46,9 +46,16 @@ export const CardSmall: React.FC<CardSmallProps> = ({
     ? aiGlassLightContentStyle(borderRadius, defaultContentOpacity)
     : aiGlassContentStyle(borderRadius, defaultContentOpacity);
 
+  // Different hover effects for light vs dark mode
+  const hoverClass = onClick
+    ? lightMode
+      ? 'cursor-pointer hover:brightness-95 hover:scale-[1.02] transition-all duration-200'
+      : 'cursor-pointer hover:brightness-110 transition-all duration-200'
+    : '';
+
   return (
     <div
-      className={`ai-glass-border ${onClick ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
+      className={`ai-glass-border ${hoverClass}`}
       style={{
         ...borderStyle,
         ...style,
