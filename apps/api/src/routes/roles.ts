@@ -20,6 +20,19 @@ type UpdateRoleBody = {
   removeCrewMemberId: string;
 };
 
+type PatchRoleBody = {
+  code?: string;
+  displayName?: string;
+  assignmentModel?: AssignmentModel;
+  consecutivePolicy?: ConsecutivePolicy;
+  taskLength?: number;
+  familyId?: number;
+  codePDF?: string;
+  allowOutsideStoreHours?: boolean;
+  windowStartOffsetMin?: number;
+  windowEndOffsetMin?: number;
+};
+
 export function registerRoleRoutes(app: FastifyInstance) {
   const roleInclude = {
     CrewRole: {
@@ -158,5 +171,260 @@ export function registerRoleRoutes(app: FastifyInstance) {
     if (!existing) return reply.code(404).send({ error: 'Role not found' });
     await prisma.role.delete({ where: { id: roleId } });
     return { ok: true, deleted: roleId };
+  });
+
+  // PATCH a role - update specific fields
+  app.patch<{ Params: { id: string }; Body: PatchRoleBody }>('/roles/:id', async (req, reply) => {
+    const { id } = req.params;
+    const roleId = Number(id);
+    if (Number.isNaN(roleId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const existing = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!existing) return reply.code(404).send({ error: 'Role not found' });
+
+    const {
+      code,
+      displayName,
+      assignmentModel,
+      consecutivePolicy,
+      taskLength,
+      familyId,
+      codePDF,
+      allowOutsideStoreHours,
+      windowStartOffsetMin,
+      windowEndOffsetMin,
+    } = req.body;
+
+    // Build update data with only provided fields
+    const updateData: any = {};
+    if (code !== undefined) updateData.code = code;
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (assignmentModel !== undefined) updateData.assignmentModel = assignmentModel;
+    if (consecutivePolicy !== undefined) updateData.consecutivePolicy = consecutivePolicy;
+    if (taskLength !== undefined) updateData.taskLength = taskLength;
+    if (familyId !== undefined) updateData.familyId = familyId;
+    if (codePDF !== undefined) updateData.codePDF = codePDF;
+    if (allowOutsideStoreHours !== undefined) updateData.allowOutsideStoreHours = allowOutsideStoreHours;
+    if (windowStartOffsetMin !== undefined) updateData.windowStartOffsetMin = windowStartOffsetMin;
+    if (windowEndOffsetMin !== undefined) updateData.windowEndOffsetMin = windowEndOffsetMin;
+
+    if (Object.keys(updateData).length === 0) {
+      return reply.code(400).send({ error: 'No fields to update' });
+    }
+
+    try {
+      const updated = await prisma.role.update({
+        where: { id: roleId },
+        data: updateData,
+        include: roleInclude,
+      });
+      return formatRole(updated as RoleWithCrew);
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Role with this code already exists' });
+      }
+      console.error('Failed to update role', e);
+      return reply.code(500).send({ error: 'Failed to update role' });
+    }
+  });
+
+  // ============ ROLE FAMILY ENDPOINTS ============
+
+  // GET /role-families - List all role families
+  app.get<{ Querystring: { companyId?: string } }>('/role-families', async (req, reply) => {
+    const { companyId } = req.query;
+    const where: any = {};
+    if (companyId) {
+      where.companyId = Number(companyId);
+    }
+
+    const families = await prisma.roleFamily.findMany({
+      where,
+      include: {
+        Role: {
+          select: { id: true, code: true, displayName: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return families.map(f => ({
+      id: f.id,
+      name: f.name,
+      minMinutes: f.minMinutes,
+      maxMinutes: f.maxMinutes,
+      companyId: f.companyId,
+      roleCount: f.Role.length,
+      roles: f.Role,
+    }));
+  });
+
+  // GET /role-families/:id - Get a specific role family with its roles
+  app.get<{ Params: { id: string } }>('/role-families/:id', async (req, reply) => {
+    const { id } = req.params;
+    const familyId = Number(id);
+    if (Number.isNaN(familyId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const family = await prisma.roleFamily.findUnique({
+      where: { id: familyId },
+      include: {
+        Role: {
+          include: roleInclude,
+          orderBy: { displayName: 'asc' },
+        },
+      },
+    });
+
+    if (!family) {
+      return reply.code(404).send({ error: 'Role family not found' });
+    }
+
+    return {
+      id: family.id,
+      name: family.name,
+      minMinutes: family.minMinutes,
+      maxMinutes: family.maxMinutes,
+      companyId: family.companyId,
+      roles: family.Role.map(r => formatRole(r as RoleWithCrew)),
+    };
+  });
+
+  // GET /role-families/:id/roles - Get roles in a family
+  app.get<{ Params: { id: string } }>('/role-families/:id/roles', async (req, reply) => {
+    const { id } = req.params;
+    const familyId = Number(id);
+    if (Number.isNaN(familyId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const family = await prisma.roleFamily.findUnique({ where: { id: familyId } });
+    if (!family) {
+      return reply.code(404).send({ error: 'Role family not found' });
+    }
+
+    const roles = await prisma.role.findMany({
+      where: { familyId },
+      include: roleInclude,
+      orderBy: { displayName: 'asc' },
+    });
+
+    return {
+      familyId: family.id,
+      familyName: family.name,
+      roles: roles.map(r => formatRole(r as RoleWithCrew)),
+    };
+  });
+
+  // PUT /role-families/:id/roles - Add a role to a family (update role's familyId)
+  app.put<{ Params: { id: string }; Body: { roleId: number } }>('/role-families/:id/roles', async (req, reply) => {
+    const { id } = req.params;
+    const { roleId } = req.body;
+
+    const familyId = Number(id);
+    if (Number.isNaN(familyId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+    if (!roleId) {
+      return reply.code(400).send({ error: 'roleId is required' });
+    }
+
+    const [family, role] = await Promise.all([
+      prisma.roleFamily.findUnique({ where: { id: familyId } }),
+      prisma.role.findUnique({ where: { id: roleId } }),
+    ]);
+
+    if (!family) {
+      return reply.code(404).send({ error: 'Role family not found' });
+    }
+    if (!role) {
+      return reply.code(404).send({ error: 'Role not found' });
+    }
+
+    const updated = await prisma.role.update({
+      where: { id: roleId },
+      data: { familyId },
+      include: roleInclude,
+    });
+
+    return {
+      success: true,
+      role: formatRole(updated as RoleWithCrew),
+      message: `Role ${role.displayName} added to family ${family.name}`,
+    };
+  });
+
+  // DELETE /role-families/:id/roles/:roleId - Remove a role from a family (set to default family 1)
+  app.delete<{ Params: { id: string; roleId: string } }>('/role-families/:id/roles/:roleId', async (req, reply) => {
+    const { id, roleId: roleIdStr } = req.params;
+
+    const familyId = Number(id);
+    const roleId = Number(roleIdStr);
+    if (Number.isNaN(familyId) || Number.isNaN(roleId)) {
+      return reply.code(400).send({ error: 'id and roleId must be numbers' });
+    }
+
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) {
+      return reply.code(404).send({ error: 'Role not found' });
+    }
+    if (role.familyId !== familyId) {
+      return reply.code(400).send({ error: 'Role is not in this family' });
+    }
+
+    // Set role to default family (id: 1)
+    const updated = await prisma.role.update({
+      where: { id: roleId },
+      data: { familyId: 1 },
+      include: roleInclude,
+    });
+
+    return {
+      success: true,
+      role: formatRole(updated as RoleWithCrew),
+      message: `Role ${role.displayName} removed from family`,
+    };
+  });
+
+  // POST /role-families - Create a new role family
+  app.post<{ Body: { name: string; minMinutes: number; maxMinutes: number; companyId: number } }>('/role-families', async (req, reply) => {
+    const { name, minMinutes, maxMinutes, companyId } = req.body;
+
+    if (!name) {
+      return reply.code(400).send({ error: 'name is required' });
+    }
+    if (!companyId) {
+      return reply.code(400).send({ error: 'companyId is required' });
+    }
+
+    try {
+      const family = await prisma.roleFamily.create({
+        data: {
+          name,
+          minMinutes: minMinutes ?? 0,
+          maxMinutes: maxMinutes ?? 480,
+          companyId,
+        },
+      });
+
+      return {
+        id: family.id,
+        name: family.name,
+        minMinutes: family.minMinutes,
+        maxMinutes: family.maxMinutes,
+        companyId: family.companyId,
+        roleCount: 0,
+        roles: [],
+      };
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Role family with this name already exists' });
+      }
+      console.error('Failed to create role family', e);
+      return reply.code(500).send({ error: 'Failed to create role family' });
+    }
   });
 }

@@ -5,6 +5,7 @@ import {
   ConstraintType,
   Prisma,
 } from "@prisma/client";
+import { getUserRole, canManageCrewPreferences } from "../middleware/rbac";
 
 const prisma = new PrismaClient();
 
@@ -221,9 +222,20 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   );
 
   // POST /crew-role-rules - Assign a role rule to a crew member
+  // RBAC: Only admin can create crew preferences
   app.post<{ Body: CreateCrewRoleRuleBody }>(
     "/crew-role-rules",
     async (req, reply) => {
+      // RBAC check - only admin can create crew role rules
+      const userRole = getUserRole(req);
+      if (!canManageCrewPreferences(userRole)) {
+        return reply.code(403).send({
+          error: "Forbidden",
+          message: "Only admin can manage crew preferences",
+          currentRole: userRole,
+        });
+      }
+
       const { crewId, roleRuleId, isPriority, description } = req.body;
 
       if (!crewId || !roleRuleId) {
@@ -277,9 +289,20 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   );
 
   // DELETE /crew-role-rules/:id - Remove a role rule from a crew member
+  // RBAC: Only admin can delete crew preferences
   app.delete<{ Params: CrewRoleRuleParams }>(
     "/crew-role-rules/:id",
     async (req, reply) => {
+      // RBAC check - only admin can delete crew role rules
+      const userRole = getUserRole(req);
+      if (!canManageCrewPreferences(userRole)) {
+        return reply.code(403).send({
+          error: "Forbidden",
+          message: "Only admin can manage crew preferences",
+          currentRole: userRole,
+        });
+      }
+
       const id = parseInt(req.params.id);
 
       try {

@@ -175,12 +175,24 @@ model Logbook {
   metadata               Json?
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
+
+  // Supersede tracking
+  supersededById         String?                  @db.Uuid
+  supersededBy           Logbook?                 @relation("SupersedesLogbook", fields: [supersededById], references: [id])
+  supersedes             Logbook[]                @relation("SupersedesLogbook")
+
+  // Audit fields
+  createdByName          String?
+  publishedAt            DateTime?
+
   Assignment             Assignment[]
   LogPreferenceMetadata  LogPreferenceMetadata?
   Store                  Store                    @relation(fields: [storeId], references: [id])
   Run                    Run[]
 
   @@unique([storeId, date, status])
+  @@index([storeId, date])
+  @@index([supersededById])
 }
 
 model Role {

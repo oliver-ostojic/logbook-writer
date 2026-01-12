@@ -655,10 +655,12 @@ export function registerScheduleRoutes(app: FastifyInstance) {
   // POST /schedule/logbook/:logbookId/publish - Publish a logbook (set status to PUBLISHED)
   // If another logbook is already published for the same date/store, delete it first
   // Also generates a PDF of the logbook and stores the file path
-  app.post<{ Params: { logbookId: string } }>(
+  // Body: { createdByName?: string } - Optional name of who published
+  app.post<{ Params: { logbookId: string }; Body: { createdByName?: string } }>(
     '/schedule/logbook/:logbookId/publish',
     async (req, reply) => {
       const { logbookId } = req.params;
+      const { createdByName } = req.body || {};
 
       // Verify logbook exists
       const logbook = await prisma.logbook.findUnique({
@@ -730,6 +732,8 @@ export function registerScheduleRoutes(app: FastifyInstance) {
           data: {
             status: LogbookStatus.PUBLISHED,
             storedFilePath: pdfPath,
+            createdByName: createdByName || null,
+            publishedAt: new Date(),
           },
         });
       });
@@ -783,11 +787,13 @@ export function registerScheduleRoutes(app: FastifyInstance) {
     }
   );
 
-  // GET /schedule/logbook/:logbookId/pdf - Download the PDF for a logbook
-  app.get<{ Params: { logbookId: string } }>(
+  // GET /schedule/logbook/:logbookId/pdf - View or download the PDF for a logbook
+  // Query params: download=true to force download, otherwise displays inline
+  app.get<{ Params: { logbookId: string }; Querystring: { download?: string } }>(
     '/schedule/logbook/:logbookId/pdf',
     async (req, reply) => {
       const { logbookId } = req.params;
+      const { download } = req.query;
 
       const logbook = await prisma.logbook.findUnique({
         where: { id: logbookId },
@@ -811,9 +817,12 @@ export function registerScheduleRoutes(app: FastifyInstance) {
       const filename = path.basename(logbook.storedFilePath);
       const stream = fs.createReadStream(logbook.storedFilePath);
 
+      // Use 'inline' for viewing in browser, 'attachment' for download
+      const disposition = download === 'true' ? 'attachment' : 'inline';
+
       return reply
         .header('Content-Type', 'application/pdf')
-        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .header('Content-Disposition', `${disposition}; filename="${filename}"`)
         .send(stream);
     }
   );
@@ -1058,4 +1067,235 @@ function calculateStdDev(values: number[], mean: number): number {
   const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
   const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
   return Math.sqrt(avgSquaredDiff);
+}
+
+/**
+ * Register logbook list and history endpoints
+ */
+export function registerLogbookRoutes(app: FastifyInstance) {
+  // GET /logbooks - List logbooks for a store with optional filters
+  // Query params: storeId (required), status (optional), limit (optional), offset (optional)
+  app.get<{ Querystring: { storeId: string; status?: string; limit?: string; offset?: string } }>(
+    '/logbooks',
+    async (req, reply) => {
+      const { storeId, status, limit, offset } = req.query;
+
+      if (!storeId) {
+        return reply.status(400).send({ error: 'storeId is required' });
+      }
+
+      const storeIdNum = Number(storeId);
+      if (!Number.isFinite(storeIdNum)) {
+        return reply.status(400).send({ error: 'storeId must be a number' });
+      }
+
+      const limitNum = Number(limit) || 50;
+      const offsetNum = Number(offset) || 0;
+
+      // Build where clause
+      const where: any = { storeId: storeIdNum };
+      if (status) {
+        // Validate status enum
+        const validStatuses = ['DRAFT', 'PUBLISHED', 'SUPERSEDED'];
+        if (!validStatuses.includes(status.toUpperCase())) {
+          return reply.status(400).send({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+        }
+        where.status = status.toUpperCase();
+      }
+
+      const [logbooks, total] = await Promise.all([
+        prisma.logbook.findMany({
+          where,
+          include: {
+            LogPreferenceMetadata: {
+              select: {
+                avgSatisfaction: true,
+                fairnessGrade: true,
+                percentMet: true,
+              },
+            },
+            supersedes: {
+              select: { id: true },
+            },
+          },
+          orderBy: { date: 'desc' },
+          take: limitNum,
+          skip: offsetNum,
+        }),
+        prisma.logbook.count({ where }),
+      ]);
+
+      return {
+        logbooks: logbooks.map(lb => ({
+          id: lb.id,
+          date: lb.date.toISOString(),
+          status: lb.status,
+          storedFilePath: lb.storedFilePath,
+          createdByName: lb.createdByName,
+          publishedAt: lb.publishedAt?.toISOString() ?? null,
+          createdAt: lb.createdAt.toISOString(),
+          hasSupersededVersions: lb.supersedes.length > 0,
+          metadata: lb.LogPreferenceMetadata ? {
+            avgSatisfaction: lb.LogPreferenceMetadata.avgSatisfaction,
+            fairnessGrade: lb.LogPreferenceMetadata.fairnessGrade,
+            percentMet: lb.LogPreferenceMetadata.percentMet,
+          } : null,
+        })),
+        total,
+        limit: limitNum,
+        offset: offsetNum,
+      };
+    }
+  );
+
+  // GET /logbooks/:id/history - Get all logbook versions for the same date
+  // Returns all logbooks for the same date and store, sorted by status priority and createdAt
+  app.get<{ Params: { id: string } }>(
+    '/logbooks/:id/history',
+    async (req, reply) => {
+      const { id } = req.params;
+
+      // First get the logbook to find its date and storeId
+      const logbook = await prisma.logbook.findUnique({
+        where: { id },
+        select: { date: true, storeId: true },
+      });
+
+      if (!logbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      // Find all logbooks for the same date and store
+      const allVersions = await prisma.logbook.findMany({
+        where: {
+          date: logbook.date,
+          storeId: logbook.storeId,
+        },
+        orderBy: [
+          { createdAt: 'desc' },
+        ],
+        select: {
+          id: true,
+          date: true,
+          status: true,
+          storedFilePath: true,
+          createdByName: true,
+          publishedAt: true,
+          createdAt: true,
+        },
+      });
+
+      // Sort by status priority (PUBLISHED > DRAFT > SUPERSEDED) then by createdAt desc
+      const statusPriority: Record<string, number> = { PUBLISHED: 3, DRAFT: 2, SUPERSEDED: 1 };
+      allVersions.sort((a, b) => {
+        const priorityDiff = (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0);
+        if (priorityDiff !== 0) return priorityDiff;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      // The "current" is the one with highest priority (first in sorted list)
+      const current = allVersions[0];
+      const supersededVersions = allVersions.slice(1);
+
+      return {
+        current: current ? {
+          id: current.id,
+          date: current.date.toISOString(),
+          status: current.status,
+          storedFilePath: current.storedFilePath,
+          createdByName: current.createdByName,
+          publishedAt: current.publishedAt?.toISOString() ?? null,
+          createdAt: current.createdAt.toISOString(),
+        } : null,
+        supersededVersions: supersededVersions.map(v => ({
+          id: v.id,
+          date: v.date.toISOString(),
+          status: v.status,
+          storedFilePath: v.storedFilePath,
+          createdByName: v.createdByName,
+          publishedAt: v.publishedAt?.toISOString() ?? null,
+          createdAt: v.createdAt.toISOString(),
+        })),
+      };
+    }
+  );
+
+  // POST /logbooks/:id/supersede - Mark current as superseded and create new version
+  // Body: { createdByName: string }
+  // This creates a new DRAFT logbook and marks the current one as SUPERSEDED
+  app.post<{ Params: { id: string }; Body: { createdByName?: string } }>(
+    '/logbooks/:id/supersede',
+    async (req, reply) => {
+      const { id } = req.params;
+      const { createdByName } = req.body || {};
+
+      const currentLogbook = await prisma.logbook.findUnique({
+        where: { id },
+        include: {
+          Assignment: true,
+        },
+      });
+
+      if (!currentLogbook) {
+        return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      if (currentLogbook.status !== 'PUBLISHED' && currentLogbook.status !== LogbookStatus.PUBLISHED) {
+        return reply.status(400).send({
+          error: 'Only published logbooks can be superseded',
+          currentStatus: currentLogbook.status,
+        });
+      }
+
+      // Create new draft logbook and mark current as superseded
+      const result = await prisma.$transaction(async (tx) => {
+        // Create new DRAFT logbook
+        const newLogbook = await tx.logbook.create({
+          data: {
+            id: crypto.randomUUID(),
+            date: currentLogbook.date,
+            storeId: currentLogbook.storeId,
+            status: LogbookStatus.DRAFT,
+            generatedAt: new Date(),
+            createdByName: createdByName || null,
+            metadata: currentLogbook.metadata,
+          },
+        });
+
+        // Copy assignments from current to new logbook
+        if (currentLogbook.Assignment.length > 0) {
+          await tx.assignment.createMany({
+            data: currentLogbook.Assignment.map(a => ({
+              id: crypto.randomUUID(),
+              logbookId: newLogbook.id,
+              crewId: a.crewId,
+              roleId: a.roleId,
+              startTime: a.startTime,
+              endTime: a.endTime,
+              origin: a.origin,
+              locked: a.locked,
+            })),
+          });
+        }
+
+        // Mark current logbook as superseded
+        await tx.logbook.update({
+          where: { id: currentLogbook.id },
+          data: {
+            status: LogbookStatus.SUPERSEDED,
+            supersededById: newLogbook.id,
+          },
+        });
+
+        return newLogbook;
+      });
+
+      return {
+        success: true,
+        newLogbookId: result.id,
+        supersededLogbookId: currentLogbook.id,
+        message: 'Logbook superseded successfully. New draft created.',
+      };
+    }
+  );
 }

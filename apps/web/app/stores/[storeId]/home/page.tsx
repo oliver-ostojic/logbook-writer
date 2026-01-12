@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { useRouter } from 'next/navigation';
+import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const VIEW_OPTIONS = [
   { id: 'home', name: 'Home', title: 'Overview' },
@@ -291,33 +295,140 @@ type EditableItem = {
 };
 
 type SelectedItem = EditableItem & {
-  mode: 'view' | 'edit';
+  mode: 'view' | 'edit' | 'add' | 'pdf' | 'history';
 };
 
 const ITEMS_PER_PAGE = 8;
 
 export default function Home() {
   const params = useParams();
+  const router = useRouter();
   const storeId = params.storeId as string;
   const [activeView, setActiveView] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<EditableItem | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolesPage, setRolesPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
+  const [activityFilter, setActivityFilter] = useState('today');
+  const [commentText, setCommentText] = useState('');
+
+  // Check if we're in PDF view mode (for panel width adjustment)
+  const isPdfView = selectedItem?.mode === 'pdf' && selectedItem?.type === 'logbooks';
+
+  // API data states
+  const [apiCrew, setApiCrew] = useState<any[]>([]);
+  const [apiRoles, setApiRoles] = useState<any[]>([]);
+  const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [crewRes, rolesRes, logbooksRes] = await Promise.all([
+          fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
+        ]);
+        setApiCrew(Array.isArray(crewRes) ? crewRes : []);
+        setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
+        // Logbooks API returns { logbooks: [...], total, limit, offset }
+        const logbooks = logbooksRes?.logbooks || [];
+        setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+      }
+    }
+    fetchData();
+  }, [storeId]);
+
+  // Use API data if available, otherwise fall back to placeholder
+  const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
+  const effectiveRoles = (apiRoles.length > 0
+    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName }))
+    : rolesData
+  ).sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
+
+  // For logbooks, deduplicate by date - show only the "best" status per date
+  // Priority: PUBLISHED > DRAFT > SUPERSEDED
+  const dedupeLogbooks = (logbooks: any[]) => {
+    const statusPriority: Record<string, number> = { PUBLISHED: 3, DRAFT: 2, SUPERSEDED: 1 };
+    const byDate = new Map<string, any>();
+
+    for (const l of logbooks) {
+      const dateKey = new Date(l.date).toISOString().split('T')[0];
+      const existing = byDate.get(dateKey);
+      const currentPriority = statusPriority[l.status] || 0;
+      const existingPriority = existing ? (statusPriority[existing.status] || 0) : -1;
+
+      if (currentPriority > existingPriority) {
+        byDate.set(dateKey, l);
+      }
+    }
+
+    return Array.from(byDate.values());
+  };
+
+  const effectiveLogbooks = apiLogbooks.length > 0
+    ? dedupeLogbooks(apiLogbooks).map((l: any) => ({
+        id: l.id,
+        date: new Date(l.date),
+        status: l.status,
+        hasSuperseded: l.hasSupersededVersions || false
+      }))
+    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false }));
+
+  const ACTIVITY_FILTER_OPTIONS = [
+    { id: 'today', label: 'Today' },
+    { id: 'last2days', label: 'Last 2 days' },
+    { id: 'oneweek', label: 'One week' },
+    { id: 'onemonth', label: 'One month' },
+  ];
 
   // Filter data based on search query
-  const filteredCrew = crewData.filter(c =>
+  const filteredCrew = effectiveCrew.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredRoles = rolesData.filter(r =>
+  const filteredRoles = effectiveRoles.filter(r =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredLogbooks = logbooksData.filter(l =>
+  const filteredLogbooks = effectiveLogbooks.filter(l =>
     formatLogbookDate(l.date).toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Helper to refresh data after mutations
+  const refreshData = async () => {
+    try {
+      const [crewRes, rolesRes, logbooksRes] = await Promise.all([
+        fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
+      ]);
+      setApiCrew(Array.isArray(crewRes) ? crewRes : []);
+      setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
+      const logbooks = logbooksRes?.logbooks || [];
+      setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
+    } catch (err) {
+      console.error('Failed to refresh data:', err);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async (item: EditableItem) => {
+    try {
+      const endpoint = item.type === 'crew' ? `/crew/${item.id}` :
+                       item.type === 'roles' ? `/roles/${item.id}` :
+                       `/logbooks/${item.id}`;
+      const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
+      if (res.ok) {
+        refreshData();
+        setDeleteConfirmItem(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   // Render list view content
   const renderListView = (type: 'crew' | 'roles' | 'logbooks') => {
@@ -355,101 +466,95 @@ export default function Home() {
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Search header */}
-          <div className="flex items-center gap-3 mb-4" style={{ paddingTop: '4px' }}>
-            {/* Search icon button */}
+          {/* Search and Add bar - bento box style */}
+          <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
+            {/* Search section - pill left, rounded right */}
             <div
-              className="ai-glass-border"
-              style={{
-                ...aiGlassLightBorderStyle('9999px'),
-                width: 26,
-                height: 26,
-                flexShrink: 0,
-              }}
+              className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
+              style={aiGlassLightBorderStyle('1rem')}
             >
-              <button
-                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                className="flex items-center justify-center w-full h-full transition-all"
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  cursor: 'pointer',
-                  border: 'none',
-                  transition: 'background 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)'}
-              >
-                <MagnifyingGlassIcon style={{ width: 14, height: 12, color: '#6B6B6B' }} />
-              </button>
-            </div>
-
-            {/* Expanded search pill */}
-            {isSearchExpanded && (
               <div
-                className="ai-glass-border"
+                className="flex items-center rounded-l-full rounded-r-md"
                 style={{
-                  ...aiGlassLightBorderStyle('9999px'),
-                  flex: 1,
-                  height: 30,
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  padding: '0 14px',
+                  height: '36px',
                 }}
               >
-                <div
-                  className="flex items-center"
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.6),
-                    padding: '0 16px',
+                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
                   }}
-                >
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setPage(1); // Reset to page 1 on search
+                  className="focus:outline-none focus:ring-0 flex-1"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#2C2C2C',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    width: '100%',
+                    marginLeft: '8px',
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setPage(1);
                     }}
-                    onBlur={() => {
-                      if (!searchQuery.trim()) {
-                        setIsSearchExpanded(false);
-                      }
-                    }}
-                    autoFocus
-                    className="focus:outline-none focus:ring-0 flex-1"
+                    className="transition-all hover:brightness-75"
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#2C2C2C',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      width: '100%',
+                      color: '#6B6B6B',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontSize: '16px',
+                      lineHeight: 1,
                     }}
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setIsSearchExpanded(false);
-                        setPage(1);
-                      }}
-                      className="transition-all hover:brightness-75"
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#6B6B6B',
-                        cursor: 'pointer',
-                        padding: 0,
-                        marginLeft: 12,
-                        fontSize: '16px',
-                        lineHeight: 1,
-                      }}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Add button - rounded left, pill right */}
+            <div
+              className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
+              style={aiGlassLightBorderStyle('1rem')}
+            >
+              <button
+                onClick={() => setSelectedItem({ id: 'new', name: `New ${type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook'}`, type, mode: 'add' })}
+                className="flex items-center justify-center gap-1 transition-all duration-200 rounded-l-md rounded-r-full"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  padding: '0 18px',
+                  height: '36px',
+                  border: 'none',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
+                }}
+              >
+                <span style={{ fontSize: '16px', lineHeight: 1, color: 'hsl(0, 84%, 60%)' }}>+</span>
+                <span>Add</span>
+              </button>
+            </div>
           </div>
 
           {/* Paginated list */}
@@ -472,8 +577,22 @@ export default function Home() {
                   itemNumber={globalIndex + 1}
                   isFirst={isFirst}
                   isLast={isLast}
-                  onView={() => setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' })}
-                  onEdit={() => setSelectedItem({ id: item.id, name: itemName, type, mode: 'edit' })}
+                  onView={() => {
+                    if (type === 'logbooks') {
+                      // For logbooks, clicking row opens version history
+                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'history' });
+                    } else {
+                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
+                    }
+                  }}
+                  onEdit={() => {
+                    if (type === 'logbooks') {
+                      // For logbooks, edit button navigates to preview page
+                      router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${item.id}`);
+                    } else {
+                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'edit' });
+                    }
+                  }}
                   onDelete={() => setDeleteConfirmItem({ id: item.id, name: itemName, type })}
                 >
                   <span
@@ -579,6 +698,9 @@ export default function Home() {
     <>
     <DashboardLayout
       rightPanelVisible={!!selectedItem}
+      leftPanelWidth={isPdfView ? '40%' : undefined}
+      rightPanelWidth={isPdfView ? '60%' : undefined}
+      rightPanelKey={selectedItem ? `${selectedItem.id}-${selectedItem.type}-${selectedItem.mode}` : undefined}
       navLinks={[
         { label: 'Home', href: `/stores/${storeId}/home` },
         { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
@@ -650,7 +772,6 @@ export default function Home() {
                             onClick={() => {
                               setActiveView(view.id);
                               setSearchQuery('');
-                              setIsSearchExpanded(false);
                             }}
                             className="text-left text-sm focus:outline-none flex-1"
                             style={{
@@ -676,8 +797,6 @@ export default function Home() {
                   onClick={() => {
                     setActiveView('home');
                     setSearchQuery('');
-                    setIsSearchExpanded(false);
-                    setSelectedItem(null);
                   }}
                   className="transition-all duration-200"
                   style={{
@@ -760,7 +879,7 @@ export default function Home() {
                       color: '#2C2C2C',
                     }}
                   >
-                    24
+                    {effectiveCrew.length}
                   </div>
                 </div>
               </div>
@@ -815,7 +934,7 @@ export default function Home() {
                       color: '#2C2C2C',
                     }}
                   >
-                    12
+                    {effectiveLogbooks.length}
                   </div>
                 </div>
               </div>
@@ -870,7 +989,7 @@ export default function Home() {
                       color: '#2C2C2C',
                     }}
                   >
-                    8
+                    {effectiveRoles.length}
                   </div>
                 </div>
               </div>
@@ -881,19 +1000,85 @@ export default function Home() {
           {/* Activity Log */}
           <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
             <div className="flex flex-col gap-4">
-              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                <div
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.6),
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#2C2C2C',
-                  }}
-                >
-                  Activity Log
+              <div className="flex items-center justify-between">
+                {/* Activity Log label pill */}
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Activity Log
+                  </div>
                 </div>
+
+                {/* Time filter dropdown */}
+                <Menu as="div" style={{ zIndex: 100 }}>
+                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                    <MenuButton
+                      className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#6B6B6B',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {ACTIVITY_FILTER_OPTIONS.find(o => o.id === activityFilter)?.label}
+                      <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </MenuButton>
+                  </div>
+                  <MenuItems
+                    anchor="bottom end"
+                    portal={false}
+                    transition
+                    className="w-36 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                    style={{
+                      zIndex: 100,
+                      ...aiGlassLightBorderStyle('0.75rem'),
+                      marginTop: 8,
+                    }}
+                  >
+                    <div
+                      className="py-1"
+                      style={{
+                        ...aiGlassLightContentStyle('0.75rem', 0.6),
+                        backdropFilter: 'blur(2px)',
+                        WebkitBackdropFilter: 'blur(2px)',
+                      }}
+                    >
+                      {ACTIVITY_FILTER_OPTIONS.map((option) => (
+                        <MenuItem key={option.id}>
+                          <div className="flex items-center justify-between px-4 py-2">
+                            <button
+                              onClick={() => setActivityFilter(option.id)}
+                              className="text-left text-sm focus:outline-none flex-1"
+                              style={{
+                                fontFamily: 'var(--font-open-sans)',
+                                color: activityFilter === option.id ? '#2C2C2C' : '#6B6B6B',
+                                backgroundColor: 'transparent',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                              onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
+                            >
+                              {option.label}
+                            </button>
+                          </div>
+                        </MenuItem>
+                      ))}
+                    </div>
+                  </MenuItems>
+                </Menu>
               </div>
               <ul className="space-y-6">
                 {activity.map((activityItem, activityItemIdx) => (
@@ -1029,17 +1214,28 @@ export default function Home() {
                     <textarea
                       rows={4}
                       placeholder="Add a comment..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
                       className="block w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-0"
                       style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none', boxShadow: 'none' }}
                     />
                     <div className="flex justify-end py-2 px-3">
                       <button
                         type="button"
-                        className="rounded-md px-3 py-1.5 text-sm font-medium"
+                        className="rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200"
                         style={{
-                          backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                          color: '#6B6B6B',
+                          backgroundColor: commentText.trim() ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)',
+                          color: commentText.trim() ? '#2C2C2C' : '#6B6B6B',
                           fontFamily: 'var(--font-open-sans)',
+                          cursor: commentText.trim() ? 'pointer' : 'default',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (commentText.trim()) {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.18)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = commentText.trim() ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)';
                         }}
                       >
                         Comment
@@ -1062,119 +1258,165 @@ export default function Home() {
       }
       rightPanel={
         selectedItem ? (
-          <div className="flex flex-col gap-4 h-full">
-            {/* Header with name and mode dropdown */}
-            <CardHeader
-              title={selectedItem.name}
-              lightMode={true}
-              borderRadius="1.5rem"
-              titleStyle={{ color: '#2C2C2C' }}
-              leftContent={
-                <Menu as="div" style={{ zIndex: 100 }}>
-                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                    <MenuButton
-                      className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
-                      style={{
-                        position: 'relative' as const,
-                        zIndex: 0,
-                        width: '100%',
-                        height: '100%',
-                        background: 'hsla(0, 84%, 60%, 0.85)',
-                        backdropFilter: 'blur(8px)',
-                        WebkitBackdropFilter: 'blur(8px)',
-                        borderRadius: '9999px',
-                        fontFamily: 'var(--font-open-sans)',
-                        color: '#FFFFFF',
-                        fontWeight: 500,
-                        padding: '6px 14px',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.95)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.85)';
-                      }}
-                    >
-                      {selectedItem.mode === 'edit' ? 'Edit' : 'View'}
-                    </MenuButton>
-                  </div>
-                  <MenuItems
-                    anchor="bottom start"
-                    portal={false}
-                    transition
-                    className="w-32 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                    style={{
-                      zIndex: 100,
-                      ...aiGlassLightBorderStyle('0.75rem'),
-                      marginTop: 8,
-                    }}
-                  >
-                    <div
-                      className="py-1"
-                      style={{
-                        ...aiGlassLightContentStyle('0.75rem', 0.6),
-                        backdropFilter: 'blur(2px)',
-                        WebkitBackdropFilter: 'blur(2px)',
-                      }}
-                    >
-                      {['view', 'edit'].map((mode) => (
-                        <MenuItem key={mode}>
-                          <div className="flex items-center justify-between px-4 py-2">
-                            <button
-                              onClick={() => setSelectedItem({ ...selectedItem, mode: mode as 'view' | 'edit' })}
-                              className="text-left text-sm focus:outline-none flex-1"
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                color: selectedItem.mode === mode ? '#2C2C2C' : '#6B6B6B',
-                                backgroundColor: 'transparent',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                              onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                            >
-                              {mode === 'view' ? 'View' : 'Edit'}
-                            </button>
-                          </div>
-                        </MenuItem>
-                      ))}
-                    </div>
-                  </MenuItems>
-                </Menu>
-              }
-              rightContent={
-                <button
-                  onClick={() => setSelectedItem(null)}
-                  className="transition-colors duration-150"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px 8px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#6B6B6B',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
-                >
-                  ×
-                </button>
-              }
+          selectedItem.mode === 'pdf' && selectedItem.type === 'logbooks' ? (
+            // Logbook PDF viewer in right panel
+            <LogbookPdfViewer
+              logbookId={selectedItem.id}
+              logbookDate={selectedItem.name}
+              onBack={() => setSelectedItem({ ...selectedItem, mode: 'history' })}
             />
-            <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
-              <div className="flex flex-col gap-4">
-                <p style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
-                  {selectedItem.mode === 'edit' ? 'Editing' : 'Viewing'} {selectedItem.type === 'crew' ? 'crew member' : selectedItem.type === 'roles' ? 'role' : 'logbook'}: <span style={{ color: '#2C2C2C', fontWeight: 500 }}>{selectedItem.name}</span>
-                </p>
-                <p style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#9A999E' }}>
-                  {selectedItem.mode === 'edit' ? 'Edit form fields will go here...' : 'Details will go here...'}
-                </p>
-              </div>
-            </CardContainer>
-          </div>
+          ) : selectedItem.mode === 'history' && selectedItem.type === 'logbooks' ? (
+            // Logbook superseded history view
+            <LogbookSupersededHistory
+              logbookId={selectedItem.id}
+              onViewPdf={(logbookId, date) => {
+                setSelectedItem({ id: logbookId, name: date, type: 'logbooks', mode: 'pdf' });
+              }}
+              onClose={() => setSelectedItem(null)}
+            />
+          ) : (
+            <div className="flex flex-col gap-4 h-full">
+              {/* Header with name and mode dropdown */}
+              <CardHeader
+                title={selectedItem.mode === 'add' ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : 'Logbook'}` : selectedItem.name}
+                lightMode={true}
+                borderRadius="1.5rem"
+                titleStyle={{ color: '#2C2C2C' }}
+                leftContent={
+                  <Menu as="div" style={{ zIndex: 100 }}>
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <MenuButton
+                        className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
+                        style={{
+                          position: 'relative' as const,
+                          zIndex: 0,
+                          width: '100%',
+                          height: '100%',
+                          background: 'hsla(0, 84%, 60%, 0.85)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
+                          borderRadius: '9999px',
+                          fontFamily: 'var(--font-open-sans)',
+                          color: '#FFFFFF',
+                          fontWeight: 500,
+                          padding: '6px 14px',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.95)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.85)';
+                        }}
+                      >
+                        {selectedItem.mode === 'add' ? 'Add' : selectedItem.mode === 'edit' ? 'Edit' : selectedItem.mode === 'pdf' ? 'PDF' : selectedItem.mode === 'history' ? 'History' : 'View'}
+                      </MenuButton>
+                    </div>
+                    <MenuItems
+                      anchor="bottom start"
+                      portal={false}
+                      transition
+                      className="w-32 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                      style={{
+                        zIndex: 100,
+                        ...aiGlassLightBorderStyle('0.75rem'),
+                        marginTop: 8,
+                      }}
+                    >
+                      <div
+                        className="py-1"
+                        style={{
+                          ...aiGlassLightContentStyle('0.75rem', 0.6),
+                          backdropFilter: 'blur(2px)',
+                          WebkitBackdropFilter: 'blur(2px)',
+                        }}
+                      >
+                        {(selectedItem.mode === 'add' ? ['add'] : selectedItem.type === 'logbooks' ? ['history', 'pdf'] : ['view', 'edit']).map((mode) => (
+                          <MenuItem key={mode}>
+                            <div className="flex items-center justify-between px-4 py-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedItem({ ...selectedItem, mode: mode as SelectedItem['mode'] });
+                                }}
+                                className="text-left text-sm focus:outline-none flex-1"
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  color: selectedItem.mode === mode ? '#2C2C2C' : '#6B6B6B',
+                                  backgroundColor: 'transparent',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
+                              >
+                                {mode === 'add' ? 'Add' : mode === 'view' ? 'View' : mode === 'edit' ? 'Edit' : mode === 'history' ? 'History' : 'PDF'}
+                              </button>
+                            </div>
+                          </MenuItem>
+                        ))}
+                      </div>
+                    </MenuItems>
+                  </Menu>
+                }
+                rightContent={
+                  <button
+                    onClick={() => setSelectedItem(null)}
+                    className="transition-colors duration-150"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px 8px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      color: '#6B6B6B',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+                  >
+                    ×
+                  </button>
+                }
+              />
+              {/* Content based on type and mode */}
+              {selectedItem.type === 'crew' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <CrewForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  crewId={selectedItem.mode === 'edit' ? selectedItem.id : undefined}
+                  storeId={storeId}
+                  onSuccess={() => {
+                    refreshData();
+                    setSelectedItem(null);
+                  }}
+                  onCancel={() => setSelectedItem(null)}
+                />
+              ) : selectedItem.type === 'crew' && selectedItem.mode === 'view' ? (
+                <CrewDetailView crewId={selectedItem.id} />
+              ) : selectedItem.type === 'roles' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <RoleForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  roleId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
+                  storeId={storeId}
+                  onSuccess={() => {
+                    refreshData();
+                    setSelectedItem(null);
+                  }}
+                  onCancel={() => setSelectedItem(null)}
+                />
+              ) : selectedItem.type === 'roles' && selectedItem.mode === 'view' ? (
+                <RoleDetailView roleId={Number(selectedItem.id)} />
+              ) : (
+                <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+                  <div className="flex flex-col gap-4">
+                    <p style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
+                      {selectedItem.mode === 'add' ? 'Adding new' : selectedItem.mode === 'edit' ? 'Editing' : 'Viewing'} {selectedItem.type === 'crew' ? 'crew member' : selectedItem.type === 'roles' ? 'role' : 'logbook'}{selectedItem.mode !== 'add' && <>: <span style={{ color: '#2C2C2C', fontWeight: 500 }}>{selectedItem.name}</span></>}
+                    </p>
+                  </div>
+                </CardContainer>
+              )}
+            </div>
+          )
         ) : (
           <div className="flex items-center justify-center h-full min-h-[400px]">
             <div className="text-center">
@@ -1255,11 +1497,7 @@ export default function Home() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Handle delete - for now just close the modal
-                  console.log('Deleting:', deleteConfirmItem);
-                  setDeleteConfirmItem(null);
-                }}
+                onClick={() => handleDelete(deleteConfirmItem)}
                 style={{
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',

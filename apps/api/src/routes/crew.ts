@@ -260,14 +260,61 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // GET /crew/:id - get a single crew member by ID
-  app.get<{ Params: { id: string } }>('/crew/:id', async (req, reply) => {
+  // Query params: include (comma-separated: roles,roleRules)
+  app.get<{ Params: { id: string }; Querystring: { include?: string } }>('/crew/:id', async (req, reply) => {
     const crewId = req.params.id;
+    const includeParam = req.query.include?.split(',') || [];
+
+    // Build include object based on query param
+    const include: any = {
+      CrewRole: {
+        include: {
+          Role: true,
+        },
+      },
+    };
+
+    // Include CrewRoleRule if requested
+    if (includeParam.includes('roleRules')) {
+      include.CrewRoleRule = {
+        include: {
+          RoleRule: {
+            include: {
+              Role: { select: { id: true, code: true, displayName: true } },
+              TargetRole: { select: { id: true, code: true, displayName: true } },
+            },
+          },
+        },
+      };
+    }
+
     const crew = await prisma.crew.findUnique({
       where: { id: crewId },
-      include: crewInclude,
+      include,
     });
     if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
-    return formatCrew(crew);
+
+    const result = formatCrew(crew);
+
+    // Format roleRules if included
+    if (includeParam.includes('roleRules') && (crew as any).CrewRoleRule) {
+      (result as any).roleRules = (crew as any).CrewRoleRule.map((crr: any) => ({
+        id: crr.id,
+        crewId: crr.crewId,
+        roleRuleId: crr.roleRuleId,
+        isPriority: crr.isPriority,
+        valueInt: crr.valueInt,
+        roleRule: crr.RoleRule ? {
+          id: crr.RoleRule.id,
+          type: crr.RoleRule.type,
+          constraintType: crr.RoleRule.constraintType,
+          role: crr.RoleRule.Role,
+          targetRole: crr.RoleRule.TargetRole,
+        } : null,
+      }));
+    }
+
+    return result;
   });
 
   // GET /crew - list or search crew
