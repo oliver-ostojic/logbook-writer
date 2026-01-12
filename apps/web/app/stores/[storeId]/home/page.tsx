@@ -7,7 +7,7 @@ import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, Magnifying
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
-import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -291,7 +291,7 @@ const activity = [
 type EditableItem = {
   id: string;
   name: string;
-  type: 'crew' | 'roles' | 'logbooks';
+  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks';
 };
 
 type SelectedItem = EditableItem & {
@@ -320,19 +320,22 @@ export default function Home() {
   // API data states
   const [apiCrew, setApiCrew] = useState<any[]>([]);
   const [apiRoles, setApiRoles] = useState<any[]>([]);
+  const [apiRoleFamilies, setApiRoleFamilies] = useState<any[]>([]);
   const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
 
   // Fetch data from API
   useEffect(() => {
     async function fetchData() {
       try {
-        const [crewRes, rolesRes, logbooksRes] = await Promise.all([
+        const [crewRes, rolesRes, roleFamiliesRes, logbooksRes] = await Promise.all([
           fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
         ]);
         setApiCrew(Array.isArray(crewRes) ? crewRes : []);
         setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
+        setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
         // Logbooks API returns { logbooks: [...], total, limit, offset }
         const logbooks = logbooksRes?.logbooks || [];
         setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
@@ -346,9 +349,13 @@ export default function Home() {
   // Use API data if available, otherwise fall back to placeholder
   const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
   const effectiveRoles = (apiRoles.length > 0
-    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName }))
-    : rolesData
+    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId }))
+    : rolesData.map(r => ({ ...r, familyId: null }))
   ).sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
+
+  const effectiveRoleFamilies = apiRoleFamilies
+    .map((f: any) => ({ id: String(f.id), name: f.displayName || f.name }))
+    .sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
 
   // For logbooks, deduplicate by date - show only the "best" status per date
   // Priority: PUBLISHED > DRAFT > SUPERSEDED
@@ -400,13 +407,15 @@ export default function Home() {
   // Helper to refresh data after mutations
   const refreshData = async () => {
     try {
-      const [crewRes, rolesRes, logbooksRes] = await Promise.all([
+      const [crewRes, rolesRes, roleFamiliesRes, logbooksRes] = await Promise.all([
         fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
       ]);
       setApiCrew(Array.isArray(crewRes) ? crewRes : []);
       setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
+      setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
       const logbooks = logbooksRes?.logbooks || [];
       setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
     } catch (err) {
@@ -419,6 +428,7 @@ export default function Home() {
     try {
       const endpoint = item.type === 'crew' ? `/crew/${item.id}` :
                        item.type === 'roles' ? `/roles/${item.id}` :
+                       item.type === 'roleFamilies' ? `/role-families/${item.id}` :
                        `/logbooks/${item.id}`;
       const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
       if (res.ok) {
@@ -694,6 +704,226 @@ export default function Home() {
     );
   };
 
+  // Role Families card (rendered separately above header)
+  const renderRoleFamiliesCard = () => {
+    if (effectiveRoleFamilies.length === 0) return null;
+
+    return (
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+        <div className="flex flex-col gap-3">
+          {/* Section title and Add button */}
+          <div className="flex items-center justify-between">
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+              <div
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
+                }}
+              >
+                Role Families
+              </div>
+            </div>
+            {/* Add button */}
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+              <button
+                onClick={() => setSelectedItem({ id: 'new', name: 'New Role Family', type: 'roleFamilies', mode: 'add' })}
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.4),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                Add
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(effectiveRoleFamilies.length, 4)}, 1fr)` }}>
+            {effectiveRoleFamilies.map((family) => (
+              <CardSmall
+                key={`family-${family.id}`}
+                lightMode={true}
+                contentStyle={{ padding: '12px' }}
+                onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
+              >
+                <div className="flex items-center justify-center h-full">
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      lineHeight: 1.2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {family.name}
+                  </span>
+                </div>
+              </CardSmall>
+            ))}
+          </div>
+        </div>
+      </CardContainer>
+    );
+  };
+
+  // Custom roles list view (just the roles search card)
+  const renderRolesListView = () => {
+    const hasRoles = filteredRoles.length > 0;
+
+    return (
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+          <div className="flex flex-col" style={{ minHeight: '400px' }}>
+            {/* Search and Add bar - bento box style */}
+            <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
+              {/* Search section - pill left, rounded right */}
+              <div
+                className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
+                style={aiGlassLightBorderStyle('1rem')}
+              >
+                <div
+                  className="flex items-center rounded-l-full rounded-r-md"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    padding: '0 14px',
+                    height: '36px',
+                  }}
+                >
+                  <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setRolesPage(1);
+                    }}
+                    className="focus:outline-none focus:ring-0 flex-1"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#2C2C2C',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      width: '100%',
+                      marginLeft: '8px',
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setRolesPage(1);
+                      }}
+                      className="transition-all hover:brightness-75"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#6B6B6B',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: '16px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      x
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Add button - rounded left, pill right */}
+              <div
+                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
+                style={aiGlassLightBorderStyle('1rem')}
+              >
+                <button
+                  onClick={() => setSelectedItem({ id: 'new', name: 'New Role', type: 'roles', mode: 'add' })}
+                  className="flex items-center justify-center gap-1 transition-all duration-200 rounded-l-md rounded-r-full"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    padding: '0 18px',
+                    height: '36px',
+                    border: 'none',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
+                  }}
+                >
+                  <span style={{ fontSize: '16px', lineHeight: 1, color: 'hsl(0, 84%, 60%)' }}>+</span>
+                  <span>Add</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Roles list */}
+            <div
+              className="flex flex-col gap-3 flex-1"
+              style={{ paddingTop: '8px' }}
+            >
+              {hasRoles ? (
+                filteredRoles.map((role, index) => (
+                  <ListRowItemLight
+                    key={`role-${role.id}`}
+                    itemNumber={index + 1}
+                    isFirst={index === 0}
+                    isLast={index === filteredRoles.length - 1}
+                    onView={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' })}
+                    onEdit={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'edit' })}
+                    onDelete={() => setDeleteConfirmItem({ id: role.id, name: role.name, type: 'roles' })}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#2C2C2C',
+                      }}
+                    >
+                      {role.name}
+                    </span>
+                  </ListRowItemLight>
+                ))
+              ) : (
+                <div
+                  className="flex items-center justify-center flex-1"
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    color: '#6B6B6B',
+                  }}
+                >
+                  No roles found
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContainer>
+    );
+  };
+
   return (
     <>
     <DashboardLayout
@@ -708,6 +938,9 @@ export default function Home() {
       ]}
       leftPanel={
         <div className="flex flex-col gap-4">
+          {/* Role Families card - shown above header when in roles view */}
+          {activeView === 'roles' && renderRoleFamiliesCard()}
+
           {/* Header with dropdown */}
           <CardHeader
             title={VIEW_OPTIONS.find(v => v.id === activeView)?.title || 'Overview'}
@@ -1250,7 +1483,7 @@ export default function Home() {
           ) : activeView === 'crew' ? (
             renderListView('crew')
           ) : activeView === 'roles' ? (
-            renderListView('roles')
+            renderRolesListView()
           ) : activeView === 'logbooks' ? (
             renderListView('logbooks')
           ) : null}
@@ -1272,13 +1505,16 @@ export default function Home() {
               onViewPdf={(logbookId, date) => {
                 setSelectedItem({ id: logbookId, name: date, type: 'logbooks', mode: 'pdf' });
               }}
-              onClose={() => setSelectedItem(null)}
+              onClose={() => {
+                setActiveView('logbooks');
+                setSelectedItem(null);
+              }}
             />
           ) : (
             <div className="flex flex-col gap-4 h-full">
               {/* Header with name and mode dropdown */}
               <CardHeader
-                title={selectedItem.mode === 'add' ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : 'Logbook'}` : selectedItem.name}
+                title={selectedItem.mode === 'add' ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : 'Logbook'}` : selectedItem.name}
                 lightMode={true}
                 borderRadius="1.5rem"
                 titleStyle={{ color: '#2C2C2C' }}
@@ -1333,7 +1569,7 @@ export default function Home() {
                           WebkitBackdropFilter: 'blur(2px)',
                         }}
                       >
-                        {(selectedItem.mode === 'add' ? ['add'] : selectedItem.type === 'logbooks' ? ['history', 'pdf'] : ['view', 'edit']).map((mode) => (
+                        {(selectedItem.mode === 'add' ? ['add'] : selectedItem.type === 'logbooks' ? ['history', 'pdf'] : selectedItem.type === 'roleFamilies' ? ['view'] : ['view', 'edit']).map((mode) => (
                           <MenuItem key={mode}>
                             <div className="flex items-center justify-between px-4 py-2">
                               <button
@@ -1360,7 +1596,12 @@ export default function Home() {
                 }
                 rightContent={
                   <button
-                    onClick={() => setSelectedItem(null)}
+                    onClick={() => {
+                      // Go back to the list view for this item type
+                      // Role families go back to roles view
+                      setActiveView(selectedItem.type === 'roleFamilies' ? 'roles' : selectedItem.type);
+                      setSelectedItem(null);
+                    }}
                     className="transition-colors duration-150"
                     style={{
                       background: 'none',
@@ -1387,9 +1628,13 @@ export default function Home() {
                   storeId={storeId}
                   onSuccess={() => {
                     refreshData();
+                    setActiveView('crew');
                     setSelectedItem(null);
                   }}
-                  onCancel={() => setSelectedItem(null)}
+                  onCancel={() => {
+                    setActiveView('crew');
+                    setSelectedItem(null);
+                  }}
                 />
               ) : selectedItem.type === 'crew' && selectedItem.mode === 'view' ? (
                 <CrewDetailView crewId={selectedItem.id} />
@@ -1400,12 +1645,35 @@ export default function Home() {
                   storeId={storeId}
                   onSuccess={() => {
                     refreshData();
+                    setActiveView('roles');
                     setSelectedItem(null);
                   }}
-                  onCancel={() => setSelectedItem(null)}
+                  onCancel={() => {
+                    setActiveView('roles');
+                    setSelectedItem(null);
+                  }}
                 />
               ) : selectedItem.type === 'roles' && selectedItem.mode === 'view' ? (
                 <RoleDetailView roleId={Number(selectedItem.id)} />
+              ) : selectedItem.type === 'roleFamilies' && selectedItem.mode === 'add' ? (
+                <RoleFamilyForm
+                  companyId={1}
+                  onSuccess={() => {
+                    refreshData();
+                    setActiveView('roles');
+                    setSelectedItem(null);
+                  }}
+                  onCancel={() => {
+                    setActiveView('roles');
+                    setSelectedItem(null);
+                  }}
+                />
+              ) : selectedItem.type === 'roleFamilies' ? (
+                <RoleFamilyDetailView
+                  familyId={selectedItem.id}
+                  storeId={storeId}
+                  onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'roleFamilies' })}
+                />
               ) : (
                 <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
                   <div className="flex flex-col gap-4">

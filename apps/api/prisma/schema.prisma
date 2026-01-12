@@ -302,13 +302,14 @@ model RoleFairnessTracker {
 }
 
 model RoleFamily {
-  id         Int     @id @default(autoincrement())
-  name       String  @unique
-  minMinutes Int
-  maxMinutes Int
-  companyId  Int
-  Role       Role[]
-  Company    Company @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  displayName String
+  minMinutes  Int
+  maxMinutes  Int
+  companyId   Int
+  Role        Role[]
+  Company     Company @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Run {

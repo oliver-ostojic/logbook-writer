@@ -253,6 +253,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
     return families.map(f => ({
       id: f.id,
       name: f.name,
+      displayName: f.displayName,
       minMinutes: f.minMinutes,
       maxMinutes: f.maxMinutes,
       companyId: f.companyId,
@@ -286,6 +287,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
     return {
       id: family.id,
       name: family.name,
+      displayName: family.displayName,
       minMinutes: family.minMinutes,
       maxMinutes: family.maxMinutes,
       companyId: family.companyId,
@@ -390,8 +392,8 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // POST /role-families - Create a new role family
-  app.post<{ Body: { name: string; minMinutes: number; maxMinutes: number; companyId: number } }>('/role-families', async (req, reply) => {
-    const { name, minMinutes, maxMinutes, companyId } = req.body;
+  app.post<{ Body: { name: string; displayName?: string; minMinutes: number; maxMinutes: number; companyId: number } }>('/role-families', async (req, reply) => {
+    const { name, displayName, minMinutes, maxMinutes, companyId } = req.body;
 
     if (!name) {
       return reply.code(400).send({ error: 'name is required' });
@@ -404,6 +406,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
       const family = await prisma.roleFamily.create({
         data: {
           name,
+          displayName: displayName ?? name, // Default to name if not provided
           minMinutes: minMinutes ?? 0,
           maxMinutes: maxMinutes ?? 480,
           companyId,
@@ -413,6 +416,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
       return {
         id: family.id,
         name: family.name,
+        displayName: family.displayName,
         minMinutes: family.minMinutes,
         maxMinutes: family.maxMinutes,
         companyId: family.companyId,
@@ -425,6 +429,58 @@ export function registerRoleRoutes(app: FastifyInstance) {
       }
       console.error('Failed to create role family', e);
       return reply.code(500).send({ error: 'Failed to create role family' });
+    }
+  });
+
+  // PATCH /role-families/:id - Update a role family
+  app.patch<{ Params: { id: string }; Body: { displayName?: string; minMinutes?: number; maxMinutes?: number } }>('/role-families/:id', async (req, reply) => {
+    const { id } = req.params;
+    const familyId = Number(id);
+    if (Number.isNaN(familyId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const existing = await prisma.roleFamily.findUnique({ where: { id: familyId } });
+    if (!existing) {
+      return reply.code(404).send({ error: 'Role family not found' });
+    }
+
+    const { displayName, minMinutes, maxMinutes } = req.body;
+
+    // Build update data with only provided fields
+    const updateData: any = {};
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (minMinutes !== undefined) updateData.minMinutes = minMinutes;
+    if (maxMinutes !== undefined) updateData.maxMinutes = maxMinutes;
+
+    if (Object.keys(updateData).length === 0) {
+      return reply.code(400).send({ error: 'No fields to update' });
+    }
+
+    try {
+      const updated = await prisma.roleFamily.update({
+        where: { id: familyId },
+        data: updateData,
+        include: {
+          Role: {
+            select: { id: true, code: true, displayName: true },
+          },
+        },
+      });
+
+      return {
+        id: updated.id,
+        name: updated.name,
+        displayName: updated.displayName,
+        minMinutes: updated.minMinutes,
+        maxMinutes: updated.maxMinutes,
+        companyId: updated.companyId,
+        roleCount: updated.Role.length,
+        roles: updated.Role,
+      };
+    } catch (e: any) {
+      console.error('Failed to update role family', e);
+      return reply.code(500).send({ error: 'Failed to update role family' });
     }
   });
 }

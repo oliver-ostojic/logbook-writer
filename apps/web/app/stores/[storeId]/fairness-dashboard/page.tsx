@@ -61,7 +61,7 @@ interface DashboardApiResponse {
 // borderColor: RGB values as string e.g. "255, 255, 255" for white, "100, 150, 255" for blue
 // borderOpacity: 0-1 value for border visibility
 const aiGlassBorderStyle = (
-  borderRadius: string | number = '1rem',
+  borderRadius: string | number = '1.5rem',
   borderColor?: string,
   borderOpacity?: number
 ): React.CSSProperties => ({
@@ -74,7 +74,7 @@ const aiGlassBorderStyle = (
 
 // Inner content styles (translucent with backdrop blur)
 // opacity parameter: lower = more transparent/lighter, higher = more opaque/darker
-const aiGlassContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.85): React.CSSProperties => ({
+const aiGlassContentStyle = (borderRadius: string | number = '1.5rem', opacity: number = 0.85): React.CSSProperties => ({
   width: '100%',
   height: '100%',
   background: `rgba(28, 27, 31, ${opacity})`,
@@ -94,7 +94,7 @@ interface AiGlassCardProps {
 
 const AiGlassCard: React.FC<AiGlassCardProps> = ({ 
   children, 
-  borderRadius = '1rem', 
+  borderRadius = '1.5rem', 
   className = '',
   style = {},
   contentStyle = {},
@@ -1993,7 +1993,7 @@ export default function FairnessDashboardPage() {
           <div className="flex flex-col min-[1200px]:flex-row gap-3">
             {/* Left card - dashboard (full width when stacked, 55% when side-by-side) */}
             <div
-              className="w-full min-[1200px]:w-[55%] rounded-2xl px-4 py-4 relative"
+              className="w-full min-[1200px]:w-[55%] rounded-3xl px-4 py-4 relative"
               style={{ 
                 background: '#141318',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
@@ -2001,11 +2001,11 @@ export default function FairnessDashboardPage() {
               }}
             >
               {/* Header card - Dashboard title, dropdown, and date */}
-              <div 
+              <div
                 className="flex flex-col mb-4 ai-glass-border"
-                style={{ 
-                  ...aiGlassBorderStyle('1rem', '180, 170, 200', 0.15),
-                  ...aiGlassContentStyle('1rem'),
+                style={{
+                  ...aiGlassBorderStyle('1.5rem', '180, 170, 200', 0.15),
+                  ...aiGlassContentStyle('1.5rem'),
                   height: 'auto',
                   padding: 16,
                   zIndex: 50,
@@ -2022,20 +2022,20 @@ export default function FairnessDashboardPage() {
                           zIndex: 0,
                           width: '100%',
                           height: '100%',
-                          background: 'rgba(255, 255, 255, 0.01)',
-                          backdropFilter: 'blur(5px)',
-                          WebkitBackdropFilter: 'blur(5px)',
+                          background: 'hsla(0, 84%, 60%, 0.7)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
                           borderRadius: '9999px',
                           fontFamily: 'var(--font-open-sans)',
-                          color: '#DBDADB',
-                          fontWeight: 400,
+                          color: '#FFFFFF',
+                          fontWeight: 500,
                           padding: '6px 14px',
                           outline: 'none',
                           cursor: 'pointer',
-                          transition: 'background 0.2s ease',
+                          transition: 'all 0.2s ease',
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.85)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.7)'}
                       >
                         {DASHBOARD_VIEWS.find(v => v.id === activeView)?.name || 'Overview'}
                       </MenuButton>
@@ -2104,12 +2104,20 @@ export default function FairnessDashboardPage() {
                   {activeView !== 'overview' && (
                     <button
                       onClick={() => {
-                        setActiveView('overview');
-                        setSelectedCrew(null);
-                        setSelectedRole(null);
-                        setSelectedCrewId(null);
-                        setSelectedRoleId(null);
-                        setExpandedQuickLook('none');
+                        // If viewing individual crew/role, go back to their list view
+                        if (selectedCrew) {
+                          setSelectedCrew(null);
+                          setSelectedCrewId(null);
+                          setExpandedQuickLook('crew');
+                        } else if (selectedRole) {
+                          setSelectedRole(null);
+                          setSelectedRoleId(null);
+                          setExpandedQuickLook('roles');
+                        } else {
+                          // From list view, go back to overview
+                          setActiveView('overview');
+                          setExpandedQuickLook('none');
+                        }
                       }}
                       className="absolute right-0 transition-all duration-200"
                       style={{
@@ -2152,7 +2160,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2217,7 +2225,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2268,7 +2276,7 @@ export default function FairnessDashboardPage() {
                           backdropFilter: 'blur(12px)',
                           WebkitBackdropFilter: 'blur(12px)',
                           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                          borderRadius: '1rem',
+                          borderRadius: '1.5rem',
                           padding: 16,
                         }}
                       >
@@ -2338,7 +2346,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2368,7 +2376,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2426,7 +2434,7 @@ export default function FairnessDashboardPage() {
                         backdropFilter: 'blur(12px)',
                         WebkitBackdropFilter: 'blur(12px)',
                         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                        borderRadius: '1rem',
+                        borderRadius: '1.5rem',
                         padding: 16,
                       }}
                     >
@@ -2446,7 +2454,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2465,7 +2473,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2485,7 +2493,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2504,7 +2512,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2522,7 +2530,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2543,7 +2551,7 @@ export default function FairnessDashboardPage() {
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1rem',
+                      borderRadius: '1.5rem',
                       padding: 16,
                     }}
                   >
@@ -2562,7 +2570,7 @@ export default function FairnessDashboardPage() {
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                    borderRadius: '1rem',
+                    borderRadius: '1.5rem',
                     padding: 16,
                     overflow: 'hidden',
                   }}
@@ -2868,7 +2876,7 @@ export default function FairnessDashboardPage() {
 
             {/* Right card - Quick Looks (full width when stacked, 45% when side-by-side) */}
             <div
-              className="w-full min-[1200px]:w-[45%] rounded-2xl px-4 py-4 graph-container-glass-border" 
+              className="w-full min-[1200px]:w-[45%] rounded-3xl px-4 py-4 graph-container-glass-border" 
               style={{ 
                 backgroundColor: '#141318',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
@@ -2880,7 +2888,7 @@ export default function FairnessDashboardPage() {
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                    borderRadius: '1rem',
+                    borderRadius: '1.5rem',
                     overflow: 'visible',
                     paddingTop: 16,
                     paddingLeft: 16,
@@ -3176,7 +3184,7 @@ export default function FairnessDashboardPage() {
                                     boxShadow: isSelected
                                       ? '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
                                       : '0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.02)',
-                                    borderRadius: '1rem',
+                                    borderRadius: '1.5rem',
                                     zIndex,
                                     transform: `scale(${cardScale})`,
                                     transformOrigin: 'center center',
@@ -3407,7 +3415,7 @@ export default function FairnessDashboardPage() {
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                  borderRadius: '1rem',
+                  borderRadius: '1.5rem',
                 }}
               >
                 {/* Quick Looks title */}
