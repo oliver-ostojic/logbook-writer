@@ -101,6 +101,22 @@ export function registerCrewRoutes(app: FastifyInstance) {
     return stores;
   });
 
+  // GET /stores/:storeId/roles - list all roles for a store
+  app.get<{ Params: { storeId: string } }>('/stores/:storeId/roles', async (req, reply) => {
+    const storeId = parseInt(req.params.storeId, 10);
+    if (isNaN(storeId)) {
+      return reply.code(400).send({ error: 'Invalid store id' });
+    }
+
+    const roles = await prisma.role.findMany({
+      where: { storeId },
+      orderBy: { displayName: 'asc' },
+      select: { id: true, displayName: true, code: true },
+    });
+
+    return roles;
+  });
+
 
   // POST /stores - create a store (explicit id + name; defaults for timezone/regHoursStartMin/regHoursEndMin)
   // Now requires a Company; if not provided, we create a default company automatically.
@@ -212,12 +228,22 @@ export function registerCrewRoutes(app: FastifyInstance) {
 
     try {
       const normalizedRoleIds = normalizeRoleIds(roleIds);
-      
+
+      // Fetch store's default roles
+      const defaultRoles = await prisma.storeDefaultRole.findMany({
+        where: { storeId: resolvedStoreId },
+        select: { roleId: true }
+      });
+      const defaultRoleIds = defaultRoles.map(dr => dr.roleId);
+
+      // Merge provided roleIds with default roleIds (using Set to avoid duplicates)
+      const allRoleIds = Array.from(new Set([...defaultRoleIds, ...(normalizedRoleIds || [])]));
+
       // Fetch role details if we have roleIds, so we can populate crewName and roleName
       let roleData: Array<{ id: number; displayName: string }> = [];
-      if (normalizedRoleIds && normalizedRoleIds.length > 0) {
+      if (allRoleIds.length > 0) {
         roleData = await prisma.role.findMany({
-          where: { id: { in: normalizedRoleIds } },
+          where: { id: { in: allRoleIds } },
           select: { id: true, displayName: true }
         });
       }
@@ -308,6 +334,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
           id: crr.RoleRule.id,
           type: crr.RoleRule.type,
           constraintType: crr.RoleRule.constraintType,
+          displayName: crr.RoleRule.displayName,
           role: crr.RoleRule.Role,
           targetRole: crr.RoleRule.TargetRole,
         } : null,
@@ -447,13 +474,13 @@ export function registerCrewRoutes(app: FastifyInstance) {
     }
 
     try {
-    await prisma.crewRole.create({ 
-      data: { 
-        crewId, 
+    await prisma.crewRole.create({
+      data: {
+        crewId,
         roleId: role.id,
         crewName: crew.name,
         roleName: role.displayName
-      } 
+      }
     });
     } catch (e: any) {
       if (e?.code === 'P2002') {
@@ -461,6 +488,70 @@ export function registerCrewRoutes(app: FastifyInstance) {
       }
       throw e;
     }
+
+    return reply.code(204).send();
+  });
+
+  // POST /crew/:crewId/roles - add a role to a crew member by roleId
+  app.post<{ Params: { crewId: string }; Body: { roleId: number } }>('/crew/:crewId/roles', async (req, reply) => {
+    const crewId = req.params.crewId;
+    const { roleId } = req.body;
+
+    if (!roleId || typeof roleId !== 'number') {
+      return reply.code(400).send({ error: 'roleId is required and must be a number' });
+    }
+
+    const crew = await prisma.crew.findUnique({ where: { id: crewId } });
+    if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) return reply.code(404).send({ error: 'Role not found' });
+
+    const existingLink = await prisma.crewRole.findUnique({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
+    if (existingLink) {
+      return reply.code(409).send({ error: 'Crew member already has this role' });
+    }
+
+    try {
+      await prisma.crewRole.create({
+        data: {
+          crewId,
+          roleId,
+          crewName: crew.name,
+          roleName: role.displayName
+        }
+      });
+      return reply.code(201).send({ ok: true });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Crew member already has this role' });
+      }
+      throw e;
+    }
+  });
+
+  // DELETE /crew/:crewId/roles/:roleId - remove a role from a crew member
+  app.delete<{ Params: { crewId: string; roleId: string } }>('/crew/:crewId/roles/:roleId', async (req, reply) => {
+    const crewId = req.params.crewId;
+    const roleId = parseInt(req.params.roleId, 10);
+
+    if (isNaN(roleId)) {
+      return reply.code(400).send({ error: 'Invalid roleId' });
+    }
+
+    const existingLink = await prisma.crewRole.findUnique({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
+
+    if (!existingLink) {
+      return reply.code(404).send({ error: 'Crew member does not have this role' });
+    }
+
+    await prisma.crewRole.delete({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
 
     return reply.code(204).send();
   });

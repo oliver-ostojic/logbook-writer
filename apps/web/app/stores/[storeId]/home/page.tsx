@@ -62,6 +62,12 @@ const logbooksData = [
   { id: '12', date: new Date('2024-12-31') },
 ];
 
+// Parse date string (YYYY-MM-DD) as local date without timezone conversion
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 // Format date as "5 Jan, 2025"
 function formatLogbookDate(date: Date): string {
   const day = date.getDate();
@@ -380,7 +386,7 @@ export default function Home() {
   const effectiveLogbooks = apiLogbooks.length > 0
     ? dedupeLogbooks(apiLogbooks).map((l: any) => ({
         id: l.id,
-        date: new Date(l.date),
+        date: parseLocalDate(l.date),
         status: l.status,
         hasSuperseded: l.hasSupersededVersions || false
       }))

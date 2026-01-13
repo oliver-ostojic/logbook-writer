@@ -160,6 +160,74 @@ export function registerRoleRoutes(app: FastifyInstance) {
     return updated ? formatRole(updated as RoleWithCrew) : null;
   });
 
+  // POST /roles/:roleId/crew - add crew to role
+  app.post<{ Params: { roleId: string }; Body: { crewId: string } }>('/roles/:roleId/crew', async (req, reply) => {
+    const roleId = parseInt(req.params.roleId, 10);
+    const { crewId } = req.body;
+
+    if (!crewId || typeof crewId !== 'string') {
+      return reply.code(400).send({ error: 'crewId is required and must be a string' });
+    }
+
+    if (isNaN(roleId)) {
+      return reply.code(400).send({ error: 'Invalid role id' });
+    }
+
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) return reply.code(404).send({ error: 'Role not found' });
+
+    const crew = await prisma.crew.findUnique({ where: { id: crewId } });
+    if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
+
+    const existingLink = await prisma.crewRole.findUnique({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
+    if (existingLink) {
+      return reply.code(409).send({ error: 'Crew member already has this role' });
+    }
+
+    try {
+      await prisma.crewRole.create({
+        data: {
+          crewId,
+          roleId,
+          crewName: crew.name,
+          roleName: role.displayName,
+        },
+      });
+      return reply.code(201).send({ ok: true });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Crew member already has this role' });
+      }
+      throw e;
+    }
+  });
+
+  // DELETE /roles/:roleId/crew/:crewId - remove crew from role
+  app.delete<{ Params: { roleId: string; crewId: string } }>('/roles/:roleId/crew/:crewId', async (req, reply) => {
+    const roleId = parseInt(req.params.roleId, 10);
+    const crewId = req.params.crewId;
+
+    if (isNaN(roleId)) {
+      return reply.code(400).send({ error: 'Invalid role id' });
+    }
+
+    const existingLink = await prisma.crewRole.findUnique({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
+
+    if (!existingLink) {
+      return reply.code(404).send({ error: 'Crew member does not have this role' });
+    }
+
+    await prisma.crewRole.delete({
+      where: { crewId_roleId: { crewId, roleId } },
+    });
+
+    return reply.code(204).send();
+  });
+
   // Delete a role
   app.delete<{ Params: { id: string } }>('/roles/:id', async (req, reply) => {
     const { id } = req.params;

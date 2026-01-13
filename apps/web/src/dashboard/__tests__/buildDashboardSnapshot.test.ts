@@ -226,9 +226,9 @@ describe('buildDashboardSnapshot', () => {
     const c002 = rollups.find(r => r.crewId === 'C002');
     const c003 = rollups.find(r => r.crewId === 'C003');
 
-    expect(c001!.avgPreferencesMetPctOverSelection).toBe(100);
-    expect(c002!.avgPreferencesMetPctOverSelection).toBe(100);
-    expect(c003!.avgPreferencesMetPctOverSelection).toBe(0);
+    expect(percentMetInSelection(c001!)).toBe(100);
+    expect(percentMetInSelection(c002!)).toBe(100);
+    expect(percentMetInSelection(c003!)).toBe(0);
 
     // Verify tiebreaker: C001 < C002 lexicographically
     expect(c001!.overallRankInSelection).toBe(1);
@@ -308,6 +308,18 @@ function createLogbook(
     storeId: 'S001',
     crew,
     roles,
+    aggregateStats: {
+      eligiblePreferences: 0,
+      preferencesMet: 0,
+      percentMet: 0,
+      avgSatisfaction: 0,
+      avgSatisfactionPerCrew: 0,
+      eligibleCrew: 0,
+      fairnessIndex: 0,
+      fairnessGrade: 'A',
+      breakdownByRoleRule: [],
+    },
+    roleFairnessSnapshots: [],
   };
 }
 
@@ -315,7 +327,15 @@ function createCrew(crewId: string, crewName: string, shifts: any[]) {
   return {
     crewId,
     crewName,
-    shifts,
+    assignments: shifts,
+    preferences: {
+      total: shifts.length,
+      met: shifts.filter(s => s.preferenceMet).length,
+      satisfaction:
+        shifts.length > 0
+          ? shifts.filter(s => s.preferenceMet).length / shifts.length
+          : 0,
+    },
   };
 }
 
@@ -329,12 +349,19 @@ function createShift(
   preferenceMet: boolean
 ) {
   return {
-    shiftId,
+    assignmentId: shiftId,
     roleId,
     roleName,
     startTime,
     endTime,
-    satisfactionScore,
     preferenceMet,
   };
+}
+
+function percentMetInSelection(crew: {
+  preferencesMetSelection: number;
+  preferencesTotalSelection: number;
+}): number {
+  if (crew.preferencesTotalSelection === 0) return 0;
+  return (crew.preferencesMetSelection / crew.preferencesTotalSelection) * 100;
 }
