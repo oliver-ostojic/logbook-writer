@@ -29,3 +29,6 @@ export * from './RoleHeatmap';
 
 // CrewFairnessTable
 export * from './CrewFairnessTable';
+
+// TitleBubble
+export * from './TitleBubble';

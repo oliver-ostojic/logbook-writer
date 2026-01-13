@@ -2148,14 +2148,14 @@ export default function FairnessDashboardPage() {
               {/* Conditional content: Individual Crew Dashboard, Dashboard, or Expanded Quick Looks */}
               {selectedCrew ? (
                 /* Individual Crew Dashboard */
-                <div 
+                <div
                   className="animate-in fade-in slide-in-from-bottom-4 duration-300"
                   style={{ animationFillMode: 'both' }}
                 >
                   {/* 2 Mini cards in a row - wrapped in translucent card */}
-                  <div 
+                  <div
                     className="graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2216,8 +2216,8 @@ export default function FairnessDashboardPage() {
                       />
                     </div>
                   </div>
-                  
-                  {/* Crew preferences met by date line graph - wrapped in translucent card */}
+
+                  {/* Crew preferences met by date line graph */}
                   <div
                     className="mt-4 graph-container-glass-border"
                     style={{
@@ -2232,31 +2232,31 @@ export default function FairnessDashboardPage() {
                     <SatisfactionLineGraph
                       title="Crew preferences met by date"
                       data={(() => {
-                        const satByDate = selectedCrew.satisfactionByDate || [];
-                        if (satByDate.length === 0) {
-                          // Fallback to placeholder data
-                          return [
-                            { shiftNumber: 1, shiftDate: '—', satisfaction: 70 },
-                          ];
-                        }
-                        return satByDate.map((d, index) => {
-                          // Parse date string manually to avoid timezone issues
-                          // Date format is "YYYY-MM-DD"
-                          const [year, month, day] = d.date.split('-').map(Number);
-                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                          const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
-                          const yearShort = String(year).slice(-2);
-                          return {
-                            shiftNumber: index + 1,
-                            shiftDate: `${day} ${monthName}, ${yearShort}`,
-                            satisfaction: Math.round(d.satisfactionPct * 100) / 100,
-                          };
-                        });
-                      })()}
-                    />
-                  </div>
-                  
-                  {/* Satisfaction distribution box plot - wrapped in translucent card - only show if there's variance */}
+                          const satByDate = selectedCrew.satisfactionByDate || [];
+                          if (satByDate.length === 0) {
+                            // Fallback to placeholder data
+                            return [
+                              { shiftNumber: 1, shiftDate: '—', satisfaction: 70 },
+                            ];
+                          }
+                          return satByDate.map((d, index) => {
+                            // Parse date string manually to avoid timezone issues
+                            // Date format is "YYYY-MM-DD"
+                            const [year, month, day] = d.date.split('-').map(Number);
+                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
+                            const yearShort = String(year).slice(-2);
+                            return {
+                              shiftNumber: index + 1,
+                              shiftDate: `${day} ${monthName}, ${yearShort}`,
+                              satisfaction: Math.round(d.satisfactionPct * 100) / 100,
+                            };
+                          });
+                        })()}
+                      />
+                    </div>
+
+                  {/* Satisfaction distribution box plot - only show if there's variance */}
                   {(() => {
                     // Check if there's variance before rendering the entire section
                     const values = (selectedCrew.satisfactionByDate || [])
@@ -2338,10 +2338,10 @@ export default function FairnessDashboardPage() {
                     );
                   })()}
 
-                  {/* Preferences Met graph - individual crew level - wrapped in translucent card */}
-                  <div 
+                  {/* Preferences met graph - individual crew level */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2362,16 +2362,16 @@ export default function FairnessDashboardPage() {
                           satisfiedCount: b.met,
                         };
                       })}
-                    />
-                  </div>
+                      />
+                    </div>
                 </div>
               ) : selectedRole ? (
                 /* Individual Role Dashboard */
                 <>
                   {/* 2 Mini cards in a row - Fairness Index and Time Share */}
-                  <div 
+                  <div
                     className="graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2425,7 +2425,7 @@ export default function FairnessDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Crew mins distribution box plot - wrapped in translucent card */}
+                  {/* Crew mins distribution box plot */}
                   {computedRoleBoxPlot.hasDistribution && (
                     <div
                       className="mt-4 graph-container-glass-border"
@@ -2446,10 +2446,10 @@ export default function FairnessDashboardPage() {
                     </div>
                   )}
 
-                  {/* Role assignment heatmap - wrapped in translucent card */}
-                  <div 
+                  {/* Role assignment heatmap */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2464,11 +2464,11 @@ export default function FairnessDashboardPage() {
                       data={computedRoleHeatmap.data}
                     />
                   </div>
-                  
-                  {/* Crew fairness details table - wrapped in translucent card */}
-                  <div 
+
+                  {/* Crew fairness details table */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2485,10 +2485,10 @@ export default function FairnessDashboardPage() {
                 </>
               ) : expandedQuickLook === 'none' ? (
                 <>
-                  {/* Mini cards grid (4 cards) - wrapped in translucent card */}
-                  <div 
+                  {/* Fairness Summary Section */}
+                  <div
                     className="graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2498,9 +2498,26 @@ export default function FairnessDashboardPage() {
                     }}
                   >
                     <div className="grid grid-cols-2 gap-3">
-                      {currentDashboard.miniCards.map((cardData, index) => (
-                        <StatGraphCard key={index} data={cardData} />
-                      ))}
+                      <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
+                      <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
+                    </div>
+                  </div>
+
+                  {/* Crew Summary Section */}
+                  <div
+                    className="mt-4 graph-container-glass-border"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
+                      borderRadius: '1.5rem',
+                      padding: 16,
+                    }}
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
+                      <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
                     </div>
                   </div>
 
@@ -2522,10 +2539,10 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
 
-                  {/* Large graph card - wrapped in translucent card */}
-                  <div 
+                  {/* Satisfaction distribution box plot */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2543,10 +2560,10 @@ export default function FairnessDashboardPage() {
                     </GraphCardWithStatsTransparent>
                   </div>
 
-                  {/* Preferences Met graph - wrapped in translucent card */}
-                  <div 
+                  {/* Crew preferences met graph */}
+                  <div
                     className="mt-4 graph-container-glass-border"
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.02)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
@@ -2898,9 +2915,20 @@ export default function FairnessDashboardPage() {
                   }}>
                     {/* Title inside container */}
                     <div className="flex items-center justify-between">
-                      <span className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                        Time Selection
-                      </span>
+                      <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px'), display: 'inline-block' }}>
+                        <div
+                          style={{
+                            ...aiGlassContentStyle('9999px'),
+                            padding: '6px 14px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#DBDADB',
+                          }}
+                        >
+                          Time Selection
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Year carousel row */}
@@ -3419,16 +3447,22 @@ export default function FairnessDashboardPage() {
                 }}
               >
                 {/* Quick Looks title */}
-                <span 
-                  className="text-med mb-4" 
-                  style={{ 
-                    fontFamily: 'var(--font-open-sans)', 
-                    color: '#DBDADB', 
-                    fontWeight: 350 
-                  }}
-                >
-                  Quick Looks
-                </span>
+                <div className="mb-4">
+                  <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px'), display: 'inline-block' }}>
+                    <div
+                      style={{
+                        ...aiGlassContentStyle('9999px'),
+                        padding: '6px 14px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#DBDADB',
+                      }}
+                    >
+                      Quick Looks
+                    </div>
+                  </div>
+                </div>
 
                 {/* Two-column layout for Quick Looks content */}
                 <div className="flex gap-4">

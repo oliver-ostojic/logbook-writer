@@ -2,6 +2,22 @@
 
 import React, { useState } from 'react';
 
+// AI Glass style helpers
+const aiGlassBorderStyle = (borderRadius: string | number = '1.5rem'): React.CSSProperties => ({
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+  position: 'relative' as const,
+  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
+});
+
+const aiGlassContentStyle = (borderRadius: string | number = '1.5rem', opacity: number = 0.85): React.CSSProperties => ({
+  width: '100%',
+  height: '100%',
+  background: `rgba(28, 27, 31, ${opacity})`,
+  backdropFilter: 'blur(5px)',
+  WebkitBackdropFilter: 'blur(5px)',
+  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
+});
+
 interface HeatmapCell {
   week: string; // 'Week 1', 'Week 2', etc.
   dayOfWeek: string; // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
@@ -48,16 +64,20 @@ export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
     <div style={{ padding: '16px' }}>
       {/* Title */}
       <div className="mb-4">
-        <span 
-          className="text-med" 
-          style={{ 
-            fontFamily: 'var(--font-open-sans)', 
-            color: '#DBDADB', 
-            fontWeight: 350,
-          }}
-        >
-          {title}
-        </span>
+        <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px'), display: 'inline-block' }}>
+          <div
+            style={{
+              ...aiGlassContentStyle('9999px'),
+              padding: '6px 14px',
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#DBDADB',
+            }}
+          >
+            {title}
+          </div>
+        </div>
       </div>
       
       {/* Heatmap grid */}
