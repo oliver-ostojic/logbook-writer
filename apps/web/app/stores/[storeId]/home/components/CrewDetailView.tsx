@@ -244,14 +244,14 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
 
     try {
       // Process deletions
-      for (const roleId of pendingDeletions) {
+      for (const roleId of Array.from(pendingDeletions)) {
         await fetch(`${API_URL}/crew/${crewId}/roles/${roleId}`, {
           method: 'DELETE',
         });
       }
 
       // Process additions
-      for (const role of pendingAdditions) {
+      for (const role of Array.from(pendingAdditions)) {
         await fetch(`${API_URL}/crew/${crewId}/roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

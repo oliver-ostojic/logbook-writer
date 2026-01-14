@@ -9,7 +9,7 @@ interface RoleFormProps {
   mode: 'add' | 'edit';
   roleId?: number;
   storeId: string;
-  onSuccess?: () => void;
+  onSuccess?: (newRole?: any) => void;
   onCancel?: () => void;
 }
 
@@ -34,7 +34,7 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
   const [formData, setFormData] = useState<FormData>({
     code: '',
     displayName: '',
-    familyId: 1,
+    familyId: 0, // Will be set after families load
     assignmentModel: 'HOURLY',
     consecutivePolicy: 'NONE',
     taskLength: 30,
@@ -48,9 +48,21 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
   useEffect(() => {
     fetch(`${API_URL}/role-families`)
       .then(res => res.json())
-      .then(data => setFamilies(data))
+      .then(data => {
+        setFamilies(data);
+        // Set default familyId to first available family (only if not already set)
+        if (data.length > 0 && mode === 'add') {
+          setFormData(prev => {
+            // Only set if still at default (0)
+            if (prev.familyId === 0) {
+              return { ...prev, familyId: data[0].id };
+            }
+            return prev;
+          });
+        }
+      })
       .catch(err => console.error('Failed to load families:', err));
-  }, []);
+  }, [mode]);
 
   // Load existing role data if editing
   useEffect(() => {
@@ -94,13 +106,20 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
     setLoading(true);
     setError(null);
 
+    console.log('=== ROLE FORM SUBMISSION START ===');
+    console.log('Form data:', formData);
+    console.log('Store ID:', storeId);
+    console.log('Mode:', mode);
+
     // Validation
     if (!formData.code.trim()) {
+      console.error('Validation failed: No code');
       setError('Code is required');
       setLoading(false);
       return;
     }
     if (!formData.displayName.trim()) {
+      console.error('Validation failed: No displayName');
       setError('Display name is required');
       setLoading(false);
       return;
@@ -110,22 +129,53 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
       const url = mode === 'add' ? `${API_URL}/roles` : `${API_URL}/roles/${roleId}`;
       const method = mode === 'add' ? 'POST' : 'PATCH';
 
+      const payload = {
+        ...formData,
+        storeId: Number(storeId),
+      };
+
+      console.log('Request URL:', url);
+      console.log('Request method:', method);
+      console.log('Request payload:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          storeId: Number(storeId),
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      const responseText = await response.text();
+      console.log('Response body (raw):', responseText);
+
       if (!response.ok) {
-        const errData = await response.json();
+        let errData;
+        try {
+          errData = JSON.parse(responseText);
+        } catch (parseErr) {
+          console.error('Failed to parse error response:', parseErr);
+          errData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('API Error:', errData);
         throw new Error(errData.error || 'Failed to save role');
       }
 
-      onSuccess?.();
+      let createdRole;
+      try {
+        createdRole = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error('Failed to parse success response:', parseErr);
+      }
+
+      console.log('=== ROLE FORM SUBMISSION SUCCESS ===');
+      onSuccess?.(createdRole);
     } catch (err: any) {
+      console.error('=== ROLE FORM SUBMISSION ERROR ===');
+      console.error('Error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
       setError(err.message);
     } finally {
       setLoading(false);

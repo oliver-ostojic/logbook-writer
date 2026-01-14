@@ -7,7 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface RoleFamilyFormProps {
   companyId: number;
-  onSuccess?: () => void;
+  onSuccess?: (newFamily?: any) => void;
   onCancel?: () => void;
 }
 
@@ -77,7 +77,8 @@ export function RoleFamilyForm({ companyId, onSuccess, onCancel }: RoleFamilyFor
         throw new Error(errData.error || 'Failed to create role family');
       }
 
-      onSuccess?.();
+      const createdFamily = await response.json();
+      onSuccess?.(createdFamily);
     } catch (err: any) {
       setError(err.message);
     } finally {

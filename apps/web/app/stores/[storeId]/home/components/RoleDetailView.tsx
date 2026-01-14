@@ -107,14 +107,14 @@ export function RoleDetailView({ roleId }: RoleDetailViewProps) {
 
     try {
       // Process deletions
-      for (const crewId of pendingDeletions) {
+      for (const crewId of Array.from(pendingDeletions)) {
         await fetch(`${API_URL}/roles/${roleId}/crew/${crewId}`, {
           method: 'DELETE',
         });
       }
 
       // Process additions
-      for (const crew of pendingAdditions) {
+      for (const crew of Array.from(pendingAdditions)) {
         await fetch(`${API_URL}/roles/${roleId}/crew`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

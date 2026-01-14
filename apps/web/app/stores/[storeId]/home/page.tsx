@@ -7,7 +7,7 @@ import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, Magnifying
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
-import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -15,8 +15,29 @@ const VIEW_OPTIONS = [
   { id: 'home', name: 'Home', title: 'Overview' },
   { id: 'crew', name: 'Crew', title: 'List View' },
   { id: 'roles', name: 'Roles', title: 'List View' },
+  { id: 'preferences', name: 'Preferences', title: 'List View' },
+  { id: 'storeRules', name: 'Store Rules', title: 'List View' },
   { id: 'logbooks', name: 'Logbooks', title: 'List View' },
 ];
+
+// Human-readable labels for RoleRuleType enum values
+const ROLE_RULE_TYPE_LABELS: Record<string, string> = {
+  'CANNOT_BE_ASSIGNED_BEFORE': 'Cannot Be Assigned Before',
+  'CANNOT_BE_ASSIGNED_AFTER': 'Cannot Be Assigned After',
+  'MIN_CONSECUTIVE_MINUTES': 'Min Consecutive Minutes',
+  'MAX_CONSECUTIVE_MINUTES': 'Max Consecutive Minutes',
+  'FORBID_ROLE': 'Forbid Role',
+  'TIMING': 'Timing',
+  'LIKE_ROLE_FOR_HOUR_X': 'Like Role for Hour',
+  'DISLIKE_ROLE_FOR_HOUR_X': 'Dislike Role for Hour',
+  'MIN_SHIFT_LENGTH_FOR_ACCESS': 'Min Shift Length for Access',
+  'ASSIGN_BEFORE_SHIFT_MIN_X': 'Assign Before Shift Minute',
+  'ASSIGN_AFTER_SHIFT_MIN_X': 'Assign After Shift Minute',
+  'MAX_CREW_ON_AT_A_TIME': 'Max Crew On at a Time',
+  'ALLOW_HALF_BLOCKSIZE': 'Allow Half Block Size',
+  'DISTRIBUTION_BETWEEN_ROLE_X': 'Distribution Between Role',
+  'CANNOT_ASSIGN_DURING_STORE_HOUR_X': 'Cannot Assign During Store Hour',
+};
 
 // Placeholder crew data
 const crewData = [
@@ -297,7 +318,7 @@ const activity = [
 type EditableItem = {
   id: string;
   name: string;
-  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks';
+  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'storeRules';
 };
 
 type SelectedItem = EditableItem & {
@@ -316,6 +337,8 @@ export default function Home() {
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<EditableItem | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolesPage, setRolesPage] = useState(1);
+  const [preferencesPage, setPreferencesPage] = useState(1);
+  const [storeRulesPage, setStoreRulesPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
   const [activityFilter, setActivityFilter] = useState('today');
   const [commentText, setCommentText] = useState('');
@@ -324,24 +347,33 @@ export default function Home() {
   const isPdfView = selectedItem?.mode === 'pdf' && selectedItem?.type === 'logbooks';
 
   // API data states
+  const [apiStore, setApiStore] = useState<any>(null);
   const [apiCrew, setApiCrew] = useState<any[]>([]);
   const [apiRoles, setApiRoles] = useState<any[]>([]);
   const [apiRoleFamilies, setApiRoleFamilies] = useState<any[]>([]);
+  const [apiPreferences, setApiPreferences] = useState<any[]>([]);
+  const [apiStoreRules, setApiStoreRules] = useState<any[]>([]);
   const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
 
   // Fetch data from API
   useEffect(() => {
     async function fetchData() {
       try {
-        const [crewRes, rolesRes, roleFamiliesRes, logbooksRes] = await Promise.all([
+        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, logbooksRes] = await Promise.all([
+          fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
           fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
         ]);
+        setApiStore(storeRes);
         setApiCrew(Array.isArray(crewRes) ? crewRes : []);
         setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
         setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
+        setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
+        setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
         // Logbooks API returns { logbooks: [...], total, limit, offset }
         const logbooks = logbooksRes?.logbooks || [];
         setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
@@ -413,15 +445,21 @@ export default function Home() {
   // Helper to refresh data after mutations
   const refreshData = async () => {
     try {
-      const [crewRes, rolesRes, roleFamiliesRes, logbooksRes] = await Promise.all([
+      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, logbooksRes] = await Promise.all([
+        fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
         fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
       ]);
+      setApiStore(storeRes);
       setApiCrew(Array.isArray(crewRes) ? crewRes : []);
       setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
       setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
+      setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
+      setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
       const logbooks = logbooksRes?.logbooks || [];
       setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
     } catch (err) {
@@ -435,11 +473,18 @@ export default function Home() {
       const endpoint = item.type === 'crew' ? `/crew/${item.id}` :
                        item.type === 'roles' ? `/roles/${item.id}` :
                        item.type === 'roleFamilies' ? `/role-families/${item.id}` :
+                       item.type === 'preferences' ? `/role-rules/${item.id}` :
+                       item.type === 'storeRules' ? `/store-role-rules/${item.id}` :
                        `/logbooks/${item.id}`;
       const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
       if (res.ok) {
         refreshData();
         setDeleteConfirmItem(null);
+
+        // Close the right panel if the deleted item is currently being viewed
+        if (selectedItem && selectedItem.id === item.id && selectedItem.type === item.type) {
+          setSelectedItem(null);
+        }
       }
     } catch (err) {
       console.error('Failed to delete:', err);
@@ -518,57 +563,44 @@ export default function Home() {
                     marginLeft: '8px',
                   }}
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setPage(1);
-                    }}
-                    className="transition-all hover:brightness-75"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#6B6B6B',
-                      cursor: 'pointer',
-                      padding: 0,
-                      fontSize: '16px',
-                      lineHeight: 1,
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
               </div>
             </div>
-
             {/* Add button - rounded left, pill right */}
             <div
               className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
               style={aiGlassLightBorderStyle('1rem')}
             >
               <button
-                onClick={() => setSelectedItem({ id: 'new', name: `New ${type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook'}`, type, mode: 'add' })}
-                className="flex items-center justify-center gap-1 transition-all duration-200 rounded-l-md rounded-r-full"
+                onClick={() => {
+                  if (type === 'logbooks') {
+                    router.push(`/stores/${storeId}/logbook/create/shifts`);
+                  } else {
+                    const itemName = type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook';
+                    setSelectedItem({
+                      id: '',
+                      name: `New ${itemName}`,
+                      type: type,
+                      mode: 'add',
+                    });
+                  }
+                }}
+                className="transition-all duration-150"
                 style={{
                   backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  padding: '0 18px',
-                  height: '36px',
                   border: 'none',
+                  borderRadius: 'inherit',
+                  padding: '0 16px',
+                  height: '36px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',
-                  fontWeight: 500,
+                  fontWeight: 400,
                   color: '#2C2C2C',
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
-                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
               >
-                <span style={{ fontSize: '16px', lineHeight: 1, color: 'hsl(0, 84%, 60%)' }}>+</span>
-                <span>Add</span>
+                + Add
               </button>
             </div>
           </div>
@@ -710,6 +742,229 @@ export default function Home() {
     );
   };
 
+  // Helper to group rules by type
+  const groupRulesByType = (rules: any[], isStoreRules: boolean = false): Map<string, any[]> => {
+    const grouped = new Map<string, any[]>();
+    for (const rule of rules) {
+      // For store rules, the type is in rule.RoleRule.type (nested)
+      // For preferences, the type is in rule.type (flat)
+      const ruleType = isStoreRules ? rule.RoleRule?.type : rule.type;
+      if (!ruleType) continue;
+      const existing = grouped.get(ruleType) || [];
+      grouped.set(ruleType, [...existing, rule]);
+    }
+    return grouped;
+  };
+
+  // Render grouped rules list view for preferences/store rules
+  const renderGroupedRulesView = (constraintType: 'SOFT' | 'HARD') => {
+    const rules = constraintType === 'SOFT' ? apiPreferences : apiStoreRules;
+    const itemType = constraintType === 'SOFT' ? 'preferences' : 'storeRules';
+    const titleText = constraintType === 'SOFT' ? 'Preferences' : 'Store Rules';
+    const isStoreRules = constraintType === 'HARD';
+
+    // Filter by constraint type (for store rules, check nested RoleRule.constraintType)
+    // Filter by search
+    // For store rules, data is nested: r.RoleRule.type, r.RoleRule.displayName, etc.
+    // For preferences, data is flat: r.type, r.displayName, etc.
+    const filteredRules = rules.filter(r => {
+      // First, filter by constraint type
+      const ruleConstraintType = isStoreRules ? r.RoleRule?.constraintType : r.constraintType;
+      if (ruleConstraintType !== constraintType) return false;
+
+      // Then filter by search query
+      const ruleType = isStoreRules ? r.RoleRule?.type : r.type;
+      const displayName = isStoreRules ? r.RoleRule?.displayName : r.displayName;
+      const roleName = isStoreRules ? r.RoleRule?.Role?.displayName : r.Role?.displayName;
+
+      return (
+        (displayName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (roleName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (ruleType?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (ROLE_RULE_TYPE_LABELS[ruleType]?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    });
+
+    // Group by type
+    const grouped = groupRulesByType(filteredRules, isStoreRules);
+
+    return (
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+        <div className="flex flex-col" style={{ minHeight: '400px' }}>
+          {/* Search and Add bar - bento box style */}
+          <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
+            {/* Search section - pill left, rounded right */}
+            <div
+              className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
+              style={aiGlassLightBorderStyle('1rem')}
+            >
+              <div
+                className="flex items-center rounded-l-full rounded-r-md"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  padding: '0 14px',
+                  height: '36px',
+                }}
+              >
+                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="focus:outline-none focus:ring-0 flex-1"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#2C2C2C',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    width: '100%',
+                    marginLeft: '8px',
+                  }}
+                />
+              </div>
+            </div>
+            {/* Add button - rounded left, pill right */}
+            <div
+              className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
+              style={aiGlassLightBorderStyle('1rem')}
+            >
+              <button
+                onClick={() =>
+                  setSelectedItem({
+                    id: '',
+                    name: `New ${constraintType === 'SOFT' ? 'Preference' : 'Store Rule'}`,
+                    type: itemType,
+                    mode: 'add',
+                  })
+                }
+                className="transition-all duration-150"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  border: 'none',
+                  borderRadius: 'inherit',
+                  padding: '0 16px',
+                  height: '36px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#2C2C2C',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+              >
+                + Add
+              </button>
+            </div>
+          </div>
+
+        {/* Grouped list */}
+        <div className="flex flex-col gap-4">
+          {Array.from(grouped.entries()).map(([ruleType, typeRules]) => (
+            <div key={ruleType} className="flex flex-col gap-2">
+              {/* Group header with count badge */}
+              <div className="flex items-center justify-between">
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '4px 12px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#6B6B6B',
+                    }}
+                  >
+                    {ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}
+                  </div>
+                </div>
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                  <div
+                    style={{
+                      background: 'hsla(0, 84%, 60%, 0.85)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      borderRadius: '9999px',
+                      padding: '3px 9px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#FFFFFF',
+                      minWidth: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      aspectRatio: '1 / 1',
+                    }}
+                  >
+                    {typeRules.length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Items in group */}
+              {typeRules.map((rule, index) => {
+                // For store rules, data is in rule.RoleRule.X
+                // For preferences, data is in rule.X
+                const ruleData = isStoreRules ? rule.RoleRule : rule;
+                const displayName = ruleData?.displayName || ruleData?.Role?.displayName;
+                const ruleType = ruleData?.type;
+                const targetRole = ruleData?.TargetRole;
+                const valueInt = rule.valueInt; // valueInt is always at the top level (in StoreRoleRule/CrewRoleRule)
+
+                return (
+                  <ListRowItemLight
+                    key={rule.id}
+                    itemNumber={index + 1}
+                    isFirst={index === 0}
+                    isLast={index === typeRules.length - 1}
+                    onView={() => setSelectedItem({
+                      id: String(rule.id),
+                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
+                      type: itemType,
+                      mode: 'view'
+                    })}
+                    onEdit={() => setSelectedItem({
+                      id: String(rule.id),
+                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
+                      type: itemType,
+                      mode: 'edit'
+                    })}
+                    onDelete={() => setDeleteConfirmItem({
+                      id: String(rule.id),
+                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
+                      type: itemType
+                    })}
+                  >
+                    <div className="flex flex-col">
+                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 400, color: '#2C2C2C' }}>
+                        {displayName}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E' }}>
+                        {targetRole ? `Target: ${targetRole.displayName}` : valueInt !== null && valueInt !== undefined ? `Value: ${valueInt}` : ''}
+                      </span>
+                    </div>
+                  </ListRowItemLight>
+                );
+              })}
+            </div>
+          ))}
+
+          {grouped.size === 0 && (
+            <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
+              No {constraintType === 'SOFT' ? 'preferences' : 'rules'} found
+            </div>
+          )}
+        </div>
+        </div>
+      </CardContainer>
+    );
+  };
+
   // Role Families card (rendered separately above header)
   const renderRoleFamiliesCard = () => {
     if (effectiveRoleFamilies.length === 0) return null;
@@ -829,57 +1084,39 @@ export default function Home() {
                       marginLeft: '8px',
                     }}
                   />
-                  {searchQuery && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setRolesPage(1);
-                      }}
-                      className="transition-all hover:brightness-75"
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#6B6B6B',
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: '16px',
-                        lineHeight: 1,
-                      }}
-                    >
-                      x
-                    </button>
-                  )}
                 </div>
               </div>
-
               {/* Add button - rounded left, pill right */}
               <div
                 className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
                 style={aiGlassLightBorderStyle('1rem')}
               >
                 <button
-                  onClick={() => setSelectedItem({ id: 'new', name: 'New Role', type: 'roles', mode: 'add' })}
-                  className="flex items-center justify-center gap-1 transition-all duration-200 rounded-l-md rounded-r-full"
+                  onClick={() =>
+                    setSelectedItem({
+                      id: '',
+                      name: 'New Role',
+                      type: 'roles',
+                      mode: 'add',
+                    })
+                  }
+                  className="transition-all duration-150"
                   style={{
                     backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    padding: '0 18px',
-                    height: '36px',
                     border: 'none',
+                    borderRadius: 'inherit',
+                    padding: '0 16px',
+                    height: '36px',
                     fontFamily: 'var(--font-open-sans)',
                     fontSize: '14px',
-                    fontWeight: 500,
+                    fontWeight: 400,
                     color: '#2C2C2C',
                     cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
-                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
                 >
-                  <span style={{ fontSize: '16px', lineHeight: 1, color: 'hsl(0, 84%, 60%)' }}>+</span>
-                  <span>Add</span>
+                  + Add
                 </button>
               </div>
             </div>
@@ -1490,6 +1727,10 @@ export default function Home() {
             renderListView('crew')
           ) : activeView === 'roles' ? (
             renderRolesListView()
+          ) : activeView === 'preferences' ? (
+            renderGroupedRulesView('SOFT')
+          ) : activeView === 'storeRules' ? (
+            renderGroupedRulesView('HARD')
           ) : activeView === 'logbooks' ? (
             renderListView('logbooks')
           ) : null}
@@ -1520,11 +1761,13 @@ export default function Home() {
             <div className="flex flex-col gap-4 h-full">
               {/* Header with name and mode dropdown */}
               <CardHeader
-                title={selectedItem.mode === 'add' ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : 'Logbook'}` : selectedItem.name}
+                title={selectedItem.mode === 'add' && !selectedItem.id ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : selectedItem.type === 'preferences' ? 'Preference' : selectedItem.type === 'storeRules' ? 'Store Rule' : 'Logbook'}` : selectedItem.name}
                 lightMode={true}
                 borderRadius="1.5rem"
                 titleStyle={{ color: '#2C2C2C' }}
                 leftContent={
+                  // Only show dropdown if not in "new add" mode (add mode with no ID)
+                  selectedItem.mode === 'add' && !selectedItem.id ? undefined : (
                   <Menu as="div" style={{ zIndex: 100 }}>
                     <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                       <MenuButton
@@ -1575,12 +1818,32 @@ export default function Home() {
                           WebkitBackdropFilter: 'blur(2px)',
                         }}
                       >
-                        {(selectedItem.mode === 'add' ? ['add'] : selectedItem.type === 'logbooks' ? ['history', 'pdf'] : selectedItem.type === 'roleFamilies' ? ['view'] : ['view', 'edit']).map((mode) => (
+                        {(selectedItem.type === 'logbooks' ? ['history', 'pdf', 'add'] : selectedItem.type === 'roleFamilies' ? (selectedItem.mode === 'add' ? ['add'] : ['view', 'add']) : ['view', 'edit', 'add']).map((mode) => (
                           <MenuItem key={mode}>
                             <div className="flex items-center justify-between px-4 py-2">
                               <button
                                 onClick={() => {
-                                  setSelectedItem({ ...selectedItem, mode: mode as SelectedItem['mode'] });
+                                  if (mode === 'add') {
+                                    if (selectedItem.type === 'logbooks') {
+                                      // For logbooks, navigate to shifts page
+                                      router.push(`/stores/${storeId}/logbook/create/shifts`);
+                                    } else {
+                                      // When clicking Add, create a new item of the current type
+                                      const itemName = selectedItem.type === 'crew' ? 'Crew Member' :
+                                                      selectedItem.type === 'roles' ? 'Role' :
+                                                      selectedItem.type === 'roleFamilies' ? 'Role Family' :
+                                                      selectedItem.type === 'preferences' ? 'Preference' :
+                                                      selectedItem.type === 'storeRules' ? 'Store Rule' : 'Item';
+                                      setSelectedItem({
+                                        id: '',
+                                        name: `New ${itemName}`,
+                                        type: selectedItem.type,
+                                        mode: 'add',
+                                      });
+                                    }
+                                  } else {
+                                    setSelectedItem({ ...selectedItem, mode: mode as SelectedItem['mode'] });
+                                  }
                                 }}
                                 className="text-left text-sm focus:outline-none flex-1"
                                 style={{
@@ -1599,6 +1862,7 @@ export default function Home() {
                       </div>
                     </MenuItems>
                   </Menu>
+                  )
                 }
                 rightContent={
                   <button
@@ -1632,10 +1896,21 @@ export default function Home() {
                   mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
                   crewId={selectedItem.mode === 'edit' ? selectedItem.id : undefined}
                   storeId={storeId}
-                  onSuccess={() => {
+                  onSuccess={(newCrew?: any) => {
                     refreshData();
-                    setActiveView('crew');
-                    setSelectedItem(null);
+                    // If adding new item, switch to view mode of the new item
+                    if (selectedItem.mode === 'add' && newCrew) {
+                      setSelectedItem({
+                        id: newCrew.id,
+                        name: newCrew.name,
+                        type: 'crew',
+                        mode: 'view',
+                      });
+                    } else {
+                      // If editing, just refresh and stay in view mode
+                      setActiveView('crew');
+                      setSelectedItem(null);
+                    }
                   }}
                   onCancel={() => {
                     setActiveView('crew');
@@ -1649,10 +1924,20 @@ export default function Home() {
                   mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
                   roleId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
                   storeId={storeId}
-                  onSuccess={() => {
+                  onSuccess={(newRole?: any) => {
                     refreshData();
-                    setActiveView('roles');
-                    setSelectedItem(null);
+                    // If adding new item, switch to view mode of the new item
+                    if (selectedItem.mode === 'add' && newRole) {
+                      setSelectedItem({
+                        id: String(newRole.id),
+                        name: newRole.displayName,
+                        type: 'roles',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('roles');
+                      setSelectedItem(null);
+                    }
                   }}
                   onCancel={() => {
                     setActiveView('roles');
@@ -1662,24 +1947,98 @@ export default function Home() {
               ) : selectedItem.type === 'roles' && selectedItem.mode === 'view' ? (
                 <RoleDetailView roleId={Number(selectedItem.id)} />
               ) : selectedItem.type === 'roleFamilies' && selectedItem.mode === 'add' ? (
-                <RoleFamilyForm
-                  companyId={1}
-                  onSuccess={() => {
+                !apiStore ? (
+                  <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+                    <div className="flex items-center justify-center py-8">
+                      <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B' }}>Loading store data...</span>
+                    </div>
+                  </CardContainer>
+                ) : (
+                  <RoleFamilyForm
+                    companyId={apiStore.companyId}
+                  onSuccess={(newFamily?: any) => {
                     refreshData();
-                    setActiveView('roles');
-                    setSelectedItem(null);
+                    // If adding new item, switch to view mode of the new item
+                    if (newFamily) {
+                      setSelectedItem({
+                        id: String(newFamily.id),
+                        name: newFamily.displayName || newFamily.name,
+                        type: 'roleFamilies',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('roles');
+                      setSelectedItem(null);
+                    }
                   }}
                   onCancel={() => {
                     setActiveView('roles');
                     setSelectedItem(null);
                   }}
-                />
+                  />
+                )
               ) : selectedItem.type === 'roleFamilies' ? (
                 <RoleFamilyDetailView
                   familyId={selectedItem.id}
                   storeId={storeId}
                   onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'roleFamilies' })}
                 />
+              ) : selectedItem.type === 'preferences' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <RoleRuleForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  ruleId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
+                  storeId={storeId}
+                  constraintType="SOFT"
+                  onSuccess={(newRule?: any) => {
+                    refreshData();
+                    // If adding new item, switch to view mode of the new item
+                    if (selectedItem.mode === 'add' && newRule) {
+                      setSelectedItem({
+                        id: String(newRule.id),
+                        name: newRule.displayName || `${newRule.Role?.displayName} - ${newRule.type}`,
+                        type: 'preferences',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('preferences');
+                      setSelectedItem(null);
+                    }
+                  }}
+                  onCancel={() => {
+                    setActiveView('preferences');
+                    setSelectedItem(null);
+                  }}
+                />
+              ) : selectedItem.type === 'preferences' && selectedItem.mode === 'view' ? (
+                <RoleRuleDetailView ruleId={Number(selectedItem.id)} constraintType="SOFT" />
+              ) : selectedItem.type === 'storeRules' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <RoleRuleForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  ruleId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
+                  storeId={storeId}
+                  constraintType="HARD"
+                  onSuccess={(newRule?: any) => {
+                    refreshData();
+                    // If adding new item, switch to view mode of the new item
+                    if (selectedItem.mode === 'add' && newRule) {
+                      setSelectedItem({
+                        id: String(newRule.id),
+                        name: newRule.displayName || `${newRule.Role?.displayName} - ${newRule.type}`,
+                        type: 'storeRules',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('storeRules');
+                      setSelectedItem(null);
+                    }
+                  }}
+                  onCancel={() => {
+                    setActiveView('storeRules');
+                    setSelectedItem(null);
+                  }}
+                />
+              ) : selectedItem.type === 'storeRules' && selectedItem.mode === 'view' ? (
+                <RoleRuleDetailView ruleId={Number(selectedItem.id)} constraintType="HARD" />
               ) : (
                 <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
                   <div className="flex flex-col gap-4">
@@ -1738,7 +2097,11 @@ export default function Home() {
                 marginBottom: '12px',
               }}
             >
-              Delete {deleteConfirmItem.type === 'crew' ? 'Crew Member' : deleteConfirmItem.type === 'roles' ? 'Role' : 'Logbook'}?
+              Delete {deleteConfirmItem.type === 'crew' ? 'Crew Member' :
+                      deleteConfirmItem.type === 'roles' ? 'Role' :
+                      deleteConfirmItem.type === 'preferences' ? 'Preference' :
+                      deleteConfirmItem.type === 'storeRules' ? 'Store Rule' :
+                      'Logbook'}?
             </h3>
             <p
               style={{

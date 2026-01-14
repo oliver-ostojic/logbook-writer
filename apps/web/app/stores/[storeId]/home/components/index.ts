@@ -4,5 +4,7 @@ export { RoleForm } from './RoleForm';
 export { RoleDetailView } from './RoleDetailView';
 export { RoleFamilyForm } from './RoleFamilyForm';
 export { RoleFamilyDetailView } from './RoleFamilyDetailView';
+export { RoleRuleForm } from './RoleRuleForm';
+export { RoleRuleDetailView } from './RoleRuleDetailView';
 export { LogbookPdfViewer } from './LogbookPdfViewer';
 export { LogbookSupersededHistory } from './LogbookSupersededHistory';

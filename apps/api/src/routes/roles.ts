@@ -60,6 +60,9 @@ export function registerRoleRoutes(app: FastifyInstance) {
 
   // Create a new role
   app.post<{ Body: CreateRoleBody }>('/roles', async (req, reply) => {
+    console.log('=== POST /roles ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
     const {
       code,
       name,
@@ -75,11 +78,25 @@ export function registerRoleRoutes(app: FastifyInstance) {
 
     const resolvedCode = code ?? name;
     if (!resolvedCode) {
+      console.error('Validation failed: No code provided');
       return reply.code(400).send({ error: 'code is required' });
     }
     if (storeId === undefined) {
+      console.error('Validation failed: No storeId provided');
       return reply.code(400).send({ error: 'storeId is required' });
     }
+
+    console.log('Creating role with data:', {
+      code: resolvedCode,
+      codePDF: codePDF ?? resolvedCode,
+      displayName: displayName ?? resolvedCode,
+      storeId,
+      assignmentModel: assignmentModel ?? AssignmentModel.HOURLY,
+      consecutivePolicy: consecutivePolicy ?? 'NONE',
+      taskLength: taskLength ?? 30,
+      familyId: familyId ?? 1,
+      allowOutsideStoreHours: allowOutsideStoreHours ?? false,
+    });
 
     try {
       const role = await prisma.role.create({
@@ -98,9 +115,13 @@ export function registerRoleRoutes(app: FastifyInstance) {
         },
         include: roleInclude,
       });
-      return formatRole(role as RoleWithCrew);
+      console.log('Role created successfully:', role.id);
+      const formatted = formatRole(role as RoleWithCrew);
+      console.log('Returning formatted role:', JSON.stringify(formatted, null, 2));
+      return formatted;
     } catch (e: any) {
       if (e?.code === 'P2002') {
+        console.error('Duplicate role detected');
         return reply.code(409).send({ error: 'Role with this code already exists' });
       }
       console.error('Failed to create role', e);
@@ -549,6 +570,46 @@ export function registerRoleRoutes(app: FastifyInstance) {
     } catch (e: any) {
       console.error('Failed to update role family', e);
       return reply.code(500).send({ error: 'Failed to update role family' });
+    }
+  });
+
+  // DELETE /role-families/:id - Delete a role family
+  app.delete<{ Params: { id: string } }>('/role-families/:id', async (req, reply) => {
+    const { id } = req.params;
+    const familyId = Number(id);
+    if (Number.isNaN(familyId)) {
+      return reply.code(400).send({ error: 'id must be a number' });
+    }
+
+    const existing = await prisma.roleFamily.findUnique({
+      where: { id: familyId },
+      include: { Role: true },
+    });
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Role family not found' });
+    }
+
+    // Check if any roles are using this family
+    if (existing.Role.length > 0) {
+      return reply.code(400).send({
+        error: 'Cannot delete role family with roles assigned. Please reassign or remove all roles first.',
+        roleCount: existing.Role.length,
+      });
+    }
+
+    try {
+      await prisma.roleFamily.delete({
+        where: { id: familyId },
+      });
+
+      return {
+        success: true,
+        message: `Role family "${existing.displayName}" deleted successfully`,
+      };
+    } catch (e: any) {
+      console.error('Failed to delete role family', e);
+      return reply.code(500).send({ error: 'Failed to delete role family' });
     }
   });
 }

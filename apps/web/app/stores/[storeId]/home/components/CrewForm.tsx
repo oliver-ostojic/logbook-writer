@@ -9,7 +9,7 @@ interface CrewFormProps {
   mode: 'add' | 'edit';
   crewId?: string;
   storeId: string;
-  onSuccess?: () => void;
+  onSuccess?: (newCrew?: any) => void;
   onCancel?: () => void;
 }
 
@@ -91,7 +91,8 @@ export function CrewForm({ mode, crewId, storeId, onSuccess, onCancel }: CrewFor
         throw new Error(errData.error || 'Failed to save crew member');
       }
 
-      onSuccess?.();
+      const createdCrew = await response.json();
+      onSuccess?.(createdCrew);
     } catch (err: any) {
       setError(err.message);
     } finally {

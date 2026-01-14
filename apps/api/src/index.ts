@@ -4,6 +4,7 @@ import { registerHealthRoutes } from './routes/health';
 import { registerCrewRoutes } from './routes/crew';
 import { registerRoleRoutes } from './routes/roles';
 import { registerRoleRuleRoutes } from './routes/role-rules';
+import { registerStoreRoutes } from './routes/stores';
 import { registerScheduleRoutes, registerLogbookRoutes } from './routes/schedule';
 import { registerSolverRoutes } from './routes/solver';
 import { registerSolverV2Routes } from './routes/solver2';
@@ -22,6 +23,7 @@ export async function buildServer() {
   registerCrewRoutes(app);
   registerRoleRoutes(app);
   registerRoleRuleRoutes(app);
+  registerStoreRoutes(app);
   registerScheduleRoutes(app);
   registerLogbookRoutes(app);
   registerSolverRoutes(app);

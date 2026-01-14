@@ -516,7 +516,7 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
         {/* Divider */}
         <div style={{ height: 1, background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)' }} />
 
-        {/* Delete Family Button */}
+        {/* Delete Button */}
         <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
           <button
             onClick={onDelete}
@@ -531,7 +531,7 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
               cursor: 'pointer',
             }}
           >
-            Delete Family
+            Delete
           </button>
         </div>
       </div>

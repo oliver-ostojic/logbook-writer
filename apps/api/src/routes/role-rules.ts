@@ -17,6 +17,8 @@ type CreateRoleRuleBody = {
   targetRoleId?: number;
   valueInt?: number;
   constraintType: ConstraintType;
+  displayName?: string;
+  description?: string;
 };
 
 type UpdateRoleRuleBody = Partial<CreateRoleRuleBody>;
@@ -57,15 +59,19 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   // ============== RoleRule CRUD ==============
 
   // GET /role-rules - List all role rules
-  app.get<{ Querystring: { roleId?: string } }>(
+  app.get<{ Querystring: { roleId?: string; constraintType?: string; storeId?: string } }>(
     "/role-rules",
     async (req, reply) => {
-      const { roleId } = req.query;
+      const { roleId, constraintType, storeId } = req.query;
 
       const rules = await prisma.roleRule.findMany({
-        where: roleId ? { roleId: parseInt(roleId) } : undefined,
+        where: {
+          ...(roleId && { roleId: parseInt(roleId) }),
+          ...(constraintType && { constraintType: constraintType as ConstraintType }),
+          ...(storeId && { Role: { storeId: parseInt(storeId) } }),
+        },
         include: roleRuleInclude,
-        orderBy: [{ roleId: "asc" }, { type: "asc" }],
+        orderBy: [{ type: "asc" }, { roleId: "asc" }],
       });
 
       return reply.send(rules);
@@ -93,9 +99,14 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
 
   // POST /role-rules - Create a new role rule
   app.post<{ Body: CreateRoleRuleBody }>("/role-rules", async (req, reply) => {
-    const { roleId, type, targetRoleId, constraintType } = req.body;
+    console.log('=== POST /role-rules ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+    const { roleId, type, targetRoleId, constraintType, valueInt, displayName, description } = req.body;
 
     if (!roleId || !type || !constraintType) {
+      console.error('Validation failed: Missing required fields');
+      console.error('roleId:', roleId, 'type:', type, 'constraintType:', constraintType);
       return reply
         .code(400)
         .send({ error: "roleId, type, and constraintType are required" });
@@ -120,26 +131,43 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
     }
 
     try {
+      console.log('Creating RoleRule with data:', {
+        roleId,
+        type,
+        targetRoleId,
+        constraintType,
+        valueInt,
+        displayName,
+        description,
+      });
+
       const rule = await prisma.roleRule.create({
         data: {
           roleId,
           type,
           targetRoleId,
           constraintType,
+          valueInt,
+          displayName,
+          description,
         },
         include: roleRuleInclude,
       });
 
+      console.log('RoleRule created successfully:', rule.id);
       return reply.code(201).send(rule);
     } catch (error) {
+      console.error('Error creating RoleRule:', error);
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
+        console.error('Duplicate RoleRule detected');
         return reply
           .code(409)
           .send({ error: "RoleRule with this combination already exists" });
       }
+      console.error('Unexpected error:', error);
       throw error;
     }
   });
@@ -149,7 +177,7 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
     "/role-rules/:id",
     async (req, reply) => {
       const id = parseInt(req.params.id);
-      const { roleId, type, targetRoleId, constraintType } = req.body;
+      const { roleId, type, targetRoleId, constraintType, valueInt, displayName, description } = req.body;
 
       try {
         const rule = await prisma.roleRule.update({
@@ -159,6 +187,9 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
             ...(type !== undefined && { type }),
             ...(targetRoleId !== undefined && { targetRoleId }),
             ...(constraintType !== undefined && { constraintType }),
+            ...(valueInt !== undefined && { valueInt }),
+            ...(displayName !== undefined && { displayName }),
+            ...(description !== undefined && { description }),
           },
           include: roleRuleInclude,
         });
