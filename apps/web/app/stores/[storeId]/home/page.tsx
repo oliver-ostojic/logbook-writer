@@ -7,7 +7,7 @@ import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, Magnifying
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
-import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -17,6 +17,9 @@ const VIEW_OPTIONS = [
   { id: 'roles', name: 'Roles', title: 'List View' },
   { id: 'preferences', name: 'Preferences', title: 'List View' },
   { id: 'storeRules', name: 'Store Rules', title: 'List View' },
+  { id: 'companies', name: 'Companies', title: 'List View' },
+  { id: 'stores', name: 'Stores', title: 'List View' },
+  { id: 'runs', name: 'Runs', title: 'Audit Log' },
   { id: 'logbooks', name: 'Logbooks', title: 'List View' },
 ];
 
@@ -318,7 +321,7 @@ const activity = [
 type EditableItem = {
   id: string;
   name: string;
-  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'storeRules';
+  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'storeRules' | 'companies' | 'stores' | 'runs';
 };
 
 type SelectedItem = EditableItem & {
@@ -339,6 +342,9 @@ export default function Home() {
   const [rolesPage, setRolesPage] = useState(1);
   const [preferencesPage, setPreferencesPage] = useState(1);
   const [storeRulesPage, setStoreRulesPage] = useState(1);
+  const [companiesPage, setCompaniesPage] = useState(1);
+  const [storesPage, setStoresPage] = useState(1);
+  const [runsPage, setRunsPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
   const [activityFilter, setActivityFilter] = useState('today');
   const [commentText, setCommentText] = useState('');
@@ -353,19 +359,25 @@ export default function Home() {
   const [apiRoleFamilies, setApiRoleFamilies] = useState<any[]>([]);
   const [apiPreferences, setApiPreferences] = useState<any[]>([]);
   const [apiStoreRules, setApiStoreRules] = useState<any[]>([]);
+  const [apiCompanies, setApiCompanies] = useState<any[]>([]);
+  const [apiStores, setApiStores] = useState<any[]>([]);
+  const [apiRuns, setApiRuns] = useState<any[]>([]);
   const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
 
   // Fetch data from API
   useEffect(() => {
     async function fetchData() {
       try {
-        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, logbooksRes] = await Promise.all([
+        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, companiesRes, storesRes, runsRes, logbooksRes] = await Promise.all([
           fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
           fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/companies`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/stores`).then(r => r.ok ? r.json() : []),
+          fetch(`${API_URL}/runs?storeId=${storeId}`).then(r => r.ok ? r.json() : { runs: [] }),
           fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
         ]);
         setApiStore(storeRes);
@@ -374,6 +386,11 @@ export default function Home() {
         setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
         setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
         setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
+        setApiCompanies(Array.isArray(companiesRes) ? companiesRes : []);
+        setApiStores(Array.isArray(storesRes) ? storesRes : []);
+        // Runs API returns { runs: [...], total, limit, offset }
+        const runs = runsRes?.runs || [];
+        setApiRuns(Array.isArray(runs) ? runs : []);
         // Logbooks API returns { logbooks: [...], total, limit, offset }
         const logbooks = logbooksRes?.logbooks || [];
         setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
@@ -438,6 +455,17 @@ export default function Home() {
   const filteredRoles = effectiveRoles.filter(r =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredCompanies = apiCompanies.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredStores = apiStores.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredRuns = apiRuns.filter((r: any) =>
+    r.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.engine.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (r.Store?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const filteredLogbooks = effectiveLogbooks.filter(l =>
     formatLogbookDate(l.date).toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -445,13 +473,15 @@ export default function Home() {
   // Helper to refresh data after mutations
   const refreshData = async () => {
     try {
-      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, logbooksRes] = await Promise.all([
+      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, companiesRes, storesRes, logbooksRes] = await Promise.all([
         fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
         fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/companies`).then(r => r.ok ? r.json() : []),
+        fetch(`${API_URL}/stores`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
       ]);
       setApiStore(storeRes);
@@ -460,6 +490,8 @@ export default function Home() {
       setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
       setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
       setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
+      setApiCompanies(Array.isArray(companiesRes) ? companiesRes : []);
+      setApiStores(Array.isArray(storesRes) ? storesRes : []);
       const logbooks = logbooksRes?.logbooks || [];
       setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
     } catch (err) {
@@ -475,6 +507,8 @@ export default function Home() {
                        item.type === 'roleFamilies' ? `/role-families/${item.id}` :
                        item.type === 'preferences' ? `/role-rules/${item.id}` :
                        item.type === 'storeRules' ? `/store-role-rules/${item.id}` :
+                       item.type === 'companies' ? `/companies/${item.id}` :
+                       item.type === 'stores' ? `/stores/${item.id}` :
                        `/logbooks/${item.id}`;
       const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
       if (res.ok) {
@@ -492,10 +526,25 @@ export default function Home() {
   };
 
   // Render list view content
-  const renderListView = (type: 'crew' | 'roles' | 'logbooks') => {
-    const data = type === 'crew' ? filteredCrew : type === 'roles' ? filteredRoles : filteredLogbooks;
-    const currentPage = type === 'crew' ? crewPage : type === 'roles' ? rolesPage : logbooksPage;
-    const setPage = type === 'crew' ? setCrewPage : type === 'roles' ? setRolesPage : setLogbooksPage;
+  const renderListView = (type: 'crew' | 'roles' | 'companies' | 'stores' | 'runs' | 'logbooks') => {
+    const data = type === 'crew' ? filteredCrew :
+                 type === 'roles' ? filteredRoles :
+                 type === 'companies' ? filteredCompanies :
+                 type === 'stores' ? filteredStores :
+                 type === 'runs' ? filteredRuns :
+                 filteredLogbooks;
+    const currentPage = type === 'crew' ? crewPage :
+                        type === 'roles' ? rolesPage :
+                        type === 'companies' ? companiesPage :
+                        type === 'stores' ? storesPage :
+                        type === 'runs' ? runsPage :
+                        logbooksPage;
+    const setPage = type === 'crew' ? setCrewPage :
+                    type === 'roles' ? setRolesPage :
+                    type === 'companies' ? setCompaniesPage :
+                    type === 'stores' ? setStoresPage :
+                    type === 'runs' ? setRunsPage :
+                    setLogbooksPage;
 
     // Calculate pagination
     const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
@@ -565,44 +614,46 @@ export default function Home() {
                 />
               </div>
             </div>
-            {/* Add button - rounded left, pill right */}
-            <div
-              className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
-              <button
-                onClick={() => {
-                  if (type === 'logbooks') {
-                    router.push(`/stores/${storeId}/logbook/create/shifts`);
-                  } else {
-                    const itemName = type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook';
-                    setSelectedItem({
-                      id: '',
-                      name: `New ${itemName}`,
-                      type: type,
-                      mode: 'add',
-                    });
-                  }
-                }}
-                className="transition-all duration-150"
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  border: 'none',
-                  borderRadius: 'inherit',
-                  padding: '0 16px',
-                  height: '36px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  color: '#2C2C2C',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+            {/* Add button - rounded left, pill right (hidden for runs) */}
+            {type !== 'runs' && (
+              <div
+                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
+                style={aiGlassLightBorderStyle('1rem')}
               >
-                + Add
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    if (type === 'logbooks') {
+                      router.push(`/stores/${storeId}/logbook/create/shifts`);
+                    } else {
+                      const itemName = type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook';
+                      setSelectedItem({
+                        id: '',
+                        name: `New ${itemName}`,
+                        type: type,
+                        mode: 'add',
+                      });
+                    }
+                  }}
+                  className="transition-all duration-150"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    border: 'none',
+                    borderRadius: 'inherit',
+                    padding: '0 16px',
+                    height: '36px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#2C2C2C',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                >
+                  + Add
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Paginated list */}
@@ -618,6 +669,8 @@ export default function Home() {
               const isLast = index === paginatedData.length - 1;
               const itemName = type === 'logbooks'
                 ? formatLogbookDate((item as typeof logbooksData[0]).date)
+                : type === 'runs'
+                ? `${(item as any).engine} - ${(item as any).status}`
                 : (item as typeof crewData[0]).name;
               return (
                 <ListRowItemLight
@@ -633,7 +686,7 @@ export default function Home() {
                       setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
                     }
                   }}
-                  onEdit={() => {
+                  onEdit={type === 'runs' ? undefined : () => {
                     if (type === 'logbooks') {
                       // For logbooks, edit button navigates to preview page
                       router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${item.id}`);
@@ -1731,6 +1784,12 @@ export default function Home() {
             renderGroupedRulesView('SOFT')
           ) : activeView === 'storeRules' ? (
             renderGroupedRulesView('HARD')
+          ) : activeView === 'companies' ? (
+            renderListView('companies')
+          ) : activeView === 'stores' ? (
+            renderListView('stores')
+          ) : activeView === 'runs' ? (
+            renderListView('runs')
           ) : activeView === 'logbooks' ? (
             renderListView('logbooks')
           ) : null}
@@ -2039,6 +2098,67 @@ export default function Home() {
                 />
               ) : selectedItem.type === 'storeRules' && selectedItem.mode === 'view' ? (
                 <RoleRuleDetailView ruleId={Number(selectedItem.id)} constraintType="HARD" />
+              ) : selectedItem.type === 'companies' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <CompanyForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  companyId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
+                  onSuccess={(newCompany?: any) => {
+                    refreshData();
+                    if (selectedItem.mode === 'add' && newCompany) {
+                      setSelectedItem({
+                        id: String(newCompany.id),
+                        name: newCompany.name,
+                        type: 'companies',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('companies');
+                      setSelectedItem(null);
+                    }
+                  }}
+                  onCancel={() => {
+                    setActiveView('companies');
+                    setSelectedItem(null);
+                  }}
+                />
+              ) : selectedItem.type === 'companies' && selectedItem.mode === 'view' ? (
+                <CompanyDetailView
+                  companyId={Number(selectedItem.id)}
+                  onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'companies' })}
+                />
+              ) : selectedItem.type === 'stores' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
+                <StoreForm
+                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
+                  storeId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
+                  onSuccess={(newStore?: any) => {
+                    refreshData();
+                    if (selectedItem.mode === 'add' && newStore) {
+                      setSelectedItem({
+                        id: String(newStore.id),
+                        name: newStore.name,
+                        type: 'stores',
+                        mode: 'view',
+                      });
+                    } else {
+                      setActiveView('stores');
+                      setSelectedItem(null);
+                    }
+                  }}
+                  onCancel={() => {
+                    setActiveView('stores');
+                    setSelectedItem(null);
+                  }}
+                />
+              ) : selectedItem.type === 'stores' && selectedItem.mode === 'view' ? (
+                <StoreDetailView
+                  storeId={Number(selectedItem.id)}
+                  onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'stores' })}
+                />
+              ) : selectedItem.type === 'runs' && selectedItem.mode === 'view' ? (
+                <RunDetailView
+                  runId={String(selectedItem.id)}
+                  onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'runs' })}
+                />
               ) : (
                 <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
                   <div className="flex flex-col gap-4">

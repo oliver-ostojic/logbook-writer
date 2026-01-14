@@ -398,9 +398,28 @@ export async function createRunRecord(
     seed: number;
     solverOutput: SolverOutputV2;
     logbookId?: string;
+    inputParams?: Record<string, any>;
+    solverVersion?: string;
+    triggeredBy?: string;
+    inputHash?: string;
+    constraintCount?: number;
+    variableCount?: number;
   }
 ): Promise<string> {
-  const { storeId, date, engine, seed, solverOutput, logbookId } = options;
+  const {
+    storeId,
+    date,
+    engine,
+    seed,
+    solverOutput,
+    logbookId,
+    inputParams,
+    solverVersion,
+    triggeredBy,
+    inputHash,
+    constraintCount,
+    variableCount,
+  } = options;
 
   const run = await prisma.run.create({
     data: {
@@ -415,6 +434,12 @@ export async function createRunRecord(
       objectiveScore: solverOutput.metadata.objectiveScore || 0,
       mipGap: solverOutput.metadata.mipGap,
       logbookId,
+      inputParams: inputParams as any,
+      solverVersion,
+      triggeredBy,
+      inputHash,
+      constraintCount,
+      variableCount,
     }
   });
 

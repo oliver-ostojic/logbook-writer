@@ -327,23 +327,34 @@ model RoleFamily {
 }
 
 model Run {
-  id             String    @id @db.Uuid
-  date           DateTime
-  storeId        Int
-  engine         String
-  seed           Int
-  status         RunStatus
-  runtimeMs      Int
-  violations     Json
-  objectiveScore Int?
-  mipGap         Float?
-  logbookId      String?   @db.Uuid
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  Logbook        Logbook?  @relation(fields: [logbookId], references: [id])
-  Store          Store     @relation(fields: [storeId], references: [id])
+  id              String    @id @db.Uuid
+  date            DateTime
+  storeId         Int
+  engine          String
+  seed            Int
+  status          RunStatus
+  runtimeMs       Int
+  violations      Json
+  objectiveScore  Int?
+  mipGap          Float?
+  logbookId       String?   @db.Uuid
+
+  // Audit fields
+  inputParams     Json?     // timeLimitSeconds, saveLogbook, etc.
+  solverVersion   String?   // Python solver version/commit
+  triggeredBy     String?   // User/API key/system
+  inputHash       String?   // Hash of shifts/rules/preferences
+  constraintCount Int?      // Number of constraints generated
+  variableCount   Int?      // Number of decision variables
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  Logbook         Logbook?  @relation(fields: [logbookId], references: [id])
+  Store           Store     @relation(fields: [storeId], references: [id])
 
   @@index([storeId, date])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Shift {

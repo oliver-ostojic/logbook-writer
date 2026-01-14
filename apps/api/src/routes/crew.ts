@@ -92,15 +92,6 @@ export function registerCrewRoutes(app: FastifyInstance) {
   const normalizeRoleIds = (roleIds: Array<number | string> | undefined) =>
     roleIds?.map((id) => (typeof id === 'string' ? Number(id) : id)).filter((id): id is number => Number.isInteger(id));
 
-  // GET /stores - list all stores
-  app.get('/stores', async () => {
-    const stores = await prisma.store.findMany({
-      orderBy: { id: 'asc' },
-      select: { id: true, name: true, timezone: true },
-    });
-    return stores;
-  });
-
   // GET /stores/:storeId/roles - list all roles for a store
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/roles', async (req, reply) => {
     const storeId = parseInt(req.params.storeId, 10);
@@ -115,71 +106,6 @@ export function registerCrewRoutes(app: FastifyInstance) {
     });
 
     return roles;
-  });
-
-
-  // POST /stores - create a store (explicit id + name; defaults for timezone/regHoursStartMin/regHoursEndMin)
-  // Now requires a Company; if not provided, we create a default company automatically.
-  app.post<{ Body: { id: number; name: string; timezone?: string; regHoursStartMin?: number; regHoursEndMin?: number; startRegHour?: number; endRegHour?: number; companyId?: number; companyName?: string } }>('/stores', async (req, reply) => {
-    const { id, name, timezone, regHoursStartMin, regHoursEndMin, startRegHour, endRegHour, companyId, companyName } = req.body;
-    if (id === undefined || Number.isNaN(id)) {
-      return reply.code(400).send({ error: 'id is required and must be a number' });
-    }
-    if (!name) {
-      return reply.code(400).send({ error: 'name is required' });
-    }
-
-    const startMinutes = regHoursStartMin ?? startRegHour;
-    const endMinutes = regHoursEndMin ?? endRegHour;
-
-    try {
-      // Resolve company: prefer provided companyId; else create or connect by name; else create a default.
-      let resolvedCompanyId = companyId;
-      if (!resolvedCompanyId) {
-        const finalCompanyName = companyName?.trim() || 'Default Company';
-        const company = await prisma.company.upsert({
-          where: { id: 1 },
-          update: {},
-          create: { name: finalCompanyName },
-        }).catch(async () => {
-          // If id:1 exists with different shape or constraint, fallback to connectOrCreate by name
-          return prisma.company.upsert({
-            where: { name: finalCompanyName as any },
-            update: {},
-            create: { name: finalCompanyName },
-          } as any);
-        });
-        resolvedCompanyId = company.id;
-      }
-
-      const store = await prisma.store.create({
-        data: {
-          id,
-          name,
-          companyId: resolvedCompanyId!,
-          ...(timezone !== undefined && { timezone }),
-          ...(startMinutes !== undefined && { regHoursStartMin: startMinutes }),
-          ...(endMinutes !== undefined && { regHoursEndMin: endMinutes }),
-        },
-      });
-      return store;
-    } catch (e: any) {
-      if (e?.code === 'P2002') {
-        return reply.code(409).send({ error: 'Store with this id already exists' });
-      }
-      console.error('Failed to create store', e);
-      return reply.code(500).send({ error: 'Failed to create store' });
-    }
-  });
-
-  // DELETE /stores/:id - remove a store (simple utility for cleanup while stabilizing defaults)
-  app.delete<{ Params: { id: string } }>('/stores/:id', async (req, reply) => {
-    const storeId = parseInt(req.params.id, 10);
-    if (isNaN(storeId)) return reply.code(400).send({ error: 'Invalid store id' });
-    const existing = await prisma.store.findUnique({ where: { id: storeId } });
-    if (!existing) return reply.code(404).send({ error: 'Store not found' });
-    await prisma.store.delete({ where: { id: storeId } });
-    return { ok: true, deleted: storeId };
   });
 
   // POST /crew - create new crew member

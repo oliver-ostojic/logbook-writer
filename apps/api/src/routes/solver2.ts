@@ -10,7 +10,7 @@ import type { RoleDescriptor, SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
 import type { ConstraintViolation } from '@logbook-writer/shared-types/src/constraint-analysis';
 import { SolverStatus } from '@logbook-writer/shared-types/src/solver';
-import { saveLogbookWithMetadata, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
+import { saveLogbookWithMetadata, createRunRecord, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
 import { startOfDay } from '../utils';
 import { 
   PRODUCTION_SOLVER_SETTINGS, 
@@ -198,33 +198,32 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         .slice(0, VIOLATION_METADATA_LIMIT)
         .map(formatViolationMessage);
 
+      // Convert to SolverOutputV2 format (used for both logbook and run record)
+      const normalizedDate = startOfDay(body.date);
+      const solverOutput: SolverOutputV2 = {
+        success: pythonResult.success,
+        metadata: {
+          status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+          objectiveScore: pythonResult.objectiveValue,
+          runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+          mipGap: pythonResult.metadata?.mipGap as number | undefined,
+          numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
+          numHours: (pythonResult.metadata?.numHours as number) ?? 0,
+          numAssignments: pythonResult.assignments?.length ?? 0,
+          violations: formattedViolations,
+          constraintAnalysis,
+        },
+        assignments: pythonResult.assignments?.map(a => ({
+          crewId: a.crewId,
+          roleId: a.roleId,
+          startMinute: a.startMinute,
+          endMinute: a.endMinute,
+        })) ?? [],
+      };
+
       // Optionally save logbook (triggers fairness tracking)
       let logbookId: string | undefined;
       if (body.saveLogbook && pythonResult.success && pythonResult.assignments && pythonResult.assignments.length > 0) {
-        const normalizedDate = startOfDay(body.date);
-        
-        // Convert to SolverOutputV2 format expected by saveLogbookWithMetadata
-        const solverOutput: SolverOutputV2 = {
-          success: pythonResult.success,
-          metadata: {
-            status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
-            objectiveScore: pythonResult.objectiveValue,
-            runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
-            mipGap: pythonResult.metadata?.mipGap as number | undefined,
-            numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
-            numHours: (pythonResult.metadata?.numHours as number) ?? 0,
-            numAssignments: pythonResult.assignments?.length ?? 0,
-            violations: formattedViolations,
-            constraintAnalysis,
-          },
-          assignments: pythonResult.assignments.map(a => ({
-            crewId: a.crewId,
-            roleId: a.roleId,
-            startMinute: a.startMinute,
-            endMinute: a.endMinute,
-          })),
-        };
-
         logbookId = await saveLogbookWithMetadata(prisma, {
           storeId,
           date: normalizedDate,
@@ -232,9 +231,33 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
           solverInput,
           status: 'DRAFT',
         });
-        
+
         request.log.info({ logbookId, date: body.date }, 'Logbook saved with fairness tracking');
       }
+
+      // Create Run record for auditing (tracks all solver executions)
+      const runId = await createRunRecord(prisma, {
+        storeId,
+        date: startOfDay(body.date),
+        engine: 'SOLVER_V2',
+        seed: 0, // Could be made configurable
+        solverOutput,
+        logbookId,
+        inputParams: {
+          timeLimitSeconds: body.timeLimitSeconds,
+          saveLogbook: body.saveLogbook,
+          skipFairnessWeights: body.skipFairnessWeights,
+          lookbackDays: body.lookbackDays,
+          numWorkers: body.numWorkers,
+          settings: body.settings,
+        },
+        solverVersion: pythonResult.metadata?.solverVersion as string | undefined,
+        triggeredBy: 'API', // Could be extracted from auth headers
+        constraintCount: (solverInput.coverageWindows?.length ?? 0) + (solverInput.roleRules?.length ?? 0),
+        variableCount: pythonResult.metadata?.numVariables as number | undefined,
+      });
+
+      request.log.info({ runId, logbookId }, 'Run record created');
 
       const response: Record<string, unknown> = {
         success: pythonResult.success,
@@ -339,32 +362,32 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         .slice(0, VIOLATION_METADATA_LIMIT)
         .map(formatViolationMessage);
 
+      // Convert to SolverOutputV2 format (used for both logbook and run record)
+      const normalizedDate = startOfDay(body.date);
+      const solverOutput: SolverOutputV2 = {
+        success: pythonResult.success,
+        metadata: {
+          status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+          objectiveScore: pythonResult.objectiveValue,
+          runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+          mipGap: pythonResult.metadata?.mipGap as number | undefined,
+          numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
+          numHours: (pythonResult.metadata?.numHours as number) ?? 0,
+          numAssignments: pythonResult.assignments?.length ?? 0,
+          violations: formattedViolations,
+          constraintAnalysis,
+        },
+        assignments: pythonResult.assignments?.map(a => ({
+          crewId: a.crewId,
+          roleId: a.roleId,
+          startMinute: a.startMinute,
+          endMinute: a.endMinute,
+        })) ?? [],
+      };
+
       // Optionally save logbook (triggers fairness tracking)
       let logbookId: string | undefined;
       if (body.saveLogbook && pythonResult.success && pythonResult.assignments && pythonResult.assignments.length > 0) {
-        const normalizedDate = startOfDay(body.date);
-        
-        const solverOutput: SolverOutputV2 = {
-          success: pythonResult.success,
-          metadata: {
-            status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
-            objectiveScore: pythonResult.objectiveValue,
-            runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
-            mipGap: pythonResult.metadata?.mipGap as number | undefined,
-            numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
-            numHours: (pythonResult.metadata?.numHours as number) ?? 0,
-            numAssignments: pythonResult.assignments?.length ?? 0,
-            violations: formattedViolations,
-            constraintAnalysis,
-          },
-          assignments: pythonResult.assignments.map(a => ({
-            crewId: a.crewId,
-            roleId: a.roleId,
-            startMinute: a.startMinute,
-            endMinute: a.endMinute,
-          })),
-        };
-
         logbookId = await saveLogbookWithMetadata(prisma, {
           storeId,
           date: normalizedDate,
@@ -372,9 +395,30 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
           solverInput,
           status: 'DRAFT',
         });
-        
+
         request.log.info({ logbookId, date: body.date }, 'Tuned logbook saved with fairness tracking');
       }
+
+      // Create Run record for auditing (tracks all solver executions)
+      const runId = await createRunRecord(prisma, {
+        storeId,
+        date: startOfDay(body.date),
+        engine: 'TUNING_ENGINE',
+        seed: 0,
+        solverOutput,
+        logbookId,
+        inputParams: {
+          saveLogbook: body.saveLogbook,
+          lookbackDays: body.lookbackDays,
+          settings: body.settings,
+        },
+        solverVersion: pythonResult.metadata?.solverVersion as string | undefined,
+        triggeredBy: 'API',
+        constraintCount: (solverInput.coverageWindows?.length ?? 0) + (solverInput.roleRules?.length ?? 0),
+        variableCount: pythonResult.metadata?.numVariables as number | undefined,
+      });
+
+      request.log.info({ runId, logbookId }, 'Run record created for tuning engine');
 
       const response: Record<string, unknown> = {
         success: pythonResult.success,

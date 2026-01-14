@@ -7,7 +7,7 @@ import {
   SolverStatus,
 } from '@logbook-writer/shared-types/src/solver';
 import type { ConstraintViolation } from '@logbook-writer/shared-types/src/constraint-analysis';
-import { saveLogbookWithMetadata, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
+import { saveLogbookWithMetadata, createRunRecord, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
 import { buildSolverInputV2, type ShiftOverrideDescriptor } from '../solver2/builder';
 import type { SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
@@ -410,6 +410,29 @@ export function registerSolverRoutes(app: FastifyInstance) {
           status: 'DRAFT',
         });
       }
+
+      // Create Run record for auditing (tracks all solver executions)
+      const runId = await createRunRecord(prisma, {
+        storeId,
+        date: startOfDay(date),
+        engine: useTuningEngine ? 'TUNING_ENGINE' : 'SOLVER_V2',
+        seed: 0,
+        solverOutput,
+        logbookId,
+        inputParams: {
+          timeLimitSeconds,
+          lookbackDays: lookbackDaysValue,
+          useTuningEngine,
+          tuningConfig,
+          hasShiftOverrides: !!shiftOverrides?.length,
+        },
+        solverVersion: (solverOutput.metadata as any)?.solverVersion as string | undefined,
+        triggeredBy: 'WEB_UI',
+        constraintCount: (solverInput.coverageWindows?.length ?? 0) + (solverInput.roleRules?.length ?? 0),
+        variableCount: (solverOutput.metadata as any)?.numVariables as number | undefined,
+      });
+
+      request.log.info({ runId, logbookId }, 'Run record created');
 
       return {
         ok: true,
