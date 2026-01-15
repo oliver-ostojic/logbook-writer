@@ -42,7 +42,7 @@ interface RunData {
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 };
 
 const formatTime = (dateStr: string) => {
@@ -59,6 +59,7 @@ export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
   const [run, setRun] = useState<RunData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllViolations, setShowAllViolations] = useState(false);
 
   const loadRun = async () => {
     setLoading(true);
@@ -268,8 +269,14 @@ export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
               >
                 Violations ({run.violations.length})
               </h3>
-              <div className="flex flex-col gap-2">
-                {run.violations.slice(0, 5).map((violation: any, idx: number) => (
+              <div
+                className="flex flex-col gap-2"
+                style={{
+                  maxHeight: showAllViolations && run.violations.length > 5 ? '400px' : 'none',
+                  overflowY: showAllViolations && run.violations.length > 5 ? 'auto' : 'visible',
+                }}
+              >
+                {(showAllViolations ? run.violations : run.violations.slice(0, 5)).map((violation: any, idx: number) => (
                   <div
                     key={idx}
                     style={{
@@ -285,6 +292,49 @@ export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
                   </div>
                 ))}
               </div>
+              {run.violations.length > 5 && (
+                <div className="flex items-center justify-start gap-2 mt-2">
+                  <button
+                    onClick={() => setShowAllViolations(!showAllViolations)}
+                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-95"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: '1px solid transparent',
+                      backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, rgba(147, 51, 234, 0.3) 0%, rgba(59, 130, 246, 0.3) 25%, rgba(16, 185, 129, 0.3) 50%, rgba(251, 191, 36, 0.3) 75%, rgba(239, 68, 68, 0.3) 100%)',
+                      backgroundOrigin: 'border-box',
+                      backgroundClip: 'padding-box, border-box',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.5)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#6B6B6B"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="17 8 12 3 7 8" />
+                      <polyline points="7 16 12 21 17 16" />
+                    </svg>
+                  </button>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      color: '#9A999E',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {showAllViolations ? 'Shrink' : 'Expand'} {run.violations.length - 5} more violations
+                  </span>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -304,7 +354,7 @@ export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
             color: 'hsl(0, 84%, 60%)',
             backgroundColor: 'rgba(220, 38, 38, 0.1)',
             border: 'none',
-            borderRadius: '0.5rem',
+            borderRadius: '9999px',
             cursor: 'pointer',
           }}
         >

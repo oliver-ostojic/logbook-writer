@@ -204,7 +204,7 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         success: pythonResult.success,
         metadata: {
           status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
-          objectiveScore: pythonResult.objectiveValue,
+          objectiveScore: pythonResult.metadata?.objectiveScore,
           runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
           mipGap: pythonResult.metadata?.mipGap as number | undefined,
           numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
@@ -368,7 +368,7 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         success: pythonResult.success,
         metadata: {
           status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
-          objectiveScore: pythonResult.objectiveValue,
+          objectiveScore: pythonResult.metadata?.objectiveScore,
           runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
           mipGap: pythonResult.metadata?.mipGap as number | undefined,
           numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,

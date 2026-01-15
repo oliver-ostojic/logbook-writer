@@ -100,6 +100,20 @@ function formatLogbookDate(date: Date): string {
   return `${day} ${month}, ${year}`;
 }
 
+// Format date as "12/16/25"
+function formatShortDate(dateString: string): string {
+  const date = new Date(dateString);
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = String(date.getUTCFullYear()).slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+// Capitalize first letter and lowercase rest
+function capitalizeStatus(status: string): string {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
 // Light mode ListRowItem component
 function ListRowItemLight({
   itemNumber,
@@ -109,6 +123,7 @@ function ListRowItemLight({
   onView,
   onEdit,
   onDelete,
+  isSelected,
 }: {
   itemNumber: number;
   isFirst: boolean;
@@ -117,6 +132,7 @@ function ListRowItemLight({
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  isSelected?: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -214,7 +230,7 @@ function ListRowItemLight({
           className="flex items-center justify-between transition-all duration-200"
           style={{
             ...aiGlassLightContentStyle('1rem', 0.6),
-            backgroundColor: isHovered ? 'rgba(0, 0, 0, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+            backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.08)' : isHovered ? 'rgba(0, 0, 0, 0.04)' : 'rgba(0, 0, 0, 0.02)',
             position: 'relative',
             zIndex: 0,
             padding: '12px 16px',
@@ -670,7 +686,7 @@ export default function Home() {
               const itemName = type === 'logbooks'
                 ? formatLogbookDate((item as typeof logbooksData[0]).date)
                 : type === 'runs'
-                ? `${(item as any).engine} - ${(item as any).status}`
+                ? `Run (${formatShortDate((item as any).date)}) (${capitalizeStatus((item as any).status)})`
                 : (item as typeof crewData[0]).name;
               return (
                 <ListRowItemLight
@@ -678,6 +694,7 @@ export default function Home() {
                   itemNumber={globalIndex + 1}
                   isFirst={isFirst}
                   isLast={isLast}
+                  isSelected={selectedItem?.id === item.id && selectedItem?.type === type}
                   onView={() => {
                     if (type === 'logbooks') {
                       // For logbooks, clicking row opens version history
@@ -975,6 +992,7 @@ export default function Home() {
                     itemNumber={index + 1}
                     isFirst={index === 0}
                     isLast={index === typeRules.length - 1}
+                    isSelected={selectedItem?.id === String(rule.id) && selectedItem?.type === itemType}
                     onView={() => setSelectedItem({
                       id: String(rule.id),
                       name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
@@ -1065,29 +1083,35 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(effectiveRoleFamilies.length, 4)}, 1fr)` }}>
-            {effectiveRoleFamilies.map((family) => (
-              <CardSmall
-                key={`family-${family.id}`}
-                lightMode={true}
-                contentStyle={{ padding: '12px' }}
-                onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
-              >
-                <div className="flex items-center justify-center h-full">
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                      lineHeight: 1.2,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {family.name}
-                  </span>
-                </div>
-              </CardSmall>
-            ))}
+            {effectiveRoleFamilies.map((family) => {
+              const isSelected = selectedItem?.id === family.id && selectedItem?.type === 'roleFamilies';
+              return (
+                <CardSmall
+                  key={`family-${family.id}`}
+                  lightMode={true}
+                  contentStyle={{
+                    padding: '12px',
+                    backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.08)' : undefined,
+                  }}
+                  onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
+                >
+                  <div className="flex items-center justify-center h-full">
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: '#2C2C2C',
+                        lineHeight: 1.2,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {family.name}
+                    </span>
+                  </div>
+                </CardSmall>
+              );
+            })}
           </div>
         </div>
       </CardContainer>
@@ -1186,6 +1210,7 @@ export default function Home() {
                     itemNumber={index + 1}
                     isFirst={index === 0}
                     isLast={index === filteredRoles.length - 1}
+                    isSelected={selectedItem?.id === role.id && selectedItem?.type === 'roles'}
                     onView={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' })}
                     onEdit={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'edit' })}
                     onDelete={() => setDeleteConfirmItem({ id: role.id, name: role.name, type: 'roles' })}
@@ -2243,7 +2268,7 @@ export default function Home() {
                   color: '#6B6B6B',
                   backgroundColor: 'rgba(0, 0, 0, 0.05)',
                   border: 'none',
-                  borderRadius: '0.5rem',
+                  borderRadius: '9999px',
                   padding: '8px 16px',
                   cursor: 'pointer',
                   transition: 'background 0.2s ease',
@@ -2262,7 +2287,7 @@ export default function Home() {
                   color: '#FFFFFF',
                   backgroundColor: 'hsl(0, 84%, 60%)',
                   border: 'none',
-                  borderRadius: '0.5rem',
+                  borderRadius: '9999px',
                   padding: '8px 16px',
                   cursor: 'pointer',
                   transition: 'background 0.2s ease',
