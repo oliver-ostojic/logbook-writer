@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
@@ -135,9 +135,28 @@ function ListRowItemLight({
   isSelected?: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [rowHeight, setRowHeight] = useState(0);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!rowRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setRowHeight(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(rowRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   return (
     <div
+      ref={rowRef}
       className="flex transition-transform duration-200"
       style={{
         position: 'relative',
@@ -150,9 +169,9 @@ function ListRowItemLight({
       onClick={onView}
     >
       {/* Number column with lines */}
-      <div className="flex flex-col items-center" style={{ width: 24, position: 'relative' }}>
+      <div className="flex flex-col items-center" style={{ width: 24, position: 'relative', height: rowHeight || 'auto' }}>
         {/* Top line for first item */}
-        {isFirst && (
+        {isFirst && rowHeight > 0 && (
           <div
             style={{
               position: 'absolute',
@@ -160,8 +179,9 @@ function ListRowItemLight({
               left: '50%',
               transform: 'translateX(-50%)',
               width: 1,
-              height: 'calc(50% - 12px)',
+              height: `${rowHeight / 2 - 12}px`,
               background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(0,0,0,0.1) 40%, transparent 95%, transparent 100%)',
+              transition: 'height 0.3s ease',
             }}
           />
         )}
@@ -191,30 +211,32 @@ function ListRowItemLight({
           </span>
         </div>
         {/* Connecting line to next number */}
-        {!isLast && (
+        {!isLast && rowHeight > 0 && (
           <div
             style={{
               position: 'absolute',
-              top: 'calc(50% + 12px)',
+              top: `${rowHeight / 2 + 12}px`,
               left: '50%',
               transform: 'translateX(-50%)',
               width: 1,
-              height: 'calc(100% - 24px + 12px)',
+              height: `${rowHeight / 2 + 12}px`,
               background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.1) 60%, transparent 95%, transparent 100%)',
+              transition: 'height 0.3s ease, top 0.3s ease',
             }}
           />
         )}
         {/* Bottom line for last item */}
-        {isLast && (
+        {isLast && rowHeight > 0 && (
           <div
             style={{
               position: 'absolute',
-              top: 'calc(50% + 12px)',
+              top: `${rowHeight / 2 + 12}px`,
               left: '50%',
               transform: 'translateX(-50%)',
               width: 1,
-              height: 'calc(50% - 12px)',
+              height: `${rowHeight / 2 - 12}px`,
               background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(0,0,0,0.1) 60%, transparent 95%, transparent 100%)',
+              transition: 'height 0.3s ease, top 0.3s ease',
             }}
           />
         )}
