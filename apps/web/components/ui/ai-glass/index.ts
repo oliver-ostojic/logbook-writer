@@ -22,3 +22,7 @@ export type { CarouselProps, CarouselItem } from './Carousel';
 // Header component
 export { CardHeader } from './CardHeader';
 export type { CardHeaderProps } from './CardHeader';
+
+// Glass pill components
+export { GlassPill, GlassPillButton, GlassPillCard } from './GlassPill';
+export type { GlassPillProps, GlassPillButtonProps, GlassPillCardProps } from './GlassPill';

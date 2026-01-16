@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import { DashboardLayout } from '@/components/layouts';
-import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
 import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
 import { renderRoleRule } from '@/lib/role-rule-templates';
@@ -227,32 +227,31 @@ function ListRowItemLight({
         )}
       </div>
       <div
-        className="flex-1 transition-all duration-200"
+        className="ai-glass-border flex-1 transition-all duration-200"
         style={{
-          background: 'rgb(255, 255, 255)',
+          ...aiGlassLightBorderStyle('1rem', '0, 0, 0', (isSelected || isHovered) ? 0 : 0.08),
           overflow: 'hidden',
-          filter: (isSelected || isHovered) ? 'brightness(0.96)' : undefined,
+          filter: (isSelected || isHovered) ? 'brightness(0.94)' : undefined,
           transform: (isSelected || isHovered) ? 'scale(1.02)' : undefined,
-          borderRadius: '1rem',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
         }}
       >
         <div
           className="flex items-center justify-between transition-all duration-200"
           style={{
-            backgroundColor: 'transparent',
+            ...aiGlassLightContentStyle('1rem', (isSelected || isHovered) ? 1 : 0.6),
             position: 'relative',
             zIndex: 0,
             padding: '12px 16px',
+            ...((isSelected || isHovered) && {
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
+            }),
           }}
         >
           {/* Left side: Name + Edit button */}
           <div className="flex items-center gap-3">
             <div className="flex-1">{children}</div>
-            <div
-              className="transition-opacity duration-200"
-              style={{ opacity: isHovered ? 1 : 0 }}
-            >
+            {isHovered && (
               <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                 <button
                   onClick={(e) => {
@@ -279,13 +278,10 @@ function ListRowItemLight({
                   Edit
                 </button>
               </div>
-            </div>
+            )}
           </div>
           {/* Right side: Delete button */}
-          <div
-            className="transition-opacity duration-200"
-            style={{ opacity: isHovered ? 1 : 0 }}
-          >
+          {isHovered && (
             <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
               <button
                 onClick={(e) => {
@@ -312,7 +308,7 @@ function ListRowItemLight({
                 Delete
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -362,6 +358,7 @@ export default function Home() {
   const storeId = params.storeId as string;
   const [activeView, setActiveView] = useState<ViewId>('home');
   const [searchQuery, setSearchQuery] = useState('');
+  const [rolesSearchQuery, setRolesSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [previousView, setPreviousView] = useState<SelectedItem | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<EditableItem | null>(null);
@@ -480,7 +477,10 @@ export default function Home() {
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const filteredRoles = effectiveRoles.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase())
+    r.name.toLowerCase().includes(rolesSearchQuery.toLowerCase())
+  );
+  const filteredRoleFamilies = effectiveRoleFamilies.filter(f =>
+    f.name.toLowerCase().includes(rolesSearchQuery.toLowerCase())
   );
   const filteredCompanies = apiCompanies.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1340,9 +1340,48 @@ export default function Home() {
     );
   };
 
+  // Roles search card (shown above Role Families when there are results)
+  const renderRolesSearchCard = () => {
+    // Only show if there's data to search
+    if (effectiveRoleFamilies.length === 0 && effectiveRoles.length === 0) return null;
+
+    return (
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+        <GlassPillCard
+          borderRadius="9999px"
+          padding="0 14px"
+          contentStyle={{ justifyContent: 'flex-start', height: '36px' }}
+        >
+          <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search"
+            value={rolesSearchQuery}
+            onChange={(e) => {
+              setRolesSearchQuery(e.target.value);
+              setRolesPage(1);
+            }}
+            className="focus:outline-none focus:ring-0 flex-1"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#2C2C2C',
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              fontWeight: 400,
+              width: '100%',
+              marginLeft: '8px',
+            }}
+          />
+        </GlassPillCard>
+      </CardContainer>
+    );
+  };
+
   // Role Families card (rendered separately above header)
   const renderRoleFamiliesCard = () => {
-    if (effectiveRoleFamilies.length === 0) return null;
+    // Don't show if no families match the search
+    if (filteredRoleFamilies.length === 0) return null;
 
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
@@ -1386,44 +1425,29 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(effectiveRoleFamilies.length, 4)}, 1fr)` }}>
-            {effectiveRoleFamilies.map((family) => {
+          <div className="flex flex-wrap gap-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(filteredRoleFamilies.length, 4)}, 1fr)` }}>
+            {filteredRoleFamilies.map((family) => {
               const isSelected = selectedItem?.id === family.id && selectedItem?.type === 'roleFamilies';
               return (
-                <CardSmall
+                <GlassPillButton
                   key={`family-${family.id}`}
-                  lightMode={true}
-                  borderOpacity={0}
-                  style={{
-                    ...(isSelected && {
-                      filter: 'brightness(0.96)',
-                      transform: 'scale(1.02)',
-                    }),
-                    borderRadius: '1rem',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-                  }}
-                  contentStyle={{
-                    background: 'rgb(255, 255, 255)',
-                    backdropFilter: 'none',
-                    padding: '12px',
-                  }}
+                  isSelected={isSelected}
                   onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
+                  style={{ width: '100%' }}
                 >
-                  <div className="flex items-center justify-center h-full">
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#2C2C2C',
-                        lineHeight: 1.2,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {family.name}
-                    </span>
-                  </div>
-                </CardSmall>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      lineHeight: 1.2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {family.name}
+                  </span>
+                </GlassPillButton>
               );
             })}
           </div>
@@ -1432,130 +1456,207 @@ export default function Home() {
     );
   };
 
-  // Custom roles list view (just the roles search card)
+  // Custom roles list view (modeled on Role Families card)
   const renderRolesListView = () => {
     const hasRoles = filteredRoles.length > 0;
 
+    // Pagination
+    const totalPages = Math.ceil(filteredRoles.length / ITEMS_PER_PAGE);
+    const startIndex = (rolesPage - 1) * ITEMS_PER_PAGE;
+    const paginatedRoles = filteredRoles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    // Reset to page 1 if current page is out of bounds
+    if (rolesPage > totalPages && totalPages > 0) {
+      setRolesPage(1);
+    }
+
+    // Generate page numbers with ellipsis
+    const getPageNumbers = (): (number | string)[] => {
+      const pages: (number | string)[] = [];
+      if (totalPages <= 5) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (rolesPage > 3) pages.push('...');
+        for (let i = Math.max(2, rolesPage - 1); i <= Math.min(totalPages - 1, rolesPage + 1); i++) {
+          if (!pages.includes(i)) pages.push(i);
+        }
+        if (rolesPage < totalPages - 2) pages.push('...');
+        if (!pages.includes(totalPages)) pages.push(totalPages);
+      }
+      return pages;
+    };
+
+    // Get family name for a role
+    const getFamilyName = (familyId: string | null): string => {
+      if (!familyId) return 'Store role';
+      const family = effectiveRoleFamilies.find(f => f.id === familyId);
+      return family ? family.name : 'Store role';
+    };
+
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-          <div className="flex flex-col" style={{ minHeight: '400px' }}>
-            {/* Search and Add bar - bento box style */}
-            <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
-              {/* Search section - pill left, rounded right */}
+        <div className="flex flex-col" style={{ minHeight: '400px' }}>
+          {/* Title and Add button row */}
+          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
-                className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
-                style={aiGlassLightBorderStyle('1rem')}
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
+                }}
               >
-                <div
-                  className="flex items-center rounded-l-full rounded-r-md"
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    padding: '0 14px',
-                    height: '36px',
-                  }}
-                >
-                  <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setRolesPage(1);
-                    }}
-                    className="focus:outline-none focus:ring-0 flex-1"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#2C2C2C',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      width: '100%',
-                      marginLeft: '8px',
-                    }}
-                  />
-                </div>
-              </div>
-              {/* Add button - rounded left, pill right */}
-              <div
-                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-                style={aiGlassLightBorderStyle('1rem')}
-              >
-                <button
-                  onClick={() =>
-                    setSelectedItem({
-                      id: '',
-                      name: 'New Role',
-                      type: 'roles',
-                      mode: 'add',
-                    })
-                  }
-                  className="transition-all duration-150"
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    border: 'none',
-                    borderRadius: 'inherit',
-                    padding: '0 16px',
-                    height: '36px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#2C2C2C',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                >
-                  + Add
-                </button>
+                Roles
               </div>
             </div>
-
-            {/* Roles list */}
-            <div
-              className="flex flex-col gap-3 flex-1"
-              style={{ paddingTop: '8px' }}
-            >
-              {hasRoles ? (
-                filteredRoles.map((role, index) => (
-                  <ListRowItemLight
-                    key={`role-${role.id}`}
-                    itemNumber={index + 1}
-                    isFirst={index === 0}
-                    isLast={index === filteredRoles.length - 1}
-                    isSelected={selectedItem?.id === role.id && selectedItem?.type === 'roles'}
-                    onView={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' })}
-                    onEdit={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'edit' })}
-                    onDelete={() => setDeleteConfirmItem({ id: role.id, name: role.name, type: 'roles' })}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        color: '#2C2C2C',
-                      }}
-                    >
-                      {role.name}
-                    </span>
-                  </ListRowItemLight>
-                ))
-              ) : (
-                <div
-                  className="flex items-center justify-center flex-1"
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    color: '#6B6B6B',
-                  }}
-                >
-                  No roles found
-                </div>
-              )}
+            {/* Add button */}
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+              <button
+                onClick={() => setSelectedItem({ id: '', name: 'New Role', type: 'roles', mode: 'add' })}
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.4),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                Add
+              </button>
             </div>
           </div>
-        </CardContainer>
+
+          {/* Paginated list */}
+          <div className="flex flex-col gap-3 flex-1">
+            {hasRoles ? (
+              paginatedRoles.map((role) => {
+                const isSelected = selectedItem?.id === role.id && selectedItem?.type === 'roles';
+                return (
+                  <GlassPillButton
+                    key={`role-${role.id}`}
+                    isSelected={isSelected}
+                    onClick={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' })}
+                    padding="12px 16px"
+                    contentStyle={{ justifyContent: 'flex-start' }}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        {role.name}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '12px',
+                          color: '#6B6B6B',
+                        }}
+                      >
+                        {getFamilyName(role.familyId)}
+                      </span>
+                    </div>
+                  </GlassPillButton>
+                );
+              })
+            ) : (
+              <div
+                className="flex items-center justify-center flex-1"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  color: '#6B6B6B',
+                }}
+              >
+                No roles found
+              </div>
+            )}
+          </div>
+
+          {/* Pagination buttons */}
+          {totalPages > 1 && (
+            <div
+              className="flex items-center justify-center gap-2 mt-4 pt-3"
+              style={{
+                position: 'relative',
+              }}
+            >
+              {/* Faded divider line */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)',
+                }}
+              />
+              {getPageNumbers().map((page, idx) =>
+                page === '...' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="text-sm px-1"
+                    style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setRolesPage(page as number)}
+                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200"
+                    style={{
+                      background: rolesPage === page ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                      cursor: 'pointer',
+                      opacity: rolesPage === page ? 1 : 0.6,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (rolesPage !== page) {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
+                        e.currentTarget.style.opacity = '0.8';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (rolesPage !== page) {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                        e.currentTarget.style.opacity = '0.6';
+                      }
+                    }}
+                  >
+                    <span
+                      className="text-[12px]"
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        color: '#2C2C2C',
+                        fontWeight: rolesPage === page ? 500 : 350,
+                      }}
+                    >
+                      {page}
+                    </span>
+                  </button>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      </CardContainer>
     );
   };
 
@@ -1689,6 +1790,9 @@ export default function Home() {
             }
           />
 
+          {/* Search card - shown above Role Families when in roles view */}
+          {activeView === 'roles' && renderRolesSearchCard()}
+
           {/* Role Families card - shown below header when in roles view */}
           {activeView === 'roles' && renderRoleFamiliesCard()}
 
@@ -1699,15 +1803,15 @@ export default function Home() {
               <CardContainer lightMode={true} borderRadius="1.5rem">
                 <div className="grid grid-cols-3 gap-3">
                 {/* Crew Count Card */}
-            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
             <CardSmall
               lightMode={true}
               borderRadius="1rem"
-              contentStyle={{ padding: '16px' }}
+              borderOpacity={0}
+              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
               onClick={() => setActiveView('crew')}
               style={{
                 // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'crew' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+                boxShadow: activeView === 'crew' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
               }}
             >
               <div className="flex flex-col h-full justify-between">
@@ -1762,18 +1866,17 @@ export default function Home() {
                 </div>
               </div>
             </CardSmall>
-            </div>
 
             {/* Logbook Count Card */}
-            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
             <CardSmall
               lightMode={true}
               borderRadius="1rem"
-              contentStyle={{ padding: '16px' }}
+              borderOpacity={0}
+              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
               onClick={() => setActiveView('logbooks')}
               style={{
                 // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'logbooks' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+                boxShadow: activeView === 'logbooks' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
               }}
             >
               <div className="flex flex-col h-full justify-between">
@@ -1828,18 +1931,17 @@ export default function Home() {
                 </div>
               </div>
             </CardSmall>
-            </div>
 
             {/* Role Count Card */}
-            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
             <CardSmall
               lightMode={true}
               borderRadius="1rem"
-              contentStyle={{ padding: '16px' }}
+              borderOpacity={0}
+              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
               onClick={() => setActiveView('roles')}
               style={{
                 // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'roles' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+                boxShadow: activeView === 'roles' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
               }}
             >
               <div className="flex flex-col h-full justify-between">
@@ -1894,7 +1996,6 @@ export default function Home() {
                 </div>
               </div>
             </CardSmall>
-            </div>
                 </div>
           </CardContainer>
 
