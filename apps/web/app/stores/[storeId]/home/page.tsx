@@ -8,6 +8,8 @@ import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
 import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+import { renderRoleRule } from '@/lib/role-rule-templates';
+import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -21,26 +23,9 @@ const VIEW_OPTIONS = [
   { id: 'stores', name: 'Stores', title: 'List View' },
   { id: 'runs', name: 'Runs', title: 'Audit Log' },
   { id: 'logbooks', name: 'Logbooks', title: 'List View' },
-];
+] as const;
 
-// Human-readable labels for RoleRuleType enum values
-const ROLE_RULE_TYPE_LABELS: Record<string, string> = {
-  'CANNOT_BE_ASSIGNED_BEFORE': 'Cannot Be Assigned Before',
-  'CANNOT_BE_ASSIGNED_AFTER': 'Cannot Be Assigned After',
-  'MIN_CONSECUTIVE_MINUTES': 'Min Consecutive Minutes',
-  'MAX_CONSECUTIVE_MINUTES': 'Max Consecutive Minutes',
-  'FORBID_ROLE': 'Forbid Role',
-  'TIMING': 'Timing',
-  'LIKE_ROLE_FOR_HOUR_X': 'Like Role for Hour',
-  'DISLIKE_ROLE_FOR_HOUR_X': 'Dislike Role for Hour',
-  'MIN_SHIFT_LENGTH_FOR_ACCESS': 'Min Shift Length for Access',
-  'ASSIGN_BEFORE_SHIFT_MIN_X': 'Assign Before Shift Minute',
-  'ASSIGN_AFTER_SHIFT_MIN_X': 'Assign After Shift Minute',
-  'MAX_CREW_ON_AT_A_TIME': 'Max Crew On at a Time',
-  'ALLOW_HALF_BLOCKSIZE': 'Allow Half Block Size',
-  'DISTRIBUTION_BETWEEN_ROLE_X': 'Distribution Between Role',
-  'CANNOT_ASSIGN_DURING_STORE_HOUR_X': 'Cannot Assign During Store Hour',
-};
+type ViewId = typeof VIEW_OPTIONS[number]['id'];
 
 // Placeholder crew data
 const crewData = [
@@ -242,17 +227,20 @@ function ListRowItemLight({
         )}
       </div>
       <div
-        className="flex-1 ai-glass-border transition-all duration-200"
+        className="flex-1 transition-all duration-200"
         style={{
-          ...aiGlassLightBorderStyle('1rem'),
+          background: 'rgb(255, 255, 255)',
           overflow: 'hidden',
+          filter: (isSelected || isHovered) ? 'brightness(0.96)' : undefined,
+          transform: (isSelected || isHovered) ? 'scale(1.02)' : undefined,
+          borderRadius: '1rem',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
         }}
       >
         <div
           className="flex items-center justify-between transition-all duration-200"
           style={{
-            ...aiGlassLightContentStyle('1rem', 0.6),
-            backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.08)' : isHovered ? 'rgba(0, 0, 0, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+            backgroundColor: 'transparent',
             position: 'relative',
             zIndex: 0,
             padding: '12px 16px',
@@ -372,9 +360,10 @@ export default function Home() {
   const params = useParams();
   const router = useRouter();
   const storeId = params.storeId as string;
-  const [activeView, setActiveView] = useState('home');
+  const [activeView, setActiveView] = useState<ViewId>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+  const [previousView, setPreviousView] = useState<SelectedItem | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<EditableItem | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolesPage, setRolesPage] = useState(1);
@@ -834,6 +823,305 @@ export default function Home() {
     );
   };
 
+  // Role rule card component (role family style)
+  const RoleRuleCard = ({
+    rule,
+    itemType,
+    isSelected,
+    onView,
+    onEdit,
+    onDelete,
+  }: {
+    rule: any;
+    itemType: string;
+    isSelected: boolean;
+    onView: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+  }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+      <CardSmall
+        lightMode={true}
+        borderOpacity={0}
+        style={{
+          ...(isSelected && {
+            filter: 'brightness(0.95)',
+            transform: 'scale(1.02)',
+          }),
+          borderRadius: '1rem',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+        }}
+        contentStyle={{
+          background: 'rgb(255, 255, 255)',
+          backdropFilter: 'none',
+          padding: '12px',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'visible',
+        }}
+        onClick={onView}
+      >
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{ position: 'relative' }}
+        >
+          <div className="flex items-center justify-center h-full">
+            {rule.TargetRole ? (
+              // Two roles: "role vs. (target_role)" - only target in bubble
+              <div className="flex items-center gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                  }}
+                >
+                  {rule.Role?.displayName || 'Unknown'}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    fontWeight: 400,
+                    color: '#6B6B6B',
+                  }}
+                >
+                  vs.
+                </span>
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.5),
+                      background: 'rgba(245, 245, 245, 0.7)',
+                      padding: '4px 12px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    {rule.TargetRole?.displayName || 'Unknown'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Single role - just plain text
+              <span
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
+                  lineHeight: 1.2,
+                  textAlign: 'center',
+                }}
+              >
+                {rule.Role?.displayName || 'Unknown'}
+              </span>
+            )}
+          </div>
+
+          {/* Hover actions - spread left and right, vertically centered */}
+          {isHovered && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                style={{
+                  position: 'absolute',
+                  left: '0',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  zIndex: 10,
+                }}
+              >
+                Edit
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '0',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: 'hsla(0, 84%, 60%, 0.85)',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  zIndex: 10,
+                }}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      </CardSmall>
+    );
+  };
+
+  // Sentence bubble item component with hover actions
+  const SentenceBubbleItem = ({
+    parts,
+    paddingLeft,
+    paddingRight,
+    isSelected,
+    onView,
+    onEdit,
+    onDelete,
+  }: {
+    parts: any;
+    paddingLeft: string;
+    paddingRight: string;
+    isSelected: boolean;
+    onView: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+  }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    if (!parts) return null;
+
+    return (
+      <div
+        style={{ position: 'relative', display: 'inline-block' }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div
+          style={{
+            display: 'inline-block',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            background: 'rgb(255, 255, 255)',
+            filter: (isSelected || isHovered) ? 'brightness(0.95)' : undefined,
+            transform: (isSelected || isHovered) ? 'scale(1.02)' : undefined,
+            borderRadius: '9999px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+          }}
+          onClick={onView}
+        >
+          <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${paddingRight} 10px ${paddingLeft}` }}>
+            <div
+              className="flex flex-wrap items-center gap-2"
+              style={{
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '13px',
+                color: '#2C2C2C',
+              }}
+            >
+              {parts.map((part: any, idx: number) => {
+                if (part.type === 'bubble') {
+                  return (
+                    <div key={idx} className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.5),
+                          background: 'rgba(245, 245, 245, 0.7)',
+                          padding: '4px 12px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        {part.content}
+                      </div>
+                    </div>
+                  );
+                }
+                return <span key={idx}>{part.content}</span>;
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Hover actions */}
+        {isHovered && (
+          <div
+            style={{
+              position: 'absolute',
+              right: '-8px',
+              top: '50%',
+              transform: 'translateY(-50%) translateX(100%)',
+              display: 'flex',
+              gap: '4px',
+              zIndex: 10,
+            }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '4px 10px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Edit
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              style={{
+                backgroundColor: 'hsla(0, 84%, 60%, 0.85)',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '4px 10px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Helper to group rules by type
   const groupRulesByType = (rules: any[], isStoreRules: boolean = false): Map<string, any[]> => {
     const grouped = new Map<string, any[]>();
@@ -855,30 +1143,41 @@ export default function Home() {
     const titleText = constraintType === 'SOFT' ? 'Preferences' : 'Store Rules';
     const isStoreRules = constraintType === 'HARD';
 
-    // Filter by constraint type (for store rules, check nested RoleRule.constraintType)
-    // Filter by search
-    // For store rules, data is nested: r.RoleRule.type, r.RoleRule.displayName, etc.
-    // For preferences, data is flat: r.type, r.displayName, etc.
-    const filteredRules = rules.filter(r => {
-      // First, filter by constraint type
-      const ruleConstraintType = isStoreRules ? r.RoleRule?.constraintType : r.constraintType;
-      if (ruleConstraintType !== constraintType) return false;
+    // Extract unique RoleRules from CrewRoleRules/StoreRoleRules
+    const roleRulesMap = new Map<number, any>();
+    rules.forEach(r => {
+      const ruleData = isStoreRules ? r.RoleRule : r;
+      if (ruleData && ruleData.constraintType === constraintType) {
+        roleRulesMap.set(ruleData.id, ruleData);
+      }
+    });
+    const uniqueRoleRules = Array.from(roleRulesMap.values());
 
-      // Then filter by search query
-      const ruleType = isStoreRules ? r.RoleRule?.type : r.type;
-      const displayName = isStoreRules ? r.RoleRule?.displayName : r.displayName;
-      const roleName = isStoreRules ? r.RoleRule?.Role?.displayName : r.Role?.displayName;
+    // Filter by search query
+    const filteredRoleRules = uniqueRoleRules.filter(rule => {
+      const ruleType = rule.type;
+      const displayName = rule.displayName;
+      const roleName = rule.Role?.displayName;
+      const targetRoleName = rule.TargetRole?.displayName;
 
       return (
         (displayName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (roleName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (targetRoleName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (ruleType?.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (ROLE_RULE_TYPE_LABELS[ruleType]?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     });
 
     // Group by type
-    const grouped = groupRulesByType(filteredRules, isStoreRules);
+    const groupedByType = new Map<string, any[]>();
+    filteredRoleRules.forEach(rule => {
+      const type = rule.type;
+      if (!groupedByType.has(type)) {
+        groupedByType.set(type, []);
+      }
+      groupedByType.get(type)!.push(rule);
+    });
 
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
@@ -953,101 +1252,65 @@ export default function Home() {
             </div>
           </div>
 
-        {/* Grouped list */}
+        {/* Grouped list - card per type like role families */}
         <div className="flex flex-col gap-4">
-          {Array.from(grouped.entries()).map(([ruleType, typeRules]) => (
-            <div key={ruleType} className="flex flex-col gap-2">
-              {/* Group header with count badge */}
-              <div className="flex items-center justify-between">
+          {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
+            <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem">
+              <div className="flex flex-col gap-3">
+                {/* Group header */}
                 <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
                   <div
                     style={{
                       ...aiGlassLightContentStyle('9999px', 0.6),
-                      padding: '4px 12px',
+                      padding: '6px 14px',
                       fontFamily: 'var(--font-open-sans)',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       fontWeight: 500,
-                      color: '#6B6B6B',
+                      color: '#2C2C2C',
                     }}
                   >
                     {ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}
                   </div>
                 </div>
-                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                  <div
-                    style={{
-                      background: 'hsla(0, 84%, 60%, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                      borderRadius: '9999px',
-                      padding: '3px 9px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#FFFFFF',
-                      minWidth: '20px',
-                      height: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      aspectRatio: '1 / 1',
-                    }}
-                  >
-                    {typeRules.length}
-                  </div>
+
+                {/* Items in group - cards like role families */}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(roleRules.length, 4)}, 1fr)`, gap: '8px' }}>
+                  {roleRules.map((rule) => {
+                    // Use the type display name for the card header
+                    const typeDisplayName = ROLE_RULE_TYPE_LABELS[rule.type] || rule.type;
+
+                    return (
+                      <RoleRuleCard
+                        key={rule.id}
+                        rule={rule}
+                        itemType={itemType}
+                        isSelected={selectedItem?.id === String(rule.id) && selectedItem?.type === itemType}
+                        onView={() => setSelectedItem({
+                          id: String(rule.id),
+                          name: typeDisplayName,
+                          type: itemType,
+                          mode: 'view'
+                        })}
+                        onEdit={() => setSelectedItem({
+                          id: String(rule.id),
+                          name: typeDisplayName,
+                          type: itemType,
+                          mode: 'edit'
+                        })}
+                        onDelete={() => setDeleteConfirmItem({
+                          id: String(rule.id),
+                          name: typeDisplayName,
+                          type: itemType
+                        })}
+                      />
+                    );
+                  })}
                 </div>
               </div>
-
-              {/* Items in group */}
-              {typeRules.map((rule, index) => {
-                // For store rules, data is in rule.RoleRule.X
-                // For preferences, data is in rule.X
-                const ruleData = isStoreRules ? rule.RoleRule : rule;
-                const displayName = ruleData?.displayName || ruleData?.Role?.displayName;
-                const ruleType = ruleData?.type;
-                const targetRole = ruleData?.TargetRole;
-                const valueInt = rule.valueInt; // valueInt is always at the top level (in StoreRoleRule/CrewRoleRule)
-
-                return (
-                  <ListRowItemLight
-                    key={rule.id}
-                    itemNumber={index + 1}
-                    isFirst={index === 0}
-                    isLast={index === typeRules.length - 1}
-                    isSelected={selectedItem?.id === String(rule.id) && selectedItem?.type === itemType}
-                    onView={() => setSelectedItem({
-                      id: String(rule.id),
-                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
-                      type: itemType,
-                      mode: 'view'
-                    })}
-                    onEdit={() => setSelectedItem({
-                      id: String(rule.id),
-                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
-                      type: itemType,
-                      mode: 'edit'
-                    })}
-                    onDelete={() => setDeleteConfirmItem({
-                      id: String(rule.id),
-                      name: displayName || `${ruleData?.Role?.displayName} - ${ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}`,
-                      type: itemType
-                    })}
-                  >
-                    <div className="flex flex-col">
-                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 400, color: '#2C2C2C' }}>
-                        {displayName}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E' }}>
-                        {targetRole ? `Target: ${targetRole.displayName}` : valueInt !== null && valueInt !== undefined ? `Value: ${valueInt}` : ''}
-                      </span>
-                    </div>
-                  </ListRowItemLight>
-                );
-              })}
-            </div>
+            </CardContainer>
           ))}
 
-          {grouped.size === 0 && (
+          {groupedByType.size === 0 && (
             <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
               No {constraintType === 'SOFT' ? 'preferences' : 'rules'} found
             </div>
@@ -1111,9 +1374,19 @@ export default function Home() {
                 <CardSmall
                   key={`family-${family.id}`}
                   lightMode={true}
+                  borderOpacity={0}
+                  style={{
+                    ...(isSelected && {
+                      filter: 'brightness(0.96)',
+                      transform: 'scale(1.02)',
+                    }),
+                    borderRadius: '1rem',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                  }}
                   contentStyle={{
+                    background: 'rgb(255, 255, 255)',
+                    backdropFilter: 'none',
                     padding: '12px',
-                    backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.08)' : undefined,
                   }}
                   onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
                 >
@@ -1281,9 +1554,6 @@ export default function Home() {
       ]}
       leftPanel={
         <div className="flex flex-col gap-4">
-          {/* Role Families card - shown above header when in roles view */}
-          {activeView === 'roles' && renderRoleFamiliesCard()}
-
           {/* Header with dropdown */}
           <CardHeader
             title={VIEW_OPTIONS.find(v => v.id === activeView)?.title || 'Overview'}
@@ -1400,6 +1670,9 @@ export default function Home() {
             }
           />
 
+          {/* Role Families card - shown below header when in roles view */}
+          {activeView === 'roles' && renderRoleFamiliesCard()}
+
           {/* Content based on active view */}
           {activeView === 'home' ? (
             <>
@@ -1407,7 +1680,17 @@ export default function Home() {
               <CardContainer lightMode={true} borderRadius="1.5rem">
                 <div className="grid grid-cols-3 gap-3">
                 {/* Crew Count Card */}
-            <CardSmall lightMode={true} contentStyle={{ padding: '16px' }} onClick={() => setActiveView('crew')}>
+            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
+            <CardSmall
+              lightMode={true}
+              borderRadius="1rem"
+              contentStyle={{ padding: '16px' }}
+              onClick={() => setActiveView('crew')}
+              style={{
+                // @ts-ignore - ViewId type inference issue
+                boxShadow: activeView === 'crew' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+              }}
+            >
               <div className="flex flex-col h-full justify-between">
                 {/* Top row: Icon and Label */}
                 <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
@@ -1460,9 +1743,20 @@ export default function Home() {
                 </div>
               </div>
             </CardSmall>
+            </div>
 
             {/* Logbook Count Card */}
-            <CardSmall lightMode={true} contentStyle={{ padding: '16px' }} onClick={() => setActiveView('logbooks')}>
+            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
+            <CardSmall
+              lightMode={true}
+              borderRadius="1rem"
+              contentStyle={{ padding: '16px' }}
+              onClick={() => setActiveView('logbooks')}
+              style={{
+                // @ts-ignore - ViewId type inference issue
+                boxShadow: activeView === 'logbooks' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+              }}
+            >
               <div className="flex flex-col h-full justify-between">
                 {/* Top row: Icon and Label */}
                 <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
@@ -1515,9 +1809,20 @@ export default function Home() {
                 </div>
               </div>
             </CardSmall>
+            </div>
 
             {/* Role Count Card */}
-            <CardSmall lightMode={true} contentStyle={{ padding: '16px' }} onClick={() => setActiveView('roles')}>
+            <div style={{ borderRadius: '1rem', overflow: 'hidden' }}>
+            <CardSmall
+              lightMode={true}
+              borderRadius="1rem"
+              contentStyle={{ padding: '16px' }}
+              onClick={() => setActiveView('roles')}
+              style={{
+                // @ts-ignore - ViewId type inference issue
+                boxShadow: activeView === 'roles' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : undefined,
+              }}
+            >
               <div className="flex flex-col h-full justify-between">
                 {/* Top row: Icon and Label */}
                 <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
@@ -1571,6 +1876,7 @@ export default function Home() {
               </div>
             </CardSmall>
             </div>
+                </div>
           </CardContainer>
 
           {/* Activity Log */}
@@ -1973,10 +2279,16 @@ export default function Home() {
                 rightContent={
                   <button
                     onClick={() => {
-                      // Go back to the list view for this item type
-                      // Role families go back to roles view
-                      setActiveView(selectedItem.type === 'roleFamilies' ? 'roles' : selectedItem.type);
-                      setSelectedItem(null);
+                      // If there's a previous view (e.g., navigated from role to role rule), go back to it
+                      if (previousView) {
+                        setSelectedItem(previousView);
+                        setPreviousView(null);
+                      } else {
+                        // Go back to the list view for this item type
+                        // Role families go back to roles view
+                        setActiveView(selectedItem.type === 'roleFamilies' ? 'roles' : selectedItem.type);
+                        setSelectedItem(null);
+                      }
                     }}
                     className="transition-colors duration-150"
                     style={{
@@ -2051,7 +2363,18 @@ export default function Home() {
                   }}
                 />
               ) : selectedItem.type === 'roles' && selectedItem.mode === 'view' ? (
-                <RoleDetailView roleId={Number(selectedItem.id)} />
+                <RoleDetailView
+                  roleId={Number(selectedItem.id)}
+                  onRoleRuleClick={(roleRuleId, roleRuleName) => {
+                    setPreviousView(selectedItem);
+                    setSelectedItem({
+                      id: String(roleRuleId),
+                      name: roleRuleName,
+                      type: 'preferences', // Role rules from roles are technically in preferences/storeRules
+                      mode: 'view',
+                    });
+                  }}
+                />
               ) : selectedItem.type === 'roleFamilies' && selectedItem.mode === 'add' ? (
                 !apiStore ? (
                   <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
