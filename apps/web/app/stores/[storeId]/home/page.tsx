@@ -868,6 +868,25 @@ export default function Home() {
           onMouseLeave={() => setIsHovered(false)}
           style={{ position: 'relative' }}
         >
+          {/* Type badge at the top */}
+          <div className="flex justify-center mb-2">
+            <div
+              style={{
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '10px',
+                fontWeight: 500,
+                color: '#6B6B6B',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {ROLE_RULE_TYPE_LABELS[rule.type] || rule.type}
+            </div>
+          </div>
+
           <div className="flex items-center justify-center h-full">
             {rule.TargetRole ? (
               // Two roles: "role vs. (target_role)" - only target in bubble
