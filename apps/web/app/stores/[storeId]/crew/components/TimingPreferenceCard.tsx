@@ -2,26 +2,6 @@
 
 import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
-// Role pill component matching the assigned roles style in CrewDetailView
-function RolePill({ name }: { name: string }) {
-  return (
-    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-      <div
-        style={{
-          ...aiGlassLightContentStyle('9999px', 0.5),
-          padding: '4px 12px',
-          fontFamily: 'var(--font-open-sans)',
-          fontSize: '12px',
-          fontWeight: 500,
-          color: '#2C2C2C',
-        }}
-      >
-        {name}
-      </div>
-    </div>
-  );
-}
-
 export function TimingPreferenceCard() {
   return (
     <CardContainer lightMode={true} borderRadius="1rem" padding="1rem">
@@ -68,18 +48,16 @@ export function TimingPreferenceCard() {
           </div>
         </div>
 
-        {/* Three columns with title bubbles and role pills */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          {/* Early column */}
-          <div className="flex flex-col gap-2">
-            {/* Title bubble */}
+        {/* Three glass pill cards with title bubbles inside */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <GlassPillCard borderRadius="1rem" padding="12px">
             <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '4px 10px',
+                  padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#2C2C2C',
                 }}
@@ -87,22 +65,16 @@ export function TimingPreferenceCard() {
                 Early
               </div>
             </div>
-            {/* Role pills */}
-            <div className="flex flex-col gap-1">
-              <RolePill name="Register" />
-            </div>
-          </div>
+          </GlassPillCard>
 
-          {/* Middle column */}
-          <div className="flex flex-col gap-2">
-            {/* Title bubble */}
+          <GlassPillCard borderRadius="1rem" padding="12px">
             <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '4px 10px',
+                  padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#2C2C2C',
                 }}
@@ -110,28 +82,16 @@ export function TimingPreferenceCard() {
                 Middle
               </div>
             </div>
-            {/* No roles placeholder */}
-            <span
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '11px',
-                color: '#9A999E',
-              }}
-            >
-              No roles
-            </span>
-          </div>
+          </GlassPillCard>
 
-          {/* Late column */}
-          <div className="flex flex-col gap-2">
-            {/* Title bubble */}
+          <GlassPillCard borderRadius="1rem" padding="12px">
             <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '4px 10px',
+                  padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#2C2C2C',
                 }}
@@ -139,12 +99,7 @@ export function TimingPreferenceCard() {
                 Late
               </div>
             </div>
-            {/* Role pills */}
-            <div className="flex flex-col gap-1">
-              <RolePill name="Demo" />
-              <RolePill name="Product" />
-            </div>
-          </div>
+          </GlassPillCard>
         </div>
       </div>
     </CardContainer>

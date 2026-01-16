@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
-import { CardContainer, CardHeader, GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, CardHeader, GlassPillButton, GlassPillCard, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { TimingPreferenceCard } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -161,21 +161,22 @@ export default function CrewPage() {
                     top: 0,
                     right: 0,
                     bottom: 0,
-                    width: activeView !== 'none' ? '100%' : '0%',
-                    transition: 'width 0.6s ease',
+                    left: 0,
+                    opacity: activeView !== 'none' ? 1 : 0,
+                    transition: 'opacity 0.4s ease',
                     pointerEvents: activeView !== 'none' ? 'auto' : 'none',
-                    overflow: 'hidden',
-                    borderRadius: '1rem',
                   }}
                 >
                   {activeView === 'accountInfo' && (
-                    <CardContainer
-                      lightMode={true}
+                    <GlassPillCard
                       borderRadius="1rem"
                       padding="1.5rem"
+                      style={{ height: '100%', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)' }}
                       contentStyle={{
-                        backdropFilter: 'blur(60px)',
-                        WebkitBackdropFilter: 'blur(60px)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        height: '100%',
                       }}
                     >
                       <div
@@ -203,17 +204,19 @@ export default function CrewPage() {
                         </button>
                       </div>
                       <div style={{ minHeight: '200px' }} />
-                    </CardContainer>
+                    </GlassPillCard>
                   )}
 
                   {activeView === 'preferences' && (
-                    <CardContainer
-                      lightMode={true}
+                    <GlassPillCard
                       borderRadius="1rem"
                       padding="1.5rem"
+                      style={{ height: '100%', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)' }}
                       contentStyle={{
-                        backdropFilter: 'blur(60px)',
-                        WebkitBackdropFilter: 'blur(60px)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        height: '100%',
                       }}
                     >
                       <div
@@ -241,7 +244,7 @@ export default function CrewPage() {
                         </button>
                       </div>
                       <TimingPreferenceCard />
-                    </CardContainer>
+                    </GlassPillCard>
                   )}
                 </div>
               </div>
