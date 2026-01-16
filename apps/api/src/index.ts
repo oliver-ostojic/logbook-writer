@@ -15,6 +15,7 @@ import { solverInputRoutes } from './routes/solver-input';
 import { registerShiftRoutes } from './routes/shifts';
 import { registerConstraintRoutes } from './routes/constraints';
 import { registerDashboardRoutes } from './routes/dashboard';
+import { registerStoreDefaultRoleRoutes } from './routes/store-default-roles';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
@@ -27,6 +28,7 @@ export async function buildServer() {
   registerRoleRuleRoutes(app);
   registerCompanyRoutes(app);
   registerStoreRoutes(app);
+  registerStoreDefaultRoleRoutes(app);
   registerRunRoutes(app);
   registerScheduleRoutes(app);
   registerLogbookRoutes(app);

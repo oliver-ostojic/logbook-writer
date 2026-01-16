@@ -233,7 +233,6 @@ model RoleRule {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @default(now()) @updatedAt
   description    String?
-  displayName    String?
   CrewRoleRules  CrewRoleRule[]
   Role           Role            @relation("RoleToRoleRules", fields: [roleId], references: [id])
   TargetRole     Role?           @relation("TargetRoleToRoleRules", fields: [targetRoleId], references: [id])

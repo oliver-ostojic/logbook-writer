@@ -452,6 +452,39 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
     }
   );
 
+  // PATCH /store-role-rules/:id - Update a store role rule
+  app.patch<{
+    Params: StoreRoleRuleParams;
+    Body: { isPriority?: boolean; valueInt?: number };
+  }>("/store-role-rules/:id", async (req, reply) => {
+    const id = parseInt(req.params.id);
+    const { isPriority, valueInt } = req.body;
+
+    try {
+      const storeRoleRule = await prisma.storeRoleRule.update({
+        where: { id },
+        data: {
+          ...(isPriority !== undefined && { isPriority }),
+          ...(valueInt !== undefined && { valueInt }),
+        },
+        include: {
+          Store: { select: { id: true, name: true } },
+          RoleRule: { include: { Role: true, TargetRole: true } },
+        },
+      });
+
+      return reply.send(storeRoleRule);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return reply.code(404).send({ error: "StoreRoleRule not found" });
+      }
+      throw error;
+    }
+  });
+
   // ============== Convenience Endpoints ==============
 
   // GET /stores/:storeId/effective-role-rules - Get all role rules effective for a store

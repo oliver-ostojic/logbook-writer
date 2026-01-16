@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface RoleRuleDetailViewProps {
   ruleId: number;
   constraintType: 'HARD' | 'SOFT';
+  onBack?: () => void;
 }
 
 interface RoleRuleData {
@@ -17,7 +19,6 @@ interface RoleRuleData {
   targetRoleId?: number | null;
   valueInt?: number | null;
   constraintType: string;
-  displayName?: string | null;
   description?: string | null;
   Role?: { id: number; code: string; displayName: string };
   TargetRole?: { id: number; code: string; displayName: string };
@@ -35,25 +36,7 @@ interface RoleRuleData {
   }>;
 }
 
-const ROLE_RULE_TYPE_LABELS: Record<string, string> = {
-  'CANNOT_BE_ASSIGNED_BEFORE': 'Cannot Be Assigned Before',
-  'CANNOT_BE_ASSIGNED_AFTER': 'Cannot Be Assigned After',
-  'MIN_CONSECUTIVE_MINUTES': 'Min Consecutive Minutes',
-  'MAX_CONSECUTIVE_MINUTES': 'Max Consecutive Minutes',
-  'FORBID_ROLE': 'Forbid Role',
-  'TIMING': 'Timing',
-  'LIKE_ROLE_FOR_HOUR_X': 'Like Role for Hour',
-  'DISLIKE_ROLE_FOR_HOUR_X': 'Dislike Role for Hour',
-  'MIN_SHIFT_LENGTH_FOR_ACCESS': 'Min Shift Length for Access',
-  'ASSIGN_BEFORE_SHIFT_MIN_X': 'Assign Before Shift Minute',
-  'ASSIGN_AFTER_SHIFT_MIN_X': 'Assign After Shift Minute',
-  'MAX_CREW_ON_AT_A_TIME': 'Max Crew On at a Time',
-  'ALLOW_HALF_BLOCKSIZE': 'Allow Half Block Size',
-  'DISTRIBUTION_BETWEEN_ROLE_X': 'Distribution Between Role',
-  'CANNOT_ASSIGN_DURING_STORE_HOUR_X': 'Cannot Assign During Store Hour',
-};
-
-export function RoleRuleDetailView({ ruleId, constraintType }: RoleRuleDetailViewProps) {
+export function RoleRuleDetailView({ ruleId, constraintType, onBack }: RoleRuleDetailViewProps) {
   const [rule, setRule] = useState<RoleRuleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +113,30 @@ export function RoleRuleDetailView({ ruleId, constraintType }: RoleRuleDetailVie
       <div className="flex flex-col gap-6">
         {/* Basic Info Section */}
         <div>
-          <div style={sectionHeaderStyle}>Basic Information</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ ...sectionHeaderStyle, marginBottom: 0 }}>Basic Information</div>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="transition-all duration-150"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  padding: '4px 0 0 0',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  color: '#6B6B6B',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+              >
+                Back
+              </button>
+            )}
+          </div>
           <div className="flex flex-col gap-3">
             {/* Role */}
             <div>
@@ -145,6 +151,26 @@ export function RoleRuleDetailView({ ruleId, constraintType }: RoleRuleDetailVie
               <div style={labelStyle}>Rule Type</div>
               <div style={valueStyle}>
                 {ROLE_RULE_TYPE_LABELS[rule.type] || rule.type}
+              </div>
+            </div>
+
+            {/* Type Enum */}
+            <div>
+              <div style={labelStyle}>Type</div>
+              <div style={valueStyle}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    backgroundColor: 'rgba(107, 107, 107, 0.1)',
+                    color: '#6B6B6B',
+                  }}
+                >
+                  {rule.type}
+                </span>
               </div>
             </div>
 
@@ -182,14 +208,6 @@ export function RoleRuleDetailView({ ruleId, constraintType }: RoleRuleDetailVie
               <div>
                 <div style={labelStyle}>Value</div>
                 <div style={valueStyle}>{rule.valueInt}</div>
-              </div>
-            )}
-
-            {/* Display Name */}
-            {rule.displayName && (
-              <div>
-                <div style={labelStyle}>Display Name</div>
-                <div style={valueStyle}>{rule.displayName}</div>
               </div>
             )}
 

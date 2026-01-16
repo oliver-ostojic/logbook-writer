@@ -100,7 +100,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
             style={{
               fontFamily: 'var(--font-open-sans)',
               fontSize: '16px',
-              fontWeight: 350,
+              fontWeight: 600,
               color: '#DBDADB',
               ...titleStyle,
             }}

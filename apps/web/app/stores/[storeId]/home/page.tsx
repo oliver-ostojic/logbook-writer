@@ -553,21 +553,18 @@ export default function Home() {
   };
 
   // Render list view content
-  const renderListView = (type: 'crew' | 'roles' | 'companies' | 'stores' | 'runs' | 'logbooks') => {
+  const renderListView = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks') => {
     const data = type === 'crew' ? filteredCrew :
-                 type === 'roles' ? filteredRoles :
                  type === 'companies' ? filteredCompanies :
                  type === 'stores' ? filteredStores :
                  type === 'runs' ? filteredRuns :
                  filteredLogbooks;
     const currentPage = type === 'crew' ? crewPage :
-                        type === 'roles' ? rolesPage :
                         type === 'companies' ? companiesPage :
                         type === 'stores' ? storesPage :
                         type === 'runs' ? runsPage :
                         logbooksPage;
     const setPage = type === 'crew' ? setCrewPage :
-                    type === 'roles' ? setRolesPage :
                     type === 'companies' ? setCompaniesPage :
                     type === 'stores' ? setStoresPage :
                     type === 'runs' ? setRunsPage :
@@ -600,59 +597,61 @@ export default function Home() {
       return pages;
     };
 
+    // Get title for each type
+    const titleMap = {
+      crew: 'Crew',
+      companies: 'Companies',
+      stores: 'Stores',
+      runs: 'Runs',
+      logbooks: 'Logbooks',
+    };
+    const title = titleMap[type];
+
+    // Get subtitle for each item type
+    const getSubtitle = (item: any): string => {
+      if (type === 'crew') return 'Crew member';
+      if (type === 'companies') return 'Company';
+      if (type === 'stores') return 'Store';
+      if (type === 'runs') return `${formatShortDate(item.date)} · ${capitalizeStatus(item.status)}`;
+      if (type === 'logbooks') return formatLogbookDate(item.date);
+      return '';
+    };
+
+    // Get item name
+    const getItemName = (item: any): string => {
+      if (type === 'logbooks') return formatLogbookDate(item.date);
+      if (type === 'runs') return `Run #${item.id}`;
+      return item.name;
+    };
+
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Search and Add bar - bento box style */}
-          <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
-            {/* Search section - pill left, rounded right */}
-            <div
-              className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
+          {/* Title and Add button row */}
+          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
-                className="flex items-center rounded-l-full rounded-r-md"
                 style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  padding: '0 14px',
-                  height: '36px',
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
                 }}
               >
-                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setPage(1);
-                  }}
-                  className="focus:outline-none focus:ring-0 flex-1"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#2C2C2C',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    width: '100%',
-                    marginLeft: '8px',
-                  }}
-                />
+                {title}
               </div>
             </div>
-            {/* Add button - rounded left, pill right (hidden for runs) */}
+            {/* Add button (hidden for runs) */}
             {type !== 'runs' && (
-              <div
-                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-                style={aiGlassLightBorderStyle('1rem')}
-              >
+              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                 <button
                   onClick={() => {
                     if (type === 'logbooks') {
                       router.push(`/stores/${storeId}/logbook/create/shifts`);
                     } else {
-                      const itemName = type === 'crew' ? 'Crew Member' : type === 'roles' ? 'Role' : 'Logbook';
+                      const itemName = type === 'crew' ? 'Crew Member' : type === 'companies' ? 'Company' : type === 'stores' ? 'Store' : 'Logbook';
                       setSelectedItem({
                         id: '',
                         name: `New ${itemName}`,
@@ -661,83 +660,73 @@ export default function Home() {
                       });
                     }
                   }}
-                  className="transition-all duration-150"
                   style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    border: 'none',
-                    borderRadius: 'inherit',
-                    padding: '0 16px',
-                    height: '36px',
+                    ...aiGlassLightContentStyle('9999px', 0.4),
+                    padding: '6px 14px',
                     fontFamily: 'var(--font-open-sans)',
                     fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#2C2C2C',
+                    fontWeight: 500,
+                    color: '#6B6B6B',
+                    border: 'none',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
                 >
-                  + Add
+                  <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                  Add
                 </button>
               </div>
             )}
           </div>
 
           {/* Paginated list */}
-          <div
-            className="flex flex-col gap-3 flex-1"
-            style={{
-              paddingTop: '8px',
-            }}
-          >
-            {paginatedData.map((item, index) => {
-              const globalIndex = startIndex + index;
-              const isFirst = index === 0;
-              const isLast = index === paginatedData.length - 1;
-              const itemName = type === 'logbooks'
-                ? formatLogbookDate((item as typeof logbooksData[0]).date)
-                : type === 'runs'
-                ? `Run (${formatShortDate((item as any).date)}) (${capitalizeStatus((item as any).status)})`
-                : (item as typeof crewData[0]).name;
-              return (
-                <ListRowItemLight
-                  key={item.id}
-                  itemNumber={globalIndex + 1}
-                  isFirst={isFirst}
-                  isLast={isLast}
-                  isSelected={selectedItem?.id === item.id && selectedItem?.type === type}
-                  onView={() => {
-                    if (type === 'logbooks') {
-                      // For logbooks, clicking row opens version history
-                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'history' });
-                    } else {
-                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
-                    }
-                  }}
-                  onEdit={type === 'runs' ? undefined : () => {
-                    if (type === 'logbooks') {
-                      // For logbooks, edit button navigates to preview page
-                      router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${item.id}`);
-                    } else {
-                      setSelectedItem({ id: item.id, name: itemName, type, mode: 'edit' });
-                    }
-                  }}
-                  onDelete={() => setDeleteConfirmItem({ id: item.id, name: itemName, type })}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      color: '#2C2C2C',
+          <div className="flex flex-col gap-3 flex-1">
+            {paginatedData.length > 0 ? (
+              paginatedData.map((item) => {
+                const itemName = getItemName(item);
+                const subtitle = getSubtitle(item);
+                const isSelected = selectedItem?.id === item.id && selectedItem?.type === type;
+                return (
+                  <GlassPillButton
+                    key={`${type}-${item.id}`}
+                    isSelected={isSelected}
+                    onClick={() => {
+                      if (type === 'logbooks') {
+                        setSelectedItem({ id: item.id, name: itemName, type, mode: 'history' });
+                      } else {
+                        setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
+                      }
                     }}
+                    padding="12px 16px"
+                    contentStyle={{ justifyContent: 'flex-start' }}
                   >
-                    {itemName}
-                  </span>
-                </ListRowItemLight>
-              );
-            })}
-            {data.length === 0 && (
+                    <div className="flex flex-col gap-0.5">
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        {itemName}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '12px',
+                          color: '#6B6B6B',
+                        }}
+                      >
+                        {subtitle}
+                      </span>
+                    </div>
+                  </GlassPillButton>
+                );
+              })
+            ) : (
               <div
                 className="flex items-center justify-center flex-1"
                 style={{
@@ -746,7 +735,7 @@ export default function Home() {
                   color: '#6B6B6B',
                 }}
               >
-                No results found
+                No {title.toLowerCase()} found
               </div>
             )}
           </div>
@@ -868,25 +857,6 @@ export default function Home() {
           onMouseLeave={() => setIsHovered(false)}
           style={{ position: 'relative' }}
         >
-          {/* Type badge at the top */}
-          <div className="flex justify-center mb-2">
-            <div
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '10px',
-                fontWeight: 500,
-                color: '#6B6B6B',
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              {ROLE_RULE_TYPE_LABELS[rule.type] || rule.type}
-            </div>
-          </div>
-
           <div className="flex items-center justify-center h-full">
             {rule.TargetRole ? (
               // Two roles: "role vs. (target_role)" - only target in bubble
@@ -1201,46 +1171,24 @@ export default function Home() {
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Search and Add bar - bento box style */}
-          <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
-            {/* Search section - pill left, rounded right */}
-            <div
-              className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
+          {/* Title and Add button row */}
+          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
-                className="flex items-center rounded-l-full rounded-r-md"
                 style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  padding: '0 14px',
-                  height: '36px',
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
                 }}
               >
-                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="focus:outline-none focus:ring-0 flex-1"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#2C2C2C',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    width: '100%',
-                    marginLeft: '8px',
-                  }}
-                />
+                {titleText}
               </div>
             </div>
-            {/* Add button - rounded left, pill right */}
-            <div
-              className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
+            {/* Add button */}
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
               <button
                 onClick={() =>
                   setSelectedItem({
@@ -1250,28 +1198,27 @@ export default function Home() {
                     mode: 'add',
                   })
                 }
-                className="transition-all duration-150"
                 style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  border: 'none',
-                  borderRadius: 'inherit',
-                  padding: '0 16px',
-                  height: '36px',
+                  ...aiGlassLightContentStyle('9999px', 0.4),
+                  padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',
-                  fontWeight: 400,
-                  color: '#2C2C2C',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                  border: 'none',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
               >
-                + Add
+                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                Add
               </button>
             </div>
           </div>
 
-        {/* Grouped list - card per type like role families */}
+        {/* Grouped list - card per type */}
         <div className="flex flex-col gap-4">
           {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
             <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem">
@@ -1292,36 +1239,84 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Items in group - cards like role families */}
+                {/* Items in group - GlassPillButton grid like role families */}
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(roleRules.length, 4)}, 1fr)`, gap: '8px' }}>
                   {roleRules.map((rule) => {
-                    // Use the type display name for the card header
                     const typeDisplayName = ROLE_RULE_TYPE_LABELS[rule.type] || rule.type;
+                    const isSelected = selectedItem?.id === String(rule.id) && selectedItem?.type === itemType;
 
                     return (
-                      <RoleRuleCard
+                      <GlassPillButton
                         key={rule.id}
-                        rule={rule}
-                        itemType={itemType}
-                        isSelected={selectedItem?.id === String(rule.id) && selectedItem?.type === itemType}
-                        onView={() => setSelectedItem({
+                        isSelected={isSelected}
+                        onClick={() => setSelectedItem({
                           id: String(rule.id),
                           name: typeDisplayName,
                           type: itemType,
                           mode: 'view'
                         })}
-                        onEdit={() => setSelectedItem({
-                          id: String(rule.id),
-                          name: typeDisplayName,
-                          type: itemType,
-                          mode: 'edit'
-                        })}
-                        onDelete={() => setDeleteConfirmItem({
-                          id: String(rule.id),
-                          name: typeDisplayName,
-                          type: itemType
-                        })}
-                      />
+                        padding="12px"
+                        contentStyle={{ justifyContent: 'center' }}
+                      >
+                        <div className="flex items-center justify-center h-full">
+                          {rule.TargetRole ? (
+                            // Two roles: "role vs. (target_role)" - only target in bubble
+                            <div className="flex items-center gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '13px',
+                                  fontWeight: 500,
+                                  color: '#2C2C2C',
+                                  lineHeight: 1.2,
+                                  textAlign: 'center',
+                                }}
+                              >
+                                {rule.Role?.displayName || 'Unknown'}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '12px',
+                                  fontWeight: 400,
+                                  color: '#6B6B6B',
+                                }}
+                              >
+                                vs.
+                              </span>
+                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <div
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.5),
+                                    background: 'rgba(245, 245, 245, 0.7)',
+                                    padding: '4px 12px',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                    color: '#2C2C2C',
+                                  }}
+                                >
+                                  {rule.TargetRole?.displayName || 'Unknown'}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            // Single role - just plain text
+                            <span
+                              style={{
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: '#2C2C2C',
+                                lineHeight: 1.2,
+                                textAlign: 'center',
+                              }}
+                            >
+                              {rule.Role?.displayName || rule.displayName || 'Unknown'}
+                            </span>
+                          )}
+                        </div>
+                      </GlassPillButton>
                     );
                   })}
                 </div>

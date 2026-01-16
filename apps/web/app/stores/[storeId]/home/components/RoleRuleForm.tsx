@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -48,29 +49,10 @@ const ROLE_RULE_TYPES = [
   'CANNOT_ASSIGN_DURING_STORE_HOUR_X',
 ] as const;
 
-const ROLE_RULE_TYPE_LABELS: Record<string, string> = {
-  'CANNOT_BE_ASSIGNED_BEFORE': 'Cannot Be Assigned Before',
-  'CANNOT_BE_ASSIGNED_AFTER': 'Cannot Be Assigned After',
-  'MIN_CONSECUTIVE_MINUTES': 'Min Consecutive Minutes',
-  'MAX_CONSECUTIVE_MINUTES': 'Max Consecutive Minutes',
-  'FORBID_ROLE': 'Forbid Role',
-  'TIMING': 'Timing',
-  'LIKE_ROLE_FOR_HOUR_X': 'Like Role for Hour',
-  'DISLIKE_ROLE_FOR_HOUR_X': 'Dislike Role for Hour',
-  'MIN_SHIFT_LENGTH_FOR_ACCESS': 'Min Shift Length for Access',
-  'ASSIGN_BEFORE_SHIFT_MIN_X': 'Assign Before Shift Minute',
-  'ASSIGN_AFTER_SHIFT_MIN_X': 'Assign After Shift Minute',
-  'MAX_CREW_ON_AT_A_TIME': 'Max Crew On at a Time',
-  'ALLOW_HALF_BLOCKSIZE': 'Allow Half Block Size',
-  'DISTRIBUTION_BETWEEN_ROLE_X': 'Distribution Between Role',
-  'CANNOT_ASSIGN_DURING_STORE_HOUR_X': 'Cannot Assign During Store Hour',
-};
-
 // Rule types that require a targetRoleId
 const RULE_TYPES_NEEDING_TARGET_ROLE = [
   'CANNOT_BE_ASSIGNED_BEFORE',
   'CANNOT_BE_ASSIGNED_AFTER',
-  'FORBID_ROLE',
   'DISTRIBUTION_BETWEEN_ROLE_X',
 ];
 

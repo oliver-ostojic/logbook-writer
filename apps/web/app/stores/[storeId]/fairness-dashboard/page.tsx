@@ -531,7 +531,7 @@ function ListRowItem({
           />
         )}
       </div>
-      <div 
+      <div
         className="flex-1 ai-glass-border"
         style={{
           ...aiGlassBorderStyle('1rem', '180, 170, 200', 0.15),
@@ -1940,6 +1940,15 @@ export default function FairnessDashboardPage() {
                     onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
                   >
                     Home
+                  </a>
+                  <a
+                    href={`/stores/${storeId}/crew`}
+                    className="text-base transition-colors"
+                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
+                  >
+                    Crew
                   </a>
                   <a
                     href={`/stores/${storeId}/fairness-dashboard`}

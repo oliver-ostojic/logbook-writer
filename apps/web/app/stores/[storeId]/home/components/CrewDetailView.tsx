@@ -3,136 +3,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { renderRoleRule } from '@/lib/role-rule-templates';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Helper to format preference type names (capitalize only first letter of first word)
+// Used as fallback when template system doesn't have a template
 function formatPreferenceType(type: string): string {
   const words = type.replace(/_/g, ' ').toLowerCase().split(' ');
   if (words.length === 0) return '';
   words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
   return words.join(' ');
-}
-
-// Helper to format timing value (0-indexed)
-function formatTimingValue(value: number): string {
-  const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
-  return labels[value] || String(value);
-}
-
-// Helper to format distribution value (0-indexed)
-function formatDistributionValue(value: number): string {
-  const labels = ['Balanced', 'More', 'Much More'];
-  return labels[value] || String(value);
-}
-
-// Decoder for displayName templates
-function decodeDisplayName(
-  displayName: string,
-  ruleType: string,
-  valueInt: number | null,
-  roleName: string,
-  targetRoleName?: string | null
-): Array<{ type: 'text' | 'bubble'; content: string }> {
-  console.log('decodeDisplayName called with:', { displayName, ruleType, valueInt, roleName, targetRoleName });
-  const type = ruleType.toLowerCase();
-
-  // Variable mappings based on rule type
-  const getVariableValue = (varNum: number): string => {
-    if (type.includes('timing')) {
-      if (varNum === 1) {
-        // Timing value
-        if (valueInt === -1) return 'Earlier';
-        if (valueInt === 0) return 'In the middle';
-        if (valueInt === 1) return 'Later';
-        return String(valueInt || '');
-      }
-      if (varNum === 2) return roleName;
-    }
-
-    if (type.includes('distribution')) {
-      if (varNum === 1) return roleName;
-      if (varNum === 2) return targetRoleName || '';
-    }
-
-    if (type.includes('min_consecutive_minutes')) {
-      if (varNum === 1) return String(valueInt || '');
-      if (varNum === 2) return roleName;
-    }
-
-    // Default fallback
-    if (varNum === 1) return roleName;
-    if (varNum === 2) return targetRoleName || '';
-
-    return '';
-  };
-
-  // Resolve conditional text (word1/word2/...)
-  const resolveConditional = (options: string[]): string => {
-    if (type.includes('timing')) {
-      // For timing: if valueInt is 1 or -1, use first option; if 0, use second option
-      if (valueInt === 0) return options[1] || options[0];
-      return options[0];
-    }
-    // Default: use first option
-    return options[0];
-  };
-
-  const parts: Array<{ type: 'text' | 'bubble'; content: string }> = [];
-  let currentText = '';
-  let i = 0;
-
-  while (i < displayName.length) {
-    // Check for {number} pattern (bubble)
-    if (displayName[i] === '{') {
-      // Save any accumulated text
-      if (currentText.trim()) {
-        parts.push({ type: 'text', content: currentText.trim() });
-        currentText = '';
-      }
-
-      // Find closing }
-      const closeIdx = displayName.indexOf('}', i);
-      if (closeIdx !== -1) {
-        const varNum = parseInt(displayName.substring(i + 1, closeIdx), 10);
-        const value = getVariableValue(varNum);
-        parts.push({ type: 'bubble', content: value });
-        i = closeIdx + 1;
-        continue;
-      }
-    }
-
-    // Check for (word1/word2) pattern (conditional)
-    if (displayName[i] === '(') {
-      // Save any accumulated text
-      if (currentText.trim()) {
-        parts.push({ type: 'text', content: currentText.trim() });
-        currentText = '';
-      }
-
-      // Find closing )
-      const closeIdx = displayName.indexOf(')', i);
-      if (closeIdx !== -1) {
-        const optionsStr = displayName.substring(i + 1, closeIdx);
-        const options = optionsStr.split('/');
-        const selected = resolveConditional(options);
-        currentText += ' ' + selected + ' ';
-        i = closeIdx + 1;
-        continue;
-      }
-    }
-
-    // Regular character
-    currentText += displayName[i];
-    i++;
-  }
-
-  // Save any remaining text
-  if (currentText.trim()) {
-    parts.push({ type: 'text', content: currentText.trim() });
-  }
-
-  return parts;
 }
 
 interface CrewDetailViewProps {
@@ -313,37 +194,40 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
 
   // Helper to render a preference/accommodation item
   const renderRuleItem = (rule: typeof accommodations[0]) => {
-    const type = rule.roleRule.type.toLowerCase();
-    const isTiming = type.includes('timing');
-    const isDistribution = type.includes('distribution');
+    // Build context for template system
+    const context = {
+      roleRule: {
+        id: rule.roleRule.id,
+        type: rule.roleRule.type,
+        constraintType: rule.roleRule.constraintType,
+        displayName: rule.roleRule.displayName,
+        description: null,
+      },
+      role: rule.roleRule.role,
+      targetRole: rule.roleRule.targetRole,
+      crewRoleRule: {
+        id: rule.id,
+        isPriority: rule.isPriority,
+        valueInt: rule.valueInt,
+      },
+    };
 
-    // Debug logging
-    console.log('Rule:', {
-      id: rule.id,
-      type: rule.roleRule.type,
-      displayName: rule.roleRule.displayName,
-      valueInt: rule.valueInt,
-      roleName: rule.roleRule.role.displayName,
-      targetRoleName: rule.roleRule.targetRole?.displayName,
-    });
+    // Try to render using template system
+    const parts = renderRoleRule(rule.roleRule.type, context);
 
-    // If displayName exists, use the decoder
-    if (rule.roleRule.displayName) {
-      console.log('Using decoder for displayName:', rule.roleRule.displayName);
-      const parts = decodeDisplayName(
-        rule.roleRule.displayName,
-        rule.roleRule.type,
-        rule.valueInt,
-        rule.roleRule.role.displayName,
-        rule.roleRule.targetRole?.displayName
-      );
-      console.log('Decoded parts:', parts);
+    if (parts) {
+      // Calculate smart padding based on whether first/last parts are bubbles
+      const firstPartIsBubble = parts.length > 0 && parts[0].type === 'bubble';
+      const lastPartIsBubble = parts.length > 0 && parts[parts.length - 1].type === 'bubble';
+      const paddingLeft = firstPartIsBubble ? '10px' : '18px';
+      const paddingRight = lastPartIsBubble ? '10px' : '18px';
 
+      // Render using template parts
       return (
         <div key={rule.id} style={{ display: 'inline-block' }}>
           {/* Outer title pill wrapper */}
           <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
-            <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '6px 14px' }}>
+            <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${paddingRight} 10px ${paddingLeft}` }}>
               {/* Inner content with flex layout */}
               <div
                 className="flex flex-wrap items-center gap-2"
@@ -382,114 +266,32 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
       );
     }
 
-    // Fallback to old format if no displayName
+    // Fallback if no template defined
     const displayText = formatPreferenceType(rule.roleRule.type);
 
+    // Fallback always starts with a bubble (role name)
+    const fallbackPaddingLeft = '10px';
+    // Ends with bubble only if has targetRole AND no valueInt (since valueInt renders after targetRole as text)
+    const endsWithBubble = rule.roleRule.targetRole && rule.valueInt === null;
+    const fallbackPaddingRight = endsWithBubble ? '10px' : '18px';
+
     return (
-      <div
-        key={rule.id}
-        className="flex flex-wrap items-center gap-2"
-        style={{
-          fontFamily: 'var(--font-open-sans)',
-          fontSize: '13px',
-          color: '#2C2C2C',
-        }}
-      >
-        {/* For timing: (Value) displayName (Role) */}
-        {isTiming && rule.valueInt !== null && (
-          <>
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {formatTimingValue(rule.valueInt)}
-              </div>
-            </div>
-            <span>{displayText}</span>
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {rule.roleRule.role.displayName}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* For distribution: (Role) displayName (TargetRole) */}
-        {isDistribution && rule.roleRule.targetRole && rule.valueInt !== null && (
-          <>
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {rule.roleRule.role.displayName}
-              </div>
-            </div>
-            <span>
-              {formatDistributionValue(rule.valueInt)} {displayText}
-            </span>
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {rule.roleRule.targetRole.displayName}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Fallback for other types */}
-        {!isTiming && !isDistribution && (
-          <>
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {rule.roleRule.role.displayName}
-              </div>
-            </div>
-            <span>{displayText}</span>
-            {rule.roleRule.targetRole && (
+      <div key={rule.id} style={{ display: 'inline-block' }}>
+        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
+          <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${fallbackPaddingRight} 10px ${fallbackPaddingLeft}` }}>
+            <div
+              className="flex flex-wrap items-center gap-2"
+              style={{
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '13px',
+                color: '#2C2C2C',
+              }}
+            >
               <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                 <div
                   style={{
                     ...aiGlassLightContentStyle('9999px', 0.5),
+                    background: 'rgba(245, 245, 245, 0.7)',
                     padding: '4px 12px',
                     fontFamily: 'var(--font-open-sans)',
                     fontSize: '12px',
@@ -497,15 +299,33 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
                     color: '#2C2C2C',
                   }}
                 >
-                  {rule.roleRule.targetRole.displayName}
+                  {rule.roleRule.role.displayName}
                 </div>
               </div>
-            )}
-            {rule.valueInt !== null && (
-              <span style={{ color: '#6B6B6B' }}>({rule.valueInt})</span>
-            )}
-          </>
-        )}
+              <span>{displayText}</span>
+              {rule.roleRule.targetRole && (
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.5),
+                      background: 'rgba(245, 245, 245, 0.7)',
+                      padding: '4px 12px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    {rule.roleRule.targetRole.displayName}
+                  </div>
+                </div>
+              )}
+              {rule.valueInt !== null && (
+                <span style={{ color: '#6B6B6B' }}>({rule.valueInt})</span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   };

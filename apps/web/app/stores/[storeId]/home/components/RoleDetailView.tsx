@@ -3,11 +3,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { renderRoleRule } from '@/lib/role-rule-templates';
+import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface RoleDetailViewProps {
   roleId: number;
+  onRoleRuleClick?: (roleRuleId: number, roleRuleName: string) => void;
 }
 
 interface RoleData {
@@ -26,7 +29,29 @@ interface RoleData {
   }>;
 }
 
-export function RoleDetailView({ roleId }: RoleDetailViewProps) {
+interface RoleRule {
+  id: number;
+  roleId?: number;
+  type: string;
+  constraintType: string;
+  displayName?: string;
+  description?: string;
+  valueInt?: number;
+  targetRoleId?: number;
+  TargetRole?: { id: number; code: string; displayName: string } | null;
+  Role?: { id: number; code: string; displayName: string };
+}
+
+interface StoreRoleRule {
+  id: number;
+  storeId: number;
+  roleRuleId: number;
+  isPriority: boolean;
+  valueInt: number | null;
+  RoleRule: RoleRule;
+}
+
+export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps) {
   const [role, setRole] = useState<RoleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +61,8 @@ export function RoleDetailView({ roleId }: RoleDetailViewProps) {
   const [pendingDeletions, setPendingDeletions] = useState<Set<string>>(new Set());
   const [pendingAdditions, setPendingAdditions] = useState<Array<{ id: string; name: string }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleRules, setRoleRules] = useState<RoleRule[]>([]);
+  const [storeRoleRules, setStoreRoleRules] = useState<StoreRoleRule[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +83,26 @@ export function RoleDetailView({ roleId }: RoleDetailViewProps) {
           if (crewRes.ok) {
             const crewData = await crewRes.json();
             if (!cancelled) setAllCrew(crewData);
+          }
+        }
+
+        // Load role rules for this role
+        const roleRulesRes = await fetch(`${API_URL}/role-rules?roleId=${roleId}`);
+        if (roleRulesRes.ok) {
+          const roleRulesData = await roleRulesRes.json();
+          if (!cancelled) setRoleRules(roleRulesData);
+        }
+
+        // Load store role rules for this role
+        if (roleData.storeId) {
+          const storeRoleRulesRes = await fetch(`${API_URL}/store-role-rules?storeId=${roleData.storeId}`);
+          if (storeRoleRulesRes.ok) {
+            const storeRoleRulesData = await storeRoleRulesRes.json();
+            // Filter to only include rules for this role
+            const filteredStoreRules = storeRoleRulesData.filter((srr: StoreRoleRule) =>
+              srr.RoleRule?.Role?.id === roleId || srr.RoleRule?.roleId === roleId
+            );
+            if (!cancelled) setStoreRoleRules(filteredStoreRules);
           }
         }
 
@@ -314,6 +361,217 @@ export function RoleDetailView({ roleId }: RoleDetailViewProps) {
               <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#2C2C2C', fontWeight: 500 }}>{role.taskLength} min</span>
             </div>
           </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)' }} />
+
+        {/* Role Rules Section */}
+        <div className="flex flex-col gap-3">
+          <h3
+            style={{
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#6B6B6B',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Role Rules ({storeRoleRules.length > 0 ? storeRoleRules.length : roleRules.length})
+          </h3>
+          {storeRoleRules.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {storeRoleRules.map((srr) => {
+                const rule = srr.RoleRule;
+                const context = {
+                  roleRule: {
+                    id: rule.id,
+                    type: rule.type,
+                    constraintType: rule.constraintType,
+                    displayName: rule.displayName || null,
+                    description: rule.description || null,
+                  },
+                  role: rule.Role || { id: roleId, code: '', displayName: role?.displayName || '' },
+                  targetRole: rule.TargetRole || null,
+                  storeRoleRule: {
+                    id: srr.id,
+                    isPriority: srr.isPriority,
+                    valueInt: srr.valueInt,
+                  },
+                };
+
+                const parts = renderRoleRule(rule.type, context);
+
+                if (!parts) {
+                  // Fallback
+                  return (
+                    <div key={srr.id} style={{ display: 'inline-block' }}>
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
+                        <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '10px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '13px',
+                              color: '#2C2C2C',
+                            }}
+                          >
+                            {rule.displayName || rule.type}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Calculate smart padding
+                const firstPartIsBubble = parts.length > 0 && parts[0].type === 'bubble';
+                const lastPartIsBubble = parts.length > 0 && parts[parts.length - 1].type === 'bubble';
+                const paddingLeft = firstPartIsBubble ? '10px' : '18px';
+                const paddingRight = lastPartIsBubble ? '10px' : '18px';
+
+                return (
+                  <div
+                    key={srr.id}
+                    style={{ display: 'inline-block', cursor: onRoleRuleClick ? 'pointer' : 'default' }}
+                    onClick={() => onRoleRuleClick && onRoleRuleClick(rule.id, ROLE_RULE_TYPE_LABELS[rule.type] || rule.type)}
+                  >
+                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
+                      <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${paddingRight} 10px ${paddingLeft}` }}>
+                        <div
+                          className="flex flex-wrap items-center gap-2"
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          {parts.map((part, idx) => {
+                            if (part.type === 'bubble') {
+                              return (
+                                <div key={idx} className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                  <div
+                                    style={{
+                                      ...aiGlassLightContentStyle('9999px', 0.5),
+                                      background: 'rgba(245, 245, 245, 0.7)',
+                                      padding: '4px 12px',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                      color: '#2C2C2C',
+                                    }}
+                                  >
+                                    {part.content}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return <span key={idx}>{part.content}</span>;
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : roleRules.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {roleRules.map((rule) => {
+                const context = {
+                  roleRule: {
+                    id: rule.id,
+                    type: rule.type,
+                    constraintType: rule.constraintType,
+                    displayName: rule.displayName || null,
+                    description: rule.description || null,
+                  },
+                  role: rule.Role || { id: roleId, code: '', displayName: role?.displayName || '' },
+                  targetRole: rule.TargetRole || null,
+                  storeRoleRule: {
+                    id: rule.id,
+                    isPriority: false,
+                    valueInt: rule.valueInt || null,
+                  },
+                };
+
+                const parts = renderRoleRule(rule.type, context);
+
+                if (!parts) {
+                  // Fallback
+                  return (
+                    <div key={rule.id} style={{ display: 'inline-block' }}>
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
+                        <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '10px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '13px',
+                              color: '#2C2C2C',
+                            }}
+                          >
+                            {rule.displayName || rule.type}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Calculate smart padding
+                const firstPartIsBubble = parts.length > 0 && parts[0].type === 'bubble';
+                const lastPartIsBubble = parts.length > 0 && parts[parts.length - 1].type === 'bubble';
+                const paddingLeft = firstPartIsBubble ? '10px' : '18px';
+                const paddingRight = lastPartIsBubble ? '10px' : '18px';
+
+                return (
+                  <div
+                    key={rule.id}
+                    style={{ display: 'inline-block', cursor: onRoleRuleClick ? 'pointer' : 'default' }}
+                    onClick={() => onRoleRuleClick && onRoleRuleClick(rule.id, ROLE_RULE_TYPE_LABELS[rule.type] || rule.type)}
+                  >
+                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block' }}>
+                      <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${paddingRight} 10px ${paddingLeft}` }}>
+                        <div
+                          className="flex flex-wrap items-center gap-2"
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          {parts.map((part, idx) => {
+                            if (part.type === 'bubble') {
+                              return (
+                                <div key={idx} className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                  <div
+                                    style={{
+                                      ...aiGlassLightContentStyle('9999px', 0.5),
+                                      background: 'rgba(245, 245, 245, 0.7)',
+                                      padding: '4px 12px',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                      color: '#2C2C2C',
+                                    }}
+                                  >
+                                    {part.content}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return <span key={idx}>{part.content}</span>;
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#9A999E' }}>No role rules defined</span>
+          )}
         </div>
 
         {/* Divider */}

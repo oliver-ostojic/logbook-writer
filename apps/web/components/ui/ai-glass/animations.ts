@@ -11,7 +11,7 @@ export const aiGlassAnimations = `
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    padding: 1px;
+    padding: 0.3px;
     background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;

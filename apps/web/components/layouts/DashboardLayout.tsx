@@ -18,6 +18,8 @@ export interface DashboardLayoutProps {
   rightPanelWidth?: string;
   /** Key to trigger right panel animation when content changes */
   rightPanelKey?: string;
+  /** Border opacity for the outer panels (default: 0.15) */
+  borderOpacity?: number;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -31,6 +33,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   leftPanelWidth,
   rightPanelWidth,
   rightPanelKey,
+  borderOpacity = 0.15,
 }) => {
   const borderRadius = '1.5rem';
 
@@ -85,7 +88,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* Left panel */}
             <div
               className="ai-glass-border w-full dashboard-left-panel transition-all duration-300"
-              style={aiGlassLightBorderStyle(borderRadius)}
+              style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
             >
               <div
                 className="px-4 py-4"
@@ -100,7 +103,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <div
                 key={rightPanelKey}
                 className="ai-glass-border w-full dashboard-right-panel transition-all duration-300 panel-slide-in"
-                style={aiGlassLightBorderStyle(borderRadius)}
+                style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
               >
                 <div
                   className="px-4 py-4"
