@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
 import { CardContainer, CardHeader, GlassPillButton, GlassPillCard, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { TimingPreferenceCard, CannotBeAssignedAfterCard } from './components';
+import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -155,7 +155,7 @@ export default function CrewPage() {
                               color: '#2C2C2C',
                             }}
                           >
-                            Preferences
+                            Role Preferences
                           </span>
                           <span
                             style={{
@@ -202,7 +202,7 @@ export default function CrewPage() {
                           color: '#2C2C2C',
                         }}
                       >
-                        {activeView === 'preferences' ? 'Preferences' : 'Account Info'}
+                        {activeView === 'preferences' ? 'Role Preferences' : 'Account Info'}
                       </div>
                     </div>
                     <button
@@ -230,6 +230,10 @@ export default function CrewPage() {
                       <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
                       <div style={{ marginTop: '1rem' }} />
                       <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                      <div style={{ marginTop: '1rem' }} />
+                      <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                      <div style={{ marginTop: '1rem' }} />
+                      <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
                     </>
                   )}
                 </GlassPillCard>
