@@ -246,7 +246,7 @@ model CrewRoleRule {
   id         Int      @id @default(autoincrement())
   crewId     String   @db.Char(7)
   roleRuleId Int
-  isPriority Boolean  @default(false)
+  isPriority Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
   valueInt   Int?

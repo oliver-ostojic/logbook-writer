@@ -28,6 +28,7 @@ type CreateCrewRoleRuleBody = {
   roleRuleId: number;
   isPriority?: boolean;
   description?: string;
+  valueInt?: number;
 };
 
 type CreateStoreRoleRuleBody = {
@@ -104,12 +105,27 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
 
     const { roleId, type, targetRoleId, constraintType, valueInt, displayName, description } = req.body;
 
+    // RBAC: Crew can create SOFT constraints, admin can create any
+    const userRole = getUserRole(req);
+    if (constraintType === 'HARD' && userRole !== 'admin') {
+      return reply.code(403).send({
+        error: 'Forbidden',
+        message: 'Only admin can create HARD constraints',
+        currentRole: userRole,
+      });
+    }
+
     if (!roleId || !type || !constraintType) {
       console.error('Validation failed: Missing required fields');
       console.error('roleId:', roleId, 'type:', type, 'constraintType:', constraintType);
       return reply
         .code(400)
         .send({ error: "roleId, type, and constraintType are required" });
+    }
+
+    // CANNOT_BE_ASSIGNED_AFTER requires targetRoleId
+    if (type === 'CANNOT_BE_ASSIGNED_AFTER' && !targetRoleId) {
+      return reply.code(400).send({ error: 'targetRoleId is required for CANNOT_BE_ASSIGNED_AFTER' });
     }
 
     // Validate that role exists
@@ -165,7 +181,10 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
         console.error('Duplicate RoleRule detected');
         return reply
           .code(409)
-          .send({ error: "RoleRule with this combination already exists" });
+          .send({
+            error: "Duplicate rule",
+            message: "A rule with this combination already exists"
+          });
       }
       console.error('Unexpected error:', error);
       throw error;
@@ -253,21 +272,13 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   );
 
   // POST /crew-role-rules - Assign a role rule to a crew member
-  // RBAC: Only admin can create crew preferences
+  // RBAC: Crew can manage their own preferences
   app.post<{ Body: CreateCrewRoleRuleBody }>(
     "/crew-role-rules",
     async (req, reply) => {
-      // RBAC check - only admin can create crew role rules
-      const userRole = getUserRole(req);
-      if (!canManageCrewPreferences(userRole)) {
-        return reply.code(403).send({
-          error: "Forbidden",
-          message: "Only admin can manage crew preferences",
-          currentRole: userRole,
-        });
-      }
+      // No RBAC check - crew can manage their own preferences
 
-      const { crewId, roleRuleId, isPriority, description } = req.body;
+      const { crewId, roleRuleId, isPriority, description, valueInt } = req.body;
 
       if (!crewId || !roleRuleId) {
         return reply
@@ -296,7 +307,8 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
           data: {
             crewId,
             roleRuleId,
-            isPriority: isPriority ?? false,
+            ...(isPriority !== undefined && { isPriority }),
+            ...(valueInt !== undefined && { valueInt }),
           },
           include: {
             Crew: { select: { id: true, name: true } },
@@ -320,19 +332,11 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   );
 
   // DELETE /crew-role-rules/:id - Remove a role rule from a crew member
-  // RBAC: Only admin can delete crew preferences
+  // RBAC: Crew can manage their own preferences
   app.delete<{ Params: CrewRoleRuleParams }>(
     "/crew-role-rules/:id",
     async (req, reply) => {
-      // RBAC check - only admin can delete crew role rules
-      const userRole = getUserRole(req);
-      if (!canManageCrewPreferences(userRole)) {
-        return reply.code(403).send({
-          error: "Forbidden",
-          message: "Only admin can manage crew preferences",
-          currentRole: userRole,
-        });
-      }
+      // No RBAC check - crew can manage their own preferences
 
       const id = parseInt(req.params.id);
 
@@ -350,6 +354,42 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  // PATCH /crew-role-rules/:id - Update a crew role rule
+  // RBAC: Crew can manage their own preferences
+  app.patch<{
+    Params: CrewRoleRuleParams;
+    Body: { isPriority?: boolean; valueInt?: number };
+  }>("/crew-role-rules/:id", async (req, reply) => {
+    // No RBAC check - crew can manage their own preferences
+
+    const id = parseInt(req.params.id);
+    const { isPriority, valueInt } = req.body;
+
+    try {
+      const crewRoleRule = await prisma.crewRoleRule.update({
+        where: { id },
+        data: {
+          ...(isPriority !== undefined && { isPriority }),
+          ...(valueInt !== undefined && { valueInt }),
+        },
+        include: {
+          Crew: { select: { id: true, name: true } },
+          RoleRule: { include: { Role: true, TargetRole: true } },
+        },
+      });
+
+      return reply.send(crewRoleRule);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return reply.code(404).send({ error: "CrewRoleRule not found" });
+      }
+      throw error;
+    }
+  });
 
   // ============== StoreRoleRule CRUD ==============
 

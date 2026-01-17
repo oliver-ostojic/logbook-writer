@@ -1373,6 +1373,61 @@ export default function Home() {
     );
   };
 
+  // Generic search card for list views (crew, companies, stores, runs, logbooks, preferences, storeRules)
+  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks' | 'preferences' | 'storeRules') => {
+    // Determine the data source to check if there's anything to search
+    const hasData = type === 'crew' ? effectiveCrew.length > 0 :
+                    type === 'companies' ? apiCompanies.length > 0 :
+                    type === 'stores' ? apiStores.length > 0 :
+                    type === 'runs' ? apiRuns.length > 0 :
+                    type === 'logbooks' ? effectiveLogbooks.length > 0 :
+                    type === 'preferences' ? apiPreferences.length > 0 :
+                    apiStoreRules.length > 0;
+
+    if (!hasData) return null;
+
+    // Get the appropriate page setter
+    const setPage = type === 'crew' ? setCrewPage :
+                    type === 'companies' ? setCompaniesPage :
+                    type === 'stores' ? setStoresPage :
+                    type === 'runs' ? setRunsPage :
+                    type === 'logbooks' ? setLogbooksPage :
+                    type === 'preferences' ? setPreferencesPage :
+                    setStoreRulesPage;
+
+    return (
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+        <GlassPillCard
+          borderRadius="9999px"
+          padding="0 14px"
+          contentStyle={{ justifyContent: 'flex-start', height: '36px' }}
+        >
+          <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+            className="focus:outline-none focus:ring-0 flex-1"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#2C2C2C',
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              fontWeight: 400,
+              width: '100%',
+              marginLeft: '8px',
+            }}
+          />
+        </GlassPillCard>
+      </CardContainer>
+    );
+  };
+
   // Role Families card (rendered separately above header)
   const renderRoleFamiliesCard = () => {
     // Don't show if no families match the search
@@ -1664,6 +1719,7 @@ export default function Home() {
       rightPanelKey={selectedItem ? `${selectedItem.id}-${selectedItem.type}-${selectedItem.mode}` : undefined}
       navLinks={[
         { label: 'Home', href: `/stores/${storeId}/home` },
+        { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
         { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
         { label: 'Settings', href: `/stores/${storeId}/settings` },
       ]}
@@ -1785,8 +1841,15 @@ export default function Home() {
             }
           />
 
-          {/* Search card - shown above Role Families when in roles view */}
+          {/* Search card - shown above content for each list view */}
           {activeView === 'roles' && renderRolesSearchCard()}
+          {activeView === 'crew' && renderSearchCard('crew')}
+          {activeView === 'companies' && renderSearchCard('companies')}
+          {activeView === 'stores' && renderSearchCard('stores')}
+          {activeView === 'runs' && renderSearchCard('runs')}
+          {activeView === 'logbooks' && renderSearchCard('logbooks')}
+          {activeView === 'preferences' && renderSearchCard('preferences')}
+          {activeView === 'storeRules' && renderSearchCard('storeRules')}
 
           {/* Role Families card - shown below header when in roles view */}
           {activeView === 'roles' && renderRoleFamiliesCard()}

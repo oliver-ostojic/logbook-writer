@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
   const navLinks = [
     { label: 'Home', href: `/stores/${storeId}/home` },
-    { label: 'Crew', href: `/stores/${storeId}/crew` },
+    { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
     { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
     { label: 'Settings', href: `/stores/${storeId}/settings` },
   ];
