@@ -1230,12 +1230,13 @@ export default function Home() {
                       ...aiGlassLightContentStyle('9999px', 0.6),
                       padding: '6px 14px',
                       fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: 500,
                       color: '#2C2C2C',
+                      letterSpacing: '0.05em',
                     }}
                   >
-                    {ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}
+                    {ruleType}
                   </div>
                 </div>
 
