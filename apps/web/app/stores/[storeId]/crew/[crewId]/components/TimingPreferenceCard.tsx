@@ -120,18 +120,21 @@ function DraggableRoleBubble({
       <div
         className="ai-glass-border"
         style={{
-          ...aiGlassLightBorderStyle('9999px'),
+          boxShadow: 'inset 0 0 0 1px rgba(34, 197, 94, 0.4)',
+          borderRadius: '9999px',
           cursor: isEditing ? 'grab' : 'default',
         }}
       >
         <div
           style={{
-            ...aiGlassLightContentStyle('9999px', 0.6),
+            background: 'rgba(34, 197, 94, 0.08)',
+            borderRadius: '9999px',
+            backdropFilter: 'blur(8px)',
             padding: '4px 10px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '12px',
             fontWeight: 500,
-            color: '#2C2C2C',
+            color: 'rgb(22, 163, 74)',
           }}
         >
           {roleName}
@@ -144,15 +147,17 @@ function DraggableRoleBubble({
 // Drag overlay bubble (shown while dragging)
 function DragOverlayBubble({ roleName }: { roleName: string }) {
   return (
-    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+    <div className="ai-glass-border" style={{ boxShadow: 'inset 0 0 0 1px rgba(34, 197, 94, 0.4)', borderRadius: '9999px' }}>
       <div
         style={{
-          ...aiGlassLightContentStyle('9999px', 0.9),
+          background: 'rgba(34, 197, 94, 0.08)',
+          borderRadius: '9999px',
+          backdropFilter: 'blur(8px)',
           padding: '4px 10px',
           fontFamily: 'var(--font-open-sans)',
           fontSize: '12px',
           fontWeight: 500,
-          color: '#2C2C2C',
+          color: 'rgb(22, 163, 74)',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         }}
       >
@@ -469,6 +474,8 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
         setError('Failed to remove timing preference');
         console.error('Failed to remove timing preference');
       } else {
+        // Refresh data to update available roles
+        await fetchData();
         onRefresh?.();
       }
     } catch (err) {
@@ -520,16 +527,15 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
         {/* Title bubble and Edit/Add buttons row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.4), width: 'fit-content' }}>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.6),
-                  backgroundColor: 'hsla(0, 84%, 60%, 0.08)',
                   padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: 'hsla(0, 84%, 45%, 0.95)',
+                  color: '#2C2C2C',
                 }}
               >
                 Timing

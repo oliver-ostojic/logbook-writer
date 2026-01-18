@@ -318,6 +318,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
     const isLiked = type === 'LIKE_ROLE_FOR_HOUR_X';
     const borderColor = isLiked ? '34, 197, 94' : '220, 38, 38'; // green-500 or red-600
     const bgColor = isLiked ? 'rgba(34, 197, 94, 0.08)' : 'rgba(220, 38, 38, 0.08)';
+    const textColor = isLiked ? 'rgb(22, 163, 74)' : 'rgb(185, 28, 28)'; // green-600 or red-700
 
     return (
       <div
@@ -388,7 +389,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
               fontFamily: 'var(--font-open-sans)',
               fontSize: '12px',
               fontWeight: 500,
-              color: '#2C2C2C',
+              color: textColor,
             }}
           >
             {roleName}

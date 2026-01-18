@@ -431,16 +431,15 @@ export function CannotBeAssignedAfterCard({ crewId, storeId, onRefresh }: Cannot
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* "Cannot Be Assigned After" title badge */}
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.4), width: 'fit-content' }}>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
               <div
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.6),
-                  backgroundColor: 'hsla(0, 84%, 60%, 0.08)',
                   padding: '6px 14px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: 'hsla(0, 84%, 45%, 0.95)',
+                  color: '#2C2C2C',
                 }}
               >
                 Cannot Be Assigned After

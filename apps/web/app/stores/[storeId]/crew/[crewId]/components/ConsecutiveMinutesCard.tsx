@@ -239,15 +239,17 @@ function RoleConsecutiveCard({ rule, isEditing, onRemove, onChange }: RoleConsec
       )}
 
       {/* Role Name Bubble */}
-      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+      <div className="ai-glass-border" style={{ boxShadow: 'inset 0 0 0 1px rgba(34, 197, 94, 0.4)', borderRadius: '9999px', width: 'fit-content' }}>
         <div
           style={{
-            ...aiGlassLightContentStyle('9999px', 0.6),
+            background: 'rgba(34, 197, 94, 0.08)',
+            borderRadius: '9999px',
+            backdropFilter: 'blur(8px)',
             padding: '8px 16px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '14px',
             fontWeight: 500,
-            color: '#2C2C2C',
+            color: 'rgb(22, 163, 74)',
           }}
         >
           {rule.roleName}
@@ -643,24 +645,15 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
         {/* Title Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           {/* Title Bubble */}
-          <div
-            className="ai-glass-border"
-            style={{
-              boxShadow: 'inset 0 0 0 1px rgba(220, 118, 38, 0.4)',
-              borderRadius: '9999px',
-              width: 'fit-content',
-            }}
-          >
+          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
             <div
               style={{
-                background: 'hsla(25, 84%, 60%, 0.08)',
-                borderRadius: '9999px',
-                backdropFilter: 'blur(8px)',
+                ...aiGlassLightContentStyle('9999px', 0.6),
                 padding: '6px 14px',
                 fontFamily: 'var(--font-open-sans)',
                 fontSize: '14px',
                 fontWeight: 500,
-                color: 'hsla(25, 84%, 45%, 0.95)',
+                color: '#2C2C2C',
               }}
             >
               Consecutive Minutes

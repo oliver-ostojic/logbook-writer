@@ -50,11 +50,27 @@ export default function CrewPage() {
         setCrew(crewData);
       }
 
-      // Fetch crew preferences
-      const prefsRes = await fetch(`${API_URL}/crew-preferences?crewId=${crewId}`);
-      if (prefsRes.ok) {
-        const prefsData = await prefsRes.json();
-        setPreferences(Array.isArray(prefsData) ? prefsData : []);
+      // Fetch crew role rules to count preferences
+      const roleRulesRes = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
+      if (roleRulesRes.ok) {
+        const roleRulesData = await roleRulesRes.json();
+
+        // Count all role preferences by CrewRoleRule ID
+        // Include TIMING, CANNOT_BE_ASSIGNED_AFTER, MIN_CONSECUTIVE_MINUTES, MAX_CONSECUTIVE_MINUTES, LIKE_ROLE_FOR_HOUR_X, DISLIKE_ROLE_FOR_HOUR_X
+        const preferenceTypes = new Set([
+          'TIMING',
+          'CANNOT_BE_ASSIGNED_AFTER',
+          'MIN_CONSECUTIVE_MINUTES',
+          'MAX_CONSECUTIVE_MINUTES',
+          'LIKE_ROLE_FOR_HOUR_X',
+          'DISLIKE_ROLE_FOR_HOUR_X'
+        ]);
+
+        const preferencesData = (Array.isArray(roleRulesData) ? roleRulesData : []).filter((rr: any) =>
+          rr.RoleRule?.type && preferenceTypes.has(rr.RoleRule.type)
+        );
+
+        setPreferences(preferencesData);
       }
     } catch (err) {
       console.error('Failed to fetch crew data:', err);
