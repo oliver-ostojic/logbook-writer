@@ -11,6 +11,7 @@ import {
 } from '@headlessui/react'
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import { BarsArrowUpIcon, BarsArrowDownIcon, UsersIcon } from '@heroicons/react/20/solid'
+import { aiGlassLightBorderStyle } from '@/components/ui/ai-glass'
 
 type Person = {
   id: number | null;
@@ -69,11 +70,14 @@ export default function CrewCombobox({ people, onSelectCrew, loading = false }: 
         }}
       >
 
-      <div className="mt-2 flex">
+      <div
+        className="mt-2 flex ai-glass-border rounded-full"
+        style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
+      >
         {/* Input + user icon + chevron */}
         <div className="-mr-px relative grid grow grid-cols-1 focus-within:relative">
           <ComboboxInput
-            className="col-start-1 row-start-1 block w-full rounded-l-md border border-gray-300 bg-white py-1.5 pr-8 pl-10 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0 sm:pl-9 sm:text-sm/6 [&::placeholder]:text-ellipsis"
+            className="col-start-1 row-start-1 block w-full rounded-l-full border-0 bg-white py-1.5 pr-8 pl-10 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 sm:pl-9 sm:text-sm/6 [&::placeholder]:text-ellipsis"
             placeholder="Oliver Ostojic"
             value={query}
             onChange={(event) => {
@@ -153,7 +157,7 @@ export default function CrewCombobox({ people, onSelectCrew, loading = false }: 
         <button
           type="button"
           onClick={() => setSortAsc((prev) => !prev)}
-          className="flex shrink-0 items-center gap-x-1.5 rounded-r-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500"
+          className="flex shrink-0 items-center gap-x-1.5 rounded-r-full border-0 border-l border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {sortAsc ? (

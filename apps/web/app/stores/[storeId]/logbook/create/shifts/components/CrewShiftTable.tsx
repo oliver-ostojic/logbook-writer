@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { BarsArrowUpIcon, BarsArrowDownIcon } from '@heroicons/react/20/solid';
+import { aiGlassLightBorderStyle } from '@/components/ui/ai-glass';
 
 type CrewMember = {
   id: number;
@@ -127,11 +128,14 @@ export default function CrewShiftTable(props: any) {
   };
 
   return (
-    <div className="mt-8">
-      <div className="overflow-hidden shadow outline outline-1 outline-black/5 rounded-lg">
-  <div className="max-h-[640px] overflow-y-auto">
+    <div className="mt-[26px]">
+      <div
+        className="ai-glass-border overflow-hidden rounded-[1rem]"
+        style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
+      >
+        <div className="max-h-[480px] overflow-y-auto">
           <table className="relative min-w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-auto">
                   <div className="flex items-center gap-2">

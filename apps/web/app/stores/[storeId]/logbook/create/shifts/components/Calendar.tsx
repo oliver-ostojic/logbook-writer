@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useMemo, useState } from 'react';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 dayjs.extend(isoWeek);
 
@@ -37,7 +38,7 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
   const monthLabel = visibleMonth.format('MMMM');
 
   return (
-    <div className="text-center">
+    <div className="text-center mt-6">
       <div className="flex items-center text-gray-900">
         <button
           type="button"
@@ -66,8 +67,22 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
         <div>S</div>
         <div>S</div>
       </div>
-      <div className="isolate mt-2 grid grid-cols-7 gap-px rounded-lg bg-gray-200 text-sm shadow ring-1 ring-gray-200">
-        {days.map((day, idx) => (
+      <div className="isolate mt-2 grid grid-cols-7 gap-px rounded-xl bg-gray-200 text-sm shadow ring-1 ring-gray-200 overflow-hidden">
+        {days.map((day, idx) => {
+          const totalDays = days.length;
+          const isFirstRow = idx < 7;
+          const isLastRow = idx >= totalDays - 7;
+          const isFirstCol = idx % 7 === 0;
+          const isLastCol = idx % 7 === 6;
+
+          const cornerClasses = [
+            isFirstRow && isFirstCol ? 'rounded-tl-xl' : '',
+            isFirstRow && isLastCol ? 'rounded-tr-xl' : '',
+            isLastRow && isFirstCol ? 'rounded-bl-xl' : '',
+            isLastRow && isLastCol ? 'rounded-br-xl' : '',
+          ].filter(Boolean).join(' ');
+
+          return (
           <button
             key={day.date}
             type="button"
@@ -75,7 +90,7 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
             data-is-today={day.isToday ? '' : undefined}
             data-is-selected={day.isSelected ? '' : undefined}
             data-is-current-month={day.isCurrentMonth ? '' : undefined}
-            className="py-1.5 first:rounded-tl-lg last:rounded-br-lg hover:bg-gray-100 focus:z-10 data-[is-current-month]:bg-white data-[is-selected]:font-semibold data-[is-today]:font-semibold data-[is-selected]:text-white data-[is-current-month]:hover:bg-gray-100 [&:not([data-is-current-month])]:bg-gray-50 data-[is-today]:[&:not([data-is-selected])]:text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] [&:not([data-is-selected])]:data-[is-current-month]:[&:not([data-is-today])]:text-gray-900 [&:not([data-is-selected])]:[&:not([data-is-current-month])]:[&:not([data-is-today])]:text-gray-400 [&:nth-child(36)]:rounded-bl-lg [&:nth-child(7)]:rounded-tr-lg"
+            className={`py-1.5 hover:bg-gray-100 focus:z-10 data-[is-current-month]:bg-white data-[is-selected]:font-semibold data-[is-today]:font-semibold data-[is-selected]:text-white data-[is-current-month]:hover:bg-gray-100 [&:not([data-is-current-month])]:bg-gray-50 data-[is-today]:[&:not([data-is-selected])]:text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] [&:not([data-is-selected])]:data-[is-current-month]:[&:not([data-is-today])]:text-gray-900 [&:not([data-is-selected])]:[&:not([data-is-current-month])]:[&:not([data-is-today])]:text-gray-400 ${cornerClasses}`}
           >
             <time
               dateTime={day.date}
@@ -84,7 +99,8 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
               {day.date.split('-').pop()?.replace(/^0/, '') || ''}
             </time>
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   )

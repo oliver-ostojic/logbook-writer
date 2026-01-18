@@ -6,12 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CrewCombobox from "./CrewSearchBar";
 import Calendar from "./Calendar";
-import DateBadge from "./DateBadge";
 import dayjs from "dayjs";
 import CrewShiftTable from "./CrewShiftTable";
 import CrewCounter from './CrewCounter';
 import ShiftValidationBox from './ShiftValidationBox';
-import Footer from '../../../../../../../components/Footer';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
 
 type CrewMember = {
   id: number; // local numeric id for UI (used for display only)
@@ -21,6 +20,42 @@ type CrewMember = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+function StepTitle({ number, title }: { number: number; title: string }) {
+  return (
+    <div className="flex items-center">
+      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+        <div
+          className="flex items-center gap-2"
+          style={{
+            ...aiGlassLightContentStyle('9999px', 0.6),
+            padding: '6px 14px 6px 6px',
+            fontFamily: 'var(--font-open-sans)',
+            fontSize: '14px',
+          }}
+        >
+          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25) }}>
+            <div
+              style={{
+                ...aiGlassLightContentStyle('9999px', 1),
+                padding: '3px 8px',
+                fontWeight: 600,
+                fontSize: '11px',
+                color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))',
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+                background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08)',
+              }}
+            >
+              {number}
+            </div>
+          </div>
+          <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{title}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function BentoGrid() {
   const router = useRouter();
@@ -242,80 +277,40 @@ export default function BentoGrid() {
   }, [selectedCrew, shiftTimes]);
 
   return (
-      <div className="bg-gray-50 pt-10 pb-12 sm:pt-16 sm:pb-16">
-        <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
-        <p className="text-xl font-medium tracking-tight pb-2 text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Crew selection
-        </p>
-        <p className="text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
-          Start by searching for crew members, add them, and record their shift times
-        </p>
-        
+      <div className="flex flex-col gap-6">
         {/* Shift validation errors */}
         {shiftValidationErrors.length > 0 && (
-          <div className="mt-8 mb-5 sm:mb-8">
+          <div>
             <ShiftValidationBox errors={shiftValidationErrors} />
           </div>
         )}
-        
-        <div className="mt-5 sm:mt-8 grid grid-cols-1 gap-4 lg:grid-cols-6 lg:auto-rows-auto">
-          {/* Top-left tile - Date selection */}
-          <div className="relative lg:col-span-2">
-            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]" />
-            <div className="relative flex h-full flex-col overflow-hidden max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 1</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700 pb-5" style={{ fontFamily: 'var(--font-heading)' }}>Choose the date</p>
-                <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
-                <DateBadge selectedDate={selectedDate} />
-              </div>
-            </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-t-[2rem] lg:rounded-tl-[3rem]" />
-          </div>
 
-          {/* Right tile - Crew selection - spans full height */}
-          <div className="relative lg:col-span-4 lg:row-span-2">
-            <div className="absolute inset-0 rounded-lg bg-white lg:rounded-r-[3rem]" />
-            <div className="relative flex h-full flex-col overflow-hidden lg:rounded-r-[3rem]">
-              <div className="p-10 pt-10">
-                <div className="flex gap-6">
-                  {/* Left container: Step 2, title, search bar */}
-                  <div className="flex-1">
-                    <h3 className="text-sm/4 font-semibold text-gray-500">Step 2</h3>
-                    <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Select crew</p>
-                    <div className="flex flex-row gap-10">
-                      <div className="flex-1">
-                        <CrewCombobox people={availablePeople} onSelectCrew={handleAddCrew} loading={loadingPeople} />
-                      </div>
-                      <div className="flex-shrink-0 mt-2">
-                        <CrewCounter count={selectedCrew.length} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <CrewShiftTable
-                  selectedCrew={selectedCrew}
-                  onRemoveCrew={handleRemoveCrew}
-                  initialShiftTimes={initialShiftTimes}
-                  onShiftTimesChange={setShiftTimes}
-                />
-              </div>
-            </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 lg:rounded-r-[3rem]" />
-          </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Left column - Steps 1 and 3 */}
+          <div className="flex flex-col gap-6 lg:col-span-1">
+            {/* Top-left tile - Date selection */}
+            <GlassPillCard
+              borderRadius="1.5rem"
+              padding="24px"
+              contentStyle={{ display: 'block' }}
+            >
+              <StepTitle number={1} title="Choose the date" />
+              <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
+            </GlassPillCard>
 
-          {/* Bottom-left tile - Review & save */}
-          <div className="relative lg:col-span-2 lg:row-auto">
-            <div className="absolute inset-0 rounded-lg bg-white max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]" />
-            <div className="relative flex flex-col overflow-hidden max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 3</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Review & save shifts</p>
-                <p className="mt-2 text-sm/6 text-gray-600">
+            {/* Bottom-left tile - Review & save */}
+            <div
+              className="ai-glass-border rounded-[1.5rem]"
+              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+            >
+              <div
+                className="rounded-[1.5rem]"
+                style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+              >
+                <StepTitle number={3} title="Review & save shifts" />
+                <p className="mt-4 text-sm/6 text-gray-600">
                   When everything looks good, hit <em>Continue</em> to save today's shifts and move on to role constraints.
                 </p>
-                {/* Button container that keeps the button vertically centered between the text above and card bottom */}
                 <SaveAndNext
                   storeId={storeId}
                   selectedDate={selectedDate}
@@ -327,12 +322,41 @@ export default function BentoGrid() {
                 />
               </div>
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 max-lg:rounded-b-[2rem] lg:rounded-bl-[3rem]" />
+          </div>
+
+          {/* Right column - Crew selection */}
+          <div
+            className="ai-glass-border lg:col-span-2 rounded-[1.5rem]"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div
+              className="rounded-[1.5rem]"
+              style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px 24px 17px 24px' }}
+            >
+              <StepTitle number={2} title="Select crew" />
+              <div className="flex gap-6 flex-shrink-0 mt-4">
+                <div className="flex-1">
+                  <div className="flex flex-row gap-10">
+                    <div className="flex-1">
+                      <CrewCombobox people={availablePeople} onSelectCrew={handleAddCrew} loading={loadingPeople} />
+                    </div>
+                    <div className="flex-shrink-0 mt-2">
+                      <CrewCounter count={selectedCrew.length} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <CrewShiftTable
+                selectedCrew={selectedCrew}
+                onRemoveCrew={handleRemoveCrew}
+                initialShiftTimes={initialShiftTimes}
+                onShiftTimesChange={setShiftTimes}
+              />
+            </div>
           </div>
         </div>
-        <Footer />
       </div>
-    </div>
   )
 }
 
@@ -385,16 +409,19 @@ function SaveAndNext({
   };
 
   return (
-    <div className="mt-6 flex flex-col">
+    <div className="flex flex-col" style={{ marginTop: '18px' }}>
       {error && (
         <p className="text-sm text-red-600 mb-2">{error}</p>
       )}
-      <div className="flex-1 flex items-center justify-center py-4">
+      <div
+        className="ai-glass-border w-full"
+        style={aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25)}
+      >
         <button
           type="button"
           onClick={handleSave}
           disabled={saving || hasValidationErrors}
-          className="rounded-full bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-[hsl(var(--brand-h)_var(--brand-s)_55%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] font-sans disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-full bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[hsl(var(--brand-h)_var(--brand-s)_55%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] font-sans disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Continue to constraints'}
         </button>
