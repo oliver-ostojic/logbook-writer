@@ -254,6 +254,7 @@ model CrewRoleRule {
   RoleRule   RoleRule @relation(fields: [roleRuleId], references: [id], onDelete: Cascade)
 
   @@index([crewId])
+  @@unique([crewId, roleRuleId, valueInt])
 }
 
 model StoreRoleRule {
