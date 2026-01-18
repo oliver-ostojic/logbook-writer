@@ -31,7 +31,8 @@ export const aiGlassContentStyle = (borderRadius: string | number = '1rem', opac
 export const aiGlassLightBorderStyle = (
   borderRadius: string | number = '1rem',
   borderColor: string = '0, 0, 0',
-  borderOpacity: number = 0.08
+  borderOpacity: number = 0.08,
+  borderWidth: string = '0.3px'
 ): React.CSSProperties => {
   const styles: any = {
     borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
@@ -40,6 +41,7 @@ export const aiGlassLightBorderStyle = (
   };
   styles['--border-color'] = borderColor;
   styles['--border-opacity'] = borderOpacity;
+  styles['--border-width'] = borderWidth;
   return styles as React.CSSProperties;
 };
 

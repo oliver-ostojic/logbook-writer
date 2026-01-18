@@ -5,13 +5,14 @@ export const aiGlassAnimations = `
     position: relative;
     --border-color: 255, 255, 255; /* Default: white, can be overridden inline */
     --border-opacity: 0.11;
+    --border-width: 0.3px;
   }
   .ai-glass-border::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    padding: 0.3px;
+    padding: var(--border-width);
     background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;

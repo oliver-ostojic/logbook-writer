@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -11,34 +11,29 @@ const TOTAL_SEGMENTS = 3;
 
 // Types
 interface ConsecutiveMinuteRule {
-  minCrewRoleRuleId: number | null;
-  maxCrewRoleRuleId: number | null;
-  minRoleRuleId: number | null;
-  maxRoleRuleId: number | null;
+  maxCrewRoleRuleId: number | null;  // Crew's MAX override (if exists)
+  maxRoleRuleId: number | null;      // RoleRule ID for MAX type
   roleId: number;
   roleName: string;
-  minutes: number;
-}
-
-interface Role {
-  id: number;
-  code: string;
-  displayName: string;
+  storeMinMinutes: number;           // Store's MIN (from StoreRoleRule) - read-only
+  crewMaxMinutes: number;            // Crew's preferred MAX
 }
 
 interface NestedPillSegmentSelectorProps {
-  selectedSegments: number;
-  totalSegments: number;
+  selectedSegments: number;       // MAX segment (draggable right edge)
+  totalSegments: number;          // Total segments (3)
   isEditing: boolean;
   onChange: (segments: number) => void;
+  onChangeEnd?: (segments: number) => void;  // Called on mouse up - for API save
   disabled?: boolean;
+  minSegment?: number;            // MIN segment (locked left edge) - optional for backwards compat
 }
 
 interface RoleConsecutiveCardProps {
   rule: ConsecutiveMinuteRule;
   isEditing: boolean;
-  onRemove: () => void;
   onChange: (segments: number) => void;
+  onChangeEnd?: (segments: number) => void;
 }
 
 interface ConsecutiveMinutesCardProps {
@@ -53,12 +48,16 @@ function NestedPillSegmentSelector({
   totalSegments,
   isEditing,
   onChange,
+  onChangeEnd,
   disabled = false,
+  minSegment = 1,
 }: NestedPillSegmentSelectorProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState<number | null>(null); // Smooth drag position (0-1 scale relative to drag range)
   const startXRef = useRef(0);
   const startSegmentsRef = useRef(selectedSegments);
   const outerPillRef = useRef<HTMLDivElement>(null);
+  const finalSegmentsRef = useRef(selectedSegments);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isEditing || disabled) return;
@@ -67,6 +66,8 @@ function NestedPillSegmentSelector({
     setIsDragging(true);
     startXRef.current = e.clientX;
     startSegmentsRef.current = selectedSegments;
+    finalSegmentsRef.current = selectedSegments;
+    setDragProgress(null);
   };
 
   useEffect(() => {
@@ -78,9 +79,16 @@ function NestedPillSegmentSelector({
       const deltaX = e.clientX - startXRef.current;
       const outerPillWidth = outerPillRef.current.offsetWidth;
       const segmentWidth = outerPillWidth / totalSegments;
-      const segmentDelta = Math.round(deltaX / segmentWidth);
 
-      const newSegments = Math.max(1, Math.min(totalSegments, startSegmentsRef.current + segmentDelta));
+      // Calculate smooth progress (fractional segments)
+      const rawSegmentDelta = deltaX / segmentWidth;
+      const smoothSegments = Math.max(minSegment, Math.min(totalSegments, startSegmentsRef.current + rawSegmentDelta));
+      setDragProgress(smoothSegments);
+
+      // Calculate snapped segment for final value
+      const segmentDelta = Math.round(deltaX / segmentWidth);
+      const newSegments = Math.max(minSegment, Math.min(totalSegments, startSegmentsRef.current + segmentDelta));
+      finalSegmentsRef.current = newSegments;
 
       if (newSegments !== selectedSegments) {
         onChange(newSegments);
@@ -89,6 +97,11 @@ function NestedPillSegmentSelector({
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setDragProgress(null);
+      // Only call onChangeEnd if value changed
+      if (finalSegmentsRef.current !== startSegmentsRef.current && onChangeEnd) {
+        onChangeEnd(finalSegmentsRef.current);
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -98,7 +111,7 @@ function NestedPillSegmentSelector({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, selectedSegments, totalSegments, onChange]);
+  }, [isDragging, selectedSegments, totalSegments, minSegment, onChange, onChangeEnd]);
 
   // Calculate segment positions
   const segmentLabels = [];
@@ -113,26 +126,22 @@ function NestedPillSegmentSelector({
     dividerPositions.push((i / totalSegments) * 100);
   }
 
-  const innerPillWidth = (selectedSegments / totalSegments) * 100;
+  // Calculate inner pill position and width (from minSegment to selectedSegments)
+  // Use dragProgress for smooth animation while dragging, otherwise use selectedSegments
+  const displaySegments = dragProgress !== null ? dragProgress : selectedSegments;
+  const innerPillLeft = ((minSegment - 1) / totalSegments) * 100;
+  const innerPillWidth = ((displaySegments - minSegment + 1) / totalSegments) * 100;
 
   return (
-    <div
-      ref={outerPillRef}
-      className="ai-glass-border"
-      style={{
-        ...aiGlassLightBorderStyle('9999px'),
-        position: 'relative',
-        width: '360px',
-        height: '64px',
-      }}
+    <GlassPillCard
+      borderRadius="9999px"
+      padding="0"
+      backgroundOpacity={0.6}
+      style={{ width: '100%', flex: 1 }}
     >
       <div
-        style={{
-          ...aiGlassLightContentStyle('9999px', 0.3),
-          height: '100%',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        ref={outerPillRef}
+        style={{ position: 'relative', minHeight: '38px', padding: '16px', width: '100%' }}
       >
         {/* Segment Dividers */}
         {dividerPositions.map((left, idx) => (
@@ -141,11 +150,13 @@ function NestedPillSegmentSelector({
             style={{
               position: 'absolute',
               left: `${left}%`,
-              top: 0,
-              bottom: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              height: 'calc(100% + 8px)',
               width: '1px',
-              background: 'hsla(0, 0%, 0%, 0.12)',
+              background: 'linear-gradient(to bottom, transparent 0%, hsla(0, 0%, 0%, 0.12) 48%, hsla(0, 0%, 0%, 0.12) 52%, transparent 100%)',
               pointerEvents: 'none',
+              zIndex: 1,
             }}
           />
         ))}
@@ -164,104 +175,88 @@ function NestedPillSegmentSelector({
               fontWeight: 500,
               color: '#6B6B6B',
               pointerEvents: 'none',
-              zIndex: 1,
+              zIndex: 3,
             }}
           >
-            {seg.label}
+            {seg.label} hr
           </div>
         ))}
 
-        {/* Inner Solid Pill */}
-        <div
-          onMouseDown={handleMouseDown}
+        {/* Inner Solid Pill (from minSegment to selectedSegments) - TRANSLUCENT RED */}
+        <GlassPillCard
+          borderRadius="9999px"
+          padding="0"
+          backgroundOpacity={0.6}
+          borderOpacity={0.18}
           style={{
             position: 'absolute',
-            left: '4px',
-            top: '4px',
-            bottom: '4px',
-            width: `calc(${innerPillWidth}% - 8px)`,
-            background: 'rgba(255, 255, 255, 1)',
-            boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
-            borderRadius: '9999px',
-            transition: isDragging ? 'none' : 'width 0.15s ease, opacity 0.15s ease',
+            left: `calc(${innerPillLeft}% + 16px)`,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            height: '34px',
+            width: `calc(${innerPillWidth}% - 32px)`,
+            transition: isDragging ? 'none' : 'left 0.15s ease, width 0.15s ease, opacity 0.15s ease',
             opacity: isDragging ? 0.8 : 1,
             cursor: isEditing && !disabled ? 'ew-resize' : 'default',
-            zIndex: 2,
+            zIndex: 0,
           }}
-        />
+          contentStyle={{
+            background: 'rgba(220, 38, 38, 0.25)',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <div onMouseDown={handleMouseDown} style={{ width: '100%', height: '100%' }} />
+        </GlassPillCard>
       </div>
-    </div>
+    </GlassPillCard>
   );
 }
 
 // RoleConsecutiveCard Component
-function RoleConsecutiveCard({ rule, isEditing, onRemove, onChange }: RoleConsecutiveCardProps) {
-  const segments = Math.round(rule.minutes / SEGMENT_DURATION_MINUTES);
+function RoleConsecutiveCard({ rule, isEditing, onChange, onChangeEnd }: RoleConsecutiveCardProps) {
+  const minSegment = Math.ceil(rule.storeMinMinutes / SEGMENT_DURATION_MINUTES);
+  const maxSegment = Math.ceil(rule.crewMaxMinutes / SEGMENT_DURATION_MINUTES);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-      }}
-      className={isEditing ? 'ios-wiggle' : ''}
-    >
-      {/* Remove Button */}
-      {isEditing && (
-        <button
-          onClick={onRemove}
-          style={{
-            position: 'absolute',
-            left: '-6px',
-            top: '-6px',
-            width: '20px',
-            height: '20px',
-            borderRadius: '50%',
-            border: 'none',
-            background: '#6B6B6B',
-            color: 'white',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            transition: 'background 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = '#2C2C2C')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = '#6B6B6B')}
-        >
-          −
-        </button>
-      )}
-
-      {/* Role Name Bubble */}
-      <div className="ai-glass-border" style={{ boxShadow: 'inset 0 0 0 1px rgba(34, 197, 94, 0.4)', borderRadius: '9999px', width: 'fit-content' }}>
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: '10px' }}>
+      {/* Role Name - Separate Outer Card */}
+      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content', flexShrink: 0 }}>
         <div
           style={{
-            background: 'rgba(34, 197, 94, 0.08)',
-            borderRadius: '9999px',
-            backdropFilter: 'blur(8px)',
-            padding: '8px 16px',
-            fontFamily: 'var(--font-open-sans)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'rgb(22, 163, 74)',
+            ...aiGlassLightContentStyle('9999px', 0.3),
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            height: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          {rule.roleName}
+          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+            <div
+              style={{
+                ...aiGlassLightContentStyle('9999px', 0.6),
+                padding: '6px 14px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#2C2C2C',
+              }}
+            >
+              {rule.roleName}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Nested Pill Selector */}
+      {/* Nested Pill Selector - Separate Outer Card */}
       <NestedPillSegmentSelector
-        selectedSegments={segments}
+        selectedSegments={maxSegment}
         totalSegments={TOTAL_SEGMENTS}
         isEditing={isEditing}
         onChange={(newSegments) => onChange(newSegments)}
+        onChangeEnd={onChangeEnd}
+        minSegment={minSegment}
       />
     </div>
   );
@@ -271,17 +266,8 @@ function RoleConsecutiveCard({ rule, isEditing, onRemove, onChange }: RoleConsec
 export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: ConsecutiveMinutesCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [rules, setRules] = useState<ConsecutiveMinuteRule[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Add flow state
-  const [isAdding, setIsAdding] = useState(false);
-  const [newRuleRoleId, setNewRuleRoleId] = useState<number | null>(null);
-  const [newRuleSegments, setNewRuleSegments] = useState(1);
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-
-  const roleDropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch data
   const fetchData = async () => {
@@ -289,64 +275,76 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
     setError(null);
 
     try {
-      // Fetch crew with roleRules
-      const crewRes = await fetch(`${API_URL}/crew/${crewId}?include=roleRules`);
-      if (!crewRes.ok) throw new Error('Failed to fetch crew data');
-      const crewData = await crewRes.json();
+      // Fetch all store consecutive rules (both MIN and MAX)
+      const storeRulesRes = await fetch(`${API_URL}/stores/${storeId}/effective-role-rules`);
+      if (!storeRulesRes.ok) throw new Error('Failed to fetch store rules');
+      const storeRulesResponse = await storeRulesRes.json();
 
-      // Filter consecutive minute rules
-      const consecutiveRules = (crewData.roleRules || []).filter(
-        (rr: any) =>
-          rr.RoleRule?.type === 'MIN_CONSECUTIVE_MINUTES' || rr.RoleRule?.type === 'MAX_CONSECUTIVE_MINUTES'
+      // API returns { storeId, crewId, rules: [...] }
+      const storeRulesData = storeRulesResponse.rules || [];
+
+      // Filter store MIN consecutive rules from StoreRoleRule entries
+      const storeMinRules = storeRulesData.filter(
+        (rule: any) => rule.RoleRule?.type === 'MIN_CONSECUTIVE_MINUTES' && rule.source === 'store'
       );
 
-      // Group by roleId
-      const rulesByRole: Record<string, any[]> = {};
-      consecutiveRules.forEach((rule: any) => {
-        const roleId = rule.RoleRule.roleId;
-        if (!rulesByRole[roleId]) rulesByRole[roleId] = [];
-        rulesByRole[roleId].push(rule);
+      // Filter store MAX consecutive rules from StoreRoleRule entries
+      const storeMaxRules = storeRulesData.filter(
+        (rule: any) => rule.RoleRule?.type === 'MAX_CONSECUTIVE_MINUTES' && rule.source === 'store'
+      );
+
+      // Build map of store MAX by roleId
+      const storeMaxByRole: Record<number, any> = {};
+      storeMaxRules.forEach((rule: any) => {
+        const roleId = rule.RoleRule?.roleId;
+        if (roleId) {
+          storeMaxByRole[roleId] = rule;
+        }
       });
 
-      // Build ConsecutiveMinuteRule objects
-      const parsedRules: ConsecutiveMinuteRule[] = Object.entries(rulesByRole).map(([roleId, rules]) => {
-        const minRule = rules.find((r) => r.RoleRule.type === 'MIN_CONSECUTIVE_MINUTES');
-        const maxRule = rules.find((r) => r.RoleRule.type === 'MAX_CONSECUTIVE_MINUTES');
+      // Fetch crew MAX overrides
+      const crewRulesRes = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
+      if (!crewRulesRes.ok) throw new Error('Failed to fetch crew rules');
+      const crewRulesData = await crewRulesRes.json();
 
-        const minutes = minRule?.valueInt || maxRule?.valueInt || 60;
+      // Filter crew MAX consecutive rules
+      const crewMaxRules = (Array.isArray(crewRulesData) ? crewRulesData : []).filter(
+        (rr: any) => rr.RoleRule?.type === 'MAX_CONSECUTIVE_MINUTES'
+      );
 
-        // Log warning if MIN and MAX don't match
-        if (minRule && maxRule && minRule.valueInt !== maxRule.valueInt) {
-          console.warn(
-            `MIN (${minRule.valueInt}) and MAX (${maxRule.valueInt}) don't match for role ${roleId}. Using MIN value.`
-          );
+      // Build map of crew MAX overrides by roleId
+      const crewMaxByRole: Record<number, any> = {};
+      crewMaxRules.forEach((rr: any) => {
+        const roleId = rr.RoleRule?.roleId;
+        if (roleId) {
+          crewMaxByRole[roleId] = rr;
         }
+      });
+
+      // Build ConsecutiveMinuteRule objects for all roles with store MIN rules
+      const parsedRules: ConsecutiveMinuteRule[] = storeMinRules.map((storeMinRule: any) => {
+        const roleId = storeMinRule.RoleRule?.roleId;
+        const storeMinMinutes = storeMinRule.RoleRule?.valueInt || 60;
+
+        // Get store MAX for this role (defaults to store MIN if not found)
+        const storeMaxRule = storeMaxByRole[roleId];
+        const storeMaxMinutes = storeMaxRule?.RoleRule?.valueInt || storeMinMinutes;
+
+        // Get crew MAX override (defaults to store MAX)
+        const crewMaxRule = crewMaxByRole[roleId];
+        const crewMaxMinutes = crewMaxRule?.valueInt || storeMaxMinutes;
 
         return {
-          minCrewRoleRuleId: minRule?.id || null,
-          maxCrewRoleRuleId: maxRule?.id || null,
-          minRoleRuleId: minRule?.roleRuleId || null,
-          maxRoleRuleId: maxRule?.roleRuleId || null,
-          roleId: Number(roleId),
-          roleName: minRule?.RoleRule?.Role?.displayName || maxRule?.RoleRule?.Role?.displayName || 'Unknown',
-          minutes,
+          maxCrewRoleRuleId: crewMaxRule?.id || null,
+          maxRoleRuleId: crewMaxRule?.roleRuleId || null,
+          roleId: roleId,
+          roleName: storeMinRule.RoleRule?.Role?.displayName || storeMinRule.RoleRule?.Role?.code || 'Unknown',
+          storeMinMinutes,
+          crewMaxMinutes,
         };
       });
 
       setRules(parsedRules);
-
-      // Get available roles (crew roles without consecutive rules)
-      const crewRoles = crewData.roles || [];
-      const usedRoleIds = new Set(parsedRules.map((r) => r.roleId));
-      const available = crewRoles
-        .filter((cr: any) => !usedRoleIds.has(cr.roleId))
-        .map((cr: any) => ({
-          id: cr.roleId,
-          code: cr.Role?.code || '',
-          displayName: cr.Role?.displayName || '',
-        }));
-
-      setAvailableRoles(available);
     } catch (err) {
       console.error('Error fetching consecutive minute rules:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -359,244 +357,95 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
     fetchData();
   }, [crewId]);
 
-  // API helpers
-  const findOrCreateRoleRule = async (roleId: number, type: string): Promise<number> => {
-    // Check if RoleRule exists
-    const res = await fetch(`${API_URL}/role-rules?storeId=${storeId}&roleId=${roleId}&type=${type}`);
-    if (!res.ok) throw new Error('Failed to fetch role rules');
-    const existing = await res.json();
+  // API helper - simplified to only update/create crew MAX override
+  // Returns the new crewRoleRuleId if created, otherwise null
+  const updateCrewMaxOverride = async (rule: ConsecutiveMinuteRule, newSegments: number): Promise<number | null> => {
+    const newMaxMinutes = newSegments * SEGMENT_DURATION_MINUTES;
 
-    if (existing.length > 0) {
-      return existing[0].id;
+    // If crew already has MAX override, update it
+    if (rule.maxCrewRoleRuleId) {
+      const res = await fetch(`${API_URL}/crew-role-rules/${rule.maxCrewRoleRuleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ valueInt: newMaxMinutes }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update crew MAX override');
+      return null; // No new ID, just updated
     }
 
-    // Create new RoleRule
-    const createRes = await fetch(`${API_URL}/role-rules`, {
+    // Otherwise, create new crew MAX override
+    // First, query for the store's MAX RoleRule ID
+    const roleRulesRes = await fetch(
+      `${API_URL}/role-rules?storeId=${storeId}&roleId=${rule.roleId}&type=MAX_CONSECUTIVE_MINUTES`
+    );
+
+    if (!roleRulesRes.ok) throw new Error('Failed to fetch store role rules');
+
+    const roleRules = await roleRulesRes.json();
+
+    if (roleRules.length === 0) {
+      throw new Error('Store MAX RoleRule not found for this role');
+    }
+
+    const maxRoleRuleId = roleRules[0].id;
+
+    // Create crew override
+    const createRes = await fetch(`${API_URL}/crew-role-rules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        roleId,
-        type,
-        constraintType: 'SOFT',
-        storeId: Number(storeId),
+        crewId,
+        roleRuleId: maxRoleRuleId,
+        valueInt: newMaxMinutes,
       }),
     });
 
-    if (!createRes.ok) {
-      const errorData = await createRes.json();
-      // Handle P2002 (unique constraint violation) - rule was created concurrently
-      if (errorData.code === 'P2002') {
-        // Refetch and return existing
-        const retryRes = await fetch(`${API_URL}/role-rules?storeId=${storeId}&roleId=${roleId}&type=${type}`);
-        const retryData = await retryRes.json();
-        if (retryData.length > 0) return retryData[0].id;
-      }
-      throw new Error('Failed to create role rule');
-    }
+    if (!createRes.ok) throw new Error('Failed to create crew MAX override');
 
-    const newRule = await createRes.json();
-    return newRule.id;
-  };
-
-  const createConsecutiveRule = async (roleId: number, segments: number) => {
-    const minutes = segments * SEGMENT_DURATION_MINUTES;
-
-    try {
-      // Step 1-2: Find or create MIN and MAX RoleRules
-      const minRoleRuleId = await findOrCreateRoleRule(roleId, 'MIN_CONSECUTIVE_MINUTES');
-      const maxRoleRuleId = await findOrCreateRoleRule(roleId, 'MAX_CONSECUTIVE_MINUTES');
-
-      // Step 3-4: Create MIN and MAX CrewRoleRules
-      const [minRes, maxRes] = await Promise.all([
-        fetch(`${API_URL}/crew-role-rules`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            crewId,
-            roleRuleId: minRoleRuleId,
-            valueInt: minutes,
-          }),
-        }),
-        fetch(`${API_URL}/crew-role-rules`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            crewId,
-            roleRuleId: maxRoleRuleId,
-            valueInt: minutes,
-          }),
-        }),
-      ]);
-
-      if (!minRes.ok || !maxRes.ok) throw new Error('Failed to create crew role rules');
-
-      const [minCrewRule, maxCrewRule] = await Promise.all([minRes.json(), maxRes.json()]);
-
-      return { minCrewRule, maxCrewRule };
-    } catch (err) {
-      console.error('Error creating consecutive rule:', err);
-      throw err;
-    }
-  };
-
-  const updateConsecutiveRule = async (
-    minCrewRoleRuleId: number | null,
-    maxCrewRoleRuleId: number | null,
-    segments: number
-  ) => {
-    const minutes = segments * SEGMENT_DURATION_MINUTES;
-
-    const updates = [];
-
-    if (minCrewRoleRuleId) {
-      updates.push(
-        fetch(`${API_URL}/crew-role-rules/${minCrewRoleRuleId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ valueInt: minutes }),
-        })
-      );
-    }
-
-    if (maxCrewRoleRuleId) {
-      updates.push(
-        fetch(`${API_URL}/crew-role-rules/${maxCrewRoleRuleId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ valueInt: minutes }),
-        })
-      );
-    }
-
-    await Promise.all(updates);
-  };
-
-  const deleteConsecutiveRule = async (minCrewRoleRuleId: number | null, maxCrewRoleRuleId: number | null) => {
-    const deletes = [];
-
-    if (minCrewRoleRuleId) {
-      deletes.push(
-        fetch(`${API_URL}/crew-role-rules/${minCrewRoleRuleId}`, {
-          method: 'DELETE',
-        })
-      );
-    }
-
-    if (maxCrewRoleRuleId) {
-      deletes.push(
-        fetch(`${API_URL}/crew-role-rules/${maxCrewRoleRuleId}`, {
-          method: 'DELETE',
-        })
-      );
-    }
-
-    await Promise.all(deletes);
+    // Return the new ID so we can update local state
+    const created = await createRes.json();
+    return created.id;
   };
 
   // Event handlers
-  const handleAddClick = () => {
-    setIsAdding(true);
-    setNewRuleRoleId(null);
-    setNewRuleSegments(1);
+  // Local state update only (no API call) - for smooth dragging
+  const handleRuleChange = (rule: ConsecutiveMinuteRule, newSegments: number) => {
+    const newMaxMinutes = newSegments * SEGMENT_DURATION_MINUTES;
+    setRules((prev) =>
+      prev.map((r) =>
+        r.roleId === rule.roleId ? { ...r, crewMaxMinutes: newMaxMinutes } : r
+      )
+    );
   };
 
-  const handleCancelAdd = () => {
-    setIsAdding(false);
-    setNewRuleRoleId(null);
-    setNewRuleSegments(1);
-  };
-
-  const handleSaveAdd = async () => {
-    if (!newRuleRoleId) return;
-
-    const role = availableRoles.find((r) => r.id === newRuleRoleId);
-    if (!role) return;
-
+  // API save on drag end
+  const handleRuleChangeEnd = async (rule: ConsecutiveMinuteRule, newSegments: number) => {
     try {
       setError(null);
-      await createConsecutiveRule(newRuleRoleId, newRuleSegments);
+      const newCrewRoleRuleId = await updateCrewMaxOverride(rule, newSegments);
 
-      // Refresh data
-      await fetchData();
-      setIsAdding(false);
-      setNewRuleRoleId(null);
-      setNewRuleSegments(1);
-
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule');
-    }
-  };
-
-  const handleRuleChange = async (rule: ConsecutiveMinuteRule, newSegments: number) => {
-    const newMinutes = newSegments * SEGMENT_DURATION_MINUTES;
-
-    // Optimistic update
-    setRules((prev) => prev.map((r) => (r.roleId === rule.roleId ? { ...r, minutes: newMinutes } : r)));
-
-    try {
-      setError(null);
-      await updateConsecutiveRule(rule.minCrewRoleRuleId, rule.maxCrewRoleRuleId, newSegments);
-
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      // Revert on error
-      setRules((prev) => prev.map((r) => (r.roleId === rule.roleId ? rule : r)));
-      setError(err instanceof Error ? err.message : 'Failed to update rule');
-    }
-  };
-
-  const handleRuleRemove = async (rule: ConsecutiveMinuteRule) => {
-    // Optimistic removal
-    setRules((prev) => prev.filter((r) => r.roleId !== rule.roleId));
-
-    try {
-      setError(null);
-      await deleteConsecutiveRule(rule.minCrewRoleRuleId, rule.maxCrewRoleRuleId);
-
-      // Add role back to available
-      const crewRes = await fetch(`${API_URL}/crew/${crewId}`);
-      const crewData = await crewRes.json();
-      const crewRole = (crewData.roles || []).find((cr: any) => cr.roleId === rule.roleId);
-      if (crewRole) {
-        setAvailableRoles((prev) => [
-          ...prev,
-          {
-            id: crewRole.roleId,
-            code: crewRole.Role?.code || '',
-            displayName: crewRole.Role?.displayName || '',
-          },
-        ]);
+      // If a new crew rule was created, update local state with the new ID (no refetch needed)
+      if (newCrewRoleRuleId !== null) {
+        setRules((prev) =>
+          prev.map((r) =>
+            r.roleId === rule.roleId ? { ...r, maxCrewRoleRuleId: newCrewRoleRuleId } : r
+          )
+        );
       }
 
       if (onRefresh) onRefresh();
     } catch (err) {
       // Revert on error
-      setRules((prev) => [...prev, rule]);
-      setError(err instanceof Error ? err.message : 'Failed to delete rule');
+      setRules((prev) =>
+        prev.map((r) => (r.roleId === rule.roleId ? rule : r))
+      );
+      setError(err instanceof Error ? err.message : 'Failed to update MAX override');
     }
   };
 
   const handleToggleEdit = () => {
     setIsEditing(!isEditing);
-    if (isAdding) {
-      setIsAdding(false);
-      setNewRuleRoleId(null);
-    }
-  };
-
-  const handleRoleDropdownEnter = () => {
-    if (roleDropdownTimeoutRef.current) {
-      clearTimeout(roleDropdownTimeoutRef.current);
-      roleDropdownTimeoutRef.current = null;
-    }
-    setShowRoleDropdown(true);
-  };
-
-  const handleRoleDropdownLeave = () => {
-    roleDropdownTimeoutRef.current = setTimeout(() => {
-      setShowRoleDropdown(false);
-    }, 200);
   };
 
   if (loading) {
@@ -656,27 +505,9 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
                 color: '#2C2C2C',
               }}
             >
-              Consecutive Minutes
+              Continuous Time on Role
             </div>
           </div>
-
-          {/* Add Button */}
-          {isEditing && availableRoles.length > 0 && !isAdding && (
-            <button
-              onClick={handleAddClick}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '20px',
-                fontWeight: 300,
-                color: 'hsl(25, 84%, 60%)',
-                cursor: 'pointer',
-                padding: '0 4px',
-              }}
-            >
-              +
-            </button>
-          )}
 
           {/* Spacer */}
           <div style={{ flex: 1 }} />
@@ -690,169 +521,45 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
               fontFamily: 'var(--font-open-sans)',
               fontSize: '13px',
               fontWeight: 400,
-              color: '#6B6B6B',
+              color: isEditing ? '#DC2626' : '#6B6B6B',
               cursor: 'pointer',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#2C2C2C')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6B6B')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = isEditing ? '#B91C1C' : '#2C2C2C')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = isEditing ? '#DC2626' : '#6B6B6B')}
           >
             {isEditing ? 'Done' : 'Edit'}
           </button>
         </div>
 
-        {/* Add Flow Panel */}
-        {isAdding && (
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.4)',
-              borderRadius: '12px',
-              padding: '12px',
-              marginBottom: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
-            {/* Role Dropdown */}
-            <div style={{ position: 'relative' }}>
-              <div
-                onMouseEnter={handleRoleDropdownEnter}
-                onMouseLeave={handleRoleDropdownLeave}
-                style={{
-                  cursor: 'pointer',
-                }}
-              >
-                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('9999px', 0.6),
-                      padding: '8px 16px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    {newRuleRoleId ? availableRoles.find((r) => r.id === newRuleRoleId)?.displayName : 'Select Role'}
-                  </div>
-                </div>
-
-                {/* Dropdown Menu */}
-                {showRoleDropdown && availableRoles.length > 0 && (
-                  <div
-                    onMouseEnter={handleRoleDropdownEnter}
-                    onMouseLeave={handleRoleDropdownLeave}
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      marginTop: '4px',
-                      background: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)',
-                      padding: '4px',
-                      zIndex: 100,
-                      minWidth: '200px',
-                    }}
-                  >
-                    {availableRoles.map((role) => (
-                      <div
-                        key={role.id}
-                        onClick={() => {
-                          setNewRuleRoleId(role.id);
-                          setShowRoleDropdown(false);
-                        }}
-                        style={{
-                          padding: '8px 12px',
-                          cursor: 'pointer',
-                          borderRadius: '6px',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '14px',
-                          color: '#2C2C2C',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        {role.displayName}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Nested Pill Selector */}
-            <NestedPillSegmentSelector
-              selectedSegments={newRuleSegments}
-              totalSegments={TOTAL_SEGMENTS}
-              isEditing={true}
-              onChange={setNewRuleSegments}
-            />
-
-            {/* Save/Cancel Buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleSaveAdd}
-                disabled={!newRuleRoleId}
-                style={{
-                  background: newRuleRoleId ? 'hsl(25, 84%, 60%)' : '#E0E0E0',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '6px 16px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'white',
-                  cursor: newRuleRoleId ? 'pointer' : 'not-allowed',
-                }}
-              >
-                Save
-              </button>
-              <button
-                onClick={handleCancelAdd}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #D0D0D0',
-                  borderRadius: '8px',
-                  padding: '6px 16px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#6B6B6B',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
+        {/* Roles List */}
+        {rules.length === 0 ? (
+          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+            <div
+              style={{
+                ...aiGlassLightContentStyle('9999px', 0.3),
+                padding: '16px',
+                color: '#9B9B9B',
+                fontSize: '12px',
+                fontFamily: 'var(--font-open-sans)',
+                textAlign: 'center',
+              }}
+            >
+              No preferences set
             </div>
           </div>
-        )}
-
-        {/* Existing Rules List */}
-        {rules.length === 0 && !isAdding && (
-          <div
-            style={{
-              color: '#6B6B6B',
-              fontSize: '14px',
-              fontFamily: 'var(--font-open-sans)',
-              textAlign: 'center',
-              padding: '16px',
-            }}
-          >
-            No consecutive minute preferences set
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {rules.map((rule) => (
+              <RoleConsecutiveCard
+                key={rule.roleId}
+                rule={rule}
+                isEditing={isEditing}
+                onChange={(segments) => handleRuleChange(rule, segments)}
+                onChangeEnd={(segments) => handleRuleChangeEnd(rule, segments)}
+              />
+            ))}
           </div>
         )}
-
-        {rules.map((rule) => (
-          <div key={rule.roleId} style={{ marginBottom: '12px' }}>
-            <RoleConsecutiveCard
-              rule={rule}
-              isEditing={isEditing}
-              onRemove={() => handleRuleRemove(rule)}
-              onChange={(segments) => handleRuleChange(rule, segments)}
-            />
-          </div>
-        ))}
       </div>
     </CardContainer>
   );

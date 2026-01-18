@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
 import { CardContainer, CardHeader, GlassPillButton, GlassPillCard, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard } from './components';
+import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard, RoleDistributionCard, AccountInfoCard } from './components';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -63,7 +63,8 @@ export default function CrewPage() {
           'MIN_CONSECUTIVE_MINUTES',
           'MAX_CONSECUTIVE_MINUTES',
           'LIKE_ROLE_FOR_HOUR_X',
-          'DISLIKE_ROLE_FOR_HOUR_X'
+          'DISLIKE_ROLE_FOR_HOUR_X',
+          'DISTRIBUTION_BETWEEN_ROLE_X'
         ]);
 
         const preferencesData = (Array.isArray(roleRulesData) ? roleRulesData : []).filter((rr: any) =>
@@ -239,17 +240,19 @@ export default function CrewPage() {
                     </button>
                   </div>
                   {activeView === 'accountInfo' && (
-                    <div style={{ minHeight: '200px' }} />
+                    <AccountInfoCard crewId={crewId} storeId={storeId} />
                   )}
                   {activeView === 'preferences' && (
                     <>
-                      <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                      <div style={{ marginTop: '1rem' }} />
-                      <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                      <RoleDistributionCard crewId={crewId} onRefresh={fetchCrewData} />
                       <div style={{ marginTop: '1rem' }} />
                       <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
                       <div style={{ marginTop: '1rem' }} />
                       <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                      <div style={{ marginTop: '1rem' }} />
+                      <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                      <div style={{ marginTop: '1rem' }} />
+                      <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
                     </>
                   )}
                 </GlassPillCard>
