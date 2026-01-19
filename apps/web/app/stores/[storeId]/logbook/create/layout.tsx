@@ -1,3 +1,12 @@
+import { aiGlassAnimations } from '@/components/ui/ai-glass';
+
 export default function CreateLogbookLayout({ children }: { children: React.ReactNode; params: { storeId: string } }) {
-  return <>{children}</>;
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
+      <div style={{ backgroundColor: '#f0eee6', minHeight: '100vh' }}>
+        {children}
+      </div>
+    </>
+  );
 }

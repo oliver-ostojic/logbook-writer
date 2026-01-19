@@ -14,6 +14,8 @@ export interface DashboardHeaderProps {
   activeItem?: string;
   onUserClick?: () => void;
   lightMode?: boolean;
+  /** Whether the header should be sticky (fixed position). Default: true */
+  sticky?: boolean;
 }
 
 const DEFAULT_NAV_LINKS: NavLink[] = [
@@ -27,6 +29,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   activeItem,
   onUserClick,
   lightMode = false,
+  sticky = true,
 }) => {
   // Colors based on mode
   const activeColor = lightMode ? '#1a1a1a' : '#FFFFFF';
@@ -43,7 +46,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     lightMode ? aiGlassLightContentStyle(radius, 0.7) : aiGlassContentStyle(radius);
 
   return (
-    <div className="fixed top-4 left-0 right-0 px-6 lg:px-8" style={{ zIndex: 200 }}>
+    <div
+      className={`${sticky ? 'fixed top-4' : 'pt-4'} left-0 right-0 px-6 lg:px-8`}
+      style={{ zIndex: sticky ? 200 : 'auto', position: sticky ? 'fixed' : 'relative' }}
+    >
       {/* Flex container: empty left spacer, centered nav, right-aligned user button */}
       <div className="flex items-center justify-between">
         {/* Left spacer - same width as user button for centering */}

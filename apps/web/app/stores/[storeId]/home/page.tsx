@@ -1734,7 +1734,7 @@ export default function Home() {
             titleStyle={{ color: '#2C2C2C' }}
             leftContent={
               <Menu as="div" style={{ zIndex: 100 }}>
-                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '139, 0, 0', 0.4)}>
                   <MenuButton
                     className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
                     style={{
@@ -1862,199 +1862,214 @@ export default function Home() {
               <CardContainer lightMode={true} borderRadius="1.5rem">
                 <div className="grid grid-cols-3 gap-3">
                 {/* Crew Count Card */}
-            <CardSmall
-              lightMode={true}
-              borderRadius="1rem"
-              borderOpacity={0}
-              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
-              onClick={() => setActiveView('crew')}
-              style={{
-                // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'crew' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
-              }}
-            >
-              <div className="flex flex-col h-full justify-between">
-                {/* Top row: Icon and Label */}
-                <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                    <div
-                      className="flex items-center justify-center w-full h-full"
-                      style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                    >
-                      <UserGroupIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '13px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      lineHeight: 1,
-                      textAlign: 'right',
-                    }}
-                  >
-                    Crew
-                  </span>
-                </div>
-
-                {/* Bottom: Count label and Stat Number */}
-                <div style={{ marginBottom: '-6px' }}>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      display: 'block',
-                      marginBottom: '-4px',
-                    }}
-                  >
-                    Count
-                  </span>
+                <div
+                  className="ai-glass-border cursor-pointer transition-all duration-200"
+                  style={{
+                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'crew' ? 0.2 : 0.08),
+                    filter: activeView === 'crew' ? 'brightness(0.94)' : undefined,
+                    transform: activeView === 'crew' ? 'scale(1.02)' : undefined,
+                  }}
+                  onClick={() => setActiveView('crew')}
+                >
                   <div
                     style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '24px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
+                      ...aiGlassLightContentStyle('1rem', 0.6),
+                      padding: '16px',
                     }}
                   >
-                    {effectiveCrew.length}
-                  </div>
-                </div>
-              </div>
-            </CardSmall>
+                    <div className="flex flex-col h-full justify-between">
+                      {/* Top row: Icon and Label */}
+                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
+                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
+                          <div
+                            className="flex items-center justify-center w-full h-full"
+                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
+                          >
+                            <UserGroupIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            lineHeight: 1,
+                            textAlign: 'right',
+                          }}
+                        >
+                          Crew
+                        </span>
+                      </div>
 
-            {/* Logbook Count Card */}
-            <CardSmall
-              lightMode={true}
-              borderRadius="1rem"
-              borderOpacity={0}
-              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
-              onClick={() => setActiveView('logbooks')}
-              style={{
-                // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'logbooks' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
-              }}
-            >
-              <div className="flex flex-col h-full justify-between">
-                {/* Top row: Icon and Label */}
-                <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                    <div
-                      className="flex items-center justify-center w-full h-full"
-                      style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                      {/* Bottom: Count label and Stat Number */}
+                      <div style={{ marginBottom: '-6px' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            display: 'block',
+                            marginBottom: '-4px',
+                          }}
+                        >
+                          Count
+                        </span>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '24px',
+                            fontWeight: 500,
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          {effectiveCrew.length}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '13px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      lineHeight: 1,
-                      textAlign: 'right',
-                    }}
-                  >
-                    Logbooks
-                  </span>
                 </div>
 
-                {/* Bottom: Count label and Stat Number */}
-                <div style={{ marginBottom: '-6px' }}>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      display: 'block',
-                      marginBottom: '-4px',
-                    }}
-                  >
-                    Count
-                  </span>
+                {/* Logbook Count Card */}
+                <div
+                  className="ai-glass-border cursor-pointer transition-all duration-200"
+                  style={{
+                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'logbooks' ? 0.2 : 0.08),
+                    filter: activeView === 'logbooks' ? 'brightness(0.94)' : undefined,
+                    transform: activeView === 'logbooks' ? 'scale(1.02)' : undefined,
+                  }}
+                  onClick={() => setActiveView('logbooks')}
+                >
                   <div
                     style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '24px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
+                      ...aiGlassLightContentStyle('1rem', 0.6),
+                      padding: '16px',
                     }}
                   >
-                    {effectiveLogbooks.length}
-                  </div>
-                </div>
-              </div>
-            </CardSmall>
+                    <div className="flex flex-col h-full justify-between">
+                      {/* Top row: Icon and Label */}
+                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
+                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
+                          <div
+                            className="flex items-center justify-center w-full h-full"
+                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
+                          >
+                            <CalendarIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            lineHeight: 1,
+                            textAlign: 'right',
+                          }}
+                        >
+                          Logbooks
+                        </span>
+                      </div>
 
-            {/* Role Count Card */}
-            <CardSmall
-              lightMode={true}
-              borderRadius="1rem"
-              borderOpacity={0}
-              contentStyle={{ padding: '16px', background: 'rgb(255, 255, 255)', backdropFilter: 'none' }}
-              onClick={() => setActiveView('roles')}
-              style={{
-                // @ts-ignore - ViewId type inference issue
-                boxShadow: activeView === 'roles' ? 'inset 0 0 0 2px rgba(0, 0, 0, 0.25), 0 4px 24px rgba(0, 0, 0, 0.06)' : '0 1px 3px rgba(0, 0, 0, 0.08)',
-              }}
-            >
-              <div className="flex flex-col h-full justify-between">
-                {/* Top row: Icon and Label */}
-                <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                    <div
-                      className="flex items-center justify-center w-full h-full"
-                      style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                    >
-                      <BriefcaseIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                      {/* Bottom: Count label and Stat Number */}
+                      <div style={{ marginBottom: '-6px' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            display: 'block',
+                            marginBottom: '-4px',
+                          }}
+                        >
+                          Count
+                        </span>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '24px',
+                            fontWeight: 500,
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          {effectiveLogbooks.length}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '13px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      lineHeight: 1,
-                      textAlign: 'right',
-                    }}
-                  >
-                    Roles
-                  </span>
                 </div>
 
-                {/* Bottom: Count label and Stat Number */}
-                <div style={{ marginBottom: '-6px' }}>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 350,
-                      color: '#6B6B6B',
-                      display: 'block',
-                      marginBottom: '-4px',
-                    }}
-                  >
-                    Count
-                  </span>
+                {/* Role Count Card */}
+                <div
+                  className="ai-glass-border cursor-pointer transition-all duration-200"
+                  style={{
+                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'roles' ? 0.2 : 0.08),
+                    filter: activeView === 'roles' ? 'brightness(0.94)' : undefined,
+                    transform: activeView === 'roles' ? 'scale(1.02)' : undefined,
+                  }}
+                  onClick={() => setActiveView('roles')}
+                >
                   <div
                     style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '24px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
+                      ...aiGlassLightContentStyle('1rem', 0.6),
+                      padding: '16px',
                     }}
                   >
-                    {effectiveRoles.length}
+                    <div className="flex flex-col h-full justify-between">
+                      {/* Top row: Icon and Label */}
+                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
+                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
+                          <div
+                            className="flex items-center justify-center w-full h-full"
+                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
+                          >
+                            <BriefcaseIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            lineHeight: 1,
+                            textAlign: 'right',
+                          }}
+                        >
+                          Roles
+                        </span>
+                      </div>
+
+                      {/* Bottom: Count label and Stat Number */}
+                      <div style={{ marginBottom: '-6px' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: 350,
+                            color: '#6B6B6B',
+                            display: 'block',
+                            marginBottom: '-4px',
+                          }}
+                        >
+                          Count
+                        </span>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '24px',
+                            fontWeight: 500,
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          {effectiveRoles.length}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardSmall>
                 </div>
           </CardContainer>
 

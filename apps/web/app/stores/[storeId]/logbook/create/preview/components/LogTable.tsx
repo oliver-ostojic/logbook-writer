@@ -1,4 +1,5 @@
 import React from 'react';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 type TimeRange = {
   startMinutes: number; // minutes from midnight
@@ -738,11 +739,24 @@ export default function LogbookSchedule({
                 className="grid grid-cols-[10rem_auto] border-b border-gray-100"
               >
                 {/* Crew name cell (Y-axis labels) - double-click to toggle edit mode */}
-                <div 
-                  className={`sticky left-4 z-20 flex items-center w-[8rem] border-y border-white/25 bg-white/50 px-3 py-3 text-xs text-gray-900 shadow-sm supports-[backdrop-filter]:backdrop-blur-lg cursor-pointer select-none outline-none ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${isCrewEditing ? 'font-bold' : 'font-medium'}`}
+                <div
+                  className={`ai-glass-border sticky left-4 z-20 w-[8rem] cursor-pointer select-none outline-none ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''}`}
+                  style={aiGlassLightBorderStyle(
+                    isFirst ? '1rem 1rem 0 0' : isLast ? '0 0 1rem 1rem' : '0',
+                    '0, 0, 0',
+                    0.08
+                  )}
                   onDoubleClick={() => handleCrewNameDoubleClick(c.id)}
                 >
-                  <span>{c.name ?? crewNameById.get(c.id) ?? c.id}</span>
+                  <div
+                    className={`flex items-center h-full px-3 py-3 text-xs text-gray-900 ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''} ${isCrewEditing ? 'font-bold' : 'font-medium'}`}
+                    style={aiGlassLightContentStyle(
+                      isFirst ? '1rem 1rem 0 0' : isLast ? '0 0 1rem 1rem' : '0',
+                      0.6
+                    )}
+                  >
+                    <span>{c.name ?? crewNameById.get(c.id) ?? c.id}</span>
+                  </div>
                 </div>
 
                 {/* Timeline grid */}

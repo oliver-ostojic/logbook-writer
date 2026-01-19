@@ -61,7 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           animation: panelSlideIn 0.3s ease-out forwards;
         }
       `}} />
-      <main className="min-h-screen" style={{ backgroundColor: '#faf9f5' }}>
+      <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
         <DashboardHeader
           navLinks={navLinks}
           activeItem={activeNavItem}

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { MinusIcon, PlusIcon } from '@heroicons/react/20/solid'
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass'
 
 export type DailyAssignmentItem = {
   id: string;
@@ -108,7 +109,7 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
 
   return (
     <fieldset>
-      <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => {
           const currentHours = hours[item.id] ?? 0;
           const isSelected = currentHours > 0;
@@ -119,22 +120,27 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
           return (
             <div
               key={item.id}
-              role="checkbox"
-              aria-checked={isSelected}
-              tabIndex={0}
-              onClick={() => toggle(item.id)}
-              onKeyDown={(e) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                  e.preventDefault();
-                  toggle(item.id);
-                }
-              }}
-              className={`group relative flex flex-col rounded-lg border px-5 py-4 cursor-pointer transition-colors ${
-                isSelected
-                  ? 'bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] border-transparent hover:bg-[hsl(var(--brand-h)_var(--brand-s)_calc(var(--brand-l)_-_5%))]'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1.5rem] cursor-pointer`}
+              style={isSelected
+                ? { borderRadius: '1.5rem', position: 'relative' as const, overflow: 'hidden', boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' }
+                : { ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08, '1.6px'), overflow: 'hidden' }}
             >
+              <div
+                role="checkbox"
+                aria-checked={isSelected}
+                tabIndex={0}
+                onClick={() => toggle(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    toggle(item.id);
+                  }
+                }}
+                className="group relative flex flex-col px-5 py-4 rounded-[1.5rem]"
+                style={{
+                  background: isSelected ? 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' : 'white',
+                }}
+              >
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span
@@ -182,6 +188,7 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
                     <span className="inline-block w-6" />
                   </>
                 )}
+              </div>
               </div>
             </div>
           );

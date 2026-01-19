@@ -6,7 +6,7 @@ import RadioGroup from './WindowRoleRadioGroup';
 import DailyAssignmentGrid from './DailyAssignmentGrid';
 import HourlyRoleRow from './HourlyRoleRows';
 import ErrorMessageBox from './ErrorMessageBox';
-import Footer from '../../../../../../../components/Footer';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 type RoleWithCrew = {
   roleId: number;
@@ -628,175 +628,347 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
   }, [saving, storeId, date, windowConstraintDrafts, dailyConstraintDrafts, hourlyConstraintDrafts, API_URL, router, setErrors]);
 
   return (
-      <div className="bg-gray-50 pt-10 pb-6 sm:pt-16 sm:pb-8">
-        <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
-          <p className="text-xl font-medium tracking-tight pb-2 text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-heading)' }}>
-            Define role constraints
-          </p>
-          <p className="text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
-              Decide how each role should be staffed—set hourly targets, total daily hours, and any windows that must stay covered        </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16">
+      <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Error message box */}
           {errors.length > 0 && (
             <div className="rounded-xl overflow-hidden">
               <ErrorMessageBox errors={errors} />
             </div>
           )}
-          
+
           {/* First row (Step 1) */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-lg bg-white rounded-t-[3rem]" />
-            <div className="relative flex h-full flex-col overflow-hidden rounded-t-[3rem]">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 1</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Set coverage windows</p>
-                <p className="mt-2 text-sm/6 text-gray-600">
-                  Define windows for roles that use the same staffing each hour. If a role needs different staffing at different times, you’ll handle that in Hourly Staffing later.
-                </p>
-                {loading ? (
-                  <div className="mt-6 text-sm text-gray-500">Loading available roles...</div>
-                ) : !date ? (
-                  <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
-                ) : rolesWithCrew.length === 0 ? (
-                  <div className="mt-6 text-sm text-gray-500">No roles available for this date. Please ensure crew members have shifts assigned and roles configured.</div>
-                ) : (
-                  <RadioGroup 
-                    roles={rolesWithCrew} 
-                    lockedRoleIds={step3ConfiguredRoles}
-                    onRoleConfigured={handleStep1RoleConfigured}
-                    initialConstraints={initialWindowPrefill}
-                    onConstraintChange={handleWindowConstraintChange}
-                  />
-                )}
+          <div
+            className="ai-glass-border rounded-[1.5rem]"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div
+              className="rounded-[1.5rem]"
+              style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+            >
+              {/* Step number + Title + Description in glass pill card */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: '20px',
+                  }}
+                >
+                  {/* Step number + Title in inner bubble */}
+                  <div className="ai-glass-border mb-3" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                    <div
+                      className="flex items-center gap-2"
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px 6px 6px',
+                      }}
+                    >
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25), width: 24, height: 24 }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 1),
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))',
+                            backdropFilter: 'none',
+                            WebkitBackdropFilter: 'none',
+                            background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08)',
+                          }}
+                        >
+                          1
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 500, color: '#2C2C2C', fontFamily: 'var(--font-open-sans)', fontSize: '14px' }}>Set coverage windows</span>
+                    </div>
+                  </div>
+                  <p className="text-sm/6 text-gray-600">
+                    Define windows for roles that use the same staffing each hour. If a role needs different staffing at different times, you'll handle that in Hourly Staffing later.
+                  </p>
+                </div>
               </div>
+              {loading ? (
+                <div className="mt-6 text-sm text-gray-500">Loading available roles...</div>
+              ) : !date ? (
+                <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
+              ) : rolesWithCrew.length === 0 ? (
+                <div className="mt-6 text-sm text-gray-500">No roles available for this date. Please ensure crew members have shifts assigned and roles configured.</div>
+              ) : (
+                <div className="ai-glass-border mt-6" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                  <div style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '20px' }}>
+                    <RadioGroup
+                      roles={rolesWithCrew}
+                      lockedRoleIds={step3ConfiguredRoles}
+                      onRoleConfigured={handleStep1RoleConfigured}
+                      initialConstraints={initialWindowPrefill}
+                      onConstraintChange={handleWindowConstraintChange}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 rounded-t-[3rem]" />
           </div>
 
           {/* Second row (Step 2) */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-lg bg-white" />
-            <div className="relative flex h-full flex-col overflow-hidden">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 2</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Set daily role requirements</p>
-                <div className="mt-2 flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <p className="text-sm/6 text-gray-600">
-                    Specify how many hours each role needs to work throughout the entire day.
-                  </p>
-                  <label className="mt-2 lg:mt-0 flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      id="select-all-daily"
-                      name="select-all-daily"
-                      type="checkbox"
-                      checked={selectAllDaily}
-                      onChange={(e) => setSelectAllDaily(e.target.checked)}
-                      aria-describedby="select-all-daily-description"
-                      className="appearance-none rounded border border-gray-300 bg-white checked:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] checked:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] indeterminate:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] indeterminate:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
-                    />
-                    <span>Select all</span>
-                  </label>
+          <div
+            className="ai-glass-border rounded-[1.5rem]"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div className="rounded-[1.5rem]" style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}>
+              {/* Step number + Title + Description in glass pill card */}
+              <div className="ai-glass-border mb-4" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: '20px',
+                  }}
+                >
+                  {/* Step number + Title in inner bubble */}
+                  <div className="ai-glass-border mb-3" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                    <div
+                      className="flex items-center gap-2"
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px 6px 6px',
+                      }}
+                    >
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25), width: 24, height: 24 }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 1),
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))',
+                            backdropFilter: 'none',
+                            WebkitBackdropFilter: 'none',
+                            background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08)',
+                          }}
+                        >
+                          2
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 500, color: '#2C2C2C', fontFamily: 'var(--font-open-sans)', fontSize: '14px' }}>Set daily role requirements</span>
+                    </div>
+                  </div>
+                  {/* Description + Select all on the same row */}
+                  <div className="flex justify-between items-center gap-4">
+                    <p className="text-sm/6 text-gray-600">
+                      Specify how many hours each role needs to work throughout the entire day.
+                    </p>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 shrink-0">
+                      <input
+                        id="select-all-daily"
+                        name="select-all-daily"
+                        type="checkbox"
+                        checked={selectAllDaily}
+                        onChange={(e) => setSelectAllDaily(e.target.checked)}
+                        aria-describedby="select-all-daily-description"
+                        className="appearance-none rounded border border-gray-300 bg-white checked:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] checked:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] indeterminate:border-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] indeterminate:bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
+                      />
+                      <span>Select all</span>
+                    </label>
+                  </div>
                 </div>
-                {/* Override native hover visuals for the select-all checkbox */}
-                <style jsx>{`
-                  /* Preserve visual state on hover */
-                  input#select-all-daily:hover:not(:checked) {
-                    background-color: white; /* keep same as default */
-                    border-color: #d1d5db; /* gray-300 */
-                    box-shadow: none;
-                  }
-                  input#select-all-daily:hover:checked {
-                    background-color: hsl(var(--brand-h) var(--brand-s) var(--brand-l));
-                    border-color: hsl(var(--brand-h) var(--brand-s) var(--brand-l));
-                    box-shadow: none;
-                  }
-                `}</style>
-                {loading ? (
-                  <div className="mt-6 text-sm text-gray-500">Loading daily roles...</div>
-                ) : !date ? (
-                  <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
-                ) : dailyRoles.length === 0 ? (
-                  <div className="mt-6 text-sm text-gray-500">No daily roles available for this date.</div>
-                ) : (
-                  <DailyAssignmentGrid
-                    items={dailyConstraintItems}
-                    selectAll={selectAllDaily}
-                    initialAssignments={initialDailyPrefill}
-                    onAssignmentsChange={handleDailyAssignmentsChange}
-                  />
-                )}
               </div>
+              {/* Override native hover visuals for the select-all checkbox */}
+              <style jsx>{`
+                /* Preserve visual state on hover */
+                input#select-all-daily:hover:not(:checked) {
+                  background-color: white; /* keep same as default */
+                  border-color: #d1d5db; /* gray-300 */
+                  box-shadow: none;
+                }
+                input#select-all-daily:hover:checked {
+                  background-color: hsl(var(--brand-h) var(--brand-s) var(--brand-l));
+                  border-color: hsl(var(--brand-h) var(--brand-s) var(--brand-l));
+                  box-shadow: none;
+                }
+              `}</style>
+              {loading ? (
+                <div className="mt-6 text-sm text-gray-500">Loading daily roles...</div>
+              ) : !date ? (
+                <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
+              ) : dailyRoles.length === 0 ? (
+                <div className="mt-6 text-sm text-gray-500">No daily roles available for this date.</div>
+              ) : (
+                <div className="ai-glass-border mt-6" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                  <div style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '20px' }}>
+                    <DailyAssignmentGrid
+                      items={dailyConstraintItems}
+                      selectAll={selectAllDaily}
+                      initialAssignments={initialDailyPrefill}
+                      onAssignmentsChange={handleDailyAssignmentsChange}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5" />
           </div>
 
           {/* Third row (Step 3) */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-lg bg-white" />
-            <div className="relative flex flex-col overflow-hidden">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 3</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Set hourly staffing requirements</p>
-                <p className="mt-2 text-sm/6 text-gray-600 pb-4">
-                  Click on each hour below to specify how many crew members you need for each role during that time period.
-                </p>
-                
-                {loading ? (
-                  <div className="mt-6 text-sm text-gray-500">Loading hourly data...</div>
-                ) : !date ? (
-                  <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
-                ) : hourlyAvailability.length === 0 ? (
-                  <div className="mt-6 text-sm text-gray-500">No crew availability data for this date.</div>
-                ) : hourlyRoles.length === 0 ? (
-                  <div className="mt-6 text-sm text-gray-500">No hourly roles are available for this store.</div>
-                ) : (
-                  <HourlyRoleRow 
-                    hourlyData={hourlyAvailability} 
-                    roles={hourlyRoles}
-                    lockedRoleIds={step1ConfiguredRoles}
-                    onRoleConfigured={handleStep3RoleConfigured}
-                    initialConstraints={initialHourlyPrefill}
-                    onHourlyConstraintsChange={handleHourlyConstraintsChange}
-                    storeHours={storeHours}
-                  />
-                )}
+          <div
+            className="ai-glass-border rounded-[1.5rem]"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div className="rounded-[1.5rem]" style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}>
+              {/* Step number + Title + Description in glass pill card */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem'), marginBottom: '6px' }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: '20px',
+                  }}
+                >
+                  {/* Step number + Title in inner bubble */}
+                  <div className="ai-glass-border mb-3" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                    <div
+                      className="flex items-center gap-2"
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px 6px 6px',
+                      }}
+                    >
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25), width: 24, height: 24 }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 1),
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))',
+                            backdropFilter: 'none',
+                            WebkitBackdropFilter: 'none',
+                            background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08)',
+                          }}
+                        >
+                          3
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 500, color: '#2C2C2C', fontFamily: 'var(--font-open-sans)', fontSize: '14px' }}>Set hourly staffing requirements</span>
+                    </div>
+                  </div>
+                  <p className="text-sm/6 text-gray-600">
+                    Click on each hour below to specify how many crew members you need for each role during that time period.
+                  </p>
+                </div>
               </div>
+
+              {loading ? (
+                <div className="mt-6 text-sm text-gray-500">Loading hourly data...</div>
+              ) : !date ? (
+                <div className="mt-6 text-sm text-red-600">No date selected. Please select shifts first.</div>
+              ) : hourlyAvailability.length === 0 ? (
+                <div className="mt-6 text-sm text-gray-500">No crew availability data for this date.</div>
+              ) : hourlyRoles.length === 0 ? (
+                <div className="mt-6 text-sm text-gray-500">No hourly roles are available for this store.</div>
+              ) : (
+                <HourlyRoleRow
+                  hourlyData={hourlyAvailability}
+                  roles={hourlyRoles}
+                  lockedRoleIds={step1ConfiguredRoles}
+                  onRoleConfigured={handleStep3RoleConfigured}
+                  initialConstraints={initialHourlyPrefill}
+                  onHourlyConstraintsChange={handleHourlyConstraintsChange}
+                  storeHours={storeHours}
+                />
+              )}
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5" />
           </div>
 
           {/* Fourth row (Step 4) */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-lg bg-white rounded-b-[3rem]" />
-            <div className="relative flex flex-col overflow-hidden rounded-b-[3rem]">
-              <div className="p-10 pt-10">
-                <h3 className="text-sm/4 font-semibold text-gray-500">Step 4</h3>
-                <p className="mt-2 text-xl font-medium tracking-tight text-gray-700" style={{ fontFamily: 'var(--font-heading)' }}>Generate logbook</p>
-                <p className="mt-2 text-sm/6 text-gray-600">
-                  Review your setup, then hit <em>Finish</em> to save today's coverage windows, role rules, and hourly staffing for the solver.
-                </p>
-                
-                <div className="mt-5">
-                  <button
-                    type="button"
-                    onClick={handleFinish}
-                    disabled={saving}
-                    className={`inline-flex items-center rounded-md px-5 py-2 text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                      saving
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed focus-visible:outline-gray-300'
-                        : 'bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] text-white hover:bg-[hsl(var(--brand-h)_var(--brand-s)_calc(var(--brand-l)_-_5%))] focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]'
-                    }`}
-                  >
-                    {saving ? 'Finishing…' : 'Finish'}
-                  </button>
+          <div
+            className="ai-glass-border rounded-[1.5rem]"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div
+              className="rounded-[1.5rem]"
+              style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+            >
+              {/* Step number + Title + Description in glass pill card */}
+              <div className="ai-glass-border mb-4" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: '20px',
+                  }}
+                >
+                  {/* Step number + Title in inner bubble */}
+                  <div className="ai-glass-border mb-3" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                    <div
+                      className="flex items-center gap-2"
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px 6px 6px',
+                      }}
+                    >
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25), width: 24, height: 24 }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 1),
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))',
+                            backdropFilter: 'none',
+                            WebkitBackdropFilter: 'none',
+                            background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.08)',
+                          }}
+                        >
+                          4
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 500, color: '#2C2C2C', fontFamily: 'var(--font-open-sans)', fontSize: '14px' }}>Generate logbook</span>
+                    </div>
+                  </div>
+                  <p className="text-sm/6 text-gray-600">
+                    Review your setup, then hit <em>Finish</em> to save today's coverage windows, role rules, and hourly staffing for the solver.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
+                  <div style={{ ...aiGlassLightContentStyle('9999px', 0.6) }}>
+                    <button
+                      type="button"
+                      onClick={handleFinish}
+                      disabled={saving}
+                      className={`w-full rounded-full px-5 py-3 text-sm font-semibold font-sans border-0 focus:outline-none focus:ring-0 transition-colors ${
+                        saving
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] text-white hover:bg-[hsl(var(--brand-h)_var(--brand-s)_calc(var(--brand-l)_-_5%))]'
+                      }`}
+                      style={{ outline: 'none', boxShadow: 'none' }}
+                    >
+                      {saving ? 'Finishing…' : 'Finish'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute inset-0 rounded-lg shadow-sm outline outline-1 outline-black/5 rounded-b-[3rem]" />
           </div>
         </div>
-        <Footer />
       </div>
-    </div>
   )
 }

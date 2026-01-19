@@ -39,14 +39,9 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
     return { ...step, status, href };
   });
 
-  // Calculate padding based on current step position
-  const currentStepIndex = steps.findIndex(s => s.status === 'current');
-  const isFirstStep = currentStepIndex === 0;
-  const isLastStep = currentStepIndex === steps.length - 1;
-
-  // Match padding on all sides when on first or last step
-  const paddingHorizontal = (isFirstStep || isLastStep) ? '48px' : '32px';
-  const paddingVertical = (isFirstStep || isLastStep) ? '34px' : '18px'; // 14px less than horizontal
+  // Use consistent padding across all steps
+  const paddingHorizontal = '48px';
+  const paddingVertical = '34px';
 
   // Glass pill circle for step number
   const StepCircle = ({

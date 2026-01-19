@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Footer from '../../../../../../../components/Footer';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -74,7 +74,7 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
   };
 
   return (
-      <div className="relative isolate bg-white pb-16 pt-16 sm:pt-24">
+      <div className="relative isolate pt-10 pb-10 sm:pt-16 sm:pb-16">
         <div
           aria-hidden="true"
           className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 transform-gpu overflow-hidden opacity-30 blur-3xl"
@@ -106,34 +106,41 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
-          <p className="mt-4 text-balance text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+          <p className="mt-4 text-balance text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-open-sans)' }}>
             Logbook published successfully.
           </p>
-          <p className="p-6 text-lg/8 text-gray-600 sm:p-12">
+          <p className="p-6 text-lg/8 text-gray-600 sm:p-12" style={{ fontFamily: 'var(--font-open-sans)' }}>
             Your logbook is now live and accessible to your team. You can always come back to make adjustments or
             create new logbooks for future dates.
             </p>
         </div>
         <div className="mx-auto mt-2 max-w-2xl text-sm/6 text-gray-900">
-          <figure className="rounded-2xl bg-white p-6 shadow-lg ring-1 ring-gray-900/5 sm:p-8">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">Date</span>
-              <span className="text-sm font-semibold text-gray-900">{logbookDate || 'Loading...'}</span>
-            </div>
-            <div className="my-4 border-t border-gray-200" />
-            <button 
-              onClick={handleDownloadPdf}
-              disabled={!hasPdf || isDownloading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          <div
+            className="ai-glass-border rounded-2xl"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div
+              className="rounded-2xl"
+              style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '1.5rem' }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              {isDownloading ? 'Downloading...' : hasPdf ? 'Download PDF' : 'PDF not available'}
-            </button>
-          </figure>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-500" style={{ fontFamily: 'var(--font-open-sans)' }}>Date</span>
+                <span className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'var(--font-open-sans)' }}>{logbookDate || 'Loading...'}</span>
+              </div>
+              <div className="my-4 border-t border-gray-200" />
+              <button
+                onClick={handleDownloadPdf}
+                disabled={!hasPdf || isDownloading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                {isDownloading ? 'Downloading...' : hasPdf ? 'Download PDF' : 'PDF not available'}
+              </button>
+            </div>
+          </div>
         </div>
-        <Footer />
       </div>
     </div>
   )

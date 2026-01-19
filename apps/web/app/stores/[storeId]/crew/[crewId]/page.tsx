@@ -97,7 +97,7 @@ export default function CrewPage() {
   const preferencesCount = preferences.length;
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#faf9f5' }}>
+    <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
       <DashboardHeader navLinks={navLinks} activeItem="Crew" lightMode={true} />
 

@@ -49,7 +49,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#faf9f5' }}>
+    <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
       <DashboardHeader navLinks={navLinks} activeItem="Settings" lightMode={true} />
 
