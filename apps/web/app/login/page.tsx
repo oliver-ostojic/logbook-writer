@@ -15,45 +15,51 @@ export default function LoginPage() {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center gap-6 relative"
+      className="min-h-screen relative"
       style={{ backgroundColor: '#f0eee6' }}
     >
-      {/* Brand title - outer card with pill shape matching inner */}
+      {/* Brand title - fixed at top center */}
       <div
-        className="ai-glass-border"
-        style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
+        className="absolute top-6 left-1/2 -translate-x-1/2"
+        style={{ zIndex: 10 }}
       >
         <div
-          style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '16px' }}
+          className="ai-glass-border"
+          style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
         >
-          {/* Inner pill for the title text */}
           <div
-            className="ai-glass-border"
-            style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
+            style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '16px' }}
           >
+            {/* Inner pill for the title text */}
             <div
-              style={{
-                ...aiGlassLightContentStyle('9999px', 0.6),
-                padding: '12px 48px',
-              }}
+              className="ai-glass-border"
+              style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
             >
               <div
                 style={{
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '20px',
-                  color: '#2C2C2C',
-                  textAlign: 'center',
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '12px 48px',
                 }}
               >
-                <span style={{ fontWeight: 600 }}>Logbook </span>
-                <span style={{ fontWeight: 600 }}>writer</span>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '20px',
+                    color: '#2C2C2C',
+                    textAlign: 'center',
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>Logbook </span>
+                  <span style={{ fontWeight: 600 }}>writer</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Outer wrapper card containing login form and continue button */}
+      {/* Outer wrapper card containing login form and continue button - centered */}
+      <div className="min-h-screen flex items-center justify-center">
       <div
         className="ai-glass-border rounded-[1.5rem]"
         style={{ ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08), width: '600px' }}
@@ -150,6 +156,7 @@ export default function LoginPage() {
                               type="text"
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
+                              className="focus:outline-none focus:ring-0"
                               style={{
                                 ...aiGlassLightContentStyle('9999px', 0.4),
                                 padding: '10px 18px',
@@ -175,6 +182,7 @@ export default function LoginPage() {
                               type="password"
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
+                              className="focus:outline-none focus:ring-0"
                               style={{
                                 ...aiGlassLightContentStyle('9999px', 0.4),
                                 padding: '10px 18px',
@@ -220,6 +228,7 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </main>
   );
