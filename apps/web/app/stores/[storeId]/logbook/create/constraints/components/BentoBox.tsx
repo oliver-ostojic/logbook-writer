@@ -628,20 +628,29 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
   }, [saving, storeId, date, windowConstraintDrafts, dailyConstraintDrafts, hourlyConstraintDrafts, API_URL, router, setErrors]);
 
   return (
-      <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 gap-6">
-            {/* Error message box */}
-          {errors.length > 0 && (
-            <div className="rounded-xl overflow-hidden">
-              <ErrorMessageBox errors={errors} />
-            </div>
-          )}
+    <div className="flex flex-col gap-6">
+      {/* Error message box - outside outer card */}
+      {errors.length > 0 && (
+        <div className="rounded-xl overflow-hidden">
+          <ErrorMessageBox errors={errors} />
+        </div>
+      )}
 
-          {/* First row (Step 1) */}
-          <div
-            className="ai-glass-border rounded-[1.5rem]"
-            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-          >
+      {/* All steps wrapped in outer glass pill card */}
+      <div
+        className="ai-glass-border rounded-[1.5rem]"
+        style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+      >
+        <div
+          className="rounded-[1.5rem]"
+          style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+        >
+          <div className="grid grid-cols-1 gap-6">
+            {/* First row (Step 1) */}
+            <div
+              className="ai-glass-border rounded-[1.5rem]"
+              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+            >
             <div
               className="rounded-[1.5rem]"
               style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
@@ -968,7 +977,9 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
+    </div>
   )
 }

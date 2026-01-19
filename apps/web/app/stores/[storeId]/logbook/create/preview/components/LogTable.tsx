@@ -92,7 +92,7 @@ type LogbookScheduleProps = {
 };
 
 const ASSIGNMENT_PILL_BASE_CLASSES =
-  'flex w-full items-center justify-center rounded-lg px-3 text-[11px] font-bold shadow-sm transition-colors duration-150';
+  'flex w-full items-center justify-center rounded-2xl px-3 text-[11px] font-bold shadow-sm transition-colors duration-150 border border-black/[0.08]';
 
 // Wiggle animation CSS (injected via style tag)
 const WIGGLE_KEYFRAMES = `
@@ -741,11 +741,14 @@ export default function LogbookSchedule({
                 {/* Crew name cell (Y-axis labels) - double-click to toggle edit mode */}
                 <div
                   className={`ai-glass-border sticky left-4 z-20 w-[8rem] cursor-pointer select-none outline-none ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''}`}
-                  style={aiGlassLightBorderStyle(
-                    isFirst ? '1rem 1rem 0 0' : isLast ? '0 0 1rem 1rem' : '0',
-                    '0, 0, 0',
-                    0.08
-                  )}
+                  style={{
+                    ...aiGlassLightBorderStyle(
+                      isFirst ? '1rem 1rem 0 0' : isLast ? '0 0 1rem 1rem' : '0',
+                      '0, 0, 0',
+                      0.08
+                    ),
+                    position: 'sticky',  // Override the 'relative' from aiGlassLightBorderStyle
+                  }}
                   onDoubleClick={() => handleCrewNameDoubleClick(c.id)}
                 >
                   <div

@@ -46,43 +46,35 @@ export default function BentoBox() {
   
   return (
     <>
-      <div className="pt-10 pb-10 sm:pt-16 sm:pb-16">
-        <div className="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
-          <h2 className="text-xl font-medium text-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]" style={{ fontFamily: 'var(--font-open-sans)' }}>Review draft</h2>
-          <p className="mt-2 text-pretty text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl" style={{ fontFamily: 'var(--font-open-sans)' }}>
-              Preview your logbook, tweak any assignments, and review key stats before you publish.
-          </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16">
-            {/* Stats bento box */}
-            <div
-              ref={statsBentoRef}
-              className="ai-glass-border rounded-[1.5rem]"
-              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-            >
-              <div
-                className="w-full overflow-hidden rounded-[1.5rem]"
-                style={aiGlassLightContentStyle('1.5rem', 0.6)}
-              >
-                <Stats
-                  metadata={preview?.metadata}
-                  preferenceMetadata={preview?.preferenceMetadata}
-                  loading={loading}
-                />
-              </div>
-            </div>
-            {/* Table bento box */}
-            <div
-              ref={tableRef}
-              className="ai-glass-border rounded-[1.5rem]"
-              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-            >
-              <div
-                className="w-full overflow-hidden rounded-[1.5rem]"
-                style={aiGlassLightContentStyle('1.5rem', 0.6)}
-              >
-                <LogbookView preview={preview} loading={loading} error={error} />
-              </div>
-            </div>
+      <div className="grid grid-cols-1 gap-6">
+        {/* Stats bento box */}
+        <div
+          ref={statsBentoRef}
+          className="ai-glass-border rounded-[1.5rem]"
+          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+        >
+          <div
+            className="w-full overflow-hidden rounded-[1.5rem]"
+            style={aiGlassLightContentStyle('1.5rem', 0.6)}
+          >
+            <Stats
+              metadata={preview?.metadata}
+              preferenceMetadata={preview?.preferenceMetadata}
+              loading={loading}
+            />
+          </div>
+        </div>
+        {/* Table bento box */}
+        <div
+          ref={tableRef}
+          className="ai-glass-border rounded-[1.5rem]"
+          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+        >
+          <div
+            className="w-full overflow-hidden rounded-[1.5rem]"
+            style={aiGlassLightContentStyle('1.5rem', 0.6)}
+          >
+            <LogbookView preview={preview} loading={loading} error={error} />
           </div>
         </div>
       </div>

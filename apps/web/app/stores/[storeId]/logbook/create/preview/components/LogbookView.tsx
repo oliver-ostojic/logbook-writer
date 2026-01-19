@@ -5,6 +5,7 @@ import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import LogTable, { type AssignmentEditPayload } from './LogTable';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 type PreviewAssignment = {
   id: string;
@@ -446,60 +447,82 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
   return (
     <>
       {/* Table section */}
-      <div className="px-10 py-10 space-y-6">
-        <div className="flex flex-wrap items-center gap-2.5 lg:gap-4">
-          <h3
-            className="flex-1 text-2xl font-semibold tracking-tight text-gray-900 lg:text-3xl"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            Logbook Preview
-          </h3>
-          <Menu as="div" className="relative inline-flex text-left">
-            <MenuButton className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:text-sm sm:px-3 sm:py-2">
-              {currentFilterLabel}
-              <ChevronDownIcon aria-hidden="true" className="size-4 text-gray-400" />
-            </MenuButton>
-            <MenuItems
-              anchor="bottom end"
-              className="z-50 mt-2 w-48 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
-            >
-              <div className="py-1 text-sm text-gray-700">
-                <MenuItem>
-                  {({ active }) => (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedStartTime(null)}
-                      className={`block w-full px-4 py-2 text-left ${active ? 'bg-gray-100 text-gray-900' : ''} ${selectedStartTime === null ? 'font-semibold text-gray-900' : ''}`}
-                    >
-                      Show all
-                    </button>
-                  )}
-                </MenuItem>
-                {uniqueStartTimes.map((startMinutes) => (
-                  <MenuItem key={startMinutes}>
-                    {({ active }) => (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStartTime(startMinutes)}
-                        className={`block w-full px-4 py-2 text-left ${active ? 'bg-gray-100 text-gray-900' : ''} ${selectedStartTime === startMinutes ? 'font-semibold text-gray-900' : ''}`}
-                      >
-                        Starts at {formatTimeLabel(startMinutes)}
-                      </button>
-                    )}
-                  </MenuItem>
-                ))}
+      <div className="px-6 py-6 space-y-6">
+        {/* Header row in glass pill card */}
+        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+          <div className="flex items-center justify-between gap-4" style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '16px 20px' }}>
+            {/* Title bubble */}
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+              <div style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '6px 16px' }}>
+                <span className="text-sm font-medium text-gray-700 font-sans">Logbook Preview</span>
               </div>
-            </MenuItems>
-          </Menu>
-          <div className="hidden sm:block h-6 w-px bg-gray-300" />
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={isPublishing}
-            className={`rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] hover:opacity-90 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] ${isPublishing ? 'opacity-50' : ''}`}
-          >
-            {isPublishing ? 'Publishing...' : localEdits.size > 0 ? `Publish (${localEdits.size} changes)` : 'Publish'}
-          </button>
+            </div>
+
+            {/* Right side: dropdown and publish button */}
+            <div className="flex items-center gap-3">
+              {/* Show all dropdown as glass pill */}
+              <Menu as="div" className="relative inline-flex text-left">
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                  <MenuButton
+                    className="inline-flex items-center gap-1.5 rounded-full text-sm font-medium text-gray-700 font-sans hover:bg-white/40 transition-colors"
+                    style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '6px 14px' }}
+                  >
+                    {currentFilterLabel}
+                    <ChevronDownIcon aria-hidden="true" className="size-4 text-gray-500" />
+                  </MenuButton>
+                </div>
+                <MenuItems
+                  anchor="bottom end"
+                  className="z-50 mt-2 w-48 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
+                >
+                  <div className="py-1 text-sm text-gray-700">
+                    <MenuItem>
+                      {({ active }) => (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStartTime(null)}
+                          className={`block w-full px-4 py-2 text-left ${active ? 'bg-gray-100 text-gray-900' : ''} ${selectedStartTime === null ? 'font-semibold text-gray-900' : ''}`}
+                        >
+                          Show all
+                        </button>
+                      )}
+                    </MenuItem>
+                    {uniqueStartTimes.map((startMinutes) => (
+                      <MenuItem key={startMinutes}>
+                        {({ active }) => (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStartTime(startMinutes)}
+                            className={`block w-full px-4 py-2 text-left ${active ? 'bg-gray-100 text-gray-900' : ''} ${selectedStartTime === startMinutes ? 'font-semibold text-gray-900' : ''}`}
+                          >
+                            Starts at {formatTimeLabel(startMinutes)}
+                          </button>
+                        )}
+                      </MenuItem>
+                    ))}
+                  </div>
+                </MenuItems>
+              </Menu>
+
+              {/* Publish button as glass pill with red theme */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.4), width: 'fit-content' }}>
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className={`inline-flex items-center rounded-full text-sm font-semibold font-sans transition-colors ${isPublishing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-100/60'}`}
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+                    color: 'rgb(185, 28, 28)',
+                    padding: '6px 16px'
+                  }}
+                >
+                  {isPublishing ? 'Publishing...' : localEdits.size > 0 ? `Publish (${localEdits.size} changes)` : 'Publish'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {statusMessage && (

@@ -133,7 +133,7 @@ export default function CrewShiftTable(props: any) {
         className="ai-glass-border overflow-hidden rounded-[1rem]"
         style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
       >
-        <div className="max-h-[480px] overflow-y-auto">
+        <div className="max-h-[465px] overflow-y-auto">
           <table className="relative min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>

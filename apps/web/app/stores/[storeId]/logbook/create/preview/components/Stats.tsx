@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { LogbookMetadata, PreferenceMetadata, QuotaWarning } from './LogbookView';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -108,18 +109,19 @@ function formatPercent(value: number): string {
   return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
 }
 
-function getBadgeColorClasses(color: Badge['color']): string {
+// Returns RGB color values for badge border and text color for badge
+function getBadgeColors(color: Badge['color']): { rgb: string; textClass: string; bgRgba: string } {
   switch (color) {
     case 'green':
-      return 'text-green-700 bg-green-50 ring-green-600/20';
+      return { rgb: '34, 197, 94', textClass: 'text-green-700', bgRgba: 'rgba(34, 197, 94, 0.08)' };
     case 'blue':
-      return 'text-blue-700 bg-blue-50 ring-blue-600/20';
+      return { rgb: '59, 130, 246', textClass: 'text-blue-700', bgRgba: 'rgba(59, 130, 246, 0.08)' };
     case 'amber':
-      return 'text-amber-700 bg-amber-50 ring-amber-600/20';
+      return { rgb: '245, 158, 11', textClass: 'text-amber-700', bgRgba: 'rgba(245, 158, 11, 0.08)' };
     case 'red':
-      return 'text-red-700 bg-red-50 ring-red-600/20';
+      return { rgb: '239, 68, 68', textClass: 'text-red-700', bgRgba: 'rgba(239, 68, 68, 0.08)' };
     case 'gray':
-      return 'text-gray-700 bg-gray-50 ring-gray-600/20';
+      return { rgb: '107, 114, 128', textClass: 'text-gray-700', bgRgba: 'rgba(107, 114, 128, 0.08)' };
   }
 }
 
@@ -244,42 +246,45 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
   }
 
   return (
-    <div className="relative isolate overflow-hidden">
-      <div className="border-b border-b-gray-900/10 lg:border-t lg:border-t-gray-900/5">
-        <dl className="mx-auto grid max-w-7xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:px-2 xl:px-0">
-          {stats.map((stat, statIdx) => (
+    <div className="relative isolate overflow-hidden px-6 py-6">
+      <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => {
+          const badgeColors = getBadgeColors(stat.badge.color);
+          return (
             <div
               key={stat.name}
-              className={classNames(
-                statIdx % 2 === 1 ? 'sm:border-l' : statIdx === 2 ? 'lg:border-l' : '',
-                'flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:px-6 lg:border-t-0 xl:px-8',
-              )}
+              className="ai-glass-border rounded-[1.5rem]"
+              style={aiGlassLightBorderStyle('1.5rem')}
             >
-              <dt className="text-sm/6 font-medium text-gray-500">
-                {'label' in stat && stat.label && (
-                  <span className="block text-xs text-gray-400 mb-0.5">{stat.label}</span>
-                )}
-                {stat.name}
-              </dt>
-              <dd
-                className={classNames(
-                  getBadgeColorClasses(stat.badge.color),
-                  'rounded-md px-2 py-1 text-sm font-semibold ring-1 ring-inset',
-                )}
+              <div
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 rounded-[1.5rem]"
+                style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '16px 20px' }}
               >
-                {stat.badge.label}
-              </dd>
-              <dd className="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">
-                {stat.value}
-              </dd>
+                <dt className="text-sm/6 font-medium text-gray-500">
+                  {'label' in stat && stat.label && (
+                    <span className="block text-xs text-gray-400 mb-0.5">{stat.label}</span>
+                  )}
+                  {stat.name}
+                </dt>
+                <dd>
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', badgeColors.rgb, 0.4), width: 'fit-content' }}>
+                    <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('9999px', 0.6), backgroundColor: badgeColors.bgRgba, padding: '4px 12px' }}>
+                      <span className={`text-sm font-semibold font-sans ${badgeColors.textClass}`}>{stat.badge.label}</span>
+                    </div>
+                  </div>
+                </dd>
+                <dd className="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900 mt-2">
+                  {stat.value}
+                </dd>
+              </div>
             </div>
-          ))}
-        </dl>
-      </div>
+          );
+        })}
+      </dl>
 
       {/* Quota Warnings Section */}
       {quotaWarnings.length > 0 && (
-        <div className="border-t border-gray-900/5 px-4 py-6 sm:px-6 xl:px-8">
+        <div className="mt-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

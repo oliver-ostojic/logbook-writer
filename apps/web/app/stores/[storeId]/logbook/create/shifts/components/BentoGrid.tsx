@@ -10,7 +10,7 @@ import dayjs from "dayjs";
 import CrewShiftTable from "./CrewShiftTable";
 import CrewCounter from './CrewCounter';
 import ShiftValidationBox from './ShiftValidationBox';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 type CrewMember = {
   id: number; // local numeric id for UI (used for display only)
@@ -277,86 +277,101 @@ export default function BentoGrid() {
   }, [selectedCrew, shiftTimes]);
 
   return (
-      <div className="flex flex-col gap-6">
-        {/* Shift validation errors */}
-        {shiftValidationErrors.length > 0 && (
-          <div>
-            <ShiftValidationBox errors={shiftValidationErrors} />
-          </div>
-        )}
+    <div className="flex flex-col gap-6">
+      {/* Shift validation errors */}
+      {shiftValidationErrors.length > 0 && (
+        <div>
+          <ShiftValidationBox errors={shiftValidationErrors} />
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left column - Steps 1 and 3 */}
-          <div className="flex flex-col gap-6 lg:col-span-1">
-            {/* Top-left tile - Date selection */}
-            <GlassPillCard
-              borderRadius="1.5rem"
-              padding="24px"
-              contentStyle={{ display: 'block' }}
-            >
-              <StepTitle number={1} title="Choose the date" />
-              <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
-            </GlassPillCard>
+      {/* All steps wrapped in outer glass pill card */}
+      <div
+        className="ai-glass-border rounded-[1.5rem]"
+        style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+      >
+        <div
+          className="rounded-[1.5rem]"
+          style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+        >
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Left column - Steps 1 and 3 */}
+            <div className="flex flex-col gap-6 lg:col-span-1">
+              {/* Step 1 - Date selection */}
+              <div
+                className="ai-glass-border rounded-[1.5rem]"
+                style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+              >
+                <div
+                  className="rounded-[1.5rem]"
+                  style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+                >
+                  <StepTitle number={1} title="Choose the date" />
+                  <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
+                </div>
+              </div>
 
-            {/* Bottom-left tile - Review & save */}
+              {/* Step 3 - Review & save */}
+              <div
+                className="ai-glass-border rounded-[1.5rem]"
+                style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+              >
+                <div
+                  className="rounded-[1.5rem]"
+                  style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+                >
+                  <StepTitle number={3} title="Review & save shifts" />
+                  <p className="mt-4 text-sm/6 text-gray-600">
+                    When everything looks good, hit <em>Continue</em> to save today's shifts and move on to role constraints.
+                  </p>
+                  <SaveAndNext
+                    storeId={storeId}
+                    selectedDate={selectedDate}
+                    selectedCrew={selectedCrew}
+                    shiftTimes={shiftTimes}
+                    hasValidationErrors={shiftValidationErrors.length > 0}
+                    onNavigate={(path) => router.push(path)}
+                    onSaveSuccess={() => localStorage.removeItem(getLocalStorageKey(selectedDate))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right column - Step 2 Crew selection */}
             <div
-              className="ai-glass-border rounded-[1.5rem]"
+              className="ai-glass-border lg:col-span-2 rounded-[1.5rem]"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
             >
               <div
                 className="rounded-[1.5rem]"
                 style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
               >
-                <StepTitle number={3} title="Review & save shifts" />
-                <p className="mt-4 text-sm/6 text-gray-600">
-                  When everything looks good, hit <em>Continue</em> to save today's shifts and move on to role constraints.
-                </p>
-                <SaveAndNext
-                  storeId={storeId}
-                  selectedDate={selectedDate}
+                <StepTitle number={2} title="Select crew" />
+                <div className="flex gap-6 flex-shrink-0 mt-4">
+                  <div className="flex-1">
+                    <div className="flex flex-row gap-10">
+                      <div className="flex-1">
+                        <CrewCombobox people={availablePeople} onSelectCrew={handleAddCrew} loading={loadingPeople} />
+                      </div>
+                      <div className="flex-shrink-0 mt-2">
+                        <CrewCounter count={selectedCrew.length} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <CrewShiftTable
                   selectedCrew={selectedCrew}
-                  shiftTimes={shiftTimes}
-                  hasValidationErrors={shiftValidationErrors.length > 0}
-                  onNavigate={(path) => router.push(path)}
-                  onSaveSuccess={() => localStorage.removeItem(getLocalStorageKey(selectedDate))}
+                  onRemoveCrew={handleRemoveCrew}
+                  initialShiftTimes={initialShiftTimes}
+                  onShiftTimesChange={setShiftTimes}
                 />
               </div>
             </div>
           </div>
-
-          {/* Right column - Crew selection */}
-          <div
-            className="ai-glass-border lg:col-span-2 rounded-[1.5rem]"
-            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-          >
-            <div
-              className="rounded-[1.5rem]"
-              style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px 24px 17px 24px' }}
-            >
-              <StepTitle number={2} title="Select crew" />
-              <div className="flex gap-6 flex-shrink-0 mt-4">
-                <div className="flex-1">
-                  <div className="flex flex-row gap-10">
-                    <div className="flex-1">
-                      <CrewCombobox people={availablePeople} onSelectCrew={handleAddCrew} loading={loadingPeople} />
-                    </div>
-                    <div className="flex-shrink-0 mt-2">
-                      <CrewCounter count={selectedCrew.length} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <CrewShiftTable
-                selectedCrew={selectedCrew}
-                onRemoveCrew={handleRemoveCrew}
-                initialShiftTimes={initialShiftTimes}
-                onShiftTimesChange={setShiftTimes}
-              />
-            </div>
-          </div>
         </div>
       </div>
+    </div>
   )
 }
 

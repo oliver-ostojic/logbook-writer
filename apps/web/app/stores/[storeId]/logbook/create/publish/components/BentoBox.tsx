@@ -74,7 +74,15 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
   };
 
   return (
-      <div className="relative isolate pt-10 pb-10 sm:pt-16 sm:pb-16">
+    <div
+      className="ai-glass-border rounded-[1.5rem]"
+      style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+    >
+      <div
+        className="rounded-[1.5rem]"
+        style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
+      >
+        <div className="relative isolate py-6 sm:py-10">
         <div
           aria-hidden="true"
           className="absolute inset-x-0 top-1/2 -z-10 -translate-y-1/2 transform-gpu overflow-hidden opacity-30 blur-3xl"
@@ -142,6 +150,8 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
           </div>
         </div>
       </div>
+      </div>
+    </div>
     </div>
   )
 }

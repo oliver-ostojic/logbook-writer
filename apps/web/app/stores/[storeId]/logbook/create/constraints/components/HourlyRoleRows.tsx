@@ -211,7 +211,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                       </div>
                     </div>
                     <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '34, 197, 94', 0.4), width: 'fit-content' }}>
-                      <div style={{ ...aiGlassLightContentStyle('9999px', 0.6), backgroundColor: 'rgba(34, 197, 94, 0.08)', padding: '4px 12px' }}>
+                      <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('9999px', 0.6), backgroundColor: 'rgba(34, 197, 94, 0.08)', padding: '4px 12px' }}>
                         <span className="text-xs font-medium font-sans" style={{ color: 'rgb(22, 163, 74)' }}>{selectedOption.crewAvailable} crew available</span>
                       </div>
                     </div>
@@ -260,7 +260,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                             </div>
                           </div>
                           {locked && (
-                            <p className="text-xs mt-1 font-sans font-normal" style={{ color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' }}>Configured in Step 1</p>
+                            <p className="text-xs mt-[5px] font-sans font-normal" style={{ color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' }}>Configured in Step 1</p>
                           )}
                         </div>
                       );
@@ -289,7 +289,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                   className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1rem]`}
                   style={isSelected
                     ? { borderRadius: '1rem', position: 'relative' as const, overflow: 'hidden', boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' }
-                    : { ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08, '1.6px'), overflow: 'hidden' }}
+                    : { ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08), overflow: 'hidden' }}
                 >
                   <button
                     role="radio"

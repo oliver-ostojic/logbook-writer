@@ -123,7 +123,7 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
               className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1.5rem] cursor-pointer`}
               style={isSelected
                 ? { borderRadius: '1.5rem', position: 'relative' as const, overflow: 'hidden', boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' }
-                : { ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08, '1.6px'), overflow: 'hidden' }}
+                : { ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08), overflow: 'hidden' }}
             >
               <div
                 role="checkbox"
