@@ -6,10 +6,12 @@ import { DashboardHeader } from '../../../../../../components/layouts/DashboardH
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import ProgressBar from '../../../components/ProgressBar';
 import BentoGrid from './components/BentoBox';
+import { useAuthStore } from '@/lib/authStore';
 
 export default function Page() {
     const params = useParams();
     const storeId = params?.storeId as string;
+    const { getNavLinks } = useAuthStore();
     const [errors, setErrors] = useState<string[]>([]);
     const errorRef = useRef<HTMLDivElement>(null);
 
@@ -27,12 +29,7 @@ export default function Page() {
     return (
         <main>
             <DashboardHeader
-                navLinks={[
-                    { label: 'Home', href: `/stores/${storeId}/home` },
-                    { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
-                    { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
-                    { label: 'Settings', href: `/stores/${storeId}/settings` },
-                ]}
+                navLinks={getNavLinks(storeId)}
                 lightMode={true}
                 sticky={false}
             />

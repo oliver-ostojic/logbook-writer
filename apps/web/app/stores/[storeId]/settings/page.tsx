@@ -4,22 +4,25 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
 import { CardContainer, CardHeader, GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { StoreRulesSection, DefaultRolesSection } from './components';
+import { StoreRulesSection, DefaultRolesSection, InviteCodesSection } from './components';
 import { RoleRuleForm, RoleRuleDetailView } from '../home/components';
+import { useAuthStore } from '@/lib/authStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-type SettingsView = 'none' | 'defaultRoles' | 'storeRules' | 'addStoreRule' | 'viewStoreRule';
+type SettingsView = 'none' | 'defaultRoles' | 'storeRules' | 'addStoreRule' | 'viewStoreRule' | 'editStoreRule' | 'inviteCodes';
 
 export default function SettingsPage() {
   const params = useParams();
   const storeId = params.storeId as string;
+  const { getNavLinks, canManageUsers } = useAuthStore();
 
   const [storeRules, setStoreRules] = useState<any[]>([]);
   const [defaultRoles, setDefaultRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<SettingsView>('none');
   const [selectedRuleId, setSelectedRuleId] = useState<number | null>(null);
+  const [selectedStoreRoleRuleId, setSelectedStoreRoleRuleId] = useState<number | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -41,12 +44,32 @@ export default function SettingsPage() {
     fetchData();
   }, [storeId]);
 
-  const navLinks = [
-    { label: 'Home', href: `/stores/${storeId}/home` },
-    { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
-    { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
-    { label: 'Settings', href: `/stores/${storeId}/settings` },
-  ];
+  // Find the selected store rule data (for valueInt)
+  const selectedStoreRule = storeRules.find(r => r.RoleRule?.id === selectedRuleId);
+  const selectedValueInt = selectedStoreRule?.valueInt ?? null;
+  const selectedStoreRoleRuleIdFromData = selectedStoreRule?.id ?? null;
+
+  const handleDeleteStoreRule = async () => {
+    const storeRoleRuleIdToDelete = selectedStoreRoleRuleIdFromData || selectedStoreRoleRuleId;
+    if (!storeRoleRuleIdToDelete) return;
+
+    try {
+      const res = await fetch(`${API_URL}/store-role-rules/${storeRoleRuleIdToDelete}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setActiveView('storeRules');
+        setSelectedRuleId(null);
+        setSelectedStoreRoleRuleId(null);
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Failed to delete store rule:', err);
+    }
+  };
+
+  const navLinks = getNavLinks(storeId);
+  const canEdit = canManageUsers(); // CAPTAIN and ADMIN can edit settings
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
@@ -126,13 +149,13 @@ export default function SettingsPage() {
 
                         <GlassPillButton
                           onClick={() => {
-                            if (activeView === 'storeRules' || activeView === 'viewStoreRule' || activeView === 'addStoreRule') {
+                            if (activeView === 'storeRules' || activeView === 'viewStoreRule' || activeView === 'addStoreRule' || activeView === 'editStoreRule') {
                               setActiveView('none');
                             } else {
                               setActiveView('storeRules');
                             }
                           }}
-                          isSelected={activeView === 'storeRules' || activeView === 'viewStoreRule' || activeView === 'addStoreRule'}
+                          isSelected={activeView === 'storeRules' || activeView === 'viewStoreRule' || activeView === 'addStoreRule' || activeView === 'editStoreRule'}
                           padding="12px 16px"
                           contentStyle={{ justifyContent: 'flex-start' }}
                         >
@@ -158,6 +181,38 @@ export default function SettingsPage() {
                             </span>
                           </div>
                         </GlassPillButton>
+
+                        {/* Invite Codes - only for CAPTAIN/ADMIN */}
+                        {canEdit && (
+                          <GlassPillButton
+                            onClick={() => setActiveView(activeView === 'inviteCodes' ? 'none' : 'inviteCodes')}
+                            isSelected={activeView === 'inviteCodes'}
+                            padding="12px 16px"
+                            contentStyle={{ justifyContent: 'flex-start' }}
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  color: '#2C2C2C',
+                                }}
+                              >
+                                Invite Codes
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '12px',
+                                  color: '#6B6B6B',
+                                }}
+                              >
+                                Invite team members
+                              </span>
+                            </div>
+                          </GlassPillButton>
+                        )}
                       </div>
                     </div>
                   </CardContainer>
@@ -176,14 +231,13 @@ export default function SettingsPage() {
                         storeId={storeId}
                         defaultRoles={defaultRoles}
                         onRefresh={fetchData}
+                        canEdit={canEdit}
                       />
                     )}
                     {activeView === 'storeRules' && (
                       <StoreRulesSection
-                        storeId={storeId}
                         storeRules={storeRules}
-                        onRefresh={fetchData}
-                        onAdd={() => setActiveView('addStoreRule')}
+                        onAdd={canEdit ? () => setActiveView('addStoreRule') : undefined}
                         onViewRule={(ruleId) => {
                           setSelectedRuleId(ruleId);
                           setActiveView('viewStoreRule');
@@ -208,8 +262,30 @@ export default function SettingsPage() {
                       <RoleRuleDetailView
                         ruleId={selectedRuleId}
                         constraintType="HARD"
+                        valueInt={selectedValueInt}
+                        storeRoleRuleId={selectedStoreRoleRuleIdFromData ?? undefined}
                         onBack={() => setActiveView('storeRules')}
+                        onEdit={canEdit ? () => setActiveView('editStoreRule') : undefined}
+                        onDelete={canEdit ? handleDeleteStoreRule : undefined}
                       />
+                    )}
+                    {activeView === 'editStoreRule' && selectedRuleId && (
+                      <RoleRuleForm
+                        mode="edit"
+                        ruleId={selectedRuleId}
+                        storeId={storeId}
+                        constraintType="HARD"
+                        onSuccess={() => {
+                          setActiveView('storeRules');
+                          fetchData();
+                        }}
+                        onCancel={() => {
+                          setActiveView('storeRules');
+                        }}
+                      />
+                    )}
+                    {activeView === 'inviteCodes' && (
+                      <InviteCodesSection storeId={storeId} />
                     )}
                   </div>
                 )}

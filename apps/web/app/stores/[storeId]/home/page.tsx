@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
 import { renderRoleRule } from '@/lib/role-rule-templates';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
+import { useAuthStore } from '@/lib/authStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -18,9 +19,6 @@ const VIEW_OPTIONS = [
   { id: 'crew', name: 'Crew', title: 'List View' },
   { id: 'roles', name: 'Roles', title: 'List View' },
   { id: 'preferences', name: 'Preferences', title: 'List View' },
-  { id: 'storeRules', name: 'Store Rules', title: 'List View' },
-  { id: 'companies', name: 'Companies', title: 'List View' },
-  { id: 'stores', name: 'Stores', title: 'List View' },
   { id: 'runs', name: 'Runs', title: 'Audit Log' },
   { id: 'logbooks', name: 'Logbooks', title: 'List View' },
 ] as const;
@@ -343,7 +341,7 @@ const activity = [
 type EditableItem = {
   id: string;
   name: string;
-  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'storeRules' | 'companies' | 'stores' | 'runs';
+  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'runs';
 };
 
 type SelectedItem = EditableItem & {
@@ -356,6 +354,7 @@ export default function Home() {
   const params = useParams();
   const router = useRouter();
   const storeId = params.storeId as string;
+  const { getNavLinks } = useAuthStore();
   const [activeView, setActiveView] = useState<ViewId>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [rolesSearchQuery, setRolesSearchQuery] = useState('');
@@ -365,9 +364,6 @@ export default function Home() {
   const [crewPage, setCrewPage] = useState(1);
   const [rolesPage, setRolesPage] = useState(1);
   const [preferencesPage, setPreferencesPage] = useState(1);
-  const [storeRulesPage, setStoreRulesPage] = useState(1);
-  const [companiesPage, setCompaniesPage] = useState(1);
-  const [storesPage, setStoresPage] = useState(1);
   const [runsPage, setRunsPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
   const [activityFilter, setActivityFilter] = useState('today');
@@ -382,9 +378,6 @@ export default function Home() {
   const [apiRoles, setApiRoles] = useState<any[]>([]);
   const [apiRoleFamilies, setApiRoleFamilies] = useState<any[]>([]);
   const [apiPreferences, setApiPreferences] = useState<any[]>([]);
-  const [apiStoreRules, setApiStoreRules] = useState<any[]>([]);
-  const [apiCompanies, setApiCompanies] = useState<any[]>([]);
-  const [apiStores, setApiStores] = useState<any[]>([]);
   const [apiRuns, setApiRuns] = useState<any[]>([]);
   const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
 
@@ -392,15 +385,12 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, companiesRes, storesRes, runsRes, logbooksRes] = await Promise.all([
+        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, runsRes, logbooksRes] = await Promise.all([
           fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
           fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/companies`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/stores`).then(r => r.ok ? r.json() : []),
           fetch(`${API_URL}/runs?storeId=${storeId}`).then(r => r.ok ? r.json() : { runs: [] }),
           fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
         ]);
@@ -409,9 +399,6 @@ export default function Home() {
         setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
         setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
         setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
-        setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
-        setApiCompanies(Array.isArray(companiesRes) ? companiesRes : []);
-        setApiStores(Array.isArray(storesRes) ? storesRes : []);
         // Runs API returns { runs: [...], total, limit, offset }
         const runs = runsRes?.runs || [];
         setApiRuns(Array.isArray(runs) ? runs : []);
@@ -482,12 +469,6 @@ export default function Home() {
   const filteredRoleFamilies = effectiveRoleFamilies.filter(f =>
     f.name.toLowerCase().includes(rolesSearchQuery.toLowerCase())
   );
-  const filteredCompanies = apiCompanies.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const filteredStores = apiStores.filter(s =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
   const filteredRuns = apiRuns.filter((r: any) =>
     r.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.engine.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -500,15 +481,12 @@ export default function Home() {
   // Helper to refresh data after mutations
   const refreshData = async () => {
     try {
-      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, storeRulesRes, companiesRes, storesRes, logbooksRes] = await Promise.all([
+      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, logbooksRes] = await Promise.all([
         fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
         fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/companies`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/stores`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
       ]);
       setApiStore(storeRes);
@@ -516,9 +494,6 @@ export default function Home() {
       setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
       setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
       setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
-      setApiStoreRules(Array.isArray(storeRulesRes) ? storeRulesRes : []);
-      setApiCompanies(Array.isArray(companiesRes) ? companiesRes : []);
-      setApiStores(Array.isArray(storesRes) ? storesRes : []);
       const logbooks = logbooksRes?.logbooks || [];
       setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
     } catch (err) {
@@ -533,9 +508,6 @@ export default function Home() {
                        item.type === 'roles' ? `/roles/${item.id}` :
                        item.type === 'roleFamilies' ? `/role-families/${item.id}` :
                        item.type === 'preferences' ? `/role-rules/${item.id}` :
-                       item.type === 'storeRules' ? `/store-role-rules/${item.id}` :
-                       item.type === 'companies' ? `/companies/${item.id}` :
-                       item.type === 'stores' ? `/stores/${item.id}` :
                        `/logbooks/${item.id}`;
       const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
       if (res.ok) {
@@ -553,20 +525,14 @@ export default function Home() {
   };
 
   // Render list view content
-  const renderListView = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks') => {
+  const renderListView = (type: 'crew' | 'runs' | 'logbooks') => {
     const data = type === 'crew' ? filteredCrew :
-                 type === 'companies' ? filteredCompanies :
-                 type === 'stores' ? filteredStores :
                  type === 'runs' ? filteredRuns :
                  filteredLogbooks;
     const currentPage = type === 'crew' ? crewPage :
-                        type === 'companies' ? companiesPage :
-                        type === 'stores' ? storesPage :
                         type === 'runs' ? runsPage :
                         logbooksPage;
     const setPage = type === 'crew' ? setCrewPage :
-                    type === 'companies' ? setCompaniesPage :
-                    type === 'stores' ? setStoresPage :
                     type === 'runs' ? setRunsPage :
                     setLogbooksPage;
 
@@ -1125,19 +1091,17 @@ export default function Home() {
     return grouped;
   };
 
-  // Render grouped rules list view for preferences/store rules
-  const renderGroupedRulesView = (constraintType: 'SOFT' | 'HARD') => {
-    const rules = constraintType === 'SOFT' ? apiPreferences : apiStoreRules;
-    const itemType = constraintType === 'SOFT' ? 'preferences' : 'storeRules';
-    const titleText = constraintType === 'SOFT' ? 'Preferences' : 'Store Rules';
-    const isStoreRules = constraintType === 'HARD';
+  // Render grouped rules list view for preferences
+  const renderGroupedRulesView = () => {
+    const rules = apiPreferences;
+    const itemType = 'preferences';
+    const titleText = 'Preferences';
 
-    // Extract unique RoleRules from CrewRoleRules/StoreRoleRules
+    // Extract unique RoleRules from CrewRoleRules
     const roleRulesMap = new Map<number, any>();
     rules.forEach(r => {
-      const ruleData = isStoreRules ? r.RoleRule : r;
-      if (ruleData && ruleData.constraintType === constraintType) {
-        roleRulesMap.set(ruleData.id, ruleData);
+      if (r && r.constraintType === 'SOFT') {
+        roleRulesMap.set(r.id, r);
       }
     });
     const uniqueRoleRules = Array.from(roleRulesMap.values());
@@ -1193,7 +1157,7 @@ export default function Home() {
                 onClick={() =>
                   setSelectedItem({
                     id: '',
-                    name: `New ${constraintType === 'SOFT' ? 'Preference' : 'Store Rule'}`,
+                    name: 'New Preference',
                     type: itemType,
                     mode: 'add',
                   })
@@ -1327,7 +1291,7 @@ export default function Home() {
 
           {groupedByType.size === 0 && (
             <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
-              No {constraintType === 'SOFT' ? 'preferences' : 'rules'} found
+              No preferences found
             </div>
           )}
         </div>
@@ -1374,16 +1338,15 @@ export default function Home() {
     );
   };
 
-  // Generic search card for list views (crew, companies, stores, runs, logbooks, preferences, storeRules)
-  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks' | 'preferences' | 'storeRules') => {
+  // Generic search card for list views (crew, companies, stores, runs, logbooks, preferences)
+  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks' | 'preferences') => {
     // Determine the data source to check if there's anything to search
     const hasData = type === 'crew' ? effectiveCrew.length > 0 :
                     type === 'companies' ? apiCompanies.length > 0 :
                     type === 'stores' ? apiStores.length > 0 :
                     type === 'runs' ? apiRuns.length > 0 :
                     type === 'logbooks' ? effectiveLogbooks.length > 0 :
-                    type === 'preferences' ? apiPreferences.length > 0 :
-                    apiStoreRules.length > 0;
+                    apiPreferences.length > 0;
 
     if (!hasData) return null;
 
@@ -1393,8 +1356,7 @@ export default function Home() {
                     type === 'stores' ? setStoresPage :
                     type === 'runs' ? setRunsPage :
                     type === 'logbooks' ? setLogbooksPage :
-                    type === 'preferences' ? setPreferencesPage :
-                    setStoreRulesPage;
+                    setPreferencesPage;
 
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
@@ -1718,17 +1680,12 @@ export default function Home() {
       leftPanelWidth={isPdfView ? '40%' : undefined}
       rightPanelWidth={isPdfView ? '60%' : undefined}
       rightPanelKey={selectedItem ? `${selectedItem.id}-${selectedItem.type}-${selectedItem.mode}` : undefined}
-      navLinks={[
-        { label: 'Home', href: `/stores/${storeId}/home` },
-        { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
-        { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
-        { label: 'Settings', href: `/stores/${storeId}/settings` },
-      ]}
+      navLinks={getNavLinks(storeId)}
       leftPanel={
         <div className="flex flex-col gap-4">
           {/* Header with dropdown */}
           <CardHeader
-            title={VIEW_OPTIONS.find(v => v.id === activeView)?.title || 'Overview'}
+            title={activeView === 'home' ? (apiStore?.name || 'Overview') : (VIEW_OPTIONS.find(v => v.id === activeView)?.title || 'Overview')}
             lightMode={true}
             borderRadius="1.5rem"
             titleStyle={{ color: '#2C2C2C' }}
@@ -1845,12 +1802,9 @@ export default function Home() {
           {/* Search card - shown above content for each list view */}
           {activeView === 'roles' && renderRolesSearchCard()}
           {activeView === 'crew' && renderSearchCard('crew')}
-          {activeView === 'companies' && renderSearchCard('companies')}
-          {activeView === 'stores' && renderSearchCard('stores')}
           {activeView === 'runs' && renderSearchCard('runs')}
           {activeView === 'logbooks' && renderSearchCard('logbooks')}
           {activeView === 'preferences' && renderSearchCard('preferences')}
-          {activeView === 'storeRules' && renderSearchCard('storeRules')}
 
           {/* Role Families card - shown below header when in roles view */}
           {activeView === 'roles' && renderRoleFamiliesCard()}
@@ -2328,13 +2282,7 @@ export default function Home() {
           ) : activeView === 'roles' ? (
             renderRolesListView()
           ) : activeView === 'preferences' ? (
-            renderGroupedRulesView('SOFT')
-          ) : activeView === 'storeRules' ? (
-            renderGroupedRulesView('HARD')
-          ) : activeView === 'companies' ? (
-            renderListView('companies')
-          ) : activeView === 'stores' ? (
-            renderListView('stores')
+            renderGroupedRulesView()
           ) : activeView === 'runs' ? (
             renderListView('runs')
           ) : activeView === 'logbooks' ? (
@@ -2367,7 +2315,7 @@ export default function Home() {
             <div className="flex flex-col gap-4 h-full">
               {/* Header with name and mode dropdown */}
               <CardHeader
-                title={selectedItem.mode === 'add' && !selectedItem.id ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : selectedItem.type === 'preferences' ? 'Preference' : selectedItem.type === 'storeRules' ? 'Store Rule' : 'Logbook'}` : selectedItem.name}
+                title={selectedItem.mode === 'add' && !selectedItem.id ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : selectedItem.type === 'preferences' ? 'Preference' : 'Logbook'}` : selectedItem.name}
                 lightMode={true}
                 borderRadius="1.5rem"
                 titleStyle={{ color: '#2C2C2C' }}
@@ -2438,8 +2386,7 @@ export default function Home() {
                                       const itemName = selectedItem.type === 'crew' ? 'Crew Member' :
                                                       selectedItem.type === 'roles' ? 'Role' :
                                                       selectedItem.type === 'roleFamilies' ? 'Role Family' :
-                                                      selectedItem.type === 'preferences' ? 'Preference' :
-                                                      selectedItem.type === 'storeRules' ? 'Store Rule' : 'Item';
+                                                      selectedItem.type === 'preferences' ? 'Preference' : 'Item';
                                       setSelectedItem({
                                         id: '',
                                         name: `New ${itemName}`,
@@ -2564,7 +2511,7 @@ export default function Home() {
                     setSelectedItem({
                       id: String(roleRuleId),
                       name: roleRuleName,
-                      type: 'preferences', // Role rules from roles are technically in preferences/storeRules
+                      type: 'preferences', // Role rules from roles are preferences
                       mode: 'view',
                     });
                   }}
@@ -2634,34 +2581,6 @@ export default function Home() {
                 />
               ) : selectedItem.type === 'preferences' && selectedItem.mode === 'view' ? (
                 <RoleRuleDetailView ruleId={Number(selectedItem.id)} constraintType="SOFT" />
-              ) : selectedItem.type === 'storeRules' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
-                <RoleRuleForm
-                  mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
-                  ruleId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
-                  storeId={storeId}
-                  constraintType="HARD"
-                  onSuccess={(newRule?: any) => {
-                    refreshData();
-                    // If adding new item, switch to view mode of the new item
-                    if (selectedItem.mode === 'add' && newRule) {
-                      setSelectedItem({
-                        id: String(newRule.id),
-                        name: newRule.displayName || `${newRule.Role?.displayName} - ${newRule.type}`,
-                        type: 'storeRules',
-                        mode: 'view',
-                      });
-                    } else {
-                      setActiveView('storeRules');
-                      setSelectedItem(null);
-                    }
-                  }}
-                  onCancel={() => {
-                    setActiveView('storeRules');
-                    setSelectedItem(null);
-                  }}
-                />
-              ) : selectedItem.type === 'storeRules' && selectedItem.mode === 'view' ? (
-                <RoleRuleDetailView ruleId={Number(selectedItem.id)} constraintType="HARD" />
               ) : selectedItem.type === 'companies' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
                 <CompanyForm
                   mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
@@ -2784,7 +2703,6 @@ export default function Home() {
               Delete {deleteConfirmItem.type === 'crew' ? 'Crew Member' :
                       deleteConfirmItem.type === 'roles' ? 'Role' :
                       deleteConfirmItem.type === 'preferences' ? 'Preference' :
-                      deleteConfirmItem.type === 'storeRules' ? 'Store Rule' :
                       'Logbook'}?
             </h3>
             <p

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
 import { CardContainer, CardHeader, GlassPillButton, GlassPillCard, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard, RoleDistributionCard, AccountInfoCard } from './components';
+import { useAuthStore } from '@/lib/authStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -34,6 +35,7 @@ export default function CrewPage() {
   const params = useParams();
   const storeId = params.storeId as string;
   const crewId = params.crewId as string;
+  const { getNavLinks } = useAuthStore();
 
   const [crew, setCrew] = useState<Crew | null>(null);
   const [preferences, setPreferences] = useState<CrewPreference[]>([]);
@@ -86,12 +88,7 @@ export default function CrewPage() {
     }
   }, [crewId]);
 
-  const navLinks = [
-    { label: 'Home', href: `/stores/${storeId}/home` },
-    { label: 'Crew', href: `/stores/${storeId}/crew/1269090` },
-    { label: 'Dashboard', href: `/stores/${storeId}/fairness-dashboard` },
-    { label: 'Settings', href: `/stores/${storeId}/settings` },
-  ];
+  const navLinks = getNavLinks(storeId);
 
   // Count preferences for display
   const preferencesCount = preferences.length;

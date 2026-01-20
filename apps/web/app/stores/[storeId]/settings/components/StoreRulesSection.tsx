@@ -5,36 +5,16 @@ import { CardContainer, CardSmall, aiGlassLightBorderStyle, aiGlassLightContentS
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 interface StoreRulesSectionProps {
-  storeId: string;
   storeRules: any[];
-  onRefresh: () => void;
   onAdd?: () => void;
   onViewRule?: (ruleId: number) => void;
 }
 
-export function StoreRulesSection({ storeId, storeRules, onRefresh, onAdd, onViewRule }: StoreRulesSectionProps) {
+export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesSectionProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [hoveredRule, setHoveredRule] = useState<number | null>(null);
 
-  const handleDelete = async (ruleId: number) => {
-    try {
-      const res = await fetch(`${API_URL}/store-role-rules/${ruleId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        onRefresh();
-        setDeleteConfirm(null);
-      }
-    } catch (err) {
-      console.error('Failed to delete rule:', err);
-    }
-  };
-
-  // Extract unique RoleRules from StoreRoleRules, keeping track of StoreRoleRule id for deletion
+  // Extract unique RoleRules from StoreRoleRules
   const roleRulesMap = new Map<number, { roleRule: any; storeRoleRuleId: number }>();
   storeRules.forEach(r => {
     const ruleData = r.RoleRule;
@@ -61,7 +41,7 @@ export function StoreRulesSection({ storeId, storeRules, onRefresh, onAdd, onVie
   });
 
   // Group by type
-  const groupedByType = new Map<string, any[]>();
+  const groupedByType = new Map<string, { roleRule: any; storeRoleRuleId: number }[]>();
   filteredRoleRules.forEach(({ roleRule, storeRoleRuleId }) => {
     const type = roleRule.type;
     if (!groupedByType.has(type)) {
@@ -167,55 +147,10 @@ export function StoreRulesSection({ storeId, storeRules, onRefresh, onAdd, onVie
                         }}
                         onClick={() => onViewRule?.(roleRule.id)}
                       >
-                        <div
-                          onMouseEnter={() => setHoveredRule(storeRoleRuleId)}
-                          onMouseLeave={() => setHoveredRule(null)}
-                          style={{ position: 'relative' }}
-                        >
-                          <div className="flex items-center justify-center h-full">
-                            {roleRule.TargetRole && ['CANNOT_BE_ASSIGNED_BEFORE', 'CANNOT_BE_ASSIGNED_AFTER', 'DISTRIBUTION_BETWEEN_ROLE_X'].includes(roleRule.type) ? (
-                              // Two roles: "role vs. (target_role)" - only target in bubble
-                              <div className="flex items-center gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-                                <span
-                                  style={{
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '13px',
-                                    fontWeight: 500,
-                                    color: '#2C2C2C',
-                                    lineHeight: 1.2,
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  {roleRule.Role?.displayName || 'Unknown'}
-                                </span>
-                                <span
-                                  style={{
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '12px',
-                                    fontWeight: 400,
-                                    color: '#6B6B6B',
-                                  }}
-                                >
-                                  vs.
-                                </span>
-                                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                  <div
-                                    style={{
-                                      ...aiGlassLightContentStyle('9999px', 0.5),
-                                      background: 'rgba(245, 245, 245, 0.7)',
-                                      padding: '4px 12px',
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '13px',
-                                      fontWeight: 500,
-                                      color: '#2C2C2C',
-                                    }}
-                                  >
-                                    {roleRule.TargetRole?.displayName || 'Unknown'}
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              // Single role - just plain text
+                        <div className="flex items-center justify-center h-full">
+                          {roleRule.TargetRole && ['CANNOT_BE_ASSIGNED_BEFORE', 'CANNOT_BE_ASSIGNED_AFTER', 'DISTRIBUTION_BETWEEN_ROLE_X'].includes(roleRule.type) ? (
+                            // Two roles: "role vs. (target_role)" - only target in bubble
+                            <div className="flex items-center gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
                               <span
                                 style={{
                                   fontFamily: 'var(--font-open-sans)',
@@ -228,36 +163,46 @@ export function StoreRulesSection({ storeId, storeRules, onRefresh, onAdd, onVie
                               >
                                 {roleRule.Role?.displayName || 'Unknown'}
                               </span>
-                            )}
-                          </div>
-
-                          {/* Hover action - delete button on right */}
-                          {hoveredRule === storeRoleRuleId && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirm(storeRoleRuleId);
-                              }}
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '12px',
+                                  fontWeight: 400,
+                                  color: '#6B6B6B',
+                                }}
+                              >
+                                vs.
+                              </span>
+                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <div
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.5),
+                                    background: 'rgba(245, 245, 245, 0.7)',
+                                    padding: '4px 12px',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                    color: '#2C2C2C',
+                                  }}
+                                >
+                                  {roleRule.TargetRole?.displayName || 'Unknown'}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            // Single role - just plain text
+                            <span
                               style={{
-                                position: 'absolute',
-                                right: '0',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                backgroundColor: 'hsla(0, 84%, 60%, 0.85)',
-                                border: 'none',
-                                borderRadius: '9999px',
-                                padding: '4px 10px',
                                 fontFamily: 'var(--font-open-sans)',
-                                fontSize: '11px',
+                                fontSize: '13px',
                                 fontWeight: 500,
-                                color: '#FFFFFF',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                zIndex: 10,
+                                color: '#2C2C2C',
+                                lineHeight: 1.2,
+                                textAlign: 'center',
                               }}
                             >
-                              Delete
-                            </button>
+                              {roleRule.Role?.displayName || 'Unknown'}
+                            </span>
                           )}
                         </div>
                       </CardSmall>
@@ -275,94 +220,6 @@ export function StoreRulesSection({ storeId, storeRules, onRefresh, onAdd, onVie
           </div>
         </div>
       </CardContainer>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setDeleteConfirm(null)}
-        >
-          <div
-            className="ai-glass-border"
-            style={{
-              ...aiGlassLightBorderStyle('1.5rem'),
-              maxWidth: '400px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                ...aiGlassLightContentStyle('1.5rem', 0.95),
-                padding: '24px',
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '18px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                  marginBottom: '12px',
-                }}
-              >
-                Remove Store Rule?
-              </h3>
-              <p
-                style={{
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  color: '#6B6B6B',
-                  marginBottom: '24px',
-                }}
-              >
-                Are you sure you want to remove this rule from the store?
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    border: 'none',
-                    borderRadius: '9999px',
-                    padding: '8px 16px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#2C2C2C',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  style={{
-                    backgroundColor: 'hsla(0, 84%, 60%, 0.85)',
-                    border: 'none',
-                    borderRadius: '9999px',
-                    padding: '8px 16px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

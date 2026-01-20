@@ -1,13 +1,14 @@
 import './globals.css';
 import { Roboto, Open_Sans } from 'next/font/google';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
-const roboto = Roboto({ 
+const roboto = Roboto({
   weight: ['400', '500', '700'],
   subsets: ['latin'],
   variable: '--font-roboto',
 });
 
-const openSans = Open_Sans({ 
+const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-open-sans',
 });
@@ -19,7 +20,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${roboto.variable} ${openSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

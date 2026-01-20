@@ -1,17 +1,84 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { useAuthStore } from '@/lib/authStore';
+import { login } from '@/lib/api/auth';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading, setUser } = useAuthStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement actual auth logic
-    console.log('Login submitted:', { username, password });
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && username && password && !isSubmitting) {
+      handleSubmit(e as unknown as React.FormEvent);
+    }
   };
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      // CREW users go to their crew page
+      if (user.role === 'CREW' && user.storeId && user.crewId) {
+        router.replace(`/stores/${user.storeId}/crew/${user.crewId}`);
+      } else if (user.role === 'ADMIN') {
+        // ADMIN users go to admin dashboard
+        router.replace('/admin');
+      } else if (user.storeId) {
+        // MATE/CAPTAIN go to their store's home
+        router.replace(`/stores/${user.storeId}/home`);
+      } else {
+        // Fallback
+        router.replace('/login');
+      }
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!username || !password) {
+      setError('Please enter username and password');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await login({ username, password });
+      setUser(response.user);
+
+      // Redirect based on role
+      const { user: loggedInUser } = response;
+      if (loggedInUser.role === 'CREW' && loggedInUser.storeId && loggedInUser.crewId) {
+        router.push(`/stores/${loggedInUser.storeId}/crew/${loggedInUser.crewId}`);
+      } else if (loggedInUser.role === 'ADMIN') {
+        router.push('/admin');
+      } else if (loggedInUser.storeId) {
+        router.push(`/stores/${loggedInUser.storeId}/home`);
+      } else {
+        router.push('/login');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f0eee6' }}>
+        <div className="text-gray-500">Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -110,7 +177,7 @@ export default function LoginPage() {
 
                     {/* Create account - right */}
                     <a
-                      href="/signup"
+                      href="/register"
                       className="ai-glass-border"
                       style={{ ...aiGlassLightBorderStyle('9999px'), textDecoration: 'none' }}
                     >
@@ -137,6 +204,22 @@ export default function LoginPage() {
                     </a>
                   </div>
 
+                  {/* Error message */}
+                  {error && (
+                    <div
+                      style={{
+                        padding: '10px 16px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderRadius: '12px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '13px',
+                        color: 'rgb(185, 28, 28)',
+                      }}
+                    >
+                      {error}
+                    </div>
+                  )}
+
                   {/* Username and Password fields in glass pill card */}
                   <div className="ai-glass-border rounded-[1.5rem]" style={aiGlassLightBorderStyle('1.5rem')}>
                     <div
@@ -156,7 +239,9 @@ export default function LoginPage() {
                               type="text"
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
+                              onKeyDown={handleKeyDown}
                               className="focus:outline-none focus:ring-0"
+                              disabled={isSubmitting}
                               style={{
                                 ...aiGlassLightContentStyle('9999px', 0.4),
                                 padding: '10px 18px',
@@ -182,7 +267,9 @@ export default function LoginPage() {
                               type="password"
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
+                              onKeyDown={handleKeyDown}
                               className="focus:outline-none focus:ring-0"
+                              disabled={isSubmitting}
                               style={{
                                 ...aiGlassLightContentStyle('9999px', 0.4),
                                 padding: '10px 18px',
@@ -208,23 +295,24 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleSubmit}
+              disabled={isSubmitting}
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: 'hsl(0, 84%, 60%)',
+                backgroundColor: isSubmitting ? 'hsl(0, 50%, 70%)' : 'hsl(0, 84%, 60%)',
                 color: 'white',
                 fontFamily: 'var(--font-open-sans)',
                 fontSize: '14px',
                 fontWeight: 600,
                 borderRadius: '1.5rem',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: 'background-color 0.2s ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 60%)'}
+              onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)')}
+              onMouseLeave={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 60%)')}
             >
-              Continue
+              {isSubmitting ? 'Signing in...' : 'Continue'}
             </button>
           </div>
         </div>

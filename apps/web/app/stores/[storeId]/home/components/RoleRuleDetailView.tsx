@@ -6,10 +6,52 @@ import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
+// Rule types that have a valueInt
+const RULE_TYPES_WITH_VALUE = [
+  'MIN_CONSECUTIVE_MINUTES',
+  'MAX_CONSECUTIVE_MINUTES',
+  'LIKE_ROLE_FOR_HOUR_X',
+  'DISLIKE_ROLE_FOR_HOUR_X',
+  'MIN_SHIFT_LENGTH_FOR_ACCESS',
+  'ASSIGN_BEFORE_SHIFT_MIN_X',
+  'ASSIGN_AFTER_SHIFT_MIN_X',
+  'MAX_CREW_ON_AT_A_TIME',
+  'CANNOT_ASSIGN_DURING_STORE_HOUR_X',
+];
+
+// Format value based on rule type
+const formatValue = (ruleType: string, value: number | null | undefined): string => {
+  if (value === null || value === undefined) return '';
+
+  // Hour-based rules
+  if (['LIKE_ROLE_FOR_HOUR_X', 'DISLIKE_ROLE_FOR_HOUR_X', 'CANNOT_ASSIGN_DURING_STORE_HOUR_X'].includes(ruleType)) {
+    // Convert 24-hour to 12-hour format
+    const hour = value % 12 || 12;
+    const ampm = value < 12 ? 'AM' : 'PM';
+    return `${hour}${ampm}`;
+  }
+
+  // Minute-based rules
+  if (['MIN_CONSECUTIVE_MINUTES', 'MAX_CONSECUTIVE_MINUTES', 'MIN_SHIFT_LENGTH_FOR_ACCESS', 'ASSIGN_BEFORE_SHIFT_MIN_X', 'ASSIGN_AFTER_SHIFT_MIN_X'].includes(ruleType)) {
+    return `${value}min`;
+  }
+
+  // Count-based rules
+  if (ruleType === 'MAX_CREW_ON_AT_A_TIME') {
+    return `${value}`;
+  }
+
+  return String(value);
+};
+
 interface RoleRuleDetailViewProps {
   ruleId: number;
   constraintType: 'HARD' | 'SOFT';
+  valueInt?: number | null;
+  storeRoleRuleId?: number;
   onBack?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 interface RoleRuleData {
@@ -36,7 +78,7 @@ interface RoleRuleData {
   }>;
 }
 
-export function RoleRuleDetailView({ ruleId, constraintType, onBack }: RoleRuleDetailViewProps) {
+export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRoleRuleId, onBack, onEdit, onDelete }: RoleRuleDetailViewProps) {
   const [rule, setRule] = useState<RoleRuleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,13 +245,17 @@ export function RoleRuleDetailView({ ruleId, constraintType, onBack }: RoleRuleD
               </div>
             )}
 
-            {/* Value (if applicable) */}
-            {rule.valueInt !== null && rule.valueInt !== undefined && (
+            {/* Value (if applicable) - use prop valueInt from StoreRoleRule, fallback to rule.valueInt */}
+            {(valueInt !== null && valueInt !== undefined) || (rule.valueInt !== null && rule.valueInt !== undefined) ? (
               <div>
                 <div style={labelStyle}>Value</div>
-                <div style={valueStyle}>{rule.valueInt}</div>
+                <div style={valueStyle}>
+                  {RULE_TYPES_WITH_VALUE.includes(rule.type)
+                    ? formatValue(rule.type, valueInt ?? rule.valueInt)
+                    : (valueInt ?? rule.valueInt)}
+                </div>
               </div>
-            )}
+            ) : null}
 
             {/* Description */}
             {rule.description && (
@@ -263,6 +309,54 @@ export function RoleRuleDetailView({ ruleId, constraintType, onBack }: RoleRuleD
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Action Buttons - Edit (left) and Delete (right) */}
+        {(onEdit || onDelete) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+            {onEdit ? (
+              <button
+                onClick={onEdit}
+                className="transition-all duration-150"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#2C2C2C',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+              >
+                Edit
+              </button>
+            ) : <div />}
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="transition-all duration-150"
+                style={{
+                  backgroundColor: 'hsla(0, 84%, 60%, 0.1)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'hsl(0, 84%, 50%)',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsla(0, 84%, 60%, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsla(0, 84%, 60%, 0.1)'}
+              >
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>

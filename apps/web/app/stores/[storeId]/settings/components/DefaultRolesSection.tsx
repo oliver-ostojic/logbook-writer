@@ -10,9 +10,10 @@ interface DefaultRolesSectionProps {
   storeId: string;
   defaultRoles: any[];
   onRefresh: () => void;
+  canEdit?: boolean;
 }
 
-export function DefaultRolesSection({ storeId, defaultRoles, onRefresh }: DefaultRolesSectionProps) {
+export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit = false }: DefaultRolesSectionProps) {
   const [allRoles, setAllRoles] = useState<any[]>([]);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -90,73 +91,75 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh }: Defaul
             Default Roles
           </div>
 
-        {/* Add Dropdown */}
-        <div style={{ position: 'relative' }} ref={dropdownRef}>
-          <button
-            onClick={() => setShowAddDropdown(!showAddDropdown)}
-            disabled={availableRoles.length === 0}
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: '6px 14px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 400,
-              color: availableRoles.length === 0 ? '#9A999E' : '#2C2C2C',
-              cursor: availableRoles.length === 0 ? 'not-allowed' : 'pointer',
-            }}
-          >
-            + Add Role
-          </button>
-
-          {showAddDropdown && availableRoles.length > 0 && (
-            <div
+        {/* Add Dropdown - only for CAPTAIN/ADMIN */}
+        {canEdit && (
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
+            <button
+              onClick={() => setShowAddDropdown(!showAddDropdown)}
+              disabled={availableRoles.length === 0}
               style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                border: '1px solid rgba(0, 0, 0, 0.08)',
-                borderRadius: '0.75rem',
-                padding: '8px',
-                zIndex: 100,
-                minWidth: '180px',
-                maxHeight: '300px',
-                overflowY: 'auto',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '6px 14px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: availableRoles.length === 0 ? '#9A999E' : '#2C2C2C',
+                cursor: availableRoles.length === 0 ? 'not-allowed' : 'pointer',
               }}
             >
-              {availableRoles.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => handleAddRole(role.id)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    padding: '8px 12px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    color: '#2C2C2C',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)')
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = 'transparent')
-                  }
-                >
-                  {role.displayName}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+              + Add Role
+            </button>
+
+            {showAddDropdown && availableRoles.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '0.75rem',
+                  padding: '8px',
+                  zIndex: 100,
+                  minWidth: '180px',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                }}
+              >
+                {availableRoles.map((role) => (
+                  <button
+                    key={role.id}
+                    onClick={() => handleAddRole(role.id)}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      padding: '8px 12px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      color: '#2C2C2C',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
+                  >
+                    {role.displayName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Roles Grid */}
@@ -188,7 +191,7 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh }: Defaul
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: canEdit ? 'space-between' : 'flex-start',
                 }}
               >
                 <span
@@ -201,25 +204,27 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh }: Defaul
                 >
                   {dr.Role.displayName}
                 </span>
-                <button
-                  onClick={() => handleRemoveRole(dr.roleId)}
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '2px',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <XMarkIcon
+                {canEdit && (
+                  <button
+                    onClick={() => handleRemoveRole(dr.roleId)}
                     style={{
-                      width: '16px',
-                      height: '16px',
-                      color: '#9A999E',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
                     }}
-                  />
-                </button>
+                  >
+                    <XMarkIcon
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        color: '#9A999E',
+                      }}
+                    />
+                  </button>
+                )}
               </div>
             </div>
           ))}

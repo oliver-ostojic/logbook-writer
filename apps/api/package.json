@@ -25,18 +25,21 @@
     "assign:shifts:store:config": "tsx scripts/assign_shifts_and_prefs.ts scripts/shifts_prefs.sample.json --store=768"
   },
   "dependencies": {
+    "@fastify/cookie": "^9.4.0",
     "@fastify/cors": "^8.4.0",
     "@fastify/jwt": "^7.2.1",
     "@logbook-writer/domain": "workspace:*",
     "@logbook-writer/shared-types": "workspace:*",
     "@prisma/client": "^5.22.0",
     "@types/pdfkit": "^0.17.4",
+    "bcrypt": "^6.0.0",
     "fastify": "^4.24.0",
     "ioredis": "^5.3.2",
     "pdfkit": "^0.17.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20.8.0",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",

@@ -47,6 +47,7 @@ model Crew {
   CrewRoleQuota           CrewRoleQuota[]
   CrewRoleRule            CrewRoleRule[]
   Shift                   Shift[]
+  User                    User?                     // One-to-one: a Crew can have at most one User login
 }
 
 model CrewRole {
@@ -393,6 +394,9 @@ model Store {
   Company                  Company                   @relation(fields: [companyId], references: [id])
   StoreRoleRule            StoreRoleRule[]
   StoreDefaultRole         StoreDefaultRole[]
+  User                     User[]                    // Users assigned to this store
+  ActivityLog              ActivityLog[]             // Activity logs for this store
+  InviteCode               InviteCode[]              // Invite codes for this store
 
   @@index([companyId])
 }
@@ -469,4 +473,74 @@ enum RunStatus {
   INFEASIBLE
   FAILED
   CANCELED
+}
+
+enum UserRole {
+  CREW
+  MATE
+  CAPTAIN
+  ADMIN
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  username     String        @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  storeId      Int?          // Null for ADMIN (global access)
+  crewId       String?       @db.Char(7) // Links to Crew for CREW role
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  Store              Store?        @relation(fields: [storeId], references: [id])
+  Crew               Crew?         @relation(fields: [crewId], references: [id])
+  ActivityLogs       ActivityLog[]
+  InviteCodesCreated InviteCode[]  @relation("InviteCodesCreated")
+  InviteCodesUsed    InviteCode[]  @relation("InviteCodesUsed")
+
+  @@unique([crewId]) // One user per crew member
+  @@index([storeId])
+  @@index([crewId])
+  @@index([username])
+}
+
+model ActivityLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  action       String    // "shifts_save", "constraints_save", "solver_run", "logbook_publish", "assignment_edit"
+  resourceType String    // "Shift", "Logbook", "Constraint"
+  resourceId   String?
+  storeId      Int?
+  date         DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+
+  User         User      @relation(fields: [userId], references: [id])
+  Store        Store?    @relation(fields: [storeId], references: [id])
+
+  @@index([userId])
+  @@index([storeId, createdAt])
+  @@index([action])
+}
+
+// Invite codes for CAPTAIN and MATE registration
+model InviteCode {
+  id          String    @id @default(uuid()) @db.Uuid
+  code        String    @unique // 8-character alphanumeric code
+  targetRole  UserRole  // The role this code grants (CAPTAIN or MATE)
+  storeId     Int       // The store this code is for
+  createdById String    @db.Uuid // User who created this code
+  usedById    String?   @db.Uuid // User who used this code (null if unused)
+  usedAt      DateTime? // When the code was used
+  expiresAt   DateTime  // Expiration date
+  createdAt   DateTime  @default(now())
+
+  Store       Store     @relation(fields: [storeId], references: [id])
+  CreatedBy   User      @relation("InviteCodesCreated", fields: [createdById], references: [id])
+  UsedBy      User?     @relation("InviteCodesUsed", fields: [usedById], references: [id])
+
+  @@index([code])
+  @@index([storeId])
+  @@index([createdById])
 }
