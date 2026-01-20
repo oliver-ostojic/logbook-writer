@@ -5,10 +5,16 @@ const prisma = new PrismaClient();
 // Activity action types
 export type ActivityAction =
   | 'shifts_save'
+  | 'shifts_add'
+  | 'shifts_edit'
   | 'constraints_save'
   | 'solver_run'
+  | 'logbook_generate'
+  | 'logbook_regenerate'
   | 'logbook_publish'
+  | 'logbook_publish_with_edits'
   | 'assignment_edit'
+  | 'comment'
   | 'crew_create'
   | 'crew_update'
   | 'crew_delete'
@@ -26,7 +32,8 @@ export type ResourceType =
   | 'Assignment'
   | 'Crew'
   | 'User'
-  | 'Run';
+  | 'Run'
+  | 'Comment';
 
 export interface LogActivityParams {
   userId: string;
@@ -198,4 +205,121 @@ export async function getActivityLogs(params: {
   ]);
 
   return { logs, total };
+}
+
+/**
+ * Log a user comment
+ */
+export async function logComment(
+  userId: string,
+  storeId: number,
+  comment: string
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'comment',
+    resourceType: 'Comment',
+    storeId,
+    metadata: { comment },
+  });
+}
+
+/**
+ * Log shifts add activity (first time adding shifts for a date)
+ */
+export async function logShiftsAdd(
+  userId: string,
+  storeId: number,
+  date: Date,
+  metadata?: { shiftCount?: number; crewIds?: string[] }
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'shifts_add',
+    resourceType: 'Shift',
+    storeId,
+    date,
+    metadata,
+  });
+}
+
+/**
+ * Log shifts edit activity (modifying existing shifts)
+ */
+export async function logShiftsEdit(
+  userId: string,
+  storeId: number,
+  date: Date,
+  metadata?: { shiftCount?: number; crewIds?: string[] }
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'shifts_edit',
+    resourceType: 'Shift',
+    storeId,
+    date,
+    metadata,
+  });
+}
+
+/**
+ * Log logbook generation activity (first time generating)
+ */
+export async function logLogbookGenerate(
+  userId: string,
+  storeId: number,
+  logbookId: string,
+  date: Date
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'logbook_generate',
+    resourceType: 'Logbook',
+    resourceId: logbookId,
+    storeId,
+    date,
+    metadata: { logbookId },
+  });
+}
+
+/**
+ * Log logbook regeneration activity (regenerating after changes)
+ */
+export async function logLogbookRegenerate(
+  userId: string,
+  storeId: number,
+  logbookId: string,
+  date: Date,
+  reason?: string
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'logbook_regenerate',
+    resourceType: 'Logbook',
+    resourceId: logbookId,
+    storeId,
+    date,
+    metadata: { logbookId, reason },
+  });
+}
+
+/**
+ * Log logbook publish with edits activity
+ */
+export async function logLogbookPublishWithEdits(
+  userId: string,
+  logbookId: string,
+  storeId: number,
+  date: Date,
+  editCount: number
+): Promise<void> {
+  await logActivity({
+    userId,
+    action: 'logbook_publish_with_edits',
+    resourceType: 'Logbook',
+    resourceId: logbookId,
+    storeId,
+    date,
+    metadata: { editCount },
+  });
 }

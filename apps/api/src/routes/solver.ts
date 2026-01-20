@@ -14,6 +14,8 @@ import { analyzeSolverResult, type AssignmentRecord } from '../services/constrai
 import { analyzeFeasibility, generateUnknownInfeasibilityMessage } from '../services/feasibility-analyzer';
 import { runPythonSolverV2, runPythonTuningEngine, type PythonSolverResult, type TuningConfig } from './solver2';
 import { startOfDay } from '../utils';
+import { rbacMiddleware, getUser } from '../middleware/rbac';
+import { logLogbookGenerate, logLogbookRegenerate } from '../services/activity-logger';
 const prisma = new PrismaClient();
 
 /**
@@ -367,10 +369,15 @@ async function runSolverV2ForLogbook(options: {
 export function registerSolverRoutes(app: FastifyInstance) {
   /**
    * POST /solve-logbook
-   * 
+   *
    * Main endpoint to generate a daily logbook schedule using MILP solver
    */
-  app.post<{ Body: SolveLogbookRequest }>('/solve-logbook', async (request, reply) => {
+  app.post<{ Body: SolveLogbookRequest }>('/solve-logbook', {
+    preHandler: rbacMiddleware({
+      allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+      // Note: storeId comes from body, not URL params, so we check manually below
+    }),
+  }, async (request, reply) => {
     const { date, store_id, shifts, time_limit_seconds, lookback_days, lookbackDays, useTuningEngine, tuningConfig } = request.body;
 
     if (!date || !store_id) {
@@ -381,6 +388,20 @@ export function registerSolverRoutes(app: FastifyInstance) {
     if (!Number.isFinite(storeId)) {
       return reply.status(400).send({ ok: false, error: 'store_id must be a number' });
     }
+
+    // Manual store access check (since storeId comes from body, not URL params)
+    const user = getUser(request);
+    if (user && user.role !== 'ADMIN' && user.storeId !== storeId) {
+      return reply.status(403).send({ ok: false, error: 'You do not have access to this store' });
+    }
+
+    // Check if a logbook already exists for this date (to determine generate vs regenerate)
+    const normalizedDateForCheck = startOfDay(date);
+    const existingLogbook = await prisma.logbook.findFirst({
+      where: { storeId, date: normalizedDateForCheck },
+      select: { id: true },
+    });
+    const hadExistingLogbook = existingLogbook !== null;
 
     try {
       const shiftOverrides = buildShiftOverridesFromRequest(shifts);
@@ -409,6 +430,15 @@ export function registerSolverRoutes(app: FastifyInstance) {
           solverInput,
           status: 'DRAFT',
         });
+
+        // Log activity for logbook generation
+        if (user && logbookId) {
+          if (hadExistingLogbook) {
+            await logLogbookRegenerate(user.id, storeId, logbookId, normalizedDate, 'constraints_changed');
+          } else {
+            await logLogbookGenerate(user.id, storeId, logbookId, normalizedDate);
+          }
+        }
       }
 
       // Create Run record for auditing (tracks all solver executions)

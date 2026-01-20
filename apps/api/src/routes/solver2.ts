@@ -12,11 +12,13 @@ import type { ConstraintViolation } from '@logbook-writer/shared-types/src/const
 import { SolverStatus } from '@logbook-writer/shared-types/src/solver';
 import { saveLogbookWithMetadata, createRunRecord, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
 import { startOfDay } from '../utils';
-import { 
-  PRODUCTION_SOLVER_SETTINGS, 
+import {
+  PRODUCTION_SOLVER_SETTINGS,
   PRODUCTION_TUNING_CONFIG,
   SOLVER_CONFIG,
 } from '../config/solver.config';
+import { rbacMiddleware, getUser } from '../middleware/rbac';
+import { logLogbookGenerate, logLogbookRegenerate } from '../services/activity-logger';
 
 const prisma = new PrismaClient();
 
@@ -124,7 +126,12 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
     return { success: true, data: input };
   });
 
-  app.post('/solver/v2/solve', async (request, reply) => {
+  app.post('/solver/v2/solve', {
+    preHandler: rbacMiddleware({
+      allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+      // Note: storeId comes from body, not URL params, so we check manually below
+    }),
+  }, async (request, reply) => {
     const body = request.body as SolveRequestBody | undefined;
     if (!body) {
       return reply.code(400).send({ success: false, error: 'storeId and date are required' });
@@ -135,6 +142,12 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
       return reply.code(400).send({ success: false, error: 'storeId (number) and date are required' });
     }
 
+    // Manual store access check (since storeId comes from body, not URL params)
+    const user = getUser(request);
+    if (user && user.role !== 'ADMIN' && user.storeId !== storeId) {
+      return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this store' });
+    }
+
     let lookbackDays: number | undefined;
     if (body.lookbackDays !== undefined) {
       lookbackDays = Number(body.lookbackDays);
@@ -142,6 +155,14 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         return reply.code(400).send({ success: false, error: 'lookbackDays must be a positive number when provided' });
       }
     }
+
+    // Check if a logbook already exists for this date (to determine generate vs regenerate)
+    const normalizedDateForCheck = startOfDay(body.date);
+    const existingLogbook = await prisma.logbook.findFirst({
+      where: { storeId, date: normalizedDateForCheck },
+      select: { id: true },
+    });
+    const hadExistingLogbook = existingLogbook !== null;
 
     try {
       const solverInput = await buildSolverInputV2({
@@ -233,6 +254,16 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         });
 
         request.log.info({ logbookId, date: body.date }, 'Logbook saved with fairness tracking');
+
+        // Log activity for logbook generation
+        const user = getUser(request);
+        if (user && logbookId) {
+          if (hadExistingLogbook) {
+            await logLogbookRegenerate(user.id, storeId, logbookId, normalizedDate, 'constraints_changed');
+          } else {
+            await logLogbookGenerate(user.id, storeId, logbookId, normalizedDate);
+          }
+        }
       }
 
       // Create Run record for auditing (tracks all solver executions)
@@ -288,7 +319,12 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
   // =========================================================================
   // TUNING ENDPOINT - Uses parallel region search for optimized schedules
   // =========================================================================
-  app.post('/solver/v2/tune', async (request, reply) => {
+  app.post('/solver/v2/tune', {
+    preHandler: rbacMiddleware({
+      allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+      // Note: storeId comes from body, not URL params, so we check manually below
+    }),
+  }, async (request, reply) => {
     const body = request.body as TuneRequestBody | undefined;
     if (!body) {
       return reply.code(400).send({ success: false, error: 'storeId and date are required' });
@@ -299,6 +335,12 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
       return reply.code(400).send({ success: false, error: 'storeId (number) and date are required' });
     }
 
+    // Manual store access check (since storeId comes from body, not URL params)
+    const user = getUser(request);
+    if (user && user.role !== 'ADMIN' && user.storeId !== storeId) {
+      return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this store' });
+    }
+
     let lookbackDays: number | undefined;
     if (body.lookbackDays !== undefined) {
       lookbackDays = Number(body.lookbackDays);
@@ -306,6 +348,14 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         return reply.code(400).send({ success: false, error: 'lookbackDays must be a positive number when provided' });
       }
     }
+
+    // Check if a logbook already exists for this date (to determine generate vs regenerate)
+    const normalizedDateForCheck = startOfDay(body.date);
+    const existingLogbook = await prisma.logbook.findFirst({
+      where: { storeId, date: normalizedDateForCheck },
+      select: { id: true },
+    });
+    const hadExistingLogbook = existingLogbook !== null;
 
     try {
       const solverInput = await buildSolverInputV2({
@@ -397,6 +447,16 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         });
 
         request.log.info({ logbookId, date: body.date }, 'Tuned logbook saved with fairness tracking');
+
+        // Log activity for logbook generation
+        const user = getUser(request);
+        if (user && logbookId) {
+          if (hadExistingLogbook) {
+            await logLogbookRegenerate(user.id, storeId, logbookId, normalizedDate, 'tuning_optimized');
+          } else {
+            await logLogbookGenerate(user.id, storeId, logbookId, normalizedDate);
+          }
+        }
       }
 
       // Create Run record for auditing (tracks all solver executions)

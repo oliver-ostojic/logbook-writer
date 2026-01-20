@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { startOfDay } from '../utils';
 import { minToHHMM, hhmmToMin } from '../services/segmentation';
+import { rbacMiddleware, getUser } from '../middleware/rbac';
+import { logShiftsAdd, logShiftsEdit } from '../services/activity-logger';
 
 const prisma = new PrismaClient();
 
@@ -36,7 +38,12 @@ export function registerShiftRoutes(app: FastifyInstance) {
   });
 
   // Upsert shifts for a store on a given date (idempotent per crewId)
-  app.post('/stores/:storeId/shifts', async (req, reply) => {
+  app.post('/stores/:storeId/shifts', {
+    preHandler: rbacMiddleware({
+      allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+      requireStoreAccess: true,
+    }),
+  }, async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
     const { date, shifts } = (req.body as any) ?? {};
     if (!storeId || !date || !Array.isArray(shifts)) {
@@ -45,6 +52,13 @@ export function registerShiftRoutes(app: FastifyInstance) {
     const sid = Number(storeId);
     if (!Number.isFinite(sid)) return reply.code(400).send({ error: 'storeId must be a number' });
     const day = startOfDay(String(date));
+
+    // Check if shifts already exist for this date (to determine add vs edit)
+    const existingShifts = await prisma.shift.findMany({
+      where: { storeId: sid, date: day },
+      select: { crewId: true },
+    });
+    const hadExistingShifts = existingShifts.length > 0;
 
     // Validate payload minimally
     const normalized = shifts
@@ -89,6 +103,20 @@ export function registerShiftRoutes(app: FastifyInstance) {
         }
       }
     });
+
+    // Log activity after successful save
+    const user = getUser(req);
+    if (user) {
+      const metadata = {
+        shiftCount: normalized.length,
+        crewIds: normalized.map(s => s.crewId),
+      };
+      if (hadExistingShifts) {
+        await logShiftsEdit(user.id, sid, day, metadata);
+      } else {
+        await logShiftsAdd(user.id, sid, day, metadata);
+      }
+    }
 
     return { ok: true, count: normalized.length };
   });

@@ -1,9 +1,47 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { CardContainer, CardHeader, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { fetchActivityLogsByDate, ActivityLogItem } from '@/lib/api/activity';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+// Helper to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Helper to get display text for action type
+function getActivityDisplayType(action: string): string {
+  switch (action) {
+    case 'shifts_add': return 'added shifts';
+    case 'shifts_edit': return 'edited shifts';
+    case 'shifts_save': return 'saved shifts';
+    case 'constraints_save': return 'updated constraints';
+    case 'solver_run': return 'ran solver';
+    case 'logbook_generate': return 'generated logbook';
+    case 'logbook_regenerate': return 'regenerated logbook';
+    case 'logbook_publish': return 'published logbook';
+    case 'logbook_publish_with_edits': return 'published logbook';
+    case 'assignment_edit': return 'edited assignments';
+    case 'comment': return 'commented';
+    default: return action.replace(/_/g, ' ');
+  }
+}
 
 interface LogbookVersion {
   id: string;
@@ -23,11 +61,150 @@ interface LogbookSupersededHistoryProps {
   onClose: () => void;
 }
 
+// Separate scrollable activity list component
+function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
+  return (
+    <div
+      style={{
+        maxHeight: '300px',
+        overflowY: 'scroll',
+        overflowX: 'hidden',
+      }}
+    >
+      <ul className="space-y-6">
+        {logs.map((log, idx) => {
+          const isComment = log.action === 'comment';
+          const isDeleted = log.metadata?.deleted === true;
+          const isPublish = log.action === 'logbook_publish' || log.action === 'logbook_publish_with_edits';
+          const isPublishWithEdits = log.action === 'logbook_publish_with_edits';
+          const displayType = getActivityDisplayType(log.action);
+          const relativeTime = formatRelativeTime(log.createdAt);
+          const initials = log.User.name.split(' ').map(n => n[0]).join('');
+          const comment = log.metadata?.comment;
+
+          return (
+            <li key={log.id} className="relative flex gap-x-4">
+              {/* Timeline line */}
+              <div
+                className={`absolute left-0 top-0 flex w-6 justify-center ${
+                  idx === logs.length - 1 ? 'h-6' : '-bottom-6'
+                }`}
+              >
+                <div className="w-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
+              </div>
+
+              {isComment ? (
+                <>
+                  {/* Avatar for comments */}
+                  <div
+                    className="relative mt-3 flex-none rounded-full flex items-center justify-center"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      backgroundColor: 'white',
+                      boxShadow: '0 0 0 12px white',
+                    }}
+                  >
+                    <div
+                      className="w-full h-full rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.04)' : log.User.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        color: isDeleted ? '#9A999E' : log.User.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
+                      }}
+                    >
+                      {initials}
+                    </div>
+                  </div>
+                  {/* Comment bubble */}
+                  <div
+                    className="flex-auto p-3"
+                    style={{
+                      backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.02)' : 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                      borderRadius: '1rem',
+                      opacity: isDeleted ? 0.7 : 1,
+                    }}
+                  >
+                    <div className="flex justify-between gap-x-4">
+                      <div style={{ fontSize: '12px', color: isDeleted ? '#9A999E' : '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
+                        <span style={{ fontWeight: 500, color: isDeleted ? '#9A999E' : '#2C2C2C' }}>{log.User.name}</span> {isDeleted ? 'deleted their comment' : 'commented'}
+                      </div>
+                      <time
+                        dateTime={log.createdAt}
+                        style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                      >
+                        {relativeTime}
+                      </time>
+                    </div>
+                    {!isDeleted && (
+                      <p style={{ fontSize: '13px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)', marginTop: '4px' }}>
+                        {comment}
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Icon for system events */}
+                  <div
+                    className="relative flex flex-none items-center justify-center rounded-full"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      backgroundColor: 'white',
+                      boxShadow: isPublish ? '0 0 0 12px white' : '0 0 0 4px white',
+                    }}
+                  >
+                    {isPublish ? (
+                      <CheckCircleIcon className="w-6 h-6" style={{ color: 'hsl(0, 84%, 60%)' }} />
+                    ) : (
+                      <div
+                        className="rounded-full"
+                        style={{
+                          width: 6,
+                          height: 6,
+                          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                          border: '1px solid rgba(0, 0, 0, 0.2)',
+                        }}
+                      />
+                    )}
+                  </div>
+                  {/* Event text */}
+                  <p
+                    className="flex-auto py-0.5"
+                    style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                  >
+                    <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{log.User.name}</span>{' '}
+                    {displayType}{isPublishWithEdits ? ' (with edits)' : ''}.
+                  </p>
+                  <time
+                    dateTime={log.createdAt}
+                    className="flex-none py-0.5"
+                    style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                  >
+                    {relativeTime}
+                  </time>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onClose }: LogbookSupersededHistoryProps) {
+  const params = useParams();
+  const storeId = params?.storeId as string;
   const [current, setCurrent] = useState<LogbookVersion | null>(null);
   const [supersededVersions, setSupersededVersions] = useState<LogbookVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +231,30 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
     loadHistory();
     return () => { cancelled = true; };
   }, [logbookId]);
+
+  // Fetch activity logs once we have the current logbook's date
+  useEffect(() => {
+    if (!current?.date || !storeId) return;
+    let cancelled = false;
+
+    async function loadActivityLogs() {
+      setActivityLoading(true);
+      try {
+        const dateStr = current!.date.slice(0, 10);
+        const response = await fetchActivityLogsByDate(Number(storeId), dateStr);
+        if (!cancelled) {
+          setActivityLogs(response.logs);
+        }
+      } catch (err) {
+        console.error('Failed to fetch activity logs:', err);
+      } finally {
+        if (!cancelled) setActivityLoading(false);
+      }
+    }
+
+    loadActivityLogs();
+    return () => { cancelled = true; };
+  }, [current?.date, storeId]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -144,7 +345,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-4">
       <CardHeader
         title="Version History"
         lightMode={true}
@@ -236,6 +437,48 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
             </p>
           )}
         </div>
+      </CardContainer>
+
+      {/* Activity Log Section */}
+      <CardHeader
+        title="Activity Log"
+        lightMode={true}
+        borderRadius="1.5rem"
+        titleStyle={{ color: '#2C2C2C' }}
+        leftContent={
+          !activityLoading && activityLogs.length > 0 ? (
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+              <div
+                style={{
+                  background: 'rgba(0, 0, 0, 0.06)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  borderRadius: '9999px',
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 500,
+                  padding: '6px 14px',
+                  fontSize: '14px',
+                }}
+              >
+                {activityLogs.length} action{activityLogs.length === 1 ? '' : 's'}
+              </div>
+            </div>
+          ) : undefined
+        }
+      />
+      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+        {activityLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B', fontSize: '13px' }}>Loading activity...</span>
+          </div>
+        ) : activityLogs.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity for this date</span>
+          </div>
+        ) : (
+          <ActivityList logs={activityLogs} />
+        )}
       </CardContainer>
     </div>
   );

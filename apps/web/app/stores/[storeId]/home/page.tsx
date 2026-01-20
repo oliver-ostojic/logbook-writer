@@ -11,6 +11,7 @@ import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, Rol
 import { renderRoleRule } from '@/lib/role-rule-templates';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 import { useAuthStore } from '@/lib/authStore';
+import { fetchActivityLogs, postComment, deleteComment, ActivityLogItem, ActivityFilter } from '@/lib/api/activity';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -312,29 +313,52 @@ function ListRowItemLight({
   );
 }
 
-// Placeholder activity data
-const activity = [
-  { id: 1, type: 'created', person: { name: 'Sarah Chen' }, date: '2d ago', dateTime: '2026-01-09T10:32' },
-  { id: 2, type: 'edited', person: { name: 'Sarah Chen' }, date: '2d ago', dateTime: '2026-01-09T11:03' },
-  {
-    id: 3,
-    type: 'commented',
-    person: { name: 'Mike Rodriguez' },
-    comment: 'Adjusted Demo coverage for the afternoon rush. Looks good now.',
-    date: '1d ago',
-    dateTime: '2026-01-10T09:15',
-  },
-  { id: 4, type: 'published', person: { name: 'Sarah Chen' }, date: '1d ago', dateTime: '2026-01-10T10:00' },
-  {
-    id: 5,
-    type: 'commented',
-    person: { name: 'Alex Kim' },
-    comment: 'Team is happy with the new schedule. Great work!',
-    date: '12h ago',
-    dateTime: '2026-01-10T22:30',
-  },
-  { id: 6, type: 'created', person: { name: 'Sarah Chen' }, date: '4h ago', dateTime: '2026-01-11T06:00' },
-];
+// Helper to format relative time from ISO date string
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+}
+
+// Helper to get display text for activity actions
+function getActivityDisplayType(action: string): string {
+  switch (action) {
+    case 'shifts_add': return 'added shifts for';
+    case 'shifts_edit': return 'edited shifts for';
+    case 'shifts_save': return 'saved shifts for';  // backward compat
+    case 'constraints_save': return 'updated constraints for';
+    case 'solver_run': return 'ran solver for';
+    case 'logbook_generate': return 'generated logbook for';
+    case 'logbook_regenerate': return 'regenerated logbook for';
+    case 'logbook_publish': return 'published logbook for';
+    case 'logbook_publish_with_edits': return 'published logbook for';
+    case 'assignment_edit': return 'edited assignments for';
+    case 'comment': return 'commented';
+    case 'crew_create': return 'created crew member';
+    case 'crew_update': return 'updated crew member';
+    case 'crew_delete': return 'deleted crew member';
+    case 'login': return 'logged in';
+    case 'logout': return 'logged out';
+    default: return action.replace(/_/g, ' ');
+  }
+}
+
+// Helper to format activity log date as "Monday, Jan 20, 2026"
+function formatActivityDate(dateString: string | null): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthDayYear = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return `${dayName}, ${monthDayYear}`;
+}
 
 // Type for items that can be edited/deleted/viewed
 type EditableItem = {
@@ -356,7 +380,7 @@ export default function Home() {
   const params = useParams();
   const router = useRouter();
   const storeId = params.storeId as string;
-  const { getNavLinks } = useAuthStore();
+  const { getNavLinks, user } = useAuthStore();
   const [activeView, setActiveView] = useState<ViewId>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [rolesSearchQuery, setRolesSearchQuery] = useState('');
@@ -368,8 +392,15 @@ export default function Home() {
   const [preferencesPage, setPreferencesPage] = useState(1);
   const [runsPage, setRunsPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
-  const [activityFilter, setActivityFilter] = useState('today');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('today');
+  const [activityUserFilter, setActivityUserFilter] = useState<'everyone' | 'mine'>('everyone');
   const [commentText, setCommentText] = useState('');
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
+  const [deleteConfirmLogId, setDeleteConfirmLogId] = useState<string | null>(null);
+  const activityScrollRef = useRef<HTMLDivElement>(null);
 
   // Check if we're in PDF view mode (for panel width adjustment)
   const isPdfView = selectedItem?.mode === 'pdf' && selectedItem?.type === 'logbooks';
@@ -414,6 +445,61 @@ export default function Home() {
     fetchData();
   }, [storeId]);
 
+  // Fetch activity logs when filter changes
+  useEffect(() => {
+    async function loadActivity() {
+      setActivityLoading(true);
+      try {
+        const { logs } = await fetchActivityLogs(Number(storeId), activityFilter);
+        setActivityLogs(logs);
+      } catch (err) {
+        console.error('Failed to load activity:', err);
+        setActivityLogs([]);
+      } finally {
+        setActivityLoading(false);
+      }
+    }
+    loadActivity();
+  }, [storeId, activityFilter]);
+
+  // Handle comment submit
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim() || commentSubmitting) return;
+    setCommentSubmitting(true);
+    try {
+      const newLog = await postComment(Number(storeId), commentText.trim());
+      setActivityLogs(prev => [...prev, newLog]); // Add to bottom (oldest-to-newest order)
+      setCommentText('');
+    } catch (err) {
+      console.error('Failed to post comment:', err);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  // Handle comment delete
+  const handleDeleteComment = async (logId: string) => {
+    try {
+      const updatedLog = await deleteComment(Number(storeId), logId);
+      setActivityLogs(prev => prev.map(log => log.id === logId ? updatedLog : log));
+      setDeleteConfirmLogId(null);
+    } catch (err) {
+      console.error('Failed to delete comment:', err);
+    }
+  };
+
+  // Filter activity logs by user
+  const filteredActivityLogs = activityUserFilter === 'mine' && user
+    ? activityLogs.filter(log => log.User.id === user.id)
+    : activityLogs;
+
+  // Scroll activity log to bottom when logs change
+  useEffect(() => {
+    if (activityScrollRef.current && filteredActivityLogs.length > 0) {
+      activityScrollRef.current.scrollTop = activityScrollRef.current.scrollHeight;
+    }
+  }, [filteredActivityLogs]);
+
   // Use API data if available, otherwise fall back to placeholder
   const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
   const effectiveRoles = (apiRoles.length > 0
@@ -454,11 +540,16 @@ export default function Home() {
       }))
     : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false }));
 
-  const ACTIVITY_FILTER_OPTIONS = [
+  const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'today', label: 'Today' },
     { id: 'last2days', label: 'Last 2 days' },
     { id: 'oneweek', label: 'One week' },
     { id: 'onemonth', label: 'One month' },
+  ];
+
+  const ACTIVITY_USER_FILTER_OPTIONS: { id: 'everyone' | 'mine'; label: string }[] = [
+    { id: 'everyone', label: 'Everyone' },
+    { id: 'mine', label: 'Mine' },
   ];
 
   // Filter data based on search query
@@ -2030,82 +2121,173 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Time filter dropdown */}
-                <Menu as="div" style={{ zIndex: 100 }}>
-                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                    <MenuButton
-                      className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                      style={{
-                        ...aiGlassLightContentStyle('9999px', 0.6),
-                        padding: '6px 14px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#6B6B6B',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {ACTIVITY_FILTER_OPTIONS.find(o => o.id === activityFilter)?.label}
-                      <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </MenuButton>
-                  </div>
-                  <MenuItems
-                    anchor="bottom end"
-                    portal={false}
-                    transition
-                    className="w-36 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                    style={{
-                      zIndex: 100,
-                      ...aiGlassLightBorderStyle('0.75rem'),
-                      marginTop: 8,
-                    }}
-                  >
-                    <div
-                      className="py-1"
-                      style={{
-                        ...aiGlassLightContentStyle('0.75rem', 0.6),
-                        backdropFilter: 'blur(2px)',
-                        WebkitBackdropFilter: 'blur(2px)',
-                      }}
-                    >
-                      {ACTIVITY_FILTER_OPTIONS.map((option) => (
-                        <MenuItem key={option.id}>
-                          <div className="flex items-center justify-between px-4 py-2">
-                            <button
-                              onClick={() => setActivityFilter(option.id)}
-                              className="text-left text-sm focus:outline-none flex-1"
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                color: activityFilter === option.id ? '#2C2C2C' : '#6B6B6B',
-                                backgroundColor: 'transparent',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                              onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                            >
-                              {option.label}
-                            </button>
-                          </div>
-                        </MenuItem>
-                      ))}
+                {/* Filter dropdowns */}
+                <div className="flex items-center gap-2">
+                  {/* User filter dropdown */}
+                  <Menu as="div" style={{ zIndex: 100 }}>
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <MenuButton
+                        className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {ACTIVITY_USER_FILTER_OPTIONS.find(o => o.id === activityUserFilter)?.label}
+                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </MenuButton>
                     </div>
-                  </MenuItems>
-                </Menu>
+                    <MenuItems
+                      anchor="bottom end"
+                      portal={false}
+                      transition
+                      className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                      style={{
+                        zIndex: 100,
+                        ...aiGlassLightBorderStyle('0.75rem'),
+                        marginTop: 8,
+                      }}
+                    >
+                      <div
+                        className="py-1"
+                        style={{
+                          ...aiGlassLightContentStyle('0.75rem', 0.6),
+                          backdropFilter: 'blur(2px)',
+                          WebkitBackdropFilter: 'blur(2px)',
+                        }}
+                      >
+                        {ACTIVITY_USER_FILTER_OPTIONS.map((option) => (
+                          <MenuItem key={option.id}>
+                            <div className="flex items-center justify-between px-4 py-2">
+                              <button
+                                onClick={() => setActivityUserFilter(option.id)}
+                                className="text-left text-sm focus:outline-none flex-1"
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  color: activityUserFilter === option.id ? '#2C2C2C' : '#6B6B6B',
+                                  backgroundColor: 'transparent',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
+                              >
+                                {option.label}
+                              </button>
+                            </div>
+                          </MenuItem>
+                        ))}
+                      </div>
+                    </MenuItems>
+                  </Menu>
+
+                  {/* Time filter dropdown */}
+                  <Menu as="div" style={{ zIndex: 100 }}>
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <MenuButton
+                        className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {ACTIVITY_FILTER_OPTIONS.find(o => o.id === activityFilter)?.label}
+                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </MenuButton>
+                    </div>
+                    <MenuItems
+                      anchor="bottom end"
+                      portal={false}
+                      transition
+                      className="w-36 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                      style={{
+                        zIndex: 100,
+                        ...aiGlassLightBorderStyle('0.75rem'),
+                        marginTop: 8,
+                      }}
+                    >
+                      <div
+                        className="py-1"
+                        style={{
+                          ...aiGlassLightContentStyle('0.75rem', 0.6),
+                          backdropFilter: 'blur(2px)',
+                          WebkitBackdropFilter: 'blur(2px)',
+                        }}
+                      >
+                        {ACTIVITY_FILTER_OPTIONS.map((option) => (
+                          <MenuItem key={option.id}>
+                            <div className="flex items-center justify-between px-4 py-2">
+                              <button
+                                onClick={() => setActivityFilter(option.id)}
+                                className="text-left text-sm focus:outline-none flex-1"
+                                style={{
+                                  fontFamily: 'var(--font-open-sans)',
+                                  color: activityFilter === option.id ? '#2C2C2C' : '#6B6B6B',
+                                  backgroundColor: 'transparent',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
+                              >
+                                {option.label}
+                              </button>
+                            </div>
+                          </MenuItem>
+                        ))}
+                      </div>
+                    </MenuItems>
+                  </Menu>
+                </div>
               </div>
+              {activityLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B', fontSize: '13px' }}>Loading activity...</span>
+                </div>
+              ) : filteredActivityLogs.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity yet</span>
+                </div>
+              ) : (
+              <div ref={activityScrollRef} style={{ maxHeight: '350px', overflowY: 'auto' }}>
               <ul className="space-y-6">
-                {activity.map((activityItem, activityItemIdx) => (
-                  <li key={activityItem.id} className="relative flex gap-x-4">
-                    {/* Timeline line */}
+                {filteredActivityLogs.map((log, idx) => {
+                  const isComment = log.action === 'comment';
+                  const isDeleted = log.metadata?.deleted === true;
+                  const isPublish = log.action === 'logbook_publish' || log.action === 'logbook_publish_with_edits';
+                  const isPublishWithEdits = log.action === 'logbook_publish_with_edits';
+                  const displayType = getActivityDisplayType(log.action);
+                  const relativeTime = formatRelativeTime(log.createdAt);
+                  const initials = log.User.name.split(' ').map(n => n[0]).join('');
+                  const comment = log.metadata?.comment;
+                  const canDelete = isComment && !isDeleted && user && log.User.id === user.id;
+                  const isHovered = hoveredCommentId === log.id;
+                  const activityDate = formatActivityDate(log.date);
+
+                  return (
+                  <li key={log.id} className="relative flex gap-x-4">
+                    {/* Timeline line - first item starts from center (no line above), last item ends at center */}
                     <div
-                      className={`absolute left-0 top-0 flex w-6 justify-center ${
-                        activityItemIdx === activity.length - 1 ? 'h-6' : '-bottom-6'
+                      className={`absolute left-0 flex w-6 justify-center ${
+                        idx === 0 ? 'top-3' : 'top-0'
+                      } ${
+                        idx === filteredActivityLogs.length - 1 ? 'h-6' : '-bottom-6'
                       }`}
                     >
                       <div className="w-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
                     </div>
 
-                    {activityItem.type === 'commented' ? (
+                    {isComment ? (
                       <>
                         {/* Avatar for comments - white circle behind to cut line */}
                         <div
@@ -2120,38 +2302,60 @@ export default function Home() {
                           <div
                             className="w-full h-full rounded-full flex items-center justify-center"
                             style={{
-                              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                              backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.04)' : log.User.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                               fontSize: '10px',
                               fontWeight: 500,
-                              color: '#6B6B6B',
+                              color: isDeleted ? '#9A999E' : log.User.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
                             }}
                           >
-                            {activityItem.person.name.split(' ').map(n => n[0]).join('')}
+                            {initials}
                           </div>
                         </div>
                         {/* Comment bubble */}
                         <div
                           className="flex-auto p-3"
                           style={{
-                            backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                            backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.02)' : 'rgba(0, 0, 0, 0.03)',
                             border: '1px solid rgba(0, 0, 0, 0.06)',
                             borderRadius: '1rem',
+                            opacity: isDeleted ? 0.7 : 1,
                           }}
+                          onMouseEnter={() => canDelete && setHoveredCommentId(log.id)}
+                          onMouseLeave={() => setHoveredCommentId(null)}
                         >
                           <div className="flex justify-between gap-x-4">
-                            <div style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
-                              <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{activityItem.person.name}</span> commented
+                            <div style={{ fontSize: '12px', color: isDeleted ? '#9A999E' : '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
+                              <span style={{ fontWeight: 500, color: isDeleted ? '#9A999E' : '#2C2C2C' }}>{log.User.name}</span> {isDeleted ? 'deleted their comment' : 'commented'}
                             </div>
-                            <time
-                              dateTime={activityItem.dateTime}
-                              style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                            >
-                              {activityItem.date}
-                            </time>
+                            {canDelete && isHovered ? (
+                              <button
+                                onClick={() => setDeleteConfirmLogId(log.id)}
+                                style={{
+                                  fontSize: '12px',
+                                  color: 'hsl(0, 84%, 50%)',
+                                  fontFamily: 'var(--font-open-sans)',
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                }}
+                              >
+                                Delete
+                              </button>
+                            ) : (
+                              <time
+                                dateTime={log.createdAt}
+                                style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                              >
+                                {relativeTime}
+                              </time>
+                            )}
                           </div>
-                          <p style={{ fontSize: '13px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)', marginTop: '4px' }}>
-                            {activityItem.comment}
-                          </p>
+                          {!isDeleted && (
+                            <p style={{ fontSize: '13px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)', marginTop: '4px' }}>
+                              {comment}
+                            </p>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -2163,10 +2367,10 @@ export default function Home() {
                             width: 24,
                             height: 24,
                             backgroundColor: 'white',
-                            boxShadow: activityItem.type === 'published' ? '0 0 0 12px white' : '0 0 0 4px white',
+                            boxShadow: isPublish ? '0 0 0 12px white' : '0 0 0 4px white',
                           }}
                         >
-                          {activityItem.type === 'published' ? (
+                          {isPublish ? (
                             <CheckCircleIcon className="w-6 h-6" style={{ color: 'hsl(0, 84%, 60%)' }} />
                           ) : (
                             <div
@@ -2185,36 +2389,39 @@ export default function Home() {
                           className="flex-auto py-0.5"
                           style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
                         >
-                          <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{activityItem.person.name}</span>{' '}
-                          {activityItem.type} the logbook.
+                          <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{log.User.name}</span>{' '}
+                          {displayType}{activityDate ? ` ${activityDate}` : ''}{isPublishWithEdits ? ' (with edits)' : ''}.
                         </p>
                         <time
-                          dateTime={activityItem.dateTime}
+                          dateTime={log.createdAt}
                           className="flex-none py-0.5"
                           style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
                         >
-                          {activityItem.date}
+                          {relativeTime}
                         </time>
                       </>
                     )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
+              </div>
+              )}
 
-              {/* Comment input placeholder */}
+              {/* Comment input */}
               <div className="mt-6 flex gap-x-3">
                 <div
                   className="flex-none rounded-full flex items-center justify-center"
                   style={{
                     width: 24,
                     height: 24,
-                    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                    backgroundColor: user?.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                     fontSize: '10px',
                     fontWeight: 500,
-                    color: '#6B6B6B',
+                    color: user?.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
                   }}
                 >
-                  You
+                  {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'You'}
                 </div>
                 <div className="relative flex-auto">
                   <div
@@ -2229,29 +2436,33 @@ export default function Home() {
                       placeholder="Add a comment..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
+                      disabled={commentSubmitting}
                       className="block w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-0"
                       style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none', boxShadow: 'none' }}
                     />
-                    <div className="flex justify-end py-2 px-3">
+                    <div className="flex justify-end py-3 px-3">
                       <button
                         type="button"
-                        className="rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200"
+                        onClick={handleCommentSubmit}
+                        disabled={!commentText.trim() || commentSubmitting}
+                        className="px-3 py-1.5 text-sm font-medium transition-all duration-200"
                         style={{
-                          backgroundColor: commentText.trim() ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)',
-                          color: commentText.trim() ? '#2C2C2C' : '#6B6B6B',
+                          backgroundColor: commentText.trim() && !commentSubmitting ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)',
+                          color: commentText.trim() && !commentSubmitting ? '#2C2C2C' : '#6B6B6B',
                           fontFamily: 'var(--font-open-sans)',
-                          cursor: commentText.trim() ? 'pointer' : 'default',
+                          cursor: commentText.trim() && !commentSubmitting ? 'pointer' : 'default',
+                          borderRadius: '0.75rem',
                         }}
                         onMouseEnter={(e) => {
-                          if (commentText.trim()) {
+                          if (commentText.trim() && !commentSubmitting) {
                             e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.18)';
                           }
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = commentText.trim() ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)';
+                          e.currentTarget.style.backgroundColor = commentText.trim() && !commentSubmitting ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)';
                         }}
                       >
-                        Comment
+                        {commentSubmitting ? 'Posting...' : 'Comment'}
                       </button>
                     </div>
                   </div>
@@ -2259,6 +2470,66 @@ export default function Home() {
               </div>
             </div>
           </CardContainer>
+
+          {/* Delete comment confirmation dialog */}
+          {deleteConfirmLogId && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+              onClick={() => setDeleteConfirmLogId(null)}
+            >
+              <div
+                className="p-6"
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '1rem',
+                  maxWidth: '400px',
+                  width: '90%',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{ fontFamily: 'var(--font-open-sans)', fontSize: '16px', fontWeight: 600, color: '#2C2C2C', marginBottom: '8px' }}>
+                  Delete comment?
+                </h3>
+                <p style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', marginBottom: '20px' }}>
+                  This action cannot be undone. The comment will be marked as deleted.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setDeleteConfirmLogId(null)}
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                      color: '#6B6B6B',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteComment(deleteConfirmLogId)}
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: 'hsl(0, 84%, 50%)',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
             </>
           ) : activeView === 'crew' ? (
             renderListView('crew')

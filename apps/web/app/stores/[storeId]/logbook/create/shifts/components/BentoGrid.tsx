@@ -410,6 +410,7 @@ function SaveAndNext({
       const res = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ date: selectedDate, shifts: items }),
       });
       if (!res.ok) throw new Error(await res.text());

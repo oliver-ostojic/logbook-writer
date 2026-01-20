@@ -39,7 +39,7 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
     return { ...step, status, href };
   });
 
-  // Use consistent padding across all steps
+  // Padding inside the progress bar
   const paddingHorizontal = '48px';
   const paddingVertical = '34px';
 

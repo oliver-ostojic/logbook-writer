@@ -330,6 +330,11 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
       // Step 2: Publish the logbook (set status to PUBLISHED)
       const publishRes = await fetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/publish`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          editCount: localEdits.size,
+        }),
       });
 
       if (!publishRes.ok) {

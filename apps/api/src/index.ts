@@ -19,6 +19,7 @@ import { registerShiftRoutes } from './routes/shifts';
 import { registerConstraintRoutes } from './routes/constraints';
 import { registerDashboardRoutes } from './routes/dashboard';
 import { registerStoreDefaultRoleRoutes } from './routes/store-default-roles';
+import { registerActivityRoutes } from './routes/activity';
 import { AUTH_CONFIG } from './config/auth.config';
 
 export async function buildServer() {
@@ -52,6 +53,7 @@ export async function buildServer() {
   registerShiftRoutes(app);
   registerConstraintRoutes(app);
   registerDashboardRoutes(app);
+  registerActivityRoutes(app);
 
   return app;
 }

@@ -117,7 +117,7 @@ export default function CrewCombobox({ people, onSelectCrew, loading = false }: 
           {/* Options dropdown */}
           <ComboboxOptions
             transition
-            className="absolute z-10 mt-1 max-w-sm max-h-[264px] w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm"
+            className="absolute z-50 mt-1 max-w-sm max-h-[264px] w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm"
           >
             {loading && (
               <div className="px-10 pr-3 py-2 text-gray-500 sm:px-9">Loading crew…</div>

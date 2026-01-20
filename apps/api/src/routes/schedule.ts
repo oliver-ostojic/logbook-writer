@@ -11,6 +11,8 @@ import {
   type CrewRoleRuleRecord,
   type CrewShiftWindow,
 } from '../services/crew-rule-satisfaction';
+import { rbacMiddleware, getUser } from '../middleware/rbac';
+import { logLogbookPublish, logLogbookPublishWithEdits } from '../services/activity-logger';
 
 // Import enums using require for runtime access
 const { LogbookStatus } = require('@prisma/client');
@@ -655,12 +657,18 @@ export function registerScheduleRoutes(app: FastifyInstance) {
   // POST /schedule/logbook/:logbookId/publish - Publish a logbook (set status to PUBLISHED)
   // If another logbook is already published for the same date/store, delete it first
   // Also generates a PDF of the logbook and stores the file path
-  // Body: { createdByName?: string } - Optional name of who published
-  app.post<{ Params: { logbookId: string }; Body: { createdByName?: string } }>(
+  // Body: { createdByName?: string, editCount?: number } - Optional name and edit count
+  app.post<{ Params: { logbookId: string }; Body: { createdByName?: string; editCount?: number } }>(
     '/schedule/logbook/:logbookId/publish',
+    {
+      preHandler: rbacMiddleware({
+        allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+        // Note: storeId comes from logbook lookup, not URL params, so we check manually below
+      }),
+    },
     async (req, reply) => {
       const { logbookId } = req.params;
-      const { createdByName } = req.body || {};
+      const { createdByName, editCount } = req.body || {};
 
       // Verify logbook exists
       const logbook = await prisma.logbook.findUnique({
@@ -669,6 +677,12 @@ export function registerScheduleRoutes(app: FastifyInstance) {
 
       if (!logbook) {
         return reply.status(404).send({ error: 'Logbook not found' });
+      }
+
+      // Manual store access check (since storeId comes from logbook, not URL params)
+      const user = getUser(req);
+      if (user && user.role !== 'ADMIN' && user.storeId !== logbook.storeId) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'You do not have access to this store' });
       }
 
       const wasAlreadyPublished = logbook.status === 'PUBLISHED' || logbook.status === LogbookStatus.PUBLISHED;
@@ -737,6 +751,17 @@ export function registerScheduleRoutes(app: FastifyInstance) {
           },
         });
       });
+
+      // Log activity for publish (user already retrieved above for store access check)
+      if (user) {
+        if (editCount && editCount > 0) {
+          await logLogbookPublishWithEdits(user.id, logbookId, logbook.storeId, logbook.date, editCount);
+        } else {
+          await logLogbookPublish(user.id, Number(logbookId), logbook.storeId, logbook.date, {
+            previousStatus: wasAlreadyPublished ? 'PUBLISHED' : 'DRAFT',
+          });
+        }
+      }
 
       return {
         success: true,

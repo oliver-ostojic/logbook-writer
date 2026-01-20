@@ -488,6 +488,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
       const response = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           date,
           coverageWindows,
@@ -566,6 +567,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
       const solverResponse = await fetch(`${API_URL}/solve-logbook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           date,
           store_id: numericStoreId,

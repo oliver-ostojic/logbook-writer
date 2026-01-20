@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CardContainer, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { PlusIcon, TrashIcon, ClipboardIcon, CheckIcon } from '@heroicons/react/20/solid';
+import { TrashIcon, ClipboardIcon, CheckIcon } from '@heroicons/react/20/solid';
 import { createInviteCode, getInviteCodes, deleteInviteCode, InviteCode } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/authStore';
 
@@ -92,31 +92,33 @@ export function InviteCodesSection({ storeId }: InviteCodesSectionProps) {
       <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-            <div
-              style={{
-                ...aiGlassLightContentStyle('9999px', 0.6),
-                padding: '6px 14px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#2C2C2C',
-              }}
-            >
-              Invite Codes
-            </div>
+          <div style={{
+            padding: '6px 14px',
+            fontFamily: 'var(--font-open-sans)',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#2C2C2C',
+          }}>
+            Invite Codes
           </div>
 
           {!showCreateForm && (
-            <GlassPillButton
+            <button
               onClick={() => setShowCreateForm(true)}
-              padding="8px 14px"
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '6px 14px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: '#2C2C2C',
+                cursor: 'pointer',
+              }}
             >
-              <PlusIcon className="w-4 h-4" style={{ color: '#2C2C2C' }} />
-              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#2C2C2C' }}>
-                Create Code
-              </span>
-            </GlassPillButton>
+              + Create Code
+            </button>
           )}
         </div>
 

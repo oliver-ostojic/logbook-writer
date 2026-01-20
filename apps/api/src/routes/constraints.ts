@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { startOfDay } from '../utils';
+import { rbacMiddleware, getUser } from '../middleware/rbac';
+import { logConstraintsSave } from '../services/activity-logger';
 
 const prisma = new PrismaClient();
 
@@ -77,7 +79,12 @@ export function registerConstraintRoutes(app: FastifyInstance) {
   });
 
   // PUT (replace) constraints for a store/date
-  app.put('/stores/:storeId/constraints', async (req, reply) => {
+  app.put('/stores/:storeId/constraints', {
+    preHandler: rbacMiddleware({
+      allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'],
+      requireStoreAccess: true,
+    }),
+  }, async (req, reply) => {
     const { storeId } = req.params as { storeId: string };
     const { date, coverageWindows, crewQuotas } = (req.body || {}) as ConstraintPayload;
 
@@ -163,6 +170,17 @@ export function registerConstraintRoutes(app: FastifyInstance) {
         });
       }
     });
+
+    // Log activity after successful save
+    const user = getUser(req);
+    if (user) {
+      await logConstraintsSave(user.id, sid, day, {
+        constraintTypes: [
+          ...(normalizedCoverageWindows.length > 0 ? ['coverageWindows'] : []),
+          ...(normalizedCrewQuotas.length > 0 ? ['crewQuotas'] : []),
+        ],
+      });
+    }
 
     return {
       ok: true,
