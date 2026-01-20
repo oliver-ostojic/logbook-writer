@@ -1942,15 +1942,6 @@ export default function FairnessDashboardPage() {
                     Home
                   </a>
                   <a
-                    href={`/stores/${storeId}/crew`}
-                    className="text-base transition-colors"
-                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
-                  >
-                    Crew
-                  </a>
-                  <a
                     href={`/stores/${storeId}/fairness-dashboard`}
                     className="text-base transition-colors"
                     style={{ fontFamily: 'var(--font-open-sans)', color: '#FFFFFF', fontWeight: 500 }}

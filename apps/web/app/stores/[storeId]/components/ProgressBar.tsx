@@ -160,7 +160,31 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
             position: 'relative',
           }}
         >
-          <nav aria-label="Progress">
+          {/* Full width red tinted glass pill for condensed view (below lg) */}
+          <div
+            className="ai-glass-border lg:hidden"
+            style={{
+              ...aiGlassLightBorderStyle('1.5rem', '220, 38, 38', 0.25),
+              position: 'absolute',
+              top: 18,
+              bottom: 18,
+              left: 18,
+              right: 18,
+              zIndex: 0,
+            }}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1.5rem', 1),
+                width: '100%',
+                height: '100%',
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+                background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.12)',
+              }}
+            />
+          </div>
+          <nav aria-label="Progress" style={{ position: 'relative', zIndex: 1 }}>
             <ol className="flex items-center justify-center lg:justify-between" style={{ position: 'relative' }}>
               {steps.map((step, stepIdx) => (
                 <React.Fragment key={step.id}>
@@ -170,10 +194,10 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
                     }
                     style={{ alignItems: 'center', position: 'relative', zIndex: 1 }}
                   >
-                    {/* Red tinted glass pill overlay for current step */}
+                    {/* Red tinted glass pill overlay for current step - expanded view only (lg and above) */}
                     {step.status === 'current' && (
                       <div
-                        className="ai-glass-border"
+                        className="ai-glass-border hidden lg:block"
                         style={{
                           ...aiGlassLightBorderStyle('1.5rem', '220, 38, 38', 0.25),
                           position: 'absolute',

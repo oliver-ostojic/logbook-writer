@@ -191,6 +191,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 top: '56px',
                 right: 0,
                 minWidth: '200px',
+                zIndex: 9999,
               }}
             >
               <div

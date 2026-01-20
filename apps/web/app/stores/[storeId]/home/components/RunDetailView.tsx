@@ -7,6 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface RunDetailViewProps {
   runId: string;
+  onBack?: () => void;
   onDelete?: () => void;
 }
 
@@ -55,7 +56,7 @@ const formatDuration = (ms: number) => {
   return `${(ms / 1000).toFixed(2)}s`;
 };
 
-export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
+export function RunDetailView({ runId, onBack, onDelete }: RunDetailViewProps) {
   const [run, setRun] = useState<RunData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,18 +122,42 @@ export function RunDetailView({ runId, onDelete }: RunDetailViewProps) {
       <div className="flex flex-col gap-6">
         {/* Basic Info Section */}
         <div className="flex flex-col gap-3">
-          <h3
-            style={{
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#6B6B6B',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Run Info
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3
+              style={{
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#6B6B6B',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                margin: 0,
+              }}
+            >
+              Run Info
+            </h3>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="transition-all duration-150"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  padding: '4px 0 0 0',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  color: '#6B6B6B',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+              >
+                Back
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-col gap-2">
             {/* Status */}

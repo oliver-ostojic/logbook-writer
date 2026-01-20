@@ -19,7 +19,6 @@ const VIEW_OPTIONS = [
   { id: 'crew', name: 'Crew', title: 'List View' },
   { id: 'roles', name: 'Roles', title: 'List View' },
   { id: 'preferences', name: 'Preferences', title: 'List View' },
-  { id: 'runs', name: 'Runs', title: 'Audit Log' },
   { id: 'logbooks', name: 'Logbooks', title: 'List View' },
 ] as const;
 
@@ -345,7 +344,10 @@ type EditableItem = {
 };
 
 type SelectedItem = EditableItem & {
-  mode: 'view' | 'edit' | 'add' | 'pdf' | 'history';
+  mode: 'view' | 'edit' | 'add' | 'pdf' | 'history' | 'runInfo';
+  // For runInfo mode, store the logbook we came from so we can go back
+  fromLogbookId?: string;
+  fromLogbookName?: string;
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -525,16 +527,10 @@ export default function Home() {
   };
 
   // Render list view content
-  const renderListView = (type: 'crew' | 'runs' | 'logbooks') => {
-    const data = type === 'crew' ? filteredCrew :
-                 type === 'runs' ? filteredRuns :
-                 filteredLogbooks;
-    const currentPage = type === 'crew' ? crewPage :
-                        type === 'runs' ? runsPage :
-                        logbooksPage;
-    const setPage = type === 'crew' ? setCrewPage :
-                    type === 'runs' ? setRunsPage :
-                    setLogbooksPage;
+  const renderListView = (type: 'crew' | 'logbooks') => {
+    const data = type === 'crew' ? filteredCrew : filteredLogbooks;
+    const currentPage = type === 'crew' ? crewPage : logbooksPage;
+    const setPage = type === 'crew' ? setCrewPage : setLogbooksPage;
 
     // Calculate pagination
     const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
@@ -566,9 +562,6 @@ export default function Home() {
     // Get title for each type
     const titleMap = {
       crew: 'Crew',
-      companies: 'Companies',
-      stores: 'Stores',
-      runs: 'Runs',
       logbooks: 'Logbooks',
     };
     const title = titleMap[type];
@@ -576,9 +569,6 @@ export default function Home() {
     // Get subtitle for each item type
     const getSubtitle = (item: any): string => {
       if (type === 'crew') return 'Crew member';
-      if (type === 'companies') return 'Company';
-      if (type === 'stores') return 'Store';
-      if (type === 'runs') return `${formatShortDate(item.date)} · ${capitalizeStatus(item.status)}`;
       if (type === 'logbooks') return formatLogbookDate(item.date);
       return '';
     };
@@ -586,7 +576,6 @@ export default function Home() {
     // Get item name
     const getItemName = (item: any): string => {
       if (type === 'logbooks') return formatLogbookDate(item.date);
-      if (type === 'runs') return `Run #${item.id}`;
       return item.name;
     };
 
@@ -609,42 +598,39 @@ export default function Home() {
                 {title}
               </div>
             </div>
-            {/* Add button (hidden for runs) */}
-            {type !== 'runs' && (
-              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                <button
-                  onClick={() => {
-                    if (type === 'logbooks') {
-                      router.push(`/stores/${storeId}/logbook/create/shifts`);
-                    } else {
-                      const itemName = type === 'crew' ? 'Crew Member' : type === 'companies' ? 'Company' : type === 'stores' ? 'Store' : 'Logbook';
-                      setSelectedItem({
-                        id: '',
-                        name: `New ${itemName}`,
-                        type: type,
-                        mode: 'add',
-                      });
-                    }
-                  }}
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.4),
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#6B6B6B',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                  Add
-                </button>
-              </div>
-            )}
+            {/* Add button */}
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+              <button
+                onClick={() => {
+                  if (type === 'logbooks') {
+                    router.push(`/stores/${storeId}/logbook/create/shifts`);
+                  } else {
+                    setSelectedItem({
+                      id: '',
+                      name: 'New Crew Member',
+                      type: type,
+                      mode: 'add',
+                    });
+                  }
+                }}
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.4),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                Add
+              </button>
+            </div>
           </div>
 
           {/* Paginated list */}
@@ -1338,13 +1324,12 @@ export default function Home() {
     );
   };
 
-  // Generic search card for list views (crew, companies, stores, runs, logbooks, preferences)
-  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'runs' | 'logbooks' | 'preferences') => {
+  // Generic search card for list views (crew, companies, stores, logbooks, preferences)
+  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'logbooks' | 'preferences') => {
     // Determine the data source to check if there's anything to search
     const hasData = type === 'crew' ? effectiveCrew.length > 0 :
                     type === 'companies' ? apiCompanies.length > 0 :
                     type === 'stores' ? apiStores.length > 0 :
-                    type === 'runs' ? apiRuns.length > 0 :
                     type === 'logbooks' ? effectiveLogbooks.length > 0 :
                     apiPreferences.length > 0;
 
@@ -1354,7 +1339,6 @@ export default function Home() {
     const setPage = type === 'crew' ? setCrewPage :
                     type === 'companies' ? setCompaniesPage :
                     type === 'stores' ? setStoresPage :
-                    type === 'runs' ? setRunsPage :
                     type === 'logbooks' ? setLogbooksPage :
                     setPreferencesPage;
 
@@ -1802,7 +1786,6 @@ export default function Home() {
           {/* Search card - shown above content for each list view */}
           {activeView === 'roles' && renderRolesSearchCard()}
           {activeView === 'crew' && renderSearchCard('crew')}
-          {activeView === 'runs' && renderSearchCard('runs')}
           {activeView === 'logbooks' && renderSearchCard('logbooks')}
           {activeView === 'preferences' && renderSearchCard('preferences')}
 
@@ -2283,8 +2266,6 @@ export default function Home() {
             renderRolesListView()
           ) : activeView === 'preferences' ? (
             renderGroupedRulesView()
-          ) : activeView === 'runs' ? (
-            renderListView('runs')
           ) : activeView === 'logbooks' ? (
             renderListView('logbooks')
           ) : null}
@@ -2306,9 +2287,37 @@ export default function Home() {
               onViewPdf={(logbookId, date) => {
                 setSelectedItem({ id: logbookId, name: date, type: 'logbooks', mode: 'pdf' });
               }}
+              onViewRunInfo={(runId) => {
+                setSelectedItem({
+                  id: runId,
+                  name: `Run Info`,
+                  type: 'runs',
+                  mode: 'runInfo',
+                  fromLogbookId: selectedItem.id,
+                  fromLogbookName: selectedItem.name,
+                });
+              }}
               onClose={() => {
                 setActiveView('logbooks');
                 setSelectedItem(null);
+              }}
+            />
+          ) : selectedItem.mode === 'runInfo' && selectedItem.type === 'runs' ? (
+            // Run detail view accessed from logbook history
+            <RunDetailView
+              runId={selectedItem.id}
+              onBack={() => {
+                if (selectedItem.fromLogbookId) {
+                  setSelectedItem({
+                    id: selectedItem.fromLogbookId,
+                    name: selectedItem.fromLogbookName || '',
+                    type: 'logbooks',
+                    mode: 'history',
+                  });
+                } else {
+                  setActiveView('logbooks');
+                  setSelectedItem(null);
+                }
               }}
             />
           ) : (
@@ -2636,11 +2645,6 @@ export default function Home() {
                 <StoreDetailView
                   storeId={Number(selectedItem.id)}
                   onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'stores' })}
-                />
-              ) : selectedItem.type === 'runs' && selectedItem.mode === 'view' ? (
-                <RunDetailView
-                  runId={String(selectedItem.id)}
-                  onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'runs' })}
                 />
               ) : (
                 <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">

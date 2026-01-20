@@ -1182,6 +1182,15 @@ export function registerLogbookRoutes(app: FastifyInstance) {
           createdByName: true,
           publishedAt: true,
           createdAt: true,
+          Run: {
+            select: {
+              id: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+          },
         },
       });
 
@@ -1206,6 +1215,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
           createdByName: current.createdByName,
           publishedAt: current.publishedAt?.toISOString() ?? null,
           createdAt: current.createdAt.toISOString(),
+          runId: current.Run[0]?.id ?? null,
         } : null,
         supersededVersions: supersededVersions.map(v => ({
           id: v.id,
@@ -1215,6 +1225,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
           createdByName: v.createdByName,
           publishedAt: v.publishedAt?.toISOString() ?? null,
           createdAt: v.createdAt.toISOString(),
+          runId: v.Run[0]?.id ?? null,
         })),
       };
     }

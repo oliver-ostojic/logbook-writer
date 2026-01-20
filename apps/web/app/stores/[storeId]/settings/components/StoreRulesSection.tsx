@@ -89,32 +89,34 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
                 />
               </div>
             </div>
-            {/* Add button - rounded left, pill right */}
-            <div
-              className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
-              <button
-                onClick={onAdd}
-                className="transition-all duration-150"
-                style={{
-                  ...aiGlassLightContentStyle('1rem', 0.6),
-                  border: 'none',
-                  borderRadius: 'inherit',
-                  padding: '0 16px',
-                  height: '36px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  color: '#2C2C2C',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+            {/* Add button - rounded left, pill right - only for CAPTAIN/ADMIN */}
+            {onAdd && (
+              <div
+                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
+                style={aiGlassLightBorderStyle('1rem')}
               >
-                + Add
-              </button>
-            </div>
+                <button
+                  onClick={onAdd}
+                  className="transition-all duration-150"
+                  style={{
+                    ...aiGlassLightContentStyle('1rem', 0.6),
+                    border: 'none',
+                    borderRadius: 'inherit',
+                    padding: '0 16px',
+                    height: '36px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#2C2C2C',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                >
+                  + Add
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Grouped list - card per type */}
@@ -122,15 +124,20 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
             {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
               <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.15}>
                 <div className="flex flex-col gap-3">
-                  {/* Group header */}
-                  <div style={{
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#2C2C2C',
-                  }}>
-                    {ROLE_RULE_TYPE_LABELS[ruleType] || ruleType}
+                  {/* Group header - title bubble */}
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#2C2C2C',
+                      }}
+                    >
+                      {ruleType}
+                    </div>
                   </div>
 
                   {/* Items in group - cards */}

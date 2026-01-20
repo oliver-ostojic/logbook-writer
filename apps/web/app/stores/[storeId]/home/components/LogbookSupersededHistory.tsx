@@ -13,15 +13,17 @@ interface LogbookVersion {
   createdByName: string | null;
   publishedAt: string | null;
   createdAt: string;
+  runId: string | null;
 }
 
 interface LogbookSupersededHistoryProps {
   logbookId: string;
   onViewPdf: (logbookId: string, date: string) => void;
+  onViewRunInfo?: (runId: string) => void;
   onClose: () => void;
 }
 
-export function LogbookSupersededHistory({ logbookId, onViewPdf, onClose }: LogbookSupersededHistoryProps) {
+export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onClose }: LogbookSupersededHistoryProps) {
   const [current, setCurrent] = useState<LogbookVersion | null>(null);
   const [supersededVersions, setSupersededVersions] = useState<LogbookVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +201,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onClose }: Logb
               formatDate={formatDate}
               formatDateTime={formatDateTime}
               onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
+              onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
             />
           )}
 
@@ -221,6 +224,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onClose }: Logb
                   formatDate={formatDate}
                   formatDateTime={formatDateTime}
                   onViewPdf={() => onViewPdf(version.id, formatDate(version.date))}
+                  onViewRunInfo={version.runId && onViewRunInfo ? () => onViewRunInfo(version.runId!) : undefined}
                 />
               ))}
             </>
@@ -243,9 +247,10 @@ interface VersionCardProps {
   formatDate: (date: string) => string;
   formatDateTime: (date: string) => string;
   onViewPdf: () => void;
+  onViewRunInfo?: () => void;
 }
 
-function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf }: VersionCardProps) {
+function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf, onViewRunInfo }: VersionCardProps) {
   return (
     <div
       className="ai-glass-border"
@@ -304,30 +309,56 @@ function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf
             )}
           </div>
         </div>
-        {version.storedFilePath && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewPdf();
-            }}
-            className="transition-all duration-150"
-            style={{
-              background: 'rgba(0, 0, 0, 0.06)',
-              border: 'none',
-              borderRadius: '0.5rem',
-              padding: '6px 12px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: '#2C2C2C',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)')}
-          >
-            View PDF
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onViewRunInfo && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewRunInfo();
+              }}
+              className="transition-all duration-150"
+              style={{
+                background: 'rgba(0, 0, 0, 0.06)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '6px 12px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#2C2C2C',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)')}
+            >
+              View Run Info
+            </button>
+          )}
+          {version.storedFilePath && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewPdf();
+              }}
+              className="transition-all duration-150"
+              style={{
+                background: 'rgba(0, 0, 0, 0.06)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '6px 12px',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#2C2C2C',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)')}
+            >
+              View PDF
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

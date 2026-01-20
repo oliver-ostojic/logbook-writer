@@ -2,47 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
+import { renderRoleRule, TemplateContext } from '@/lib/role-rule-templates';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
-// Rule types that have a valueInt
-const RULE_TYPES_WITH_VALUE = [
-  'MIN_CONSECUTIVE_MINUTES',
-  'MAX_CONSECUTIVE_MINUTES',
-  'LIKE_ROLE_FOR_HOUR_X',
-  'DISLIKE_ROLE_FOR_HOUR_X',
-  'MIN_SHIFT_LENGTH_FOR_ACCESS',
-  'ASSIGN_BEFORE_SHIFT_MIN_X',
-  'ASSIGN_AFTER_SHIFT_MIN_X',
-  'MAX_CREW_ON_AT_A_TIME',
-  'CANNOT_ASSIGN_DURING_STORE_HOUR_X',
-];
-
-// Format value based on rule type
-const formatValue = (ruleType: string, value: number | null | undefined): string => {
-  if (value === null || value === undefined) return '';
-
-  // Hour-based rules
-  if (['LIKE_ROLE_FOR_HOUR_X', 'DISLIKE_ROLE_FOR_HOUR_X', 'CANNOT_ASSIGN_DURING_STORE_HOUR_X'].includes(ruleType)) {
-    // Convert 24-hour to 12-hour format
-    const hour = value % 12 || 12;
-    const ampm = value < 12 ? 'AM' : 'PM';
-    return `${hour}${ampm}`;
-  }
-
-  // Minute-based rules
-  if (['MIN_CONSECUTIVE_MINUTES', 'MAX_CONSECUTIVE_MINUTES', 'MIN_SHIFT_LENGTH_FOR_ACCESS', 'ASSIGN_BEFORE_SHIFT_MIN_X', 'ASSIGN_AFTER_SHIFT_MIN_X'].includes(ruleType)) {
-    return `${value}min`;
-  }
-
-  // Count-based rules
-  if (ruleType === 'MAX_CREW_ON_AT_A_TIME') {
-    return `${value}`;
-  }
-
-  return String(value);
-};
 
 interface RoleRuleDetailViewProps {
   ruleId: number;
@@ -180,41 +142,71 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
             )}
           </div>
           <div className="flex flex-col gap-3">
-            {/* Role */}
-            <div>
-              <div style={labelStyle}>Role</div>
-              <div style={valueStyle}>
-                {rule.Role?.displayName || 'Unknown'}
-              </div>
-            </div>
+            {/* Sentence Bubble */}
+            {(() => {
+              // Only render template if we have the required role data
+              if (!rule.Role) {
+                return (
+                  <div>
+                    <div style={labelStyle}>Role</div>
+                    <div style={valueStyle}>Unknown</div>
+                  </div>
+                );
+              }
 
-            {/* Rule Type */}
-            <div>
-              <div style={labelStyle}>Rule Type</div>
-              <div style={valueStyle}>
-                {ROLE_RULE_TYPE_LABELS[rule.type] || rule.type}
-              </div>
-            </div>
-
-            {/* Type Enum */}
-            <div>
-              <div style={labelStyle}>Type</div>
-              <div style={valueStyle}>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    backgroundColor: 'rgba(107, 107, 107, 0.1)',
-                    color: '#6B6B6B',
-                  }}
-                >
-                  {rule.type}
-                </span>
-              </div>
-            </div>
+              const context: TemplateContext = {
+                roleRule: {
+                  id: rule.id,
+                  type: rule.type,
+                  constraintType: rule.constraintType,
+                  displayName: rule.description ?? null,
+                  description: rule.description ?? null,
+                },
+                role: rule.Role,
+                targetRole: rule.TargetRole ?? null,
+                storeRoleRule: storeRoleRuleId ? {
+                  id: storeRoleRuleId,
+                  isPriority: false,
+                  valueInt: valueInt ?? rule.valueInt ?? null,
+                } : undefined,
+              };
+              const parts = renderRoleRule(rule.type, context);
+              if (parts) {
+                const firstPartIsBubble = parts.length > 0 && parts[0].type === 'bubble';
+                const lastPartIsBubble = parts.length > 0 && parts[parts.length - 1].type === 'bubble';
+                const paddingLeft = firstPartIsBubble ? '10px' : '18px';
+                const paddingRight = lastPartIsBubble ? '10px' : '18px';
+                return (
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), display: 'inline-block', width: 'fit-content' }}>
+                    <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: `10px ${paddingRight} 10px ${paddingLeft}` }}>
+                      <div className="flex flex-wrap items-center gap-2" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#2C2C2C' }}>
+                        {parts.map((part, idx) => {
+                          if (part.type === 'bubble') {
+                            return (
+                              <div key={idx} className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), background: 'rgba(245, 245, 245, 0.7)', padding: '4px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 500, color: '#2C2C2C' }}>
+                                  {part.content}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return <span key={idx}>{part.content}</span>;
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              // Fallback if no template exists - show role name
+              return (
+                <div>
+                  <div style={labelStyle}>Role</div>
+                  <div style={valueStyle}>
+                    {rule.Role?.displayName || 'Unknown'}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Constraint Type */}
             <div>
@@ -234,36 +226,6 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
                 </span>
               </div>
             </div>
-
-            {/* Target Role (if applicable) */}
-            {rule.TargetRole && (
-              <div>
-                <div style={labelStyle}>Target Role</div>
-                <div style={valueStyle}>
-                  {rule.TargetRole.displayName}
-                </div>
-              </div>
-            )}
-
-            {/* Value (if applicable) - use prop valueInt from StoreRoleRule, fallback to rule.valueInt */}
-            {(valueInt !== null && valueInt !== undefined) || (rule.valueInt !== null && rule.valueInt !== undefined) ? (
-              <div>
-                <div style={labelStyle}>Value</div>
-                <div style={valueStyle}>
-                  {RULE_TYPES_WITH_VALUE.includes(rule.type)
-                    ? formatValue(rule.type, valueInt ?? rule.valueInt)
-                    : (valueInt ?? rule.valueInt)}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Description */}
-            {rule.description && (
-              <div>
-                <div style={labelStyle}>Description</div>
-                <div style={valueStyle}>{rule.description}</div>
-              </div>
-            )}
           </div>
         </div>
 
