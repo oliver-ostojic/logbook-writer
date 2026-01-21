@@ -836,62 +836,31 @@ export default function Home() {
       return item.name;
     };
 
+    // Check if there's data to show search
+    const hasData = type === 'crew' ? effectiveCrew.length > 0 : effectiveLogbooks.length > 0;
+
+    // Add button click handler
+    const handleAddClick = () => {
+      if (type === 'logbooks') {
+        router.push(`/stores/${storeId}/logbook/create/shifts`);
+      } else {
+        setSelectedItem({
+          id: '',
+          name: 'New Crew Member',
+          type: type,
+          mode: 'add',
+        });
+      }
+    };
+
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Title and Add button row */}
-          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {title}
-              </div>
-            </div>
-            {/* Add button */}
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <button
-                onClick={() => {
-                  if (type === 'logbooks') {
-                    router.push(`/stores/${storeId}/logbook/create/shifts`);
-                  } else {
-                    setSelectedItem({
-                      id: '',
-                      name: 'New Crew Member',
-                      type: type,
-                      mode: 'add',
-                    });
-                  }
-                }}
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.4),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#6B6B6B',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                Add
-              </button>
-            </div>
-          </div>
+          {/* Embedded search header with title and add button */}
+          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPage, title, handleAddClick)}
 
           {/* Paginated list */}
-          <div className="flex flex-col gap-3 flex-1">
+          <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
             {paginatedData.length > 0 ? (
               paginatedData.map((item) => {
                 const itemName = getItemName(item);
@@ -1375,58 +1344,25 @@ export default function Home() {
       groupedByType.get(type)!.push(rule);
     });
 
+    // Check if there's data to show search
+    const hasSearchData = apiPreferences.length > 0;
+
+    // Add button click handler
+    const handleAddClick = () => setSelectedItem({
+      id: '',
+      name: 'New Preference',
+      type: itemType,
+      mode: 'add',
+    });
+
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Title and Add button row */}
-          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                {titleText}
-              </div>
-            </div>
-            {/* Add button */}
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <button
-                onClick={() =>
-                  setSelectedItem({
-                    id: '',
-                    name: 'New Preference',
-                    type: itemType,
-                    mode: 'add',
-                  })
-                }
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.4),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#6B6B6B',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                Add
-              </button>
-            </div>
-          </div>
+          {/* Embedded search header with title and add button */}
+          {hasSearchData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPreferencesPage, titleText, handleAddClick)}
 
         {/* Grouped list - card per type */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
           {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
             <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem">
               <div className="flex flex-col gap-3">
@@ -1543,92 +1479,97 @@ export default function Home() {
     );
   };
 
-  // Roles search card (shown above Role Families when there are results)
-  const renderRolesSearchCard = () => {
-    // Only show if there's data to search
-    if (effectiveRoleFamilies.length === 0 && effectiveRoles.length === 0) return null;
-
+  // Embedded search header for list views - bento style with rounded top corners
+  // Title and search bar on left, add button on right
+  const renderEmbeddedSearchHeader = (
+    searchValue: string,
+    onSearchChange: (value: string) => void,
+    setPage: (page: number) => void,
+    title: string,
+    onAddClick: () => void
+  ) => {
     return (
-      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        <GlassPillCard
-          borderRadius="9999px"
-          padding="0 14px"
-          contentStyle={{ justifyContent: 'flex-start', height: '36px' }}
-        >
-          <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Search"
-            value={rolesSearchQuery}
-            onChange={(e) => {
-              setRolesSearchQuery(e.target.value);
-              setRolesPage(1);
-            }}
-            className="focus:outline-none focus:ring-0 flex-1"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#2C2C2C',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 400,
-              width: '100%',
-              marginLeft: '8px',
-            }}
-          />
+      <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+        <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+          {/* Single row: Title + Search on left, Add button on right */}
+          <div className="flex items-center justify-between" style={{ width: '100%', gap: '16px' }}>
+            {/* Left side: Title pill + Search bar */}
+            <div className="flex items-center" style={{ gap: '12px', flex: 1 }}>
+              {/* Title pill */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  {title}
+                </div>
+              </div>
+              {/* Search bar - next to title, using glass UI style */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: '50%', minWidth: '200px', maxWidth: '400px' }}>
+                <div
+                  className="flex items-center"
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '0 14px',
+                    height: '36px',
+                    width: '100%',
+                  }}
+                >
+                  <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchValue}
+                    onChange={(e) => {
+                      onSearchChange(e.target.value);
+                      setPage(1);
+                    }}
+                    className="focus:outline-none focus:ring-0 flex-1"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#2C2C2C',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      width: '100%',
+                      marginLeft: '8px',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Right side: Add button */}
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+              <button
+                onClick={onAddClick}
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.4),
+                  padding: '6px 14px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                Add
+              </button>
+            </div>
+          </div>
         </GlassPillCard>
-      </CardContainer>
-    );
-  };
-
-  // Generic search card for list views (crew, companies, stores, logbooks, preferences)
-  const renderSearchCard = (type: 'crew' | 'companies' | 'stores' | 'logbooks' | 'preferences') => {
-    // Determine the data source to check if there's anything to search
-    const hasData = type === 'crew' ? effectiveCrew.length > 0 :
-                    type === 'companies' ? apiCompanies.length > 0 :
-                    type === 'stores' ? apiStores.length > 0 :
-                    type === 'logbooks' ? effectiveLogbooks.length > 0 :
-                    apiPreferences.length > 0;
-
-    if (!hasData) return null;
-
-    // Get the appropriate page setter
-    const setPage = type === 'crew' ? setCrewPage :
-                    type === 'companies' ? setCompaniesPage :
-                    type === 'stores' ? setStoresPage :
-                    type === 'logbooks' ? setLogbooksPage :
-                    setPreferencesPage;
-
-    return (
-      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        <GlassPillCard
-          borderRadius="9999px"
-          padding="0 14px"
-          contentStyle={{ justifyContent: 'flex-start', height: '36px' }}
-        >
-          <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            className="focus:outline-none focus:ring-0 flex-1"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#2C2C2C',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 400,
-              width: '100%',
-              marginLeft: '8px',
-            }}
-          />
-        </GlassPillCard>
-      </CardContainer>
+      </div>
     );
   };
 
@@ -1748,51 +1689,20 @@ export default function Home() {
       return family ? family.name : 'Store role';
     };
 
+    // Check if there's data to show search
+    const hasSearchData = effectiveRoleFamilies.length > 0 || effectiveRoles.length > 0;
+
+    // Add button click handler
+    const handleAddClick = () => setSelectedItem({ id: '', name: 'New Role', type: 'roles', mode: 'add' });
+
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Title and Add button row */}
-          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                Roles
-              </div>
-            </div>
-            {/* Add button */}
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <button
-                onClick={() => setSelectedItem({ id: '', name: 'New Role', type: 'roles', mode: 'add' })}
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.4),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#6B6B6B',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                Add
-              </button>
-            </div>
-          </div>
+          {/* Embedded search header with title and add button */}
+          {hasSearchData && renderEmbeddedSearchHeader(rolesSearchQuery, setRolesSearchQuery, setRolesPage, 'Roles', handleAddClick)}
 
           {/* Paginated list */}
-          <div className="flex flex-col gap-3 flex-1">
+          <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
             {hasRoles ? (
               paginatedRoles.map((role) => {
                 const isSelected = selectedItem?.id === role.id && selectedItem?.type === 'roles';
@@ -2085,12 +1995,6 @@ export default function Home() {
                 </nav>
               </div>
             </div>
-
-          {/* Search card - shown above content for each list view */}
-          {activeView === 'roles' && renderRolesSearchCard()}
-          {activeView === 'crew' && renderSearchCard('crew')}
-          {activeView === 'logbooks' && renderSearchCard('logbooks')}
-          {activeView === 'preferences' && renderSearchCard('preferences')}
 
           {/* Role Families card - shown below header when in roles view */}
           {activeView === 'roles' && renderRoleFamiliesCard()}
