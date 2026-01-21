@@ -63,10 +63,10 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
           style={{
             ...aiGlassLightBorderStyle('1.5rem', '220, 38, 38', 0.25),
             position: 'absolute',
-            top: compact ? -12 : -16,
-            bottom: compact ? -12 : -16,
-            left: isFirst ? (compact ? -12 : -32) : (compact ? -12 : -20),
-            right: isLast ? (compact ? -12 : -32) : (compact ? -12 : -20),
+            top: compact ? -7 : -16,
+            bottom: compact ? -7 : -16,
+            left: isFirst ? (compact ? -7 : -32) : isLast ? (compact ? -20 : -20) : (compact ? -20 : -20),
+            right: isLast ? (compact ? -7 : -32) : isFirst ? (compact ? -20 : -20) : (compact ? -20 : -20),
             zIndex: -1,
           }}
         >
@@ -171,10 +171,10 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
 export const NavDivider: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
   <div
     style={{
-      width: compact ? 1.5 : 1,
-      height: compact ? 50 : 40,
+      width: 1,
+      height: compact ? 40 : 55,
       background: compact
-        ? 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)'
+        ? 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 33%, rgba(0,0,0,0.1) 67%, transparent 100%)'
         : 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.08) 20%, rgba(0,0,0,0.08) 80%, transparent 100%)',
       margin: compact ? '0 28px' : '0 20px',
       alignSelf: 'center',

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
+import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon, BuildingStorefrontIcon } from '@heroicons/react/24/solid';
 import { logout } from '@/lib/api/auth';
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
@@ -1865,7 +1865,7 @@ export default function Home() {
                     <div
                       style={{
                         ...aiGlassLightContentStyle('9999px', 0.6),
-                        padding: '12px 32px',
+                        padding: '2px 16px',
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
@@ -1891,7 +1891,10 @@ export default function Home() {
                           hideSubtext
                           compact
                           isActive={activeTopNav === 'dashboard'}
-                          onClick={() => setActiveTopNav('dashboard')}
+                          onClick={() => {
+                            setActiveTopNav('dashboard');
+                            router.push(`/stores/${storeId}/fairness-dashboard`);
+                          }}
                         />
                         <NavDivider compact />
                         <NavStatsCard
@@ -1900,7 +1903,10 @@ export default function Home() {
                           hideSubtext
                           compact
                           isActive={activeTopNav === 'settings'}
-                          onClick={() => setActiveTopNav('settings')}
+                          onClick={() => {
+                            setActiveTopNav('settings');
+                            router.push(`/stores/${storeId}/settings`);
+                          }}
                           isLast
                         />
                       </nav>
@@ -1947,7 +1953,7 @@ export default function Home() {
               <div
                 style={{
                   ...aiGlassLightContentStyle('1.5rem', 0.6),
-                  padding: '34px 48px',
+                  padding: '24px 48px',
                   overflowX: 'auto',
                 }}
               >
@@ -3033,6 +3039,36 @@ export default function Home() {
                 {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
               </div>
             </div>
+          )}
+          {/* Back to stores - only for ADMIN */}
+          {user?.role === 'ADMIN' && (
+            <button
+              type="button"
+              onClick={() => {
+                if (apiStore?.companyId) {
+                  router.push(`/admin/companies/${apiStore.companyId}`);
+                } else {
+                  router.push('/admin');
+                }
+              }}
+              className="w-full flex items-center gap-3 transition-all"
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                color: '#2C2C2C',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <BuildingStorefrontIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+              Back to stores
+            </button>
           )}
           <button
             type="button"
