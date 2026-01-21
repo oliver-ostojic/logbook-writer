@@ -11,9 +11,13 @@ import { logComment, getActivityLogs } from '../services/activity-logger';
 
 const prisma = new PrismaClient();
 
-type DateFilter = 'today' | 'last2days' | 'oneweek' | 'onemonth';
+type DateFilter = 'recent' | 'today' | 'last2days' | 'oneweek' | 'onemonth';
 
-function getDateFilterStart(filter: DateFilter): Date {
+function getDateFilterStart(filter: DateFilter): Date | null {
+  if (filter === 'recent') {
+    return null; // No date filter, just use limit
+  }
+
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
@@ -37,9 +41,9 @@ export function registerActivityRoutes(app: FastifyInstance) {
    *
    * Fetches activity logs for a store with optional date filtering.
    * Query params:
-   *   - filter: 'today' | 'last2days' | 'oneweek' | 'onemonth' (default: 'oneweek')
+   *   - filter: 'recent' | 'today' | 'last2days' | 'oneweek' | 'onemonth' (default: 'recent')
    *   - date: YYYY-MM-DD (optional, filters by specific logbook date)
-   *   - limit: number (default: 50)
+   *   - limit: number (default: 20 for 'recent', 50 for others)
    *   - offset: number (default: 0)
    */
   app.get<{
@@ -60,9 +64,10 @@ export function registerActivityRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: 'Invalid storeId' });
       }
 
-      const filter = request.query.filter || 'oneweek';
+      const filter = (request.query.filter || 'recent') as DateFilter;
       const specificDate = request.query.date; // YYYY-MM-DD format
-      const limit = Math.min(parseInt(request.query.limit || '50', 10), 100);
+      const defaultLimit = filter === 'recent' ? 20 : 50;
+      const limit = Math.min(parseInt(request.query.limit || String(defaultLimit), 10), 100);
       const offset = parseInt(request.query.offset || '0', 10);
 
       // Build where clause based on whether a specific date is provided
@@ -78,10 +83,15 @@ export function registerActivityRoutes(app: FastifyInstance) {
       } else {
         // Use the time-based filter (createdAt)
         const filterStart = getDateFilterStart(filter);
-        whereClause = {
-          storeId,
-          createdAt: { gte: filterStart },
-        };
+        if (filterStart) {
+          whereClause = {
+            storeId,
+            createdAt: { gte: filterStart },
+          };
+        } else {
+          // 'recent' filter - no date constraint
+          whereClause = { storeId };
+        }
       }
 
       try {

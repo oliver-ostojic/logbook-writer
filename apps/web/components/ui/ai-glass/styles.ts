@@ -31,8 +31,8 @@ export const aiGlassContentStyle = (borderRadius: string | number = '1rem', opac
 export const aiGlassLightBorderStyle = (
   borderRadius: string | number = '1rem',
   borderColor: string = '0, 0, 0',
-  borderOpacity: number = 0.08,
-  borderWidth: string = '0.3px'
+  borderOpacity: number = 0,
+  borderWidth: string = '1px'
 ): React.CSSProperties => {
   const styles: any = {
     borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
@@ -46,12 +46,12 @@ export const aiGlassLightBorderStyle = (
 };
 
 // Light mode inner content styles (white/light background)
-// opacity parameter: lower = more transparent, higher = more opaque (default 0.6)
-export const aiGlassLightContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.6): React.CSSProperties => ({
+// opacity parameter: lower = more transparent, higher = more opaque (default 0.1)
+export const aiGlassLightContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.1): React.CSSProperties => ({
   width: '100%',
   height: '100%',
   background: `rgba(255, 255, 255, ${opacity})`,
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
+  backdropFilter: 'blur(7px)',
+  WebkitBackdropFilter: 'blur(7px)',
   borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
 });

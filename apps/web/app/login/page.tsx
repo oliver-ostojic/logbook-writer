@@ -74,7 +74,7 @@ export default function LoginPage() {
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f0eee6' }}>
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'transparent' }}>
         <div className="text-gray-500">Loading...</div>
       </main>
     );
@@ -83,7 +83,7 @@ export default function LoginPage() {
   return (
     <main
       className="min-h-screen relative"
-      style={{ backgroundColor: '#f0eee6' }}
+      style={{ backgroundColor: 'transparent' }}
     >
       {/* Brand title - fixed at top center */}
       <div

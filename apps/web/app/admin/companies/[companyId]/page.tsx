@@ -112,7 +112,7 @@ export default function CompanyStoresPage() {
   };
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
+    <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
       <DashboardHeader navLinks={[]} lightMode={true} />
 

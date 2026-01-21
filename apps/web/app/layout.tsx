@@ -19,8 +19,8 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${roboto.variable} ${openSans.variable}`}>
-      <body>
+    <html lang="en" className={`${roboto.variable} ${openSans.variable}`} style={{ backgroundColor: 'transparent' }}>
+      <body style={{ backgroundColor: 'transparent' }}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

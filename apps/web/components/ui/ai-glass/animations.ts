@@ -4,8 +4,10 @@ export const aiGlassAnimations = `
   .ai-glass-border {
     position: relative;
     --border-color: 255, 255, 255; /* Default: white, can be overridden inline */
-    --border-opacity: 0.11;
-    --border-width: 0.3px;
+    --border-opacity: 0;
+    --border-width: 1px;
+    --border-brightness: 1.85;
+    --border-fade: 50;
   }
   .ai-glass-border::before {
     content: '';

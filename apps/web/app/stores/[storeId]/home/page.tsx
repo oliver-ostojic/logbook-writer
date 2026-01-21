@@ -118,11 +118,11 @@ function UserDropdown() {
   const handleLogout = async () => {
     try {
       await logout();
-      logoutStore();
-      router.push('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout API call failed:', error);
     }
+    logoutStore();
+    router.push('/login');
   };
 
   return (
@@ -523,7 +523,7 @@ export default function Home() {
   const [preferencesPage, setPreferencesPage] = useState(1);
   const [runsPage, setRunsPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('today');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('recent');
   const [activityUserFilter, setActivityUserFilter] = useState<'everyone' | 'mine'>('everyone');
   const [activityPage, setActivityPage] = useState(1);
   const ACTIVITY_ITEMS_PER_PAGE = 10;
@@ -535,11 +535,15 @@ export default function Home() {
   const [deleteConfirmLogId, setDeleteConfirmLogId] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
+      if (isOutsideButton && isOutsideDropdown) {
         setIsUserMenuOpen(false);
       }
     }
@@ -550,11 +554,11 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       await logout();
-      logoutStore();
-      router.push('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout API call failed:', error);
     }
+    logoutStore();
+    router.push('/login');
   };
 
   // Check if we're in PDF view mode (for panel width adjustment)
@@ -701,6 +705,7 @@ export default function Home() {
     : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false }));
 
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
+    { id: 'recent', label: 'Recent' },
     { id: 'today', label: 'Today' },
     { id: 'last2days', label: 'Last 2 days' },
     { id: 'oneweek', label: 'One week' },
@@ -2038,6 +2043,7 @@ export default function Home() {
       leftPanel={
         <div className="flex flex-col gap-6">
           {/* Activity/Crew/Logbooks navigation */}
+          <div className="sticky top-7 z-50">
           <div
             className="ai-glass-border"
             style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
@@ -2093,6 +2099,7 @@ export default function Home() {
                 />
               </nav>
             </div>
+          </div>
           </div>
 
           {/* Search card - shown above content for each list view */}
@@ -3079,6 +3086,7 @@ export default function Home() {
     {isUserMenuOpen && userMenuRef.current && (
       <div
         ref={(el) => {
+          userDropdownRef.current = el;
           // Position dropdown below the user button
           if (el && userMenuRef.current) {
             const rect = userMenuRef.current.getBoundingClientRect();
@@ -3131,6 +3139,7 @@ export default function Home() {
             </div>
           )}
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 transition-all"
             style={{

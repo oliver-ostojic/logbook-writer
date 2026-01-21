@@ -107,7 +107,7 @@ export default function RegisterPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f0eee6' }}>
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'transparent' }}>
         <div className="text-gray-500">Loading...</div>
       </main>
     );
@@ -116,7 +116,7 @@ export default function RegisterPage() {
   return (
     <main
       className="min-h-screen relative"
-      style={{ backgroundColor: '#f0eee6' }}
+      style={{ backgroundColor: 'transparent' }}
     >
       {/* Registration form card - centered */}
       <div className="min-h-screen flex items-center justify-center">

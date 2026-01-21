@@ -66,7 +66,7 @@ export const CardSmall: React.FC<CardSmallProps> = ({
         className={className}
         style={{
           ...contentBaseStyle,
-          padding: '1rem',
+          padding: '1.5rem',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',

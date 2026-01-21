@@ -27,7 +27,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
   contentStyle = {},
   borderColor,
   borderOpacity,
-  padding = '1rem',
+  padding = '1.5rem',
   lightMode = false,
 }) => {
   const paddingValue = typeof padding === 'number' ? `${padding}px` : padding;

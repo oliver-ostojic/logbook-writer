@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f0eee6' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'transparent' }}>
         <div className="text-gray-500">Loading...</div>
       </div>
     );

@@ -72,7 +72,7 @@ export default function SettingsPage() {
   const canEdit = canManageUsers(); // CAPTAIN and ADMIN can edit settings
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
+    <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
       <DashboardHeader navLinks={navLinks} activeItem="Settings" lightMode={true} />
 

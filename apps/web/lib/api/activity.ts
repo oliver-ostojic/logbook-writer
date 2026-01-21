@@ -1,6 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-export type ActivityFilter = 'today' | 'last2days' | 'oneweek' | 'onemonth';
+export type ActivityFilter = 'recent' | 'today' | 'last2days' | 'oneweek' | 'onemonth';
 
 export interface ActivityLogItem {
   id: string;

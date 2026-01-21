@@ -102,11 +102,32 @@ When you make a mistake or I correct you:
 
 ## Frontend Context
 
-- Stack: [your stack, e.g., React 18, Next.js 14, Tailwind 3.4]
-- Design system: [link or location if you have one]
+- Stack: React 18, Next.js 13 (app router), Tailwind CSS
+- Design system: AI glass components in `apps/web/components/ui/ai-glass/`
 - "Responsive" = mobile-first, breakpoints at 640/768/1024px
 - Use `gap` for spacing in flex/grid, not margin
 - Always include `key` props when mapping
+
+### Standard Spacing & Styling
+
+- **Standard padding**: `1.5rem` (24px) for glass card content
+- **Standard border radius**: `1rem` (16px) for cards, `0.75rem` (12px) for buttons, `9999px` for pills
+- **Font**: `var(--font-open-sans)` for body text
+- **Text colors**: `#2C2C2C` (primary), `#6B6B6B` (secondary), `#9A999E` (muted)
+
+### Glass Component Defaults (Light Mode)
+
+```typescript
+// aiGlassLightContentStyle defaults:
+backgroundOpacity: 0.1  // Very transparent
+blur: 7px               // Backdrop blur
+
+// aiGlassLightBorderStyle defaults:
+borderOpacity: 0        // No visible border by default
+borderWidth: 1px
+borderBrightness: 1.85
+borderFade: 50
+```
 
 ## Communication
 
