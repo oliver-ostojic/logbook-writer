@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
+import { logout } from '@/lib/api/auth';
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
-import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory } from './components';
+import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory, NavStatsCard, NavDivider } from './components';
 import { renderRoleRule } from '@/lib/role-rule-templates';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 import { useAuthStore } from '@/lib/authStore';
@@ -95,6 +96,135 @@ function formatShortDate(dateString: string): string {
 // Capitalize first letter and lowercase rest
 function capitalizeStatus(status: string): string {
   return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+// User dropdown component for top nav
+function UserDropdown() {
+  const router = useRouter();
+  const { user, logout: logoutStore } = useAuthStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      logoutStore();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative', flex: '1' }}>
+      <div
+        className="ai-glass-border"
+        style={{
+          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+          height: '100%',
+        }}
+      >
+        <button
+          className="flex items-center justify-center transition-all"
+          style={{
+            ...aiGlassLightContentStyle('1.5rem', 0.6),
+            width: '100%',
+            height: '100%',
+            cursor: 'pointer',
+            border: 'none',
+            transition: 'background 0.2s ease, filter 0.2s ease',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
+          onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <UserIcon className="w-5 h-5" style={{ color: '#6b7280' }} />
+        </button>
+      </div>
+
+      {isOpen && (
+        <div
+          className="ai-glass-border"
+          style={{
+            ...aiGlassLightBorderStyle('1rem'),
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: '200px',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1rem', 0.95),
+              padding: '8px',
+            }}
+          >
+            {user && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                  marginBottom: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  {user.name}
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    color: '#6B6B6B',
+                    marginTop: '2px',
+                  }}
+                >
+                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                </div>
+              </div>
+            )}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 transition-all"
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                color: '#2C2C2C',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <ArrowRightOnRectangleIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Light mode ListRowItem component
@@ -374,13 +504,14 @@ type SelectedItem = EditableItem & {
   fromLogbookName?: string;
 };
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 export default function Home() {
   const params = useParams();
   const router = useRouter();
   const storeId = params.storeId as string;
-  const { getNavLinks, user } = useAuthStore();
+  const { getNavLinks, user, logout: logoutStore } = useAuthStore();
+  const [activeTopNav, setActiveTopNav] = useState<'home' | 'dashboard' | 'settings' | 'user'>('home');
   const [activeView, setActiveView] = useState<ViewId>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [rolesSearchQuery, setRolesSearchQuery] = useState('');
@@ -394,13 +525,37 @@ export default function Home() {
   const [logbooksPage, setLogbooksPage] = useState(1);
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('today');
   const [activityUserFilter, setActivityUserFilter] = useState<'everyone' | 'mine'>('everyone');
+  const [activityPage, setActivityPage] = useState(1);
+  const ACTIVITY_ITEMS_PER_PAGE = 10;
   const [commentText, setCommentText] = useState('');
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
   const [deleteConfirmLogId, setDeleteConfirmLogId] = useState<string | null>(null);
-  const activityScrollRef = useRef<HTMLDivElement>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      logoutStore();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   // Check if we're in PDF view mode (for panel width adjustment)
   const isPdfView = selectedItem?.mode === 'pdf' && selectedItem?.type === 'logbooks';
@@ -493,12 +648,17 @@ export default function Home() {
     ? activityLogs.filter(log => log.User.id === user.id)
     : activityLogs;
 
-  // Scroll activity log to bottom when logs change
+  // Pagination for activity logs
+  const totalActivityPages = Math.ceil(filteredActivityLogs.length / ACTIVITY_ITEMS_PER_PAGE);
+  const paginatedActivityLogs = filteredActivityLogs.slice(
+    (activityPage - 1) * ACTIVITY_ITEMS_PER_PAGE,
+    activityPage * ACTIVITY_ITEMS_PER_PAGE
+  );
+
+  // Reset to page 1 when filter changes
   useEffect(() => {
-    if (activityScrollRef.current && filteredActivityLogs.length > 0) {
-      activityScrollRef.current.scrollTop = activityScrollRef.current.scrollHeight;
-    }
-  }, [filteredActivityLogs]);
+    setActivityPage(1);
+  }, [activityFilter, activityUserFilter]);
 
   // Use API data if available, otherwise fall back to placeholder
   const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
@@ -1755,124 +1915,185 @@ export default function Home() {
       leftPanelWidth={isPdfView ? '40%' : undefined}
       rightPanelWidth={isPdfView ? '60%' : undefined}
       rightPanelKey={selectedItem ? `${selectedItem.id}-${selectedItem.type}-${selectedItem.mode}` : undefined}
-      navLinks={getNavLinks(storeId)}
-      leftPanel={
-        <div className="flex flex-col gap-4">
-          {/* Header with dropdown */}
-          <CardHeader
-            title={activeView === 'home' ? (apiStore?.name || 'Overview') : (VIEW_OPTIONS.find(v => v.id === activeView)?.title || 'Overview')}
-            lightMode={true}
-            borderRadius="1.5rem"
-            titleStyle={{ color: '#2C2C2C' }}
-            leftContent={
-              <Menu as="div" style={{ zIndex: 100 }}>
-                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '139, 0, 0', 0.4)}>
-                  <MenuButton
-                    className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
+      navLinks={[]}
+      leftPanelPadding="p-6"
+      topContent={
+        /* Outer wrapper card - matches leftPanel outer card */
+        <div
+          className="ai-glass-border"
+          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.15)}
+        >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1.5rem'),
+              padding: '24px',
+            }}
+          >
+            <div className="flex gap-6" style={{ alignItems: 'stretch' }}>
+              {/* Inner nav card */}
+              <div
+                className="ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                  flex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: '16px 48px',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
+                    <NavStatsCard
+                      icon={<HomeIcon />}
+                      label="Home"
+                      hideSubtext
+                      compact
+                      isActive={activeTopNav === 'home'}
+                      onClick={() => {
+                        setActiveTopNav('home');
+                        router.push(`/stores/${storeId}/home`);
+                      }}
+                      isFirst
+                    />
+                    <NavDivider compact />
+                    <NavStatsCard
+                      icon={<ChartBarIcon />}
+                      label="Fairness Dashboard"
+                      hideSubtext
+                      compact
+                      isActive={activeTopNav === 'dashboard'}
+                      onClick={() => setActiveTopNav('dashboard')}
+                    />
+                    <NavDivider compact />
+                    <NavStatsCard
+                      icon={<Cog6ToothIcon />}
+                      label="Settings"
+                      hideSubtext
+                      compact
+                      isActive={activeTopNav === 'settings'}
+                      onClick={() => setActiveTopNav('settings')}
+                      isLast
+                    />
+                  </nav>
+                </div>
+              </div>
+
+              {/* User button card */}
+              <div ref={userMenuRef}>
+                <div
+                  className="ai-glass-border"
+                  style={{
+                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                    height: '100%',
+                  }}
+                >
+                  <button
+                    className="flex items-center justify-center"
                     style={{
-                      position: 'relative' as const,
-                      zIndex: 0,
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
                       width: '100%',
                       height: '100%',
-                      background: 'hsla(0, 84%, 60%, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                      borderRadius: '9999px',
-                      fontFamily: 'var(--font-open-sans)',
-                      color: '#FFFFFF',
-                      fontWeight: 500,
-                      padding: '6px 14px',
-                      outline: 'none',
+                      padding: '0 24px',
+                      border: 'none',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'filter 0.2s ease',
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.95)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.85)';
-                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
+                    onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   >
-                    {VIEW_OPTIONS.find(v => v.id === activeView)?.name || 'Home'}
-                  </MenuButton>
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <UserIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+                      </div>
+                    </div>
+                  </button>
                 </div>
-                <MenuItems
-                  anchor="bottom start"
-                  portal={false}
-                  transition
-                  className="w-40 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                  style={{
-                    zIndex: 100,
-                    ...aiGlassLightBorderStyle('0.75rem'),
-                    marginTop: 8,
-                  }}
-                >
-                  <div
-                    className="py-1"
-                    style={{
-                      ...aiGlassLightContentStyle('0.75rem', 0.6),
-                      backdropFilter: 'blur(2px)',
-                      WebkitBackdropFilter: 'blur(2px)',
-                    }}
-                  >
-                    {VIEW_OPTIONS.map((view) => (
-                      <MenuItem key={view.id}>
-                        <div className="flex items-center justify-between px-4 py-2">
-                          <button
-                            onClick={() => {
-                              setActiveView(view.id);
-                              setSearchQuery('');
-                            }}
-                            className="text-left text-sm focus:outline-none flex-1"
-                            style={{
-                              fontFamily: 'var(--font-open-sans)',
-                              color: activeView === view.id ? '#2C2C2C' : '#6B6B6B',
-                              backgroundColor: 'transparent',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                            onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                          >
-                            {view.name}
-                          </button>
-                        </div>
-                      </MenuItem>
-                    ))}
-                  </div>
-                </MenuItems>
-              </Menu>
-            }
-            rightContent={
-              activeView !== 'home' ? (
-                <button
-                  onClick={() => {
-                    setActiveView('home');
-                    setSearchQuery('');
-                  }}
-                  className="transition-all duration-200"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#9A999E',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#2C2C2C';
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#9A999E';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  Back
-                </button>
-              ) : undefined
-            }
-          />
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+      leftPanel={
+        <div className="flex flex-col gap-6">
+          {/* Activity/Crew/Logbooks navigation */}
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1.5rem', 0.6),
+                padding: '34px 48px',
+                overflowX: 'auto',
+              }}
+            >
+              <nav className="flex items-center" style={{ minWidth: 'max-content' }}>
+                <NavStatsCard
+                  icon={<BellIcon />}
+                  label="Activity"
+                  subtext="View all"
+                  isActive={activeView === 'home'}
+                  onClick={() => setActiveView('home')}
+                  isFirst
+                />
+                <NavDivider />
+                <NavStatsCard
+                  icon={<UserGroupIcon />}
+                  label="Crew"
+                  count={effectiveCrew.length}
+                  isActive={activeView === 'crew'}
+                  onClick={() => setActiveView('crew')}
+                />
+                <NavDivider />
+                <NavStatsCard
+                  icon={<DocumentTextIcon />}
+                  label="Logbooks"
+                  count={effectiveLogbooks.length}
+                  isActive={activeView === 'logbooks'}
+                  onClick={() => setActiveView('logbooks')}
+                />
+                <NavDivider />
+                <NavStatsCard
+                  icon={<ShieldCheckIcon />}
+                  label="Roles"
+                  count={effectiveRoles.length}
+                  isActive={activeView === 'roles'}
+                  onClick={() => setActiveView('roles')}
+                />
+                <NavDivider />
+                <NavStatsCard
+                  icon={<AdjustmentsHorizontalIcon />}
+                  label="Preferences"
+                  count={apiPreferences.length}
+                  isActive={activeView === 'preferences'}
+                  onClick={() => setActiveView('preferences')}
+                  isLast
+                />
+              </nav>
+            </div>
+          </div>
 
           {/* Search card - shown above content for each list view */}
           {activeView === 'roles' && renderRolesSearchCard()}
@@ -1886,224 +2107,9 @@ export default function Home() {
           {/* Content based on active view */}
           {activeView === 'home' ? (
             <>
-              {/* Mini stats cards */}
-              <CardContainer lightMode={true} borderRadius="1.5rem">
-                <div className="grid grid-cols-3 gap-3">
-                {/* Crew Count Card */}
-                <div
-                  className="ai-glass-border cursor-pointer transition-all duration-200"
-                  style={{
-                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'crew' ? 0.2 : 0.08),
-                    filter: activeView === 'crew' ? 'brightness(0.94)' : undefined,
-                    transform: activeView === 'crew' ? 'scale(1.02)' : undefined,
-                  }}
-                  onClick={() => setActiveView('crew')}
-                >
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('1rem', 0.6),
-                      padding: '16px',
-                    }}
-                  >
-                    <div className="flex flex-col h-full justify-between">
-                      {/* Top row: Icon and Label */}
-                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                          <div
-                            className="flex items-center justify-center w-full h-full"
-                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                          >
-                            <UserGroupIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '13px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            lineHeight: 1,
-                            textAlign: 'right',
-                          }}
-                        >
-                          Crew
-                        </span>
-                      </div>
-
-                      {/* Bottom: Count label and Stat Number */}
-                      <div style={{ marginBottom: '-6px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            display: 'block',
-                            marginBottom: '-4px',
-                          }}
-                        >
-                          Count
-                        </span>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '24px',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                          }}
-                        >
-                          {effectiveCrew.length}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logbook Count Card */}
-                <div
-                  className="ai-glass-border cursor-pointer transition-all duration-200"
-                  style={{
-                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'logbooks' ? 0.2 : 0.08),
-                    filter: activeView === 'logbooks' ? 'brightness(0.94)' : undefined,
-                    transform: activeView === 'logbooks' ? 'scale(1.02)' : undefined,
-                  }}
-                  onClick={() => setActiveView('logbooks')}
-                >
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('1rem', 0.6),
-                      padding: '16px',
-                    }}
-                  >
-                    <div className="flex flex-col h-full justify-between">
-                      {/* Top row: Icon and Label */}
-                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                          <div
-                            className="flex items-center justify-center w-full h-full"
-                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                          >
-                            <CalendarIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '13px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            lineHeight: 1,
-                            textAlign: 'right',
-                          }}
-                        >
-                          Logbooks
-                        </span>
-                      </div>
-
-                      {/* Bottom: Count label and Stat Number */}
-                      <div style={{ marginBottom: '-6px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            display: 'block',
-                            marginBottom: '-4px',
-                          }}
-                        >
-                          Count
-                        </span>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '24px',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                          }}
-                        >
-                          {effectiveLogbooks.length}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role Count Card */}
-                <div
-                  className="ai-glass-border cursor-pointer transition-all duration-200"
-                  style={{
-                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', activeView === 'roles' ? 0.2 : 0.08),
-                    filter: activeView === 'roles' ? 'brightness(0.94)' : undefined,
-                    transform: activeView === 'roles' ? 'scale(1.02)' : undefined,
-                  }}
-                  onClick={() => setActiveView('roles')}
-                >
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('1rem', 0.6),
-                      padding: '16px',
-                    }}
-                  >
-                    <div className="flex flex-col h-full justify-between">
-                      {/* Top row: Icon and Label */}
-                      <div className="flex items-start justify-between" style={{ marginBottom: '16px' }}>
-                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.375rem'), width: 24, height: 24 }}>
-                          <div
-                            className="flex items-center justify-center w-full h-full"
-                            style={{ ...aiGlassLightContentStyle('0.375rem', 0.7), backgroundColor: 'rgba(0, 0, 0, 0.06)' }}
-                          >
-                            <BriefcaseIcon className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '13px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            lineHeight: 1,
-                            textAlign: 'right',
-                          }}
-                        >
-                          Roles
-                        </span>
-                      </div>
-
-                      {/* Bottom: Count label and Stat Number */}
-                      <div style={{ marginBottom: '-6px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 350,
-                            color: '#6B6B6B',
-                            display: 'block',
-                            marginBottom: '-4px',
-                          }}
-                        >
-                          Count
-                        </span>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '24px',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                          }}
-                        >
-                          {effectiveRoles.length}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                </div>
-          </CardContainer>
-
           {/* Activity Log */}
-          <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-            <div className="flex flex-col gap-4">
+          <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+            <div className="flex flex-col gap-6">
               <div className="flex items-center justify-between">
                 {/* Activity Log label pill */}
                 <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
@@ -2121,8 +2127,70 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Filter dropdowns */}
-                <div className="flex items-center gap-2">
+                {/* Filter dropdowns and pagination */}
+                <div className="flex items-center gap-6">
+                  {/* Pagination - horizontal, matching dropdown style */}
+                  {totalActivityPages > 1 && (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <div
+                        className="flex items-center gap-1"
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          padding: '6px 14px',
+                        }}
+                      >
+                        <button
+                          onClick={() => setActivityPage(p => Math.max(1, p - 1))}
+                          disabled={activityPage === 1}
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '12px',
+                            color: activityPage === 1 ? '#9A999E' : '#6B6B6B',
+                            background: 'none',
+                            border: 'none',
+                            cursor: activityPage === 1 ? 'default' : 'pointer',
+                            padding: '0 4px',
+                          }}
+                        >
+                          ◀
+                        </button>
+                        {Array.from({ length: totalActivityPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setActivityPage(page)}
+                            style={{
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '14px',
+                              fontWeight: activityPage === page ? 600 : 400,
+                              color: activityPage === page ? '#2C2C2C' : '#9A999E',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '0 4px',
+                            }}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setActivityPage(p => Math.min(totalActivityPages, p + 1))}
+                          disabled={activityPage === totalActivityPages}
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '12px',
+                            color: activityPage === totalActivityPages ? '#9A999E' : '#6B6B6B',
+                            background: 'none',
+                            border: 'none',
+                            cursor: activityPage === totalActivityPages ? 'default' : 'pointer',
+                            padding: '0 4px',
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* User filter dropdown */}
                   <Menu as="div" style={{ zIndex: 100 }}>
                     <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
@@ -2259,215 +2327,187 @@ export default function Home() {
                   <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity yet</span>
                 </div>
               ) : (
-              <div ref={activityScrollRef} style={{ maxHeight: '350px', overflowY: 'auto' }}>
-              <ul className="space-y-6">
-                {filteredActivityLogs.map((log, idx) => {
-                  const isComment = log.action === 'comment';
-                  const isDeleted = log.metadata?.deleted === true;
-                  const isPublish = log.action === 'logbook_publish' || log.action === 'logbook_publish_with_edits';
-                  const isPublishWithEdits = log.action === 'logbook_publish_with_edits';
-                  const displayType = getActivityDisplayType(log.action);
-                  const relativeTime = formatRelativeTime(log.createdAt);
-                  const initials = log.User.name.split(' ').map(n => n[0]).join('');
-                  const comment = log.metadata?.comment;
-                  const canDelete = isComment && !isDeleted && user && log.User.id === user.id;
-                  const isHovered = hoveredCommentId === log.id;
-                  const activityDate = formatActivityDate(log.date);
+              <GlassPillCard padding="1.5rem" borderRadius="1rem" contentStyle={{ width: '100%' }}>
+                <div className="flex flex-col gap-6 w-full">
+                  {paginatedActivityLogs
+                    .filter((log) => !(log.action === 'comment' && log.metadata?.deleted === true))
+                    .map((log) => {
+                      const isComment = log.action === 'comment';
+                      const isPublish = log.action === 'logbook_publish' || log.action === 'logbook_publish_with_edits';
+                      const isPublishWithEdits = log.action === 'logbook_publish_with_edits';
+                      const displayType = getActivityDisplayType(log.action);
+                      const relativeTime = formatRelativeTime(log.createdAt);
+                      const comment = log.metadata?.comment;
+                      const canDelete = isComment && user && log.User.id === user.id;
+                      const isHovered = hoveredCommentId === log.id;
+                      const activityDate = formatActivityDate(log.date);
+                      const initials = log.User.name.split(' ').map(n => n[0]).join('');
 
-                  return (
-                  <li key={log.id} className="relative flex gap-x-4">
-                    {/* Timeline line - first item starts from center (no line above), last item ends at center */}
-                    <div
-                      className={`absolute left-0 flex w-6 justify-center ${
-                        idx === 0 ? 'top-3' : 'top-0'
-                      } ${
-                        idx === filteredActivityLogs.length - 1 ? 'h-6' : '-bottom-6'
-                      }`}
-                    >
-                      <div className="w-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
-                    </div>
-
-                    {isComment ? (
-                      <>
-                        {/* Avatar for comments - white circle behind to cut line */}
-                        <div
-                          className="relative mt-3 flex-none rounded-full flex items-center justify-center"
-                          style={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: 'white',
-                            boxShadow: '0 0 0 12px white',
-                          }}
-                        >
-                          <div
-                            className="w-full h-full rounded-full flex items-center justify-center"
-                            style={{
-                              backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.04)' : log.User.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-                              fontSize: '10px',
-                              fontWeight: 500,
-                              color: isDeleted ? '#9A999E' : log.User.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
-                            }}
-                          >
-                            {initials}
-                          </div>
-                        </div>
-                        {/* Comment bubble */}
-                        <div
-                          className="flex-auto p-3"
-                          style={{
-                            backgroundColor: isDeleted ? 'rgba(0, 0, 0, 0.02)' : 'rgba(0, 0, 0, 0.03)',
-                            border: '1px solid rgba(0, 0, 0, 0.06)',
-                            borderRadius: '1rem',
-                            opacity: isDeleted ? 0.7 : 1,
-                          }}
-                          onMouseEnter={() => canDelete && setHoveredCommentId(log.id)}
-                          onMouseLeave={() => setHoveredCommentId(null)}
-                        >
-                          <div className="flex justify-between gap-x-4">
-                            <div style={{ fontSize: '12px', color: isDeleted ? '#9A999E' : '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
-                              <span style={{ fontWeight: 500, color: isDeleted ? '#9A999E' : '#2C2C2C' }}>{log.User.name}</span> {isDeleted ? 'deleted their comment' : 'commented'}
+                      return (
+                        <div key={log.id} className="flex items-center gap-4">
+                          {/* Icon */}
+                          {isComment ? (
+                            <div
+                              className="flex-none rounded-full flex items-center justify-center"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                backgroundColor: log.User.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                                fontSize: '10px',
+                                fontWeight: 500,
+                                color: log.User.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
+                              }}
+                            >
+                              {initials}
                             </div>
-                            {canDelete && isHovered ? (
-                              <button
-                                onClick={() => setDeleteConfirmLogId(log.id)}
+                          ) : (
+                            <div className="flex-none flex items-center justify-center" style={{ width: 24, height: 24 }}>
+                              {isPublish ? (
+                                <CheckCircleIcon className="w-6 h-6" style={{ color: 'hsl(0, 84%, 60%)' }} />
+                              ) : (
+                                <div
+                                  className="rounded-full"
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+                                    border: '1px solid rgba(0, 0, 0, 0.25)',
+                                  }}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Message content */}
+                          {isComment ? (
+                            <div className="flex-1 flex items-center gap-6">
+                              <div
+                                className="flex-1 p-3"
                                 style={{
-                                  fontSize: '12px',
-                                  color: 'hsl(0, 84%, 50%)',
-                                  fontFamily: 'var(--font-open-sans)',
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  padding: 0,
+                                  backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                                  border: '1px solid rgba(0, 0, 0, 0.06)',
+                                  borderRadius: '1rem',
                                 }}
+                                onMouseEnter={() => canDelete && setHoveredCommentId(log.id)}
+                                onMouseLeave={() => setHoveredCommentId(null)}
                               >
-                                Delete
-                              </button>
-                            ) : (
+                                <div className="flex justify-between gap-x-4">
+                                  <div style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
+                                    <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{log.User.name}</span> commented
+                                  </div>
+                                  {canDelete && isHovered && (
+                                    <button
+                                      onClick={() => setDeleteConfirmLogId(log.id)}
+                                      style={{
+                                        fontSize: '12px',
+                                        color: 'hsl(0, 84%, 50%)',
+                                        fontFamily: 'var(--font-open-sans)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: 0,
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                                <p style={{ fontSize: '13px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)', marginTop: '4px' }}>
+                                  {comment}
+                                </p>
+                              </div>
+                              <time
+                                dateTime={log.createdAt}
+                                className="flex-none"
+                                style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                              >
+                                {relativeTime}
+                              </time>
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex justify-between items-center">
+                              <p style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}>
+                                <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{log.User.name}</span>{' '}
+                                {displayType}{activityDate ? ` ${activityDate}` : ''}{isPublishWithEdits ? ' (with edits)' : ''}.
+                              </p>
                               <time
                                 dateTime={log.createdAt}
                                 style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
                               >
                                 {relativeTime}
                               </time>
-                            )}
-                          </div>
-                          {!isDeleted && (
-                            <p style={{ fontSize: '13px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)', marginTop: '4px' }}>
-                              {comment}
-                            </p>
+                            </div>
                           )}
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Icon for system events - white circle behind to cut line */}
-                        <div
-                          className="relative flex flex-none items-center justify-center rounded-full"
-                          style={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: 'white',
-                            boxShadow: isPublish ? '0 0 0 12px white' : '0 0 0 4px white',
-                          }}
-                        >
-                          {isPublish ? (
-                            <CheckCircleIcon className="w-6 h-6" style={{ color: 'hsl(0, 84%, 60%)' }} />
-                          ) : (
-                            <div
-                              className="rounded-full"
-                              style={{
-                                width: 6,
-                                height: 6,
-                                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                                border: '1px solid rgba(0, 0, 0, 0.2)',
-                              }}
-                            />
-                          )}
-                        </div>
-                        {/* Event text */}
-                        <p
-                          className="flex-auto py-0.5"
-                          style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                        >
-                          <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{log.User.name}</span>{' '}
-                          {displayType}{activityDate ? ` ${activityDate}` : ''}{isPublishWithEdits ? ' (with edits)' : ''}.
-                        </p>
-                        <time
-                          dateTime={log.createdAt}
-                          className="flex-none py-0.5"
-                          style={{ fontSize: '12px', color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                        >
-                          {relativeTime}
-                        </time>
-                      </>
-                    )}
-                  </li>
-                  );
-                })}
-              </ul>
-              </div>
+                      );
+                    })}
+                </div>
+              </GlassPillCard>
               )}
 
               {/* Comment input */}
-              <div className="mt-6 flex gap-x-3">
-                <div
-                  className="flex-none rounded-full flex items-center justify-center"
-                  style={{
-                    width: 24,
-                    height: 24,
-                    backgroundColor: user?.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-                    fontSize: '10px',
-                    fontWeight: 500,
-                    color: user?.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
-                  }}
-                >
-                  {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'You'}
-                </div>
-                <div className="relative flex-auto">
+              <GlassPillCard borderRadius="1rem" className="w-full" padding="1.5rem" contentStyle={{ justifyContent: 'stretch', paddingLeft: '0.75rem' }}>
+                <div className="flex gap-3 w-full">
                   <div
-                    className="overflow-hidden"
+                    className="flex-none rounded-full flex items-center justify-center"
                     style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                      borderRadius: '1rem',
+                      width: 24,
+                      height: 24,
+                      backgroundColor: user?.role === 'CAPTAIN' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      color: user?.role === 'CAPTAIN' ? 'hsl(0, 84%, 50%)' : '#6B6B6B',
                     }}
                   >
-                    <textarea
-                      rows={4}
-                      placeholder="Add a comment..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      disabled={commentSubmitting}
-                      className="block w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-0"
-                      style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none', boxShadow: 'none' }}
-                    />
-                    <div className="flex justify-end py-3 px-3">
-                      <button
-                        type="button"
-                        onClick={handleCommentSubmit}
-                        disabled={!commentText.trim() || commentSubmitting}
-                        className="px-3 py-1.5 text-sm font-medium transition-all duration-200"
-                        style={{
-                          backgroundColor: commentText.trim() && !commentSubmitting ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)',
-                          color: commentText.trim() && !commentSubmitting ? '#2C2C2C' : '#6B6B6B',
-                          fontFamily: 'var(--font-open-sans)',
-                          cursor: commentText.trim() && !commentSubmitting ? 'pointer' : 'default',
-                          borderRadius: '0.75rem',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (commentText.trim() && !commentSubmitting) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.18)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = commentText.trim() && !commentSubmitting ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.05)';
-                        }}
-                      >
-                        {commentSubmitting ? 'Posting...' : 'Comment'}
-                      </button>
+                    {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'You'}
+                  </div>
+                  <div className="relative flex-auto">
+                    <div
+                      className="overflow-hidden"
+                      style={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                        borderRadius: '1rem',
+                      }}
+                    >
+                      <textarea
+                        rows={4}
+                        placeholder="Add a comment..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        disabled={commentSubmitting}
+                        className="block w-full resize-none bg-transparent text-sm placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                        style={{ fontFamily: 'var(--font-open-sans)', color: '#2C2C2C', outline: 'none', border: 'none', boxShadow: 'none', padding: '0.75rem', paddingBottom: '0.375rem' }}
+                      />
+                      <div className="flex justify-end" style={{ padding: '0 0.75rem 0.75rem 0.75rem' }}>
+                        <GlassPillButton
+                          onClick={() => {
+                            if (commentText.trim() && !commentSubmitting) {
+                              handleCommentSubmit();
+                            }
+                          }}
+                          padding="6px 12px"
+                          borderRadius="0.75rem"
+                          style={{
+                            opacity: commentText.trim() && !commentSubmitting ? 1 : 0.5,
+                            cursor: commentText.trim() && !commentSubmitting ? 'pointer' : 'default',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              color: commentText.trim() && !commentSubmitting ? '#2C2C2C' : '#6B6B6B',
+                            }}
+                          >
+                            {commentSubmitting ? 'Posting...' : 'Comment'}
+                          </span>
+                        </GlassPillButton>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </GlassPillCard>
             </div>
           </CardContainer>
 
@@ -3031,6 +3071,85 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    )}
+
+    {/* User dropdown menu - rendered at root level with fixed positioning */}
+    {isUserMenuOpen && userMenuRef.current && (
+      <div
+        ref={(el) => {
+          // Position dropdown below the user button
+          if (el && userMenuRef.current) {
+            const rect = userMenuRef.current.getBoundingClientRect();
+            el.style.top = `${rect.bottom + 8}px`;
+            el.style.right = `${window.innerWidth - rect.right}px`;
+          }
+        }}
+        className="ai-glass-border"
+        style={{
+          ...aiGlassLightBorderStyle('1rem'),
+          position: 'fixed',
+          minWidth: '200px',
+          zIndex: 99999,
+        }}
+      >
+        <div
+          style={{
+            ...aiGlassLightContentStyle('1rem', 0.95),
+            padding: '8px',
+          }}
+        >
+          {user && (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                marginBottom: '8px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                }}
+              >
+                {user.name}
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '12px',
+                  color: '#6B6B6B',
+                  marginTop: '2px',
+                }}
+              >
+                {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 transition-all"
+            style={{
+              padding: '10px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              color: '#2C2C2C',
+              textAlign: 'left',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ArrowRightOnRectangleIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+            Sign out
+          </button>
         </div>
       </div>
     )}

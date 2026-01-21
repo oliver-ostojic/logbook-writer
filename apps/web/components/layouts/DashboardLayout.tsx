@@ -20,6 +20,12 @@ export interface DashboardLayoutProps {
   rightPanelKey?: string;
   /** Border opacity for the outer panels (default: 0.15) */
   borderOpacity?: number;
+  /** Custom padding for left panel content (default: 'p-6' / 24px) */
+  leftPanelPadding?: string;
+  /** Content to render above the main panels (e.g., top navigation bar) */
+  topContent?: React.ReactNode;
+  /** Sticky navigation content rendered above the left panel */
+  stickyNav?: React.ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -34,13 +40,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   rightPanelWidth,
   rightPanelKey,
   borderOpacity = 0.15,
+  leftPanelPadding = 'p-6',
+  topContent,
+  stickyNav,
 }) => {
   const borderRadius = '1.5rem';
 
   // Determine panel widths
   const leftWidth = rightPanelVisible
     ? (leftPanelWidth || '55%')
-    : '60%';
+    : '80%';
   const rightWidth = rightPanelWidth || '45%';
 
   return (
@@ -61,21 +70,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           animation: panelSlideIn 0.3s ease-out forwards;
         }
       `}} />
-      <main className="min-h-screen" style={{ backgroundColor: '#f0eee6' }}>
-        <DashboardHeader
-          navLinks={navLinks}
-          activeItem={activeNavItem}
-          onUserClick={onUserClick}
-          lightMode={lightMode}
-        />
+      <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
+        <div className="px-6 lg:px-8 pt-12 lg:pt-16 pb-9 flex flex-col gap-6">
+          {/* Top content (e.g., navigation bar) - rendered outside the main card */}
+          {topContent}
 
-        <div className="px-6 lg:px-8 pt-20 pb-9">
           {/* Dynamic panel styles for responsive widths */}
           <style>{`
             @media (min-width: 1200px) {
               .dashboard-left-panel {
-                flex: ${rightPanelVisible ? `0 0 ${leftWidth}` : '0 0 60%'};
-                max-width: ${rightPanelVisible ? leftWidth : '60%'};
+                flex: ${rightPanelVisible ? `0 0 ${leftWidth}` : '0 0 80%'};
+                max-width: ${rightPanelVisible ? leftWidth : '80%'};
               }
               .dashboard-right-panel {
                 flex: 0 0 ${rightWidth};
@@ -84,17 +89,26 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             }
           `}</style>
           {/* Main content area */}
-          <div className={`flex flex-col min-[1200px]:flex-row gap-3 ${!rightPanelVisible ? 'min-[1200px]:justify-center' : ''}`}>
-            {/* Left panel */}
-            <div
-              className="ai-glass-border w-full dashboard-left-panel transition-all duration-300"
-              style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
-            >
+          <div className={`flex flex-col min-[1200px]:flex-row gap-6 ${!rightPanelVisible ? 'min-[1200px]:justify-center' : ''}`}>
+            {/* Left column - sticky nav + left panel */}
+            <div className="w-full dashboard-left-panel flex flex-col gap-6">
+              {/* Sticky navigation */}
+              {stickyNav && (
+                <div className="sticky top-4 z-50">
+                  {stickyNav}
+                </div>
+              )}
+              {/* Left panel */}
               <div
-                className="px-4 py-4"
-                style={aiGlassLightContentStyle(borderRadius)}
+                className="ai-glass-border transition-all duration-300"
+                style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
               >
-                {leftPanel}
+                <div
+                  className={leftPanelPadding}
+                  style={aiGlassLightContentStyle(borderRadius)}
+                >
+                  {leftPanel}
+                </div>
               </div>
             </div>
 
@@ -106,7 +120,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
               >
                 <div
-                  className="px-4 py-4"
+                  className="p-6"
                   style={aiGlassLightContentStyle(borderRadius)}
                 >
                   {rightPanel}
