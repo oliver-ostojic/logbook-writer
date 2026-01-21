@@ -647,10 +647,11 @@ export default function Home() {
     }
   };
 
-  // Filter activity logs by user
-  const filteredActivityLogs = activityUserFilter === 'mine' && user
+  // Filter activity logs by user and reverse to show newest first
+  const filteredActivityLogs = (activityUserFilter === 'mine' && user
     ? activityLogs.filter(log => log.User.id === user.id)
-    : activityLogs;
+    : activityLogs
+  ).slice().reverse();
 
   // Pagination for activity logs
   const totalActivityPages = Math.ceil(filteredActivityLogs.length / ACTIVITY_ITEMS_PER_PAGE);
@@ -1922,185 +1923,168 @@ export default function Home() {
       rightPanelKey={selectedItem ? `${selectedItem.id}-${selectedItem.type}-${selectedItem.mode}` : undefined}
       navLinks={[]}
       leftPanelPadding="p-6"
-      topContent={
-        /* Outer wrapper card - matches leftPanel outer card */
-        <div
-          className="ai-glass-border"
-          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.15)}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1.5rem'),
-              padding: '24px',
-            }}
-          >
-            <div className="flex gap-6" style={{ alignItems: 'stretch' }}>
-              {/* Inner nav card */}
+      leftPanel={
+        <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+          <div className="flex flex-col gap-6">
+            {/* Top nav - bento style header */}
+            <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
               <div
                 className="ai-glass-border"
                 style={{
-                  ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                  flex: 1,
+                  ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
                 }}
               >
                 <div
                   style={{
-                    ...aiGlassLightContentStyle('1.5rem', 0.6),
-                    padding: '16px 48px',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
+                    ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                    padding: '24px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '23px',
+                    alignItems: 'stretch',
                   }}
                 >
-                  <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
-                    <NavStatsCard
-                      icon={<HomeIcon />}
-                      label="Home"
-                      hideSubtext
-                      compact
-                      isActive={activeTopNav === 'home'}
-                      onClick={() => {
-                        setActiveTopNav('home');
-                        router.push(`/stores/${storeId}/home`);
-                      }}
-                      isFirst
-                    />
-                    <NavDivider compact />
-                    <NavStatsCard
-                      icon={<ChartBarIcon />}
-                      label="Fairness Dashboard"
-                      hideSubtext
-                      compact
-                      isActive={activeTopNav === 'dashboard'}
-                      onClick={() => setActiveTopNav('dashboard')}
-                    />
-                    <NavDivider compact />
-                    <NavStatsCard
-                      icon={<Cog6ToothIcon />}
-                      label="Settings"
-                      hideSubtext
-                      compact
-                      isActive={activeTopNav === 'settings'}
-                      onClick={() => setActiveTopNav('settings')}
-                      isLast
-                    />
-                  </nav>
-                </div>
-              </div>
-
-              {/* User button card */}
-              <div ref={userMenuRef}>
-                <div
-                  className="ai-glass-border"
-                  style={{
-                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                    height: '100%',
-                  }}
-                >
-                  <button
-                    className="flex items-center justify-center"
+                  {/* Inner nav pill */}
+                  <div
+                    className="ai-glass-border"
                     style={{
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      width: '100%',
-                      height: '100%',
-                      padding: '0 24px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'filter 0.2s ease',
+                      ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
+                      flex: 1,
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-                    onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   >
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '12px 32px',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
+                        <NavStatsCard
+                          icon={<HomeIcon />}
+                          label="Home"
+                          hideSubtext
+                          compact
+                          isActive={activeTopNav === 'home'}
+                          onClick={() => {
+                            setActiveTopNav('home');
+                            router.push(`/stores/${storeId}/home`);
+                          }}
+                          isFirst
+                        />
+                        <NavDivider compact />
+                        <NavStatsCard
+                          icon={<ChartBarIcon />}
+                          label="Fairness Dashboard"
+                          hideSubtext
+                          compact
+                          isActive={activeTopNav === 'dashboard'}
+                          onClick={() => setActiveTopNav('dashboard')}
+                        />
+                        <NavDivider compact />
+                        <NavStatsCard
+                          icon={<Cog6ToothIcon />}
+                          label="Settings"
+                          hideSubtext
+                          compact
+                          isActive={activeTopNav === 'settings'}
+                          onClick={() => setActiveTopNav('settings')}
+                          isLast
+                        />
+                      </nav>
+                    </div>
+                  </div>
+                  {/* User button */}
+                  <div ref={userMenuRef} style={{ height: '100%', aspectRatio: '1' }}>
                     <div
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
-                        width: 32,
-                        height: 32,
+                        width: '100%',
+                        height: '100%',
                       }}
                     >
-                      <div
+                      <button
+                        className="flex items-center justify-center"
                         style={{
                           ...aiGlassLightContentStyle('9999px', 0.6),
                           width: '100%',
                           height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'filter 0.2s ease',
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
+                        onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       >
-                        <UserIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
-                      </div>
+                        <UserIcon className="w-5 h-5" style={{ color: '#6B6B6B' }} />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      }
-      leftPanel={
-        <div className="flex flex-col gap-6">
-          {/* Activity/Crew/Logbooks navigation */}
-          <div className="sticky top-7 z-50">
-          <div
-            className="ai-glass-border"
-            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-          >
+
+            {/* Secondary nav - Activity/Crew/Logbooks */}
             <div
-              style={{
-                ...aiGlassLightContentStyle('1.5rem', 0.6),
-                padding: '34px 48px',
-                overflowX: 'auto',
-              }}
+              className="ai-glass-border"
+              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
             >
-              <nav className="flex items-center" style={{ minWidth: 'max-content' }}>
-                <NavStatsCard
-                  icon={<BellIcon />}
-                  label="Activity"
-                  subtext="View all"
-                  isActive={activeView === 'home'}
-                  onClick={() => setActiveView('home')}
-                  isFirst
-                />
-                <NavDivider />
-                <NavStatsCard
-                  icon={<UserGroupIcon />}
-                  label="Crew"
-                  count={effectiveCrew.length}
-                  isActive={activeView === 'crew'}
-                  onClick={() => setActiveView('crew')}
-                />
-                <NavDivider />
-                <NavStatsCard
-                  icon={<DocumentTextIcon />}
-                  label="Logbooks"
-                  count={effectiveLogbooks.length}
-                  isActive={activeView === 'logbooks'}
-                  onClick={() => setActiveView('logbooks')}
-                />
-                <NavDivider />
-                <NavStatsCard
-                  icon={<ShieldCheckIcon />}
-                  label="Roles"
-                  count={effectiveRoles.length}
-                  isActive={activeView === 'roles'}
-                  onClick={() => setActiveView('roles')}
-                />
-                <NavDivider />
-                <NavStatsCard
-                  icon={<AdjustmentsHorizontalIcon />}
-                  label="Preferences"
-                  count={apiPreferences.length}
-                  isActive={activeView === 'preferences'}
-                  onClick={() => setActiveView('preferences')}
-                  isLast
-                />
-              </nav>
+              <div
+                style={{
+                  ...aiGlassLightContentStyle('1.5rem', 0.6),
+                  padding: '34px 48px',
+                  overflowX: 'auto',
+                }}
+              >
+                <nav className="flex items-center" style={{ minWidth: 'max-content' }}>
+                  <NavStatsCard
+                    icon={<BellIcon />}
+                    label="Activity"
+                    subtext="View all"
+                    isActive={activeView === 'home'}
+                    onClick={() => setActiveView('home')}
+                    isFirst
+                  />
+                  <NavDivider />
+                  <NavStatsCard
+                    icon={<UserGroupIcon />}
+                    label="Crew"
+                    count={effectiveCrew.length}
+                    isActive={activeView === 'crew'}
+                    onClick={() => setActiveView('crew')}
+                  />
+                  <NavDivider />
+                  <NavStatsCard
+                    icon={<DocumentTextIcon />}
+                    label="Logbooks"
+                    count={effectiveLogbooks.length}
+                    isActive={activeView === 'logbooks'}
+                    onClick={() => setActiveView('logbooks')}
+                  />
+                  <NavDivider />
+                  <NavStatsCard
+                    icon={<ShieldCheckIcon />}
+                    label="Roles"
+                    count={effectiveRoles.length}
+                    isActive={activeView === 'roles'}
+                    onClick={() => setActiveView('roles')}
+                  />
+                  <NavDivider />
+                  <NavStatsCard
+                    icon={<AdjustmentsHorizontalIcon />}
+                    label="Preferences"
+                    count={apiPreferences.length}
+                    isActive={activeView === 'preferences'}
+                    onClick={() => setActiveView('preferences')}
+                    isLast
+                  />
+                </nav>
+              </div>
             </div>
-          </div>
-          </div>
 
           {/* Search card - shown above content for each list view */}
           {activeView === 'roles' && renderRolesSearchCard()}
@@ -2117,7 +2101,10 @@ export default function Home() {
           {/* Activity Log */}
           <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
             <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between">
+              {/* Activity Log header card - bento style: top corners match outer CardContainer */}
+              <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+              <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+              <div className="flex items-center justify-between" style={{ width: '100%' }}>
                 {/* Activity Log label pill */}
                 <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
                   <div
@@ -2324,6 +2311,8 @@ export default function Home() {
                     </MenuItems>
                   </Menu>
                 </div>
+              </div>
+              </GlassPillCard>
               </div>
               {activityLoading ? (
                 <div className="flex items-center justify-center py-8">
@@ -2587,7 +2576,8 @@ export default function Home() {
           ) : activeView === 'logbooks' ? (
             renderListView('logbooks')
           ) : null}
-        </div>
+          </div>
+        </CardContainer>
       }
       rightPanel={
         selectedItem ? (

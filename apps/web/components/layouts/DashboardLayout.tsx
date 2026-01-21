@@ -44,7 +44,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   topContent,
   stickyNav,
 }) => {
-  const borderRadius = '1.5rem';
+  const borderRadius = '1.5rem 1.5rem 0 0';
 
   // Determine panel widths
   const leftWidth = rightPanelVisible
