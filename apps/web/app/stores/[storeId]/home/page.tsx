@@ -1939,6 +1939,7 @@ export default function Home() {
             </div>
 
             {/* Secondary nav - Activity/Crew/Logbooks */}
+            <div className="sticky top-7 z-50">
             <div
               className="ai-glass-border"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
@@ -1994,6 +1995,7 @@ export default function Home() {
                   />
                 </nav>
               </div>
+            </div>
             </div>
 
           {/* Role Families card - shown below header when in roles view */}
