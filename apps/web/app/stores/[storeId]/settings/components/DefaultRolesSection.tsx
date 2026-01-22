@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -178,55 +178,44 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit 
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {defaultRoles.map((dr) => (
-            <div
+            <GlassPillCard
               key={dr.id}
-              className="ai-glass-border"
-              style={{
-                ...aiGlassLightBorderStyle('0.75rem'),
-              }}
+              padding="10px 12px"
+              borderRadius="0.75rem"
+              contentStyle={{ justifyContent: canEdit ? 'space-between' : 'flex-start' }}
             >
-              <div
+              <span
                 style={{
-                  ...aiGlassLightContentStyle('0.75rem', 0.6),
-                  padding: '10px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: canEdit ? 'space-between' : 'flex-start',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#2C2C2C',
                 }}
               >
-                <span
+                {dr.Role.displayName}
+              </span>
+              {canEdit && (
+                <button
+                  onClick={() => handleRemoveRole(dr.roleId)}
                   style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#2C2C2C',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
-                  {dr.Role.displayName}
-                </span>
-                {canEdit && (
-                  <button
-                    onClick={() => handleRemoveRole(dr.roleId)}
+                  <XMarkIcon
                     style={{
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '2px',
-                      display: 'flex',
-                      alignItems: 'center',
+                      width: '16px',
+                      height: '16px',
+                      color: '#9A999E',
                     }}
-                  >
-                    <XMarkIcon
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        color: '#9A999E',
-                      }}
-                    />
-                  </button>
-                )}
-              </div>
-            </div>
+                  />
+                </button>
+              )}
+            </GlassPillCard>
           ))}
         </div>
       )}

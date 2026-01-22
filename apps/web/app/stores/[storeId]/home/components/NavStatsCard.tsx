@@ -19,9 +19,9 @@ export interface NavStatsCardProps {
   isActive?: boolean;
   /** Click handler */
   onClick?: () => void;
-  /** Whether this is the first item (for red pill left padding) */
+  /** Whether this is the first item (edge pill padding) */
   isFirst?: boolean;
-  /** Whether this is the last item (for red pill right padding) */
+  /** Whether this is the last item (edge pill padding) */
   isLast?: boolean;
   /** Hide subtext (for simpler nav items) */
   hideSubtext?: boolean;
@@ -56,8 +56,8 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   const iconSize = compact ? 'size-3' : 'size-4';
   const labelFontSize = textOnly ? '14px' : (compact ? '13px' : '15px');
 
-  // Show highlight on active or hover (for textOnly mode)
-  const showHighlight = isActive || (textOnly && isHovered);
+  // Show highlight on active or hover
+  const showHighlight = isActive || isHovered;
 
   return (
     <div
@@ -74,10 +74,10 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
           style={{
             ...aiGlassLightBorderStyle('20px', '0, 0, 0', 0.08),
             position: 'absolute',
-            top: textOnly ? 0 : (compact ? -7 : -16),
-            bottom: textOnly ? 0 : (compact ? -7 : -16),
-            left: textOnly ? 0 : (isFirst ? (compact ? -7 : -26) : (compact ? -20 : -20)),
-            right: textOnly ? 0 : (isLast ? (compact ? -7 : -26) : (compact ? -20 : -20)),
+            top: textOnly ? 0 : (compact ? -7 : -8),
+            bottom: textOnly ? 0 : (compact ? -7 : -8),
+            left: textOnly ? 0 : (compact ? -7 : (isFirst ? 0 : 4)),
+            right: textOnly ? 0 : (compact ? -7 : (isLast ? 0 : 4)),
             zIndex: -1,
           }}
         >

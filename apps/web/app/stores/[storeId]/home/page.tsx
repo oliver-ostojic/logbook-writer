@@ -2019,7 +2019,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(filteredRoleFamilies.length, 4)}, 1fr)` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(filteredRoleFamilies.length, 4)}, 1fr)`, gap: '1rem' }}>
             {filteredRoleFamilies.map((family) => {
               const isSelected = selectedItem?.id === family.id && selectedItem?.type === 'roleFamilies';
               return (
@@ -2281,7 +2281,6 @@ export default function Home() {
                         setActiveTopNav('home');
                         router.push(`/stores/${storeId}/home`);
                       }}
-                      isFirst
                     />
                     <NavStatsCard
                       label="System Health"
@@ -2307,7 +2306,6 @@ export default function Home() {
                         textOnly
                         isActive={isUserMenuOpen}
                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                        isLast
                       />
                     </div>
                   </nav>
@@ -2324,11 +2322,11 @@ export default function Home() {
               <div
                 style={{
                   ...aiGlassLightContentStyle('1.5rem', 0.6),
-                  padding: '16px 32px',
+                  padding: '16px 8px',
                   overflowX: 'auto',
                 }}
               >
-                <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
+                <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', width: '100%' }}>
                   <NavStatsCard
                     icon={<BellIcon />}
                     label="Activity"
@@ -2337,7 +2335,6 @@ export default function Home() {
                     onClick={() => setActiveView('home')}
                     isFirst
                   />
-                  <NavDivider />
                   <NavStatsCard
                     icon={<UserGroupIcon />}
                     label="Crew"
@@ -2345,7 +2342,6 @@ export default function Home() {
                     isActive={activeView === 'crew'}
                     onClick={() => setActiveView('crew')}
                   />
-                  <NavDivider />
                   <NavStatsCard
                     icon={<DocumentTextIcon />}
                     label="Logbooks"
@@ -2353,7 +2349,6 @@ export default function Home() {
                     isActive={activeView === 'logbooks'}
                     onClick={() => setActiveView('logbooks')}
                   />
-                  <NavDivider />
                   <NavStatsCard
                     icon={<ShieldCheckIcon />}
                     label="Roles"
@@ -2361,7 +2356,6 @@ export default function Home() {
                     isActive={activeView === 'roles'}
                     onClick={() => setActiveView('roles')}
                   />
-                  <NavDivider />
                   <NavStatsCard
                     icon={<AdjustmentsHorizontalIcon />}
                     label="Preferences"

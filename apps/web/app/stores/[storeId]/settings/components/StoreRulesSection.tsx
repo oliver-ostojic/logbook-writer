@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CardContainer, CardSmall, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
@@ -143,20 +143,14 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
                   {/* Items in group - cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(roleRules.length, 4)}, 1fr)`, gap: '8px' }}>
                     {roleRules.map(({ roleRule, storeRoleRuleId }) => (
-                      <CardSmall
+                      <GlassPillButton
                         key={storeRoleRuleId}
-                        lightMode={true}
-                        contentStyle={{
-                          padding: '12px',
-                          cursor: 'pointer',
-                          position: 'relative',
-                          overflow: 'visible',
-                        }}
                         onClick={() => onViewRule?.(roleRule.id)}
+                        padding="12px"
+                        contentStyle={{ justifyContent: 'center' }}
                       >
                         <div className="flex items-center justify-center h-full">
                           {roleRule.TargetRole && ['CANNOT_BE_ASSIGNED_BEFORE', 'CANNOT_BE_ASSIGNED_AFTER', 'DISTRIBUTION_BETWEEN_ROLE_X'].includes(roleRule.type) ? (
-                            // Two roles: "role vs. (target_role)" - only target in bubble
                             <div className="flex items-center gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
                               <span
                                 style={{
@@ -197,7 +191,6 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
                               </div>
                             </div>
                           ) : (
-                            // Single role - just plain text
                             <span
                               style={{
                                 fontFamily: 'var(--font-open-sans)',
@@ -212,7 +205,7 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
                             </span>
                           )}
                         </div>
-                      </CardSmall>
+                      </GlassPillButton>
                     ))}
                   </div>
                 </div>
