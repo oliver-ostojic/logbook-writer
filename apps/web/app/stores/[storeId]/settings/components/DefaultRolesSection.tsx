@@ -77,148 +77,158 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit 
   );
 
   return (
-    <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.15}>
+    <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.08}>
       <div className="flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div style={{
-            padding: '6px 14px',
-            fontFamily: 'var(--font-open-sans)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2C2C2C',
-          }}>
-            Default Roles
-          </div>
-
-        {/* Add Dropdown - only for CAPTAIN/ADMIN */}
-        {canEdit && (
-          <div style={{ position: 'relative' }} ref={dropdownRef}>
-            <button
-              onClick={() => setShowAddDropdown(!showAddDropdown)}
-              disabled={availableRoles.length === 0}
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '6px 14px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: availableRoles.length === 0 ? '#9A999E' : '#2C2C2C',
-                cursor: availableRoles.length === 0 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              + Add Role
-            </button>
-
-            {showAddDropdown && availableRoles.length > 0 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  borderRadius: '0.75rem',
-                  padding: '8px',
-                  zIndex: 100,
-                  minWidth: '180px',
-                  maxHeight: '300px',
-                  overflowY: 'auto',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                }}
-              >
-                {availableRoles.map((role) => (
-                  <button
-                    key={role.id}
-                    onClick={() => handleAddRole(role.id)}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      padding: '8px 12px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      color: '#2C2C2C',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)')
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = 'transparent')
-                    }
-                  >
-                    {role.displayName}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Roles Grid */}
-      {defaultRoles.length === 0 ? (
-        <div
-          style={{
-            fontFamily: 'var(--font-open-sans)',
-            fontSize: '14px',
-            color: '#6B6B6B',
-            textAlign: 'center',
-            padding: '24px',
-          }}
-        >
-          No default roles set
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {defaultRoles.map((dr) => (
-            <GlassPillCard
-              key={dr.id}
-              padding="10px 12px"
-              borderRadius="0.75rem"
-              contentStyle={{ justifyContent: canEdit ? 'space-between' : 'flex-start' }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  color: '#2C2C2C',
-                }}
-              >
-                {dr.Role.displayName}
-              </span>
-              {canEdit && (
-                <button
-                  onClick={() => handleRemoveRole(dr.roleId)}
+        {/* Embedded Header */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <GlassPillCard padding="6px" borderRadius="1rem 1rem 0 0" borderOpacity={0.08} contentStyle={{ width: '100%' }}>
+            <div className="flex items-center justify-between" style={{ width: '100%', padding: '8px 10px' }}>
+              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div
+                  className="ai-glass-content"
                   style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '2px',
-                    display: 'flex',
-                    alignItems: 'center',
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
                   }}
                 >
-                  <XMarkIcon
+                  Default Roles
+                </div>
+              </div>
+
+              {/* Add Dropdown - only for CAPTAIN/ADMIN */}
+              {canEdit && (
+                <div style={{ position: 'relative' }} ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowAddDropdown(!showAddDropdown)}
+                    disabled={availableRoles.length === 0}
                     style={{
-                      width: '16px',
-                      height: '16px',
-                      color: '#9A999E',
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                      border: 'none',
+                      borderRadius: '9999px',
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      color: availableRoles.length === 0 ? '#9A999E' : '#2C2C2C',
+                      cursor: availableRoles.length === 0 ? 'not-allowed' : 'pointer',
                     }}
-                  />
-                </button>
+                  >
+                    + Add Role
+                  </button>
+
+                  {showAddDropdown && availableRoles.length > 0 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '8px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid rgba(0, 0, 0, 0.08)',
+                        borderRadius: '0.75rem',
+                        padding: '8px',
+                        zIndex: 100,
+                        minWidth: '180px',
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      }}
+                    >
+                      {availableRoles.map((role) => (
+                        <button
+                          key={role.id}
+                          onClick={() => handleAddRole(role.id)}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            padding: '8px 12px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: '#2C2C2C',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = 'transparent')
+                          }
+                        >
+                          {role.displayName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </GlassPillCard>
-          ))}
+            </div>
+          </GlassPillCard>
         </div>
-      )}
+
+        {/* Roles Grid */}
+        {defaultRoles.length === 0 ? (
+          <div
+            style={{
+              fontFamily: 'var(--font-open-sans)',
+              fontSize: '14px',
+              color: '#6B6B6B',
+              textAlign: 'center',
+              padding: '24px',
+            }}
+          >
+            No default roles set
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {defaultRoles.map((dr) => (
+              <GlassPillCard
+                key={dr.id}
+                padding="10px 12px"
+                borderRadius="0.75rem"
+                contentStyle={{ justifyContent: canEdit ? 'space-between' : 'flex-start' }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  {dr.Role.displayName}
+                </span>
+                {canEdit && (
+                  <button
+                    onClick={() => handleRemoveRole(dr.roleId)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <XMarkIcon
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        color: '#9A999E',
+                      }}
+                    />
+                  </button>
+                )}
+              </GlassPillCard>
+            ))}
+          </div>
+        )}
       </div>
     </CardContainer>
   );

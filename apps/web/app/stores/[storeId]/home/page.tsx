@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
+import { UserGroupIcon, CheckCircleIcon, MagnifyingGlassIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/solid';
 import { logout } from '@/lib/api/auth';
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
@@ -98,134 +98,6 @@ function capitalizeStatus(status: string): string {
   return status.charAt(0) + status.slice(1).toLowerCase();
 }
 
-// User dropdown component for top nav
-function UserDropdown() {
-  const router = useRouter();
-  const { user, logout: logoutStore } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    }
-    logoutStore();
-    router.push('/login');
-  };
-
-  return (
-    <div ref={menuRef} style={{ position: 'relative', flex: '1' }}>
-      <div
-        className="ai-glass-border"
-        style={{
-          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-          height: '100%',
-        }}
-      >
-        <button
-          className="flex items-center justify-center transition-all"
-          style={{
-            ...aiGlassLightContentStyle('1.5rem', 0.6),
-            width: '100%',
-            height: '100%',
-            cursor: 'pointer',
-            border: 'none',
-            transition: 'background 0.2s ease, filter 0.2s ease',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-          onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <UserIcon className="w-5 h-5" style={{ color: '#6b7280' }} />
-        </button>
-      </div>
-
-      {isOpen && (
-        <div
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('1rem'),
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            right: 0,
-            minWidth: '200px',
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1rem', 0.95),
-              padding: '8px',
-            }}
-          >
-            {user && (
-              <div
-                style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
-                  marginBottom: '8px',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#2C2C2C',
-                  }}
-                >
-                  {user.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '12px',
-                    color: '#6B6B6B',
-                    marginTop: '2px',
-                  }}
-                >
-                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
-                </div>
-              </div>
-            )}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 transition-all"
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                color: '#2C2C2C',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <ArrowRightOnRectangleIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
-              Sign out
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Light mode ListRowItem component
 function ListRowItemLight({
@@ -552,6 +424,7 @@ export default function Home() {
   }, []);
 
   const handleLogout = async () => {
+    setIsUserMenuOpen(false);
     try {
       await logout();
     } catch (error) {
@@ -3378,6 +3251,8 @@ export default function Home() {
           style={{
             ...aiGlassLightContentStyle('1rem', 0.95),
             padding: '8px',
+            position: 'relative',
+            zIndex: 5,
           }}
         >
           {user && (

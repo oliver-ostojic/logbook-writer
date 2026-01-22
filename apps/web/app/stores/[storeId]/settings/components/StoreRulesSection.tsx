@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CardContainer, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillButton, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 
@@ -51,94 +51,118 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
   });
 
   return (
-    <>
-      <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.15}>
-        <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Search and Add bar - bento box style */}
-          <div className="mb-4 flex gap-2" style={{ paddingTop: '4px' }}>
-            {/* Search section - pill left, rounded right */}
-            <div
-              className="ai-glass-border flex-1 rounded-l-full rounded-r-md overflow-hidden"
-              style={aiGlassLightBorderStyle('1rem')}
-            >
-              <div
-                className="flex items-center rounded-l-full rounded-r-md"
-                style={{
-                  ...aiGlassLightContentStyle('1rem', 0.6),
-                  padding: '0 14px',
-                  height: '36px',
-                }}
-              >
-                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="focus:outline-none focus:ring-0 flex-1"
+    <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.08}>
+      <div className="flex flex-col gap-4">
+        {/* Embedded Header */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <GlassPillCard padding="6px" borderRadius="1rem 1rem 0 0" borderOpacity={0.08} contentStyle={{ width: '100%' }}>
+            <div className="flex items-center justify-between" style={{ width: '100%', padding: '8px 10px' }}>
+              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div
+                  className="ai-glass-content"
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#2C2C2C',
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '6px 14px',
                     fontFamily: 'var(--font-open-sans)',
                     fontSize: '14px',
-                    fontWeight: 400,
-                    width: '100%',
-                    marginLeft: '8px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
                   }}
-                />
+                >
+                  Store Role Rules
+                </div>
               </div>
             </div>
-            {/* Add button - rounded left, pill right - only for CAPTAIN/ADMIN */}
-            {onAdd && (
-              <div
-                className="ai-glass-border rounded-l-md rounded-r-full overflow-hidden"
-                style={aiGlassLightBorderStyle('1rem')}
-              >
-                <button
-                  onClick={onAdd}
-                  className="transition-all duration-150"
-                  style={{
-                    ...aiGlassLightContentStyle('1rem', 0.6),
-                    border: 'none',
-                    borderRadius: 'inherit',
-                    padding: '0 16px',
-                    height: '36px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: '#2C2C2C',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                >
-                  + Add
-                </button>
-              </div>
-            )}
-          </div>
+          </GlassPillCard>
+        </div>
 
-          {/* Grouped list - card per type */}
+        {/* Inner card: search header + grouped list */}
+        <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.08}>
           <div className="flex flex-col gap-4">
-            {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
-              <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.15}>
-                <div className="flex flex-col gap-3">
-                  {/* Group header - title bubble */}
-                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+            {/* Search header - Add button on left, search bar fills remaining space */}
+            <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+              <GlassPillCard padding="1rem" borderRadius="1rem 1rem 0 0" contentStyle={{ width: '100%' }}>
+                <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
+                  {/* Add button */}
+                  {onAdd && (
+                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                      <button
+                        onClick={onAdd}
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.4),
+                          padding: '0 14px',
+                          height: '36px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                        Add
+                      </button>
+                    </div>
+                  )}
+                  {/* Search bar - fills remaining space */}
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flex: 1, minWidth: 0 }}>
                     <div
+                      className="flex items-center"
                       style={{
                         ...aiGlassLightContentStyle('9999px', 0.6),
-                        padding: '6px 14px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#2C2C2C',
+                        padding: '0 14px',
+                        height: '36px',
+                        width: '100%',
                       }}
                     >
-                      {ruleType}
+                      <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                      <input
+                        type="text"
+                        placeholder="Search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="focus:outline-none focus:ring-0 flex-1"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#2C2C2C',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          width: '100%',
+                          marginLeft: '8px',
+                        }}
+                      />
                     </div>
                   </div>
+                </div>
+              </GlassPillCard>
+            </div>
+
+            {/* Grouped list - card per type */}
+            <div className="flex flex-col gap-4">
+              {Array.from(groupedByType.entries()).map(([ruleType, roleRules]) => (
+                <CardContainer key={ruleType} lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.15}>
+                  <div className="flex flex-col gap-3">
+                    {/* Group header - title bubble */}
+                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        {ruleType}
+                      </div>
+                    </div>
 
                   {/* Items in group - cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(roleRules.length, 4)}, 1fr)`, gap: '8px' }}>
@@ -209,17 +233,18 @@ export function StoreRulesSection({ storeRules, onAdd, onViewRule }: StoreRulesS
                     ))}
                   </div>
                 </div>
-              </CardContainer>
-            ))}
+                </CardContainer>
+              ))}
 
-            {groupedByType.size === 0 && (
-              <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
-                No store rules found
-              </div>
-            )}
+              {groupedByType.size === 0 && (
+                <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
+                  No store rules found
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContainer>
-    </>
+        </CardContainer>
+      </div>
+    </CardContainer>
   );
 }

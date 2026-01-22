@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CardContainer, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillButton, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { TrashIcon, ClipboardIcon, CheckIcon } from '@heroicons/react/20/solid';
 import { createInviteCode, getInviteCodes, deleteInviteCode, InviteCode } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/authStore';
@@ -88,38 +88,48 @@ export function InviteCodesSection({ storeId }: InviteCodesSectionProps) {
   const availableRoles: Array<'MATE' | 'CAPTAIN'> = canCreateCaptain ? ['MATE', 'CAPTAIN'] : ['MATE'];
 
   return (
-    <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+    <CardContainer lightMode={true} borderRadius="1rem" padding="1rem" borderOpacity={0.08}>
       <div className="flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div style={{
-            padding: '6px 14px',
-            fontFamily: 'var(--font-open-sans)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2C2C2C',
-          }}>
-            Invite Codes
-          </div>
+        {/* Embedded Header */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <GlassPillCard padding="6px" borderRadius="1rem 1rem 0 0" borderOpacity={0.08} contentStyle={{ width: '100%' }}>
+            <div className="flex items-center justify-between" style={{ width: '100%', padding: '8px 10px' }}>
+              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div
+                  className="ai-glass-content"
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Invite Codes
+                </div>
+              </div>
 
-          {!showCreateForm && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '6px 14px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: '#2C2C2C',
-                cursor: 'pointer',
-              }}
-            >
-              + Create Code
-            </button>
-          )}
+              {!showCreateForm && (
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#2C2C2C',
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Create Code
+                </button>
+              )}
+            </div>
+          </GlassPillCard>
         </div>
 
         {/* Error message */}

@@ -443,14 +443,14 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
         {/* Description Field */}
         <div className="flex flex-col gap-1">
           <label htmlFor="rule-description" style={labelStyle}>Description</label>
-          <div className="ai-glass-border" style={aiGlassLightBorderStyle('0.5rem')}>
+          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('0.5rem'), display: 'flex' }}>
             <textarea
               id="rule-description"
               value={formData.description}
               onChange={handleChange('description')}
               placeholder="Optional description"
               rows={3}
-              style={inputStyle}
+              style={{ ...inputStyle, height: 'auto', resize: 'vertical', display: 'block' }}
             />
           </div>
         </div>
@@ -482,16 +482,13 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
               type="submit"
               disabled={loading}
               style={{
-                background: loading ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.8)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
+                ...aiGlassLightContentStyle('9999px', 0.6),
                 padding: '8px 20px',
                 border: 'none',
-                borderRadius: '9999px',
                 fontFamily: 'var(--font-open-sans)',
                 fontSize: '14px',
                 fontWeight: 500,
-                color: '#FFFFFF',
+                color: loading ? 'hsla(0, 84%, 60%, 0.5)' : 'hsl(0, 84%, 60%)',
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
