@@ -57,7 +57,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       }}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...contentBaseStyle,
           padding: paddingValue,

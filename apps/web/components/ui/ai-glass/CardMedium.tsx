@@ -40,7 +40,7 @@ export const CardMedium: React.FC<CardMediumProps> = ({
       }}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...aiGlassContentStyle(borderRadius, 0.85),
           padding: '1.5rem',

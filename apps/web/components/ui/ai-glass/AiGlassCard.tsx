@@ -19,7 +19,7 @@ export const AiGlassCard: React.FC<AiGlassCardProps> = ({
 }) => (
   <div className="ai-glass-border" style={{ ...aiGlassBorderStyle(borderRadius), ...style }} data-radius={typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius}>
     <div
-      className={className}
+      className={`ai-glass-content ${className}`}
       style={{ ...aiGlassContentStyle(borderRadius), ...contentStyle }}
     >
       {children}

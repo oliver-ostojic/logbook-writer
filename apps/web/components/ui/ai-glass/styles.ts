@@ -42,6 +42,8 @@ export const aiGlassLightBorderStyle = (
   styles['--border-color'] = borderColor;
   styles['--border-opacity'] = borderOpacity;
   styles['--border-width'] = borderWidth;
+  // Don't set --border-brightness or --border-fade here - let CSS defaults apply
+  // so the GlassDevPanel config can override them consistently
   return styles as React.CSSProperties;
 };
 

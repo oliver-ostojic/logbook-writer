@@ -41,7 +41,7 @@ export const GlassPill: React.FC<GlassPillProps> = ({
   onClick,
   borderRadius = '1rem',
   padding = '24px',
-  backgroundOpacity = 0.6,
+  backgroundOpacity = 0.4,
   borderOpacity = 0.08,
   selectedBrightness = 0.94,
   selectedScale = 1.02,
@@ -51,6 +51,9 @@ export const GlassPill: React.FC<GlassPillProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const isInteractive = !!onClick;
+
+  // Hover just bumps opacity slightly, selected goes fully opaque
+  const contentOpacity = isSelected ? 1 : (isInteractive && isHovered) ? backgroundOpacity + 0.15 : backgroundOpacity;
 
   return (
     <div
@@ -63,9 +66,6 @@ export const GlassPill: React.FC<GlassPillProps> = ({
           filter: `brightness(${selectedBrightness})`,
           transform: `scale(${selectedScale})`,
         }),
-        ...(isInteractive && isHovered && !isSelected && {
-          filter: `brightness(${selectedBrightness})`,
-        }),
         ...style,
       }}
       onClick={onClick}
@@ -75,10 +75,10 @@ export const GlassPill: React.FC<GlassPillProps> = ({
       <div
         className="flex items-center justify-center h-full"
         style={{
-          ...aiGlassLightContentStyle(borderRadius, (isSelected || (isInteractive && isHovered)) ? 1 : backgroundOpacity),
+          ...aiGlassLightContentStyle(borderRadius, contentOpacity),
           padding,
           transition: 'background 0.2s ease',
-          ...((isSelected || (isInteractive && isHovered)) && {
+          ...(isSelected && {
             backdropFilter: 'none',
             WebkitBackdropFilter: 'none',
           }),

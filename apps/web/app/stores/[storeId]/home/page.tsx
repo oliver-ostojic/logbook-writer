@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon, BuildingStorefrontIcon } from '@heroicons/react/24/solid';
+import { UserGroupIcon, CalendarIcon, BriefcaseIcon, CheckCircleIcon, MagnifyingGlassIcon, HomeIcon, ChartBarIcon, Cog6ToothIcon, UserIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
 import { logout } from '@/lib/api/auth';
 import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
@@ -854,139 +854,96 @@ export default function Home() {
       );
     }
 
-    // Standard detail views with header
+    // Get the title for the detail panel
+    const getDetailTitle = () => {
+      if (selectedItem.mode === 'add' && !selectedItem.id) {
+        return `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : selectedItem.type === 'preferences' ? 'Preference' : 'Logbook'}`;
+      }
+      return selectedItem.name;
+    };
+
+    // Standard detail views with embedded header
     return (
-      <div className="flex flex-col gap-4 h-full">
-        {/* Header with name and mode dropdown */}
-        <CardHeader
-          title={selectedItem.mode === 'add' && !selectedItem.id ? `New ${selectedItem.type === 'crew' ? 'Crew Member' : selectedItem.type === 'roles' ? 'Role' : selectedItem.type === 'roleFamilies' ? 'Role Family' : selectedItem.type === 'preferences' ? 'Preference' : 'Logbook'}` : selectedItem.name}
-          lightMode={true}
-          borderRadius="1.5rem"
-          titleStyle={{ color: '#2C2C2C' }}
-          leftContent={
-            selectedItem.mode === 'add' && !selectedItem.id ? undefined : (
-            <Menu as="div" style={{ zIndex: 100 }}>
-              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                <MenuButton
-                  className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
-                  style={{
-                    position: 'relative' as const,
-                    zIndex: 0,
-                    width: '100%',
-                    height: '100%',
-                    background: 'hsla(0, 84%, 60%, 0.85)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    borderRadius: '9999px',
-                    fontFamily: 'var(--font-open-sans)',
-                    color: '#FFFFFF',
-                    fontWeight: 500,
-                    padding: '6px 14px',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.95)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.85)';
-                  }}
-                >
-                  {selectedItem.mode === 'add' ? 'Add' : selectedItem.mode === 'edit' ? 'Edit' : selectedItem.mode === 'pdf' ? 'PDF' : selectedItem.mode === 'history' ? 'History' : 'View'}
-                </MenuButton>
-              </div>
-              <MenuItems
-                anchor="bottom start"
-                portal={false}
-                transition
-                className="w-32 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                style={{
-                  zIndex: 100,
-                  ...aiGlassLightBorderStyle('0.75rem'),
-                  marginTop: 8,
-                }}
-              >
-                <div
-                  className="py-1"
-                  style={{
-                    ...aiGlassLightContentStyle('0.75rem', 0.6),
-                    backdropFilter: 'blur(2px)',
-                    WebkitBackdropFilter: 'blur(2px)',
-                  }}
-                >
-                  {(selectedItem.type === 'logbooks' ? ['history', 'pdf', 'add'] : selectedItem.type === 'roleFamilies' ? (selectedItem.mode === 'add' ? ['add'] : ['view', 'add']) : ['view', 'edit', 'add']).map((mode) => (
-                    <MenuItem key={mode}>
-                      <div className="flex items-center justify-between px-4 py-2">
-                        <button
-                          onClick={() => {
-                            if (mode === 'add') {
-                              if (selectedItem.type === 'logbooks') {
-                                router.push(`/stores/${storeId}/logbook/create/shifts`);
-                              } else {
-                                const itemName = selectedItem.type === 'crew' ? 'Crew Member' :
-                                                selectedItem.type === 'roles' ? 'Role' :
-                                                selectedItem.type === 'roleFamilies' ? 'Role Family' :
-                                                selectedItem.type === 'preferences' ? 'Preference' : 'Item';
-                                setSelectedItem({
-                                  id: '',
-                                  name: `New ${itemName}`,
-                                  type: selectedItem.type,
-                                  mode: 'add',
-                                });
-                              }
-                            } else {
-                              setSelectedItem({ ...selectedItem, mode: mode as SelectedItem['mode'] });
-                            }
-                          }}
-                          className="text-left text-sm focus:outline-none flex-1"
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            color: selectedItem.mode === mode ? '#2C2C2C' : '#6B6B6B',
-                            backgroundColor: 'transparent',
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                          onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                        >
-                          {mode === 'add' ? 'Add' : mode === 'view' ? 'View' : mode === 'edit' ? 'Edit' : mode === 'history' ? 'History' : 'PDF'}
-                        </button>
-                      </div>
-                    </MenuItem>
-                  ))}
+      <div className="flex flex-col h-full">
+        {/* Embedded header - matches list view style */}
+        <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+          <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+            <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
+              {/* Edit button - only in view mode */}
+              {selectedItem.mode === 'view' && (
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                  <button
+                    onClick={() => setSelectedItem({ ...selectedItem, mode: 'edit' })}
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Edit
+                  </button>
                 </div>
-              </MenuItems>
-            </Menu>
-            )
-          }
-          rightContent={
-            <button
-              onClick={() => {
-                if (previousView) {
-                  setSelectedItem(previousView);
-                  setPreviousView(null);
-                } else {
-                  setActiveView(selectedItem.type === 'roleFamilies' ? 'roles' : selectedItem.type);
-                  setSelectedItem(null);
-                }
-              }}
-              className="transition-colors duration-150"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px 8px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: '#6B6B6B',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
-            >
-              ×
-            </button>
-          }
-        />
+              )}
+              {/* Delete button - only in view mode */}
+              {selectedItem.mode === 'view' && (
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                  <button
+                    onClick={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: selectedItem.type })}
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: 'hsl(0, 84%, 50%)',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+              {/* Spacer to push Back button to right */}
+              <div style={{ flex: 1 }} />
+              {/* Back button */}
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                <button
+                  onClick={() => {
+                    if (selectedItem.mode === 'edit' || selectedItem.mode === 'add') {
+                      // Go back to view mode
+                      setSelectedItem({ ...selectedItem, mode: 'view' });
+                    } else if (previousView) {
+                      setSelectedItem(previousView);
+                      setPreviousView(null);
+                    } else {
+                      setSelectedItem(null);
+                    }
+                  }}
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.4),
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#6B6B6B',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          </GlassPillCard>
+        </div>
+        {/* Content with gap */}
+        <div className="flex flex-col gap-4" style={{ marginTop: '1rem' }}>
         {/* Content based on type and mode */}
         {selectedItem.type === 'crew' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
           <CrewForm
@@ -1193,19 +1150,20 @@ export default function Home() {
             </div>
           </CardContainer>
         )}
+        </div>
       </div>
     );
   };
 
   // Wrapper to render list view with inline detail panel
   const renderListWithInlineDetail = (
-    listContent: React.ReactNode,
+    renderListFn: () => React.ReactNode,
     viewType: ViewId | 'roleFamilies' | 'runs'
   ) => {
     const hasDetailPanel = isSelectedItemOfType(viewType);
 
     return (
-      <div className="flex gap-4" style={{ minHeight: '400px' }}>
+      <div className="flex gap-6" style={{ minHeight: '400px' }}>
         {/* List section */}
         <div
           style={{
@@ -1214,7 +1172,7 @@ export default function Home() {
             minWidth: hasDetailPanel ? '200px' : undefined,
           }}
         >
-          {listContent}
+          {renderListFn()}
         </div>
 
         {/* Detail panel - inline */}
@@ -1308,7 +1266,7 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
           {/* Embedded search header with title and add button */}
-          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPage, title, handleAddClick)}
+          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPage, handleAddClick)}
 
           {/* Paginated list */}
           <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
@@ -1322,7 +1280,9 @@ export default function Home() {
                     key={`${type}-${item.id}`}
                     isSelected={isSelected}
                     onClick={() => {
-                      if (type === 'logbooks') {
+                      if (isSelected) {
+                        setSelectedItem(null);
+                      } else if (type === 'logbooks') {
                         setSelectedItem({ id: item.id, name: itemName, type, mode: 'history' });
                       } else {
                         setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
@@ -1810,7 +1770,7 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
           {/* Embedded search header with title and add button */}
-          {hasSearchData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPreferencesPage, titleText, handleAddClick)}
+          {hasSearchData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPreferencesPage, handleAddClick)}
 
         {/* Grouped list - card per type */}
         <div className="flex flex-col gap-4" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
@@ -1844,12 +1804,18 @@ export default function Home() {
                       <GlassPillButton
                         key={rule.id}
                         isSelected={isSelected}
-                        onClick={() => setSelectedItem({
-                          id: String(rule.id),
-                          name: typeDisplayName,
-                          type: itemType,
-                          mode: 'view'
-                        })}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedItem(null);
+                          } else {
+                            setSelectedItem({
+                              id: String(rule.id),
+                              name: typeDisplayName,
+                              type: itemType,
+                              mode: 'view'
+                            });
+                          }
+                        }}
                         padding="12px"
                         contentStyle={{ justifyContent: 'center' }}
                       >
@@ -1931,78 +1897,26 @@ export default function Home() {
   };
 
   // Embedded search header for list views - bento style with rounded top corners
-  // Title and search bar on left, add button on right
+  // Add button on left, search bar fills remaining space
   const renderEmbeddedSearchHeader = (
     searchValue: string,
     onSearchChange: (value: string) => void,
     setPage: (page: number) => void,
-    title: string,
     onAddClick: () => void
   ) => {
     return (
       <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
         <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-          {/* Single row: Title + Search on left, Add button on right */}
-          <div className="flex items-center justify-between" style={{ width: '100%', gap: '16px' }}>
-            {/* Left side: Title pill + Search bar */}
-            <div className="flex items-center" style={{ gap: '12px', flex: 1 }}>
-              {/* Title pill */}
-              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
-                <div
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.6),
-                    padding: '6px 14px',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#2C2C2C',
-                  }}
-                >
-                  {title}
-                </div>
-              </div>
-              {/* Search bar - next to title, using glass UI style */}
-              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: '50%', minWidth: '200px', maxWidth: '400px' }}>
-                <div
-                  className="flex items-center"
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.6),
-                    padding: '0 14px',
-                    height: '36px',
-                    width: '100%',
-                  }}
-                >
-                  <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchValue}
-                    onChange={(e) => {
-                      onSearchChange(e.target.value);
-                      setPage(1);
-                    }}
-                    className="focus:outline-none focus:ring-0 flex-1"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#2C2C2C',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      width: '100%',
-                      marginLeft: '8px',
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-            {/* Right side: Add button */}
+          {/* Single row: Add button on left, Search bar fills remaining space */}
+          <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
+            {/* Add button */}
             <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
               <button
                 onClick={onAddClick}
                 style={{
                   ...aiGlassLightContentStyle('9999px', 0.4),
-                  padding: '6px 14px',
+                  padding: '0 14px',
+                  height: '36px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '14px',
                   fontWeight: 500,
@@ -2017,6 +1931,40 @@ export default function Home() {
                 <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
                 Add
               </button>
+            </div>
+            {/* Search bar - fills remaining space */}
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flex: 1, minWidth: 0 }}>
+              <div
+                className="flex items-center"
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.6),
+                  padding: '0 14px',
+                  height: '36px',
+                  width: '100%',
+                }}
+              >
+                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchValue}
+                  onChange={(e) => {
+                    onSearchChange(e.target.value);
+                    setPage(1);
+                  }}
+                  className="focus:outline-none focus:ring-0 flex-1"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#2C2C2C',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    width: '100%',
+                    marginLeft: '8px',
+                  }}
+                />
+              </div>
             </div>
           </div>
         </GlassPillCard>
@@ -2078,7 +2026,13 @@ export default function Home() {
                 <GlassPillButton
                   key={`family-${family.id}`}
                   isSelected={isSelected}
-                  onClick={() => setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' })}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedItem(null);
+                    } else {
+                      setSelectedItem({ id: family.id, name: family.name, type: 'roleFamilies', mode: 'view' });
+                    }
+                  }}
                   style={{ width: '100%' }}
                 >
                   <span
@@ -2150,7 +2104,7 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
           {/* Embedded search header with title and add button */}
-          {hasSearchData && renderEmbeddedSearchHeader(rolesSearchQuery, setRolesSearchQuery, setRolesPage, 'Roles', handleAddClick)}
+          {hasSearchData && renderEmbeddedSearchHeader(rolesSearchQuery, setRolesSearchQuery, setRolesPage, handleAddClick)}
 
           {/* Paginated list */}
           <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
@@ -2161,7 +2115,13 @@ export default function Home() {
                   <GlassPillButton
                     key={`role-${role.id}`}
                     isSelected={isSelected}
-                    onClick={() => setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' })}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedItem(null);
+                      } else {
+                        setSelectedItem({ id: role.id, name: role.name, type: 'roles', mode: 'view' });
+                      }
+                    }}
                     padding="12px 16px"
                     contentStyle={{ justifyContent: 'flex-start' }}
                   >
@@ -2285,7 +2245,17 @@ export default function Home() {
       navLinks={[]}
       leftPanelPadding="p-6"
       leftPanel={
-        <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+        <div
+          className="ai-glass-border rounded-[1.5rem]"
+          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+        >
+          <div
+            className="rounded-[1.5rem]"
+            style={{
+              ...aiGlassLightContentStyle('1.5rem', 0.6),
+              padding: '24px',
+            }}
+          >
           <div className="flex flex-col gap-6">
             {/* Top nav - bento style header */}
             <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
@@ -2298,100 +2268,49 @@ export default function Home() {
                 <div
                   style={{
                     ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
-                    padding: '24px',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gap: '23px',
-                    alignItems: 'stretch',
+                    padding: '6px',
                   }}
                 >
-                  {/* Inner nav pill */}
-                  <div
-                    className="ai-glass-border"
-                    style={{
-                      ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
-                      flex: 1,
-                      margin: '1px 0',
-                    }}
-                  >
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('9999px', 0.6),
-                        padding: '1px 16px',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
+                  {/* Main nav - 4 equal segments */}
+                  <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                    <NavStatsCard
+                      label="Home"
+                      textOnly
+                      isActive={activeTopNav === 'home'}
+                      onClick={() => {
+                        setActiveTopNav('home');
+                        router.push(`/stores/${storeId}/home`);
                       }}
-                    >
-                      <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
-                        <NavStatsCard
-                          icon={<HomeIcon />}
-                          label="Home"
-                          hideSubtext
-                          compact
-                          isActive={activeTopNav === 'home'}
-                          onClick={() => {
-                            setActiveTopNav('home');
-                            router.push(`/stores/${storeId}/home`);
-                          }}
-                          isFirst
-                        />
-                        <NavDivider compact />
-                        <NavStatsCard
-                          icon={<ChartBarIcon />}
-                          label="Fairness Dashboard"
-                          hideSubtext
-                          compact
-                          isActive={activeTopNav === 'dashboard'}
-                          onClick={() => {
-                            setActiveTopNav('dashboard');
-                            router.push(`/stores/${storeId}/fairness-dashboard`);
-                          }}
-                        />
-                        <NavDivider compact />
-                        <NavStatsCard
-                          icon={<Cog6ToothIcon />}
-                          label="Settings"
-                          hideSubtext
-                          compact
-                          isActive={activeTopNav === 'settings'}
-                          onClick={() => {
-                            setActiveTopNav('settings');
-                            router.push(`/stores/${storeId}/settings`);
-                          }}
-                          isLast
-                        />
-                      </nav>
-                    </div>
-                  </div>
-                  {/* User button */}
-                  <div ref={userMenuRef} style={{ height: '100%', aspectRatio: '1' }}>
-                    <div
-                      className="ai-glass-border"
-                      style={{
-                        ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
-                        width: '100%',
-                        height: '100%',
+                      isFirst
+                    />
+                    <NavStatsCard
+                      label="System Health"
+                      textOnly
+                      isActive={activeTopNav === 'dashboard'}
+                      onClick={() => {
+                        setActiveTopNav('dashboard');
+                        router.push(`/stores/${storeId}/fairness-dashboard`);
                       }}
-                    >
-                      <button
-                        className="flex items-center justify-center"
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          width: '100%',
-                          height: '100%',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'filter 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                    />
+                    <NavStatsCard
+                      label="Settings"
+                      textOnly
+                      isActive={activeTopNav === 'settings'}
+                      onClick={() => {
+                        setActiveTopNav('settings');
+                        router.push(`/stores/${storeId}/settings`);
+                      }}
+                    />
+                    <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+                      <NavStatsCard
+                        label="Account"
+                        textOnly
+                        isActive={isUserMenuOpen}
                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      >
-                        <UserIcon className="w-5 h-5" style={{ color: '#6B6B6B' }} />
-                      </button>
+                        isLast
+                      />
                     </div>
-                  </div>
+                  </nav>
                 </div>
               </div>
             </div>
@@ -2405,11 +2324,11 @@ export default function Home() {
               <div
                 style={{
                   ...aiGlassLightContentStyle('1.5rem', 0.6),
-                  padding: '24px 48px',
+                  padding: '16px 32px',
                   overflowX: 'auto',
                 }}
               >
-                <nav className="flex items-center" style={{ minWidth: 'max-content' }}>
+                <nav className="flex items-center justify-evenly" style={{ width: '100%' }}>
                   <NavStatsCard
                     icon={<BellIcon />}
                     label="Activity"
@@ -2463,38 +2382,22 @@ export default function Home() {
           {activeView === 'home' ? (
             <>
           {/* Activity Log */}
-          <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
-            <div className="flex flex-col gap-6">
+          <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
+            <div className="flex flex-col gap-3">
               {/* Activity Log header card - bento style: top corners match outer CardContainer */}
-              <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-              <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+              <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+              <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
               <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                {/* Activity Log label pill */}
-                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('9999px', 0.6),
-                      padding: '6px 14px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Activity Log
-                  </div>
-                </div>
-
-                {/* Filter dropdowns and pagination */}
-                <div className="flex items-center gap-6">
-                  {/* Pagination - horizontal, matching dropdown style */}
+                {/* Pagination - left aligned */}
+                <div>
                   {totalActivityPages > 1 && (
                     <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                       <div
                         className="flex items-center gap-1"
                         style={{
                           ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 14px',
+                          padding: '0 14px',
+                          height: '36px',
                         }}
                       >
                         <button
@@ -2548,7 +2451,10 @@ export default function Home() {
                       </div>
                     </div>
                   )}
+                </div>
 
+                {/* Filter dropdowns - right aligned */}
+                <div className="flex items-center gap-6">
                   {/* User filter dropdown */}
                   <Menu as="div" style={{ zIndex: 100 }}>
                     <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
@@ -2556,7 +2462,8 @@ export default function Home() {
                         className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
                         style={{
                           ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 14px',
+                          padding: '0 14px',
+                          height: '36px',
                           fontFamily: 'var(--font-open-sans)',
                           fontSize: '14px',
                           fontWeight: 500,
@@ -2619,7 +2526,8 @@ export default function Home() {
                         className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
                         style={{
                           ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 14px',
+                          padding: '0 14px',
+                          height: '36px',
                           fontFamily: 'var(--font-open-sans)',
                           fontSize: '14px',
                           fontWeight: 500,
@@ -2687,6 +2595,7 @@ export default function Home() {
                   <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity yet</span>
                 </div>
               ) : (
+              <div style={{ paddingTop: '4px' }}>
               <GlassPillCard padding="1.5rem" borderRadius="1rem" contentStyle={{ width: '100%' }}>
                 <div className="flex flex-col gap-6 w-full">
                   {paginatedActivityLogs
@@ -2803,6 +2712,7 @@ export default function Home() {
                     })}
                 </div>
               </GlassPillCard>
+              </div>
               )}
 
               {/* Comment input */}
@@ -2932,19 +2842,31 @@ export default function Home() {
           )}
             </>
           ) : activeView === 'crew' ? (
-            renderListWithInlineDetail(renderListView('crew'), 'crew')
+            renderListWithInlineDetail(() => renderListView('crew'), 'crew')
           ) : activeView === 'roles' ? (
-            renderListWithInlineDetail(renderRolesListView(), 'roles')
+            renderListWithInlineDetail(() => renderRolesListView(), 'roles')
           ) : activeView === 'preferences' ? (
-            renderListWithInlineDetail(renderGroupedRulesView(), 'preferences')
+            renderListWithInlineDetail(() => renderGroupedRulesView(), 'preferences')
           ) : activeView === 'logbooks' ? (
-            renderListWithInlineDetail(renderListView('logbooks'), 'logbooks')
+            renderListWithInlineDetail(() => renderListView('logbooks'), 'logbooks')
           ) : null}
           </div>
-        </CardContainer>
+          </div>
+        </div>
       }
       rightPanel={
-        selectedItem ? (
+        <div
+          className="ai-glass-border rounded-[1.5rem]"
+          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+        >
+          <div
+            className="rounded-[1.5rem]"
+            style={{
+              ...aiGlassLightContentStyle('1.5rem', 0.6),
+              padding: '24px',
+            }}
+          >
+        {selectedItem ? (
           selectedItem.mode === 'pdf' && selectedItem.type === 'logbooks' ? (
             // Logbook PDF viewer in right panel
             <LogbookPdfViewer
@@ -3340,7 +3262,9 @@ export default function Home() {
               </p>
             </div>
           </div>
-        )
+        )}
+          </div>
+        </div>
       }
       activeNavItem="Home"
     />
@@ -3441,18 +3365,18 @@ export default function Home() {
       <div
         ref={(el) => {
           userDropdownRef.current = el;
-          // Position dropdown below the user button
+          // Position dropdown below the user button, matching its width
           if (el && userMenuRef.current) {
             const rect = userMenuRef.current.getBoundingClientRect();
-            el.style.top = `${rect.bottom + 8}px`;
-            el.style.right = `${window.innerWidth - rect.right}px`;
+            el.style.top = `${rect.bottom + 6}px`;
+            el.style.left = `${rect.left}px`;
+            el.style.width = `${rect.width}px`;
           }
         }}
         className="ai-glass-border"
         style={{
           ...aiGlassLightBorderStyle('1rem'),
           position: 'fixed',
-          minWidth: '200px',
           zIndex: 99999,
         }}
       >
@@ -3497,13 +3421,10 @@ export default function Home() {
             <button
               type="button"
               onClick={() => {
-                if (apiStore?.companyId) {
-                  router.push(`/admin/companies/${apiStore.companyId}`);
-                } else {
-                  router.push('/admin');
-                }
+                setIsUserMenuOpen(false);
+                router.push('/admin');
               }}
-              className="w-full flex items-center gap-3 transition-all"
+              className="w-full transition-all"
               style={{
                 padding: '10px 16px',
                 borderRadius: '8px',
@@ -3518,14 +3439,13 @@ export default function Home() {
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <BuildingStorefrontIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
               Back to stores
             </button>
           )}
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 transition-all"
+            className="w-full transition-all"
             style={{
               padding: '10px 16px',
               borderRadius: '8px',
@@ -3540,7 +3460,6 @@ export default function Home() {
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <ArrowRightOnRectangleIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
             Sign out
           </button>
         </div>

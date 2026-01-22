@@ -26,3 +26,6 @@ export type { CardHeaderProps } from './CardHeader';
 // Glass pill components
 export { GlassPill, GlassPillButton, GlassPillCard } from './GlassPill';
 export type { GlassPillProps, GlassPillButtonProps, GlassPillCardProps } from './GlassPill';
+
+// Dev panel for testing glass config
+export { GlassDevPanel } from './GlassDevPanel';

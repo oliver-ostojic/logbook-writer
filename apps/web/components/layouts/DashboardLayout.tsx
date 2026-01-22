@@ -44,7 +44,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   topContent,
   stickyNav,
 }) => {
-  const borderRadius = '1.5rem 1.5rem 0 0';
+  const borderRadius = '1.5rem';
 
   // Determine panel widths
   const leftWidth = rightPanelVisible
@@ -98,17 +98,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   {stickyNav}
                 </div>
               )}
-              {/* Left panel */}
-              <div
-                className="ai-glass-border transition-all duration-300"
-                style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
-              >
-                <div
-                  className={leftPanelPadding}
-                  style={aiGlassLightContentStyle(borderRadius)}
-                >
-                  {leftPanel}
-                </div>
+              {/* Left panel - no glass wrapper, content provides its own */}
+              <div className="transition-all duration-300">
+                {leftPanel}
               </div>
             </div>
 
@@ -116,15 +108,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {rightPanelVisible && rightPanel && (
               <div
                 key={rightPanelKey}
-                className="ai-glass-border w-full dashboard-right-panel transition-all duration-300 panel-slide-in"
-                style={aiGlassLightBorderStyle(borderRadius, '0, 0, 0', borderOpacity)}
+                className="w-full dashboard-right-panel transition-all duration-300 panel-slide-in"
               >
-                <div
-                  className="p-6"
-                  style={aiGlassLightContentStyle(borderRadius)}
-                >
-                  {rightPanel}
-                </div>
+                {rightPanel}
               </div>
             )}
           </div>

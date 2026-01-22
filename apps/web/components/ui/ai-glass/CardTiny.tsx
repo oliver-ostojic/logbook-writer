@@ -43,7 +43,7 @@ export const CardTiny: React.FC<CardTinyProps> = ({
       onClick={onClick}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...aiGlassContentStyle(borderRadius, 0.85),
           display: 'flex',

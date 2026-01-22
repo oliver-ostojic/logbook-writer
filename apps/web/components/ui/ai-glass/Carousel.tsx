@@ -107,7 +107,7 @@ export const Carousel: React.FC<CarouselProps> = ({
       }}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...aiGlassContentStyle(borderRadius, 0.85),
           display: 'flex',
@@ -155,6 +155,7 @@ export const Carousel: React.FC<CarouselProps> = ({
               onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
             >
               <div
+                className="ai-glass-content"
                 style={{
                   ...aiGlassContentStyle('0.5rem', 0.85),
                   display: 'flex',
@@ -204,6 +205,7 @@ export const Carousel: React.FC<CarouselProps> = ({
               onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
             >
               <div
+                className="ai-glass-content"
                 style={{
                   ...aiGlassContentStyle('0.5rem', 0.85),
                   display: 'flex',

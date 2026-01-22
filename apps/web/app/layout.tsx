@@ -1,6 +1,7 @@
 import './globals.css';
 import { Roboto, Open_Sans } from 'next/font/google';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { GlassDevPanel } from '@/components/ui/ai-glass';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${roboto.variable} ${openSans.variable}`} style={{ backgroundColor: 'transparent' }}>
       <body style={{ backgroundColor: 'transparent' }}>
         <AuthProvider>{children}</AuthProvider>
+        <GlassDevPanel />
       </body>
     </html>
   );

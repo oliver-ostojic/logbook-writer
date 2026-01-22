@@ -40,7 +40,7 @@ export const CardLarge: React.FC<CardLargeProps> = ({
       }}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...aiGlassContentStyle(borderRadius, 0.85),
           padding: '1.5rem',

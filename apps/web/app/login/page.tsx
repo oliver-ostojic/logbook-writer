@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
 import { useAuthStore } from '@/lib/authStore';
 import { login } from '@/lib/api/auth';
 
@@ -85,45 +85,6 @@ export default function LoginPage() {
       className="min-h-screen relative"
       style={{ backgroundColor: 'transparent' }}
     >
-      {/* Brand title - fixed at top center */}
-      <div
-        className="absolute top-6 left-1/2 -translate-x-1/2"
-        style={{ zIndex: 10 }}
-      >
-        <div
-          className="ai-glass-border"
-          style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
-        >
-          <div
-            style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '16px' }}
-          >
-            {/* Inner pill for the title text */}
-            <div
-              className="ai-glass-border"
-              style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}
-            >
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '12px 48px',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '20px',
-                    color: '#2C2C2C',
-                    textAlign: 'center',
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>Logbook </span>
-                  <span style={{ fontWeight: 600 }}>writer</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Outer wrapper card containing login form and continue button - centered */}
       <div className="min-h-screen flex items-center justify-center">
@@ -139,6 +100,28 @@ export default function LoginPage() {
           }}
         >
           <div className="flex flex-col gap-6">
+            {/* Outer card header - Logbook writer title - bento style */}
+            <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+              <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+                <div className="flex items-center justify-start" style={{ width: '100%' }}>
+                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 24px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                      }}
+                    >
+                      Logbook writer
+                    </div>
+                  </div>
+                </div>
+              </GlassPillCard>
+            </div>
+
             {/* Login form - inner card */}
             <div
               className="ai-glass-border rounded-[1.5rem]"
@@ -152,56 +135,55 @@ export default function LoginPage() {
                 }}
               >
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                  {/* Title row - Sign in left, Create account right */}
-                  <div className="flex justify-between items-center">
-                    {/* Sign into your account - left */}
-                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '10px 20px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                          }}
-                        >
-                          Sign into your account
-                        </span>
-                      </div>
-                    </div>
+                  {/* Header row - Sign in / Create account - bento style */}
+                  <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+                    <GlassPillCard padding="1rem 1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+                      <div className="flex items-center justify-between" style={{ width: '100%' }}>
+                        {/* Sign into your account - left */}
+                        <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                          <div
+                            style={{
+                              ...aiGlassLightContentStyle('9999px', 0.6),
+                              padding: '6px 14px',
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              color: '#2C2C2C',
+                            }}
+                          >
+                            Sign into your account
+                          </div>
+                        </div>
 
-                    {/* Create account - right */}
-                    <a
-                      href="/register"
-                      className="ai-glass-border"
-                      style={{ ...aiGlassLightBorderStyle('9999px'), textDecoration: 'none' }}
-                    >
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '10px 20px',
-                          transition: 'filter 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-                      >
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            color: 'hsl(0, 84%, 60%)',
-                          }}
+                        {/* Create account - right */}
+                        <a
+                          href="/register"
+                          className="ai-glass-border"
+                          style={{ ...aiGlassLightBorderStyle('9999px'), textDecoration: 'none' }}
                         >
-                          Create account
-                        </span>
+                          <div
+                            style={{
+                              ...aiGlassLightContentStyle('9999px', 0.6),
+                              padding: '6px 14px',
+                              transition: 'filter 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
+                            onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                          >
+                            <span
+                              style={{
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: 'hsl(0, 84%, 60%)',
+                              }}
+                            >
+                              Create account
+                            </span>
+                          </div>
+                        </a>
                       </div>
-                    </a>
+                    </GlassPillCard>
                   </div>
 
                   {/* Error message */}

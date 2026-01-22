@@ -63,7 +63,7 @@ export const CardSmall: React.FC<CardSmallProps> = ({
       onClick={onClick}
     >
       <div
-        className={className}
+        className={`ai-glass-content ${className}`}
         style={{
           ...contentBaseStyle,
           padding: '1.5rem',

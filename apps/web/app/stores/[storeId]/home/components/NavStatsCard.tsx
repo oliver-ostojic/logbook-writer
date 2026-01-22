@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
@@ -27,6 +27,8 @@ export interface NavStatsCardProps {
   hideSubtext?: boolean;
   /** Compact mode - smaller circles, icons, and larger font (for top nav) */
   compact?: boolean;
+  /** Text-only mode - no icons/circles, just text with hover highlight */
+  textOnly?: boolean;
 }
 
 /**
@@ -45,110 +47,120 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   isLast = false,
   hideSubtext = false,
   compact = false,
+  textOnly = false,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   // Circle and icon sizes based on compact mode
   const circleSize = compact ? 22 : 32;
   const iconSize = compact ? 'size-3' : 'size-4';
-  const labelFontSize = compact ? '13px' : '15px';
+  const labelFontSize = textOnly ? '14px' : (compact ? '13px' : '15px');
+
+  // Show highlight on active or hover (for textOnly mode)
+  const showHighlight = isActive || (textOnly && isHovered);
+
   return (
     <div
       className="flex items-center justify-center cursor-pointer"
-      style={{ position: 'relative', zIndex: 1, flex: 1 }}
+      style={{ position: 'relative', zIndex: 1, flex: 1, padding: textOnly ? '8px 0' : undefined }}
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Red tinted glass pill overlay for active step */}
-      {isActive && (
+      {/* White glass pill overlay for active step or hover */}
+      {showHighlight && (
         <div
           className="ai-glass-border"
           style={{
-            ...aiGlassLightBorderStyle('1.5rem', '220, 38, 38', 0.25),
+            ...aiGlassLightBorderStyle('20px', '0, 0, 0', 0.08),
             position: 'absolute',
-            top: compact ? -7 : -16,
-            bottom: compact ? -7 : -16,
-            left: isFirst ? (compact ? -7 : -32) : isLast ? (compact ? -20 : -20) : (compact ? -20 : -20),
-            right: isLast ? (compact ? -7 : -32) : isFirst ? (compact ? -20 : -20) : (compact ? -20 : -20),
+            top: textOnly ? 0 : (compact ? -7 : -16),
+            bottom: textOnly ? 0 : (compact ? -7 : -16),
+            left: textOnly ? 0 : (isFirst ? (compact ? -7 : -26) : (compact ? -20 : -20)),
+            right: textOnly ? 0 : (isLast ? (compact ? -7 : -26) : (compact ? -20 : -20)),
             zIndex: -1,
           }}
         >
           <div
             style={{
-              ...aiGlassLightContentStyle('1.5rem', 1),
+              ...aiGlassLightContentStyle('20px', 1),
               width: '100%',
               height: '100%',
               backdropFilter: 'none',
               WebkitBackdropFilter: 'none',
-              background: 'hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.12)',
+              background: isHovered && !isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.85)',
             }}
           />
         </div>
       )}
 
-      {/* Circle with step number - hidden below lg */}
-      <div
-        className="ai-glass-border shrink-0 hidden lg:block"
-        style={{
-          ...aiGlassLightBorderStyle('9999px', '0, 0, 0', isActive ? 0 : 0.08),
-          width: circleSize,
-          height: circleSize,
-        }}
-      >
+      {/* Circle with step number - hidden in textOnly mode and below lg */}
+      {!textOnly && (
         <div
+          className="ai-glass-border shrink-0 hidden lg:block"
           style={{
-            ...aiGlassLightContentStyle('9999px', isActive ? 1 : 0.6),
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            ...(isActive && {
-              backdropFilter: 'none',
-              WebkitBackdropFilter: 'none',
-            }),
+            ...aiGlassLightBorderStyle('9999px', '0, 0, 0', isActive ? 0 : 0.08),
+            width: circleSize,
+            height: circleSize,
           }}
         >
-          {isActive ? (
-            <CheckIcon
-              aria-hidden="true"
-              className={iconSize}
-              style={{ color: 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' }}
-            />
-          ) : icon ? (
-            <div
-              className={iconSize}
-              style={{ color: '#6B6B6B' }}
-            >
-              {icon}
-            </div>
-          ) : (
-            <span
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: compact ? '11px' : '14px',
-                fontWeight: 500,
-                color: '#6B6B6B',
-              }}
-            >
-              {stepNumber}
-            </span>
-          )}
+          <div
+            style={{
+              ...aiGlassLightContentStyle('9999px', isActive ? 1 : 0.6),
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...(isActive && {
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+              }),
+            }}
+          >
+            {isActive ? (
+              <CheckIcon
+                aria-hidden="true"
+                className={iconSize}
+                style={{ color: '#2C2C2C' }}
+              />
+            ) : icon ? (
+              <div
+                className={iconSize}
+                style={{ color: '#6B6B6B' }}
+              >
+                {icon}
+              </div>
+            ) : (
+              <span
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: compact ? '11px' : '14px',
+                  fontWeight: 500,
+                  color: '#6B6B6B',
+                }}
+              >
+                {stepNumber}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Label and count subtext */}
-      <div className="lg:ml-3 flex min-w-0 flex-col">
+      <div className={textOnly ? 'flex min-w-0 flex-col' : 'lg:ml-3 flex min-w-0 flex-col'}>
         <span
           style={{
             fontFamily: 'var(--font-open-sans)',
-            fontSize: labelFontSize,
-            fontWeight: 500,
-            color: isActive
-              ? 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))'
-              : '#2C2C2C',
+            fontSize: textOnly ? (isActive ? '15px' : '14px') : labelFontSize,
+            fontWeight: isActive ? 600 : 400,
+            color: isActive ? '#2C2C2C' : '#9A999E',
+            transition: 'all 0.15s ease',
           }}
         >
           {label}
         </span>
-        {!hideSubtext && (
+        {!hideSubtext && !textOnly && (
           <span
             style={{
               fontFamily: 'var(--font-open-sans)',
@@ -176,7 +188,7 @@ export const NavDivider: React.FC<{ compact?: boolean }> = ({ compact = false })
       background: compact
         ? 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 33%, rgba(0,0,0,0.1) 67%, transparent 100%)'
         : 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.08) 20%, rgba(0,0,0,0.08) 80%, transparent 100%)',
-      margin: compact ? '0 28px' : '0 20px',
+      margin: compact ? '0 28px' : '0 16px',
       alignSelf: 'center',
       flexShrink: 0,
     }}

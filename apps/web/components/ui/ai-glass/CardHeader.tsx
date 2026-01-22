@@ -77,6 +77,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
       }}
     >
       <div
+        className="ai-glass-content"
         style={{
           ...contentBaseStyle,
           padding: paddingValue,

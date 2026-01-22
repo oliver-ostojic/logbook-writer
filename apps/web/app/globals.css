@@ -78,3 +78,63 @@ body { font-family: var(--font-sans); }
 /* Apply Roboto to all headings */
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
+/* AI Glass border effect */
+.ai-glass-border {
+  position: relative;
+  isolation: isolate; /* Prevents nested cards from covering parent's border */
+  --border-color: 0, 0, 0;
+  --border-opacity: 0;
+  --border-width: 1.5px;
+  --border-brightness: 1.3;
+  --border-fade: 30%; /* How much the corners fade - higher = more fade */
+}
+
+/* Ensure content renders above border pseudo-elements */
+.ai-glass-border > .ai-glass-content {
+  position: relative;
+  z-index: 3;
+}
+
+/* Luminous border - uses backdrop-filter brightness to sample and brighten background */
+.ai-glass-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--border-width);
+  /* Sample and brighten the background - this gives the colored glow effect */
+  backdrop-filter: blur(2px) brightness(var(--border-brightness)) saturate(1.3);
+  -webkit-backdrop-filter: blur(2px) brightness(var(--border-brightness)) saturate(1.3);
+  /* Gradient border with corner fade - 135deg goes from top-left to bottom-right */
+  /* When --border-fade is 0%, shows solid border. When 50%, corners are fully transparent */
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) var(--border-fade),
+    rgba(255, 255, 255, 0.35) calc(100% - var(--border-fade)),
+    transparent 100%
+  );
+  /* Mask to only show as border */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Optional: add subtle inner glow */
+.ai-glass-border::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 2;
+}
+
