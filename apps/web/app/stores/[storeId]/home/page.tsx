@@ -2141,7 +2141,7 @@ export default function Home() {
                 <div
                   style={{
                     ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
-                    padding: '6px',
+                    padding: '8px',
                   }}
                 >
                   {/* Main nav - 4 equal segments */}
