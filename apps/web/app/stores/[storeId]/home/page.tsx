@@ -1137,7 +1137,7 @@ export default function Home() {
 
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        <div className="flex flex-col" style={{ minHeight: '400px' }}>
+        <div className="flex flex-col">
           {/* Embedded search header with title and add button */}
           {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPage, handleAddClick)}
 

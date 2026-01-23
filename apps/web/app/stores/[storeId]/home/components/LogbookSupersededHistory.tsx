@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { CardContainer, CardHeader, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { fetchActivityLogsByDate, ActivityLogItem } from '@/lib/api/activity';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -84,15 +84,6 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
 
           return (
             <li key={log.id} className="relative flex gap-x-4">
-              {/* Timeline line */}
-              <div
-                className={`absolute left-0 top-0 flex w-6 justify-center ${
-                  idx === logs.length - 1 ? 'h-6' : '-bottom-6'
-                }`}
-              >
-                <div className="w-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
-              </div>
-
               {isComment ? (
                 <>
                   {/* Avatar for comments */}
@@ -101,8 +92,6 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
                     style={{
                       width: 24,
                       height: 24,
-                      backgroundColor: 'white',
-                      boxShadow: '0 0 0 12px white',
                     }}
                   >
                     <div
@@ -153,8 +142,6 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
                     style={{
                       width: 24,
                       height: 24,
-                      backgroundColor: 'white',
-                      boxShadow: isPublish ? '0 0 0 12px white' : '0 0 0 4px white',
                     }}
                   >
                     {isPublish ? (
@@ -280,206 +267,316 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-4 h-full">
-        <CardHeader
-          title="Version History"
-          lightMode={true}
-          borderRadius="1.5rem"
-          titleStyle={{ color: '#2C2C2C' }}
-          rightContent={
-            <button
-              onClick={onClose}
-              className="transition-colors duration-150"
+      <div className="flex flex-col gap-6">
+        {/* Version History header - embedded in outer card top */}
+        <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
+          >
+            <div
               style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px 8px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: '#6B6B6B',
-                cursor: 'pointer',
+                ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                padding: '16px 24px',
               }}
             >
-              ×
-            </button>
-          }
-        />
-        <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
-          <div className="flex items-center justify-center py-8">
-            <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B' }}>Loading history...</span>
+              <div className="flex items-center justify-between">
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Version History
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="transition-colors duration-150"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 8px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#6B6B6B',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           </div>
-        </CardContainer>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B' }}>Loading history...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col gap-4 h-full">
-        <CardHeader
-          title="Version History"
-          lightMode={true}
-          borderRadius="1.5rem"
-          titleStyle={{ color: '#2C2C2C' }}
-          rightContent={
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6B6B6B', cursor: 'pointer' }}>×</button>
-          }
-        />
-        <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
+      <div className="flex flex-col gap-6">
+        {/* Version History header - embedded in outer card top */}
+        <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
           <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'rgba(220, 38, 38, 0.1)',
-              borderRadius: '0.5rem',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '13px',
-              color: 'rgb(220, 38, 38)',
-            }}
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
           >
-            {error}
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                padding: '16px 24px',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Version History
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="transition-colors duration-150"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 8px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: '#6B6B6B',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           </div>
-        </CardContainer>
+        </div>
+        <div
+          style={{
+            padding: '12px',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+            borderRadius: '0.5rem',
+            fontFamily: 'var(--font-open-sans)',
+            fontSize: '13px',
+            color: 'rgb(220, 38, 38)',
+          }}
+        >
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <CardHeader
-        title="Version History"
-        lightMode={true}
-        borderRadius="1.5rem"
-        titleStyle={{ color: '#2C2C2C' }}
-        leftContent={
-          <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-            <div
-              style={{
-                background: 'rgba(0, 0, 0, 0.06)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                borderRadius: '9999px',
-                fontFamily: 'var(--font-open-sans)',
-                color: '#6B6B6B',
-                fontWeight: 500,
-                padding: '6px 14px',
-                fontSize: '14px',
-              }}
-            >
-              {supersededVersions.length + 1} versions
-            </div>
-          </div>
-        }
-        rightContent={
-          <button
-            onClick={onClose}
-            className="transition-colors duration-150"
+    <div className="flex flex-col gap-6">
+      {/* Version History header - embedded in outer card top */}
+      <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+        <div
+          className="ai-glass-border"
+          style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
+        >
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              padding: '4px 8px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 400,
-              color: '#6B6B6B',
-              cursor: 'pointer',
+              ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+              padding: '16px 24px',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
           >
-            ×
-          </button>
-        }
-      />
-
-      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        <div className="flex flex-col gap-3">
-          {/* Current version */}
-          {current && (
-            <VersionCard
-              version={current}
-              isCurrent={true}
-              formatDate={formatDate}
-              formatDateTime={formatDateTime}
-              onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
-              onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
-            />
-          )}
-
-          {/* Superseded versions */}
-          {supersededVersions.length > 0 && (
-            <>
-              <div
-                className="flex items-center gap-2 py-2"
-                style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E' }}
-              >
-                <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
-                <span>Other Versions</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Version History
+                  </div>
+                </div>
+                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#6B6B6B',
+                    }}
+                  >
+                    {supersededVersions.length + 1} versions
+                  </div>
+                </div>
               </div>
-              {supersededVersions.map((version) => (
-                <VersionCard
-                  key={version.id}
-                  version={version}
-                  isCurrent={false}
-                  formatDate={formatDate}
-                  formatDateTime={formatDateTime}
-                  onViewPdf={() => onViewPdf(version.id, formatDate(version.date))}
-                  onViewRunInfo={version.runId && onViewRunInfo ? () => onViewRunInfo(version.runId!) : undefined}
-                />
-              ))}
-            </>
-          )}
-
-          {supersededVersions.length === 0 && (
-            <p style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#9A999E', textAlign: 'center', padding: '16px 0' }}>
-              No other versions for this date
-            </p>
-          )}
-        </div>
-      </CardContainer>
-
-      {/* Activity Log Section */}
-      <CardHeader
-        title="Activity Log"
-        lightMode={true}
-        borderRadius="1.5rem"
-        titleStyle={{ color: '#2C2C2C' }}
-        leftContent={
-          !activityLoading && activityLogs.length > 0 ? (
-            <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-              <div
+              <button
+                onClick={onClose}
+                className="transition-colors duration-150"
                 style={{
-                  background: 'rgba(0, 0, 0, 0.06)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  borderRadius: '9999px',
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 8px',
                   fontFamily: 'var(--font-open-sans)',
-                  color: '#6B6B6B',
-                  fontWeight: 500,
-                  padding: '6px 14px',
                   fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#6B6B6B',
+                  cursor: 'pointer',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
               >
-                {activityLogs.length} action{activityLogs.length === 1 ? '' : 's'}
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Version cards */}
+      <div className="flex flex-col gap-3">
+        {/* Current version */}
+        {current && (
+          <VersionCard
+            version={current}
+            isCurrent={true}
+            formatDate={formatDate}
+            formatDateTime={formatDateTime}
+            onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
+            onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
+          />
+        )}
+
+        {/* Superseded versions */}
+        {supersededVersions.length > 0 && (
+          <>
+            <div
+              className="flex items-center gap-2 py-2"
+              style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E' }}
+            >
+              <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+              <span>Other Versions</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+            </div>
+            {supersededVersions.map((version) => (
+              <VersionCard
+                key={version.id}
+                version={version}
+                isCurrent={false}
+                formatDate={formatDate}
+                formatDateTime={formatDateTime}
+                onViewPdf={() => onViewPdf(version.id, formatDate(version.date))}
+                onViewRunInfo={version.runId && onViewRunInfo ? () => onViewRunInfo(version.runId!) : undefined}
+              />
+            ))}
+          </>
+        )}
+
+      </div>
+
+      {/* Activity Log - card with embedded header */}
+      <div
+        className="ai-glass-border"
+        style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+      >
+        <div
+          className="rounded-[1.5rem]"
+          style={{
+            ...aiGlassLightContentStyle('1.5rem', 0.6),
+            padding: '24px',
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            {/* Activity Log header - embedded at top of card */}
+            <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+              <div
+                className="ai-glass-border"
+                style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
+              >
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                    padding: '16px 24px',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.6),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        Activity Log
+                      </div>
+                    </div>
+                    {!activityLoading && activityLogs.length > 0 && (
+                      <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 0.6),
+                            padding: '6px 14px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#6B6B6B',
+                          }}
+                        >
+                          {activityLogs.length} action{activityLogs.length === 1 ? '' : 's'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          ) : undefined
-        }
-      />
-      <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-        {activityLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B', fontSize: '13px' }}>Loading activity...</span>
+
+            {/* Activity content */}
+            {activityLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <span style={{ fontFamily: 'var(--font-open-sans)', color: '#6B6B6B', fontSize: '13px' }}>Loading activity...</span>
+              </div>
+            ) : activityLogs.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity for this date</span>
+              </div>
+            ) : (
+              <ActivityList logs={activityLogs} />
+            )}
           </div>
-        ) : activityLogs.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No activity for this date</span>
-          </div>
-        ) : (
-          <ActivityList logs={activityLogs} />
-        )}
-      </CardContainer>
+        </div>
+      </div>
     </div>
   );
 }
