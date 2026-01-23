@@ -117,30 +117,7 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
       <div className="flex flex-col gap-6">
         {/* Basic Info Section */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ ...sectionHeaderStyle, marginBottom: 0 }}>Basic Information</div>
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="transition-all duration-150"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  padding: '4px 0 0 0',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 400,
-                  color: '#6B6B6B',
-                  cursor: 'pointer',
-                  lineHeight: 1,
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
-              >
-                Back
-              </button>
-            )}
-          </div>
+          <div style={sectionHeaderStyle}>Basic Information</div>
           <div className="flex flex-col gap-3">
             {/* Sentence Bubble */}
             {(() => {
@@ -271,54 +248,6 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Action Buttons - Edit (left) and Delete (right) */}
-        {(onEdit || onDelete) && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-            {onEdit ? (
-              <button
-                onClick={onEdit}
-                className="transition-all duration-150"
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '9999px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-              >
-                Edit
-              </button>
-            ) : <div />}
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="transition-all duration-150"
-                style={{
-                  backgroundColor: 'hsla(0, 84%, 60%, 0.1)',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '9999px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'hsl(0, 84%, 50%)',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsla(0, 84%, 60%, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsla(0, 84%, 60%, 0.1)'}
-              >
-                Delete
-              </button>
-            )}
           </div>
         )}
       </div>

@@ -101,7 +101,7 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
             userDropdownRef.current = el;
             if (el && userMenuRef.current) {
               const rect = userMenuRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 6}px`;
+              el.style.top = `${rect.bottom + 16}px`;
               el.style.left = `${rect.left}px`;
               el.style.width = `${rect.width}px`;
             }

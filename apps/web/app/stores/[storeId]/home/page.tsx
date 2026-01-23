@@ -1040,7 +1040,7 @@ export default function Home() {
         {/* List section */}
         <div
           style={{
-            width: hasDetailPanel ? '30%' : '100%',
+            width: hasDetailPanel ? '40%' : '100%',
             transition: 'width 0.3s ease',
             minWidth: hasDetailPanel ? '200px' : undefined,
           }}
@@ -1052,7 +1052,7 @@ export default function Home() {
         {hasDetailPanel && (
           <div
             style={{
-              width: '70%',
+              width: '60%',
               transition: 'width 0.3s ease',
             }}
           >
@@ -1204,69 +1204,110 @@ export default function Home() {
 
           {/* Pagination buttons */}
           {totalPages > 1 && (
-            <div
-              className="flex items-center justify-center gap-2 mt-4 pt-3"
-              style={{
-                position: 'relative',
-              }}
-            >
-              {/* Faded divider line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 1,
-                  background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)',
-                }}
-              />
-              {getPageNumbers().map((page, idx) =>
-                page === '...' ? (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="text-sm px-1"
-                    style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                  >
-                    ...
-                  </span>
-                ) : (
+            <div className="flex items-center justify-center mt-4">
+              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div
+                  className="flex items-center gap-1"
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '0 14px',
+                    height: '36px',
+                  }}
+                >
                   <button
-                    key={page}
-                    onClick={() => setPage(page as number)}
-                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
                     style={{
-                      background: currentPage === page ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(0, 0, 0, 0.06)',
-                      cursor: 'pointer',
-                      opacity: currentPage === page ? 1 : 0.6,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== page) {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
-                        e.currentTarget.style.opacity = '0.8';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage !== page) {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
-                        e.currentTarget.style.opacity = '0.6';
-                      }
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '12px',
+                      color: currentPage === 1 ? '#9A999E' : '#6B6B6B',
+                      background: 'none',
+                      border: 'none',
+                      cursor: currentPage === 1 ? 'default' : 'pointer',
+                      padding: '0 4px',
                     }}
                   >
-                    <span
-                      className="text-[12px]"
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        color: '#2C2C2C',
-                        fontWeight: currentPage === page ? 500 : 350,
-                      }}
-                    >
-                      {page}
-                    </span>
+                    ◀
                   </button>
-                )
-              )}
+                  {(() => {
+                    // Show all pages if 10 or fewer
+                    if (totalPages <= 10) {
+                      return Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          onClick={() => setPage(page)}
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: currentPage === page ? 600 : 400,
+                            color: currentPage === page ? '#2C2C2C' : '#9A999E',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0 4px',
+                          }}
+                        >
+                          {page}
+                        </button>
+                      ));
+                    }
+
+                    // Use ellipsis for more than 10 pages
+                    const pages: (number | string)[] = [];
+                    pages.push(1);
+                    if (currentPage > 3) pages.push('...');
+                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                      if (!pages.includes(i)) pages.push(i);
+                    }
+                    if (currentPage < totalPages - 2) pages.push('...');
+                    if (!pages.includes(totalPages)) pages.push(totalPages);
+
+                    return pages.map((page, idx) =>
+                      page === '...' ? (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="text-sm px-1"
+                          style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => setPage(page as number)}
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            fontWeight: currentPage === page ? 600 : 400,
+                            color: currentPage === page ? '#2C2C2C' : '#9A999E',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0 4px',
+                          }}
+                        >
+                          {page}
+                        </button>
+                      )
+                    );
+                  })()}
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '12px',
+                      color: currentPage === totalPages ? '#9A999E' : '#6B6B6B',
+                      background: 'none',
+                      border: 'none',
+                      cursor: currentPage === totalPages ? 'default' : 'pointer',
+                      padding: '0 4px',
+                    }}
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -3235,7 +3276,7 @@ export default function Home() {
           // Position dropdown below the user button, matching its width
           if (el && userMenuRef.current) {
             const rect = userMenuRef.current.getBoundingClientRect();
-            el.style.top = `${rect.bottom + 6}px`;
+            el.style.top = `${rect.bottom + 16}px`;
             el.style.left = `${rect.left}px`;
             el.style.width = `${rect.width}px`;
           }

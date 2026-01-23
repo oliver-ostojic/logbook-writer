@@ -102,19 +102,29 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
+      <style>{`
+        @media (min-width: 1200px) {
+          .settings-container {
+            flex: 0 0 80%;
+            max-width: 80%;
+          }
+        }
+      `}</style>
 
       <div className="px-6 lg:px-8 pt-12 lg:pt-16 pb-9">
-        <div
-          className="ai-glass-border rounded-[1.5rem]"
-          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-        >
-          <div
-            className="rounded-[1.5rem]"
-            style={{
-              ...aiGlassLightContentStyle('1.5rem', 0.6),
-              padding: '24px',
-            }}
-          >
+        <div className="flex flex-col min-[1200px]:flex-row gap-6 min-[1200px]:justify-center">
+          <div className="w-full settings-container">
+            <div
+              className="ai-glass-border rounded-[1.5rem]"
+              style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+            >
+              <div
+                className="rounded-[1.5rem]"
+                style={{
+                  ...aiGlassLightContentStyle('1.5rem', 0.6),
+                  padding: '24px',
+                }}
+              >
             <div className="flex flex-col gap-6">
               {/* Top nav - bento style header */}
               <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
@@ -350,7 +360,7 @@ export default function SettingsPage() {
             // Position dropdown below the user button, matching its width
             if (el && userMenuRef.current) {
               const rect = userMenuRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 6}px`;
+              el.style.top = `${rect.bottom + 16}px`;
               el.style.left = `${rect.left}px`;
               el.style.width = `${rect.width}px`;
             }
@@ -449,6 +459,8 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+          </div>
+        </div>
     </main>
   );
 }

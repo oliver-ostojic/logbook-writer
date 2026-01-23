@@ -103,7 +103,7 @@ export default function LoginPage() {
             {/* Outer card header - Logbook writer title - bento style */}
             <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
               <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                <div className="flex items-center justify-start" style={{ width: '100%' }}>
+                <div className="flex items-center justify-between" style={{ width: '100%' }}>
                   <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                     <div
                       style={{
@@ -118,6 +118,29 @@ export default function LoginPage() {
                       Logbook writer
                     </div>
                   </div>
+                  {/* Close/Exit button */}
+                  <button
+                    type="button"
+                    onClick={() => router.push('/')}
+                    className="transition-all"
+                    style={{
+                      padding: '0 12px',
+                      height: '36px',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '16px',
+                      color: '#6B6B6B',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
+                  >
+                    ✕
+                  </button>
                 </div>
               </GlassPillCard>
             </div>

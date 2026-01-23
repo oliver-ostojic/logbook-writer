@@ -2805,87 +2805,126 @@ export default function FairnessDashboardPage() {
                   </div>
                   
                   {/* Pagination buttons */}
-                  <div 
-                    className="flex items-center justify-center gap-2 mt-4 pt-3"
-                    style={{ 
-                      borderTop: 'none',
-                      position: 'relative',
-                    }}
-                  >
-                    {/* Faded divider line */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 1,
-                        background: 'linear-gradient(to right, transparent 0%, rgba(255,255,255,0.10) 40%, rgba(255,255,255,0.10) 60%, transparent 100%)',
-                      }}
-                    />
-                    {(() => {
-                      const cardsPerPage = expandedQuickLook === 'crew' ? CREW_CARDS_PER_PAGE : ROLE_CARDS_PER_PAGE;
-                      const filteredCards = expandedQuickLook === 'crew'
-                        ? computedCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
-                        : computedRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
-                      const totalCards = filteredCards.length;
-                      const totalPages = Math.ceil(totalCards / cardsPerPage);
-                      const currentPage = expandedQuickLook === 'crew' ? crewPage : rolePage;
-                      const setPage = expandedQuickLook === 'crew' ? setCrewPage : setRolePage;
-                      
-                      if (totalPages <= 1) return null;
-                      
-                      const pages: (number | string)[] = [];
-                      if (totalPages <= 5) {
-                        for (let i = 1; i <= totalPages; i++) pages.push(i);
-                      } else {
-                        pages.push(1);
-                        if (currentPage > 3) pages.push('...');
-                        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-                          if (!pages.includes(i)) pages.push(i);
-                        }
-                        if (currentPage < totalPages - 2) pages.push('...');
-                        if (!pages.includes(totalPages)) pages.push(totalPages);
-                      }
-                      
-                      return pages.map((page, idx) => (
-                        page === '...' ? (
-                          <span 
-                            key={`ellipsis-${idx}`}
-                            className="text-sm px-1"
-                            style={{ color: '#7C7F82', fontFamily: 'var(--font-open-sans)' }}
-                          >
-                            ...
-                          </span>
-                        ) : (
-                          <button
-                            key={page}
-                            onClick={() => setPage(page as number)}
-                            className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
+                  {(() => {
+                    const cardsPerPage = expandedQuickLook === 'crew' ? CREW_CARDS_PER_PAGE : ROLE_CARDS_PER_PAGE;
+                    const filteredCards = expandedQuickLook === 'crew'
+                      ? computedCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
+                      : computedRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
+                    const totalCards = filteredCards.length;
+                    const totalPages = Math.ceil(totalCards / cardsPerPage);
+                    const currentPage = expandedQuickLook === 'crew' ? crewPage : rolePage;
+                    const setPage = expandedQuickLook === 'crew' ? setCrewPage : setRolePage;
+
+                    if (totalPages <= 1) return null;
+
+                    return (
+                      <div className="flex items-center justify-center mt-4">
+                        <div className="ai-glass-border" style={aiGlassBorderStyle('9999px')}>
+                          <div
+                            className="flex items-center gap-1"
                             style={{
-                              background: 'rgba(255, 255, 255, 0.25)',
-                              backdropFilter: 'blur(12px)',
-                              WebkitBackdropFilter: 'blur(12px)',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                              cursor: 'pointer',
-                              opacity: currentPage === page ? 1 : 0.5,
+                              ...aiGlassContentStyle('9999px', 0.85),
+                              padding: '0 14px',
+                              height: '36px',
                             }}
                           >
-                            <span
-                              className="text-[12px]"
+                            <button
+                              onClick={() => setPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
                               style={{
                                 fontFamily: 'var(--font-open-sans)',
-                                color: '#DBDADB',
-                                fontWeight: 350,
+                                fontSize: '12px',
+                                color: currentPage === 1 ? '#7C7F82' : '#DBDADB',
+                                background: 'none',
+                                border: 'none',
+                                cursor: currentPage === 1 ? 'default' : 'pointer',
+                                padding: '0 4px',
                               }}
                             >
-                              {page}
-                            </span>
-                          </button>
-                        )
-                      ));
-                    })()}
-                  </div>
+                              ◀
+                            </button>
+                            {(() => {
+                              // Show all pages if 10 or fewer
+                              if (totalPages <= 10) {
+                                return Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                  <button
+                                    key={page}
+                                    onClick={() => setPage(page)}
+                                    style={{
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                      fontWeight: currentPage === page ? 600 : 400,
+                                      color: currentPage === page ? '#FFFFFF' : '#7C7F82',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0 4px',
+                                    }}
+                                  >
+                                    {page}
+                                  </button>
+                                ));
+                              }
+
+                              // Use ellipsis for more than 10 pages
+                              const pages: (number | string)[] = [];
+                              pages.push(1);
+                              if (currentPage > 3) pages.push('...');
+                              for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                                if (!pages.includes(i)) pages.push(i);
+                              }
+                              if (currentPage < totalPages - 2) pages.push('...');
+                              if (!pages.includes(totalPages)) pages.push(totalPages);
+
+                              return pages.map((page, idx) =>
+                                page === '...' ? (
+                                  <span
+                                    key={`ellipsis-${idx}`}
+                                    className="text-sm px-1"
+                                    style={{ color: '#7C7F82', fontFamily: 'var(--font-open-sans)' }}
+                                  >
+                                    ...
+                                  </span>
+                                ) : (
+                                  <button
+                                    key={page}
+                                    onClick={() => setPage(page as number)}
+                                    style={{
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                      fontWeight: currentPage === page ? 600 : 400,
+                                      color: currentPage === page ? '#FFFFFF' : '#7C7F82',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0 4px',
+                                    }}
+                                  >
+                                    {page}
+                                  </button>
+                                )
+                              );
+                            })()}
+                            <button
+                              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                              style={{
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '12px',
+                                color: currentPage === totalPages ? '#7C7F82' : '#DBDADB',
+                                background: 'none',
+                                border: 'none',
+                                cursor: currentPage === totalPages ? 'default' : 'pointer',
+                                padding: '0 4px',
+                              }}
+                            >
+                              ▶
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 </div>
               )}
