@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillCard, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -386,7 +386,151 @@ export function CannotBeAssignedAfterCard({ crewId, storeId, onRefresh }: Cannot
 
   return (
     <CardContainer lightMode={true} borderRadius="1rem" padding="1rem">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col" style={{ gap: '1rem' }}>
+        {/* Embedded header bar */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1rem 1rem 0 0', '0, 0, 0', 0.08)}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1rem 1rem 0 0', 0.6),
+                padding: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Cannot Be Assigned After
+                  </div>
+                </div>
+
+                {/* Add button (edit mode only) */}
+                {isEditing && (
+                  <GlassPillButton
+                    onClick={handleStartAdding}
+                    isSelected={false}
+                    padding="6px 14px"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#6B6B6B',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                      Add
+                    </span>
+                  </GlassPillButton>
+                )}
+              </div>
+
+              {/* Edit/Done/Save/Cancel buttons */}
+              {!isEditing ? (
+                <GlassPillButton
+                  onClick={() => setIsEditing(true)}
+                  isSelected={false}
+                  padding="6px 14px"
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#6B6B6B',
+                    }}
+                  >
+                    Edit
+                  </span>
+                </GlassPillButton>
+              ) : isAdding ? (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <GlassPillButton
+                    onClick={handleConfirmAdd}
+                    isSelected={false}
+                    padding="6px 14px"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: newRuleSourceId && newRuleTargetId ? 'hsl(0, 84%, 60%)' : '#9B9B9B',
+                      }}
+                    >
+                      Save
+                    </span>
+                  </GlassPillButton>
+                  <GlassPillButton
+                    onClick={() => {
+                      setIsAdding(false);
+                      setNewRuleSourceId(null);
+                      setNewRuleTargetId(null);
+                      setShowSourceDropdown(false);
+                      setShowTargetDropdown(false);
+                    }}
+                    isSelected={false}
+                    padding="6px 14px"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: '#6B6B6B',
+                      }}
+                    >
+                      Cancel
+                    </span>
+                  </GlassPillButton>
+                </div>
+              ) : (
+                <GlassPillButton
+                  onClick={() => {
+                    setIsEditing(false);
+                    setIsAdding(false);
+                    setNewRuleSourceId(null);
+                    setNewRuleTargetId(null);
+                    setShowSourceDropdown(false);
+                    setShowTargetDropdown(false);
+                  }}
+                  isSelected={false}
+                  padding="6px 14px"
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#DC2626',
+                    }}
+                  >
+                    Done
+                  </span>
+                </GlassPillButton>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Error message */}
         {error && (
           <div
@@ -426,136 +570,6 @@ export function CannotBeAssignedAfterCard({ crewId, storeId, onRefresh }: Cannot
             </button>
           </div>
         )}
-
-        {/* Title and Edit/Add buttons */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* "Cannot Be Assigned After" title badge */}
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                Cannot Be Assigned After
-              </div>
-            </div>
-
-            {/* Add button (edit mode only) */}
-            {isEditing && (
-              <div style={{ position: 'relative' }}>
-                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                  <button
-                    onClick={handleStartAdding}
-                    style={{
-                      ...aiGlassLightContentStyle('9999px', 0.4),
-                      padding: '6px 14px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: '#6B6B6B',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Edit/Done/Save/Cancel buttons */}
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '13px',
-                fontWeight: 400,
-                color: '#6B6B6B',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#2C2C2C')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6B6B')}
-            >
-              Edit
-            </button>
-          ) : isAdding ? (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={handleConfirmAdd}
-                disabled={!newRuleSourceId || !newRuleTargetId}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: newRuleSourceId && newRuleTargetId ? 'pointer' : 'not-allowed',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 400,
-                  color: newRuleSourceId && newRuleTargetId ? 'hsl(0, 84%, 60%)' : '#9B9B9B',
-                }}
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setIsAdding(false);
-                  setNewRuleSourceId(null);
-                  setNewRuleTargetId(null);
-                  setShowSourceDropdown(false);
-                  setShowTargetDropdown(false);
-                }}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '13px',
-                  fontWeight: 400,
-                  color: '#6B6B6B',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#2C2C2C')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6B6B')}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setIsAdding(false);
-                setNewRuleSourceId(null);
-                setNewRuleTargetId(null);
-                setShowSourceDropdown(false);
-                setShowTargetDropdown(false);
-              }}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '13px',
-                fontWeight: 400,
-                color: 'hsl(0, 84%, 60%)',
-              }}
-            >
-              Done
-            </button>
-          )}
-        </div>
 
         {/* New rule being added (appears as own card at top) */}
         {isAdding && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
+import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard, GlassPillButton } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -162,32 +162,40 @@ function NestedPillSegmentSelector({
         ))}
 
         {/* Segment Labels */}
-        {segmentLabels.map((seg) => (
-          <div
-            key={seg.label}
-            style={{
-              position: 'absolute',
-              left: `${seg.left}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#6B6B6B',
-              pointerEvents: 'none',
-              zIndex: 3,
-            }}
-          >
-            {seg.label} hr
-          </div>
-        ))}
+        {segmentLabels.map((seg) => {
+          // Check if this label is covered by the inner pill
+          const segStart = ((seg.label - 1) / totalSegments) * 100;
+          const segEnd = (seg.label / totalSegments) * 100;
+          const isCovered = segStart >= innerPillLeft && segEnd <= (innerPillLeft + innerPillWidth);
 
-        {/* Inner Solid Pill (from minSegment to selectedSegments) - TRANSLUCENT RED */}
+          return (
+            <div
+              key={seg.label}
+              style={{
+                position: 'absolute',
+                left: `${seg.left}%`,
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: isCovered ? 'rgb(22, 163, 74)' : '#6B6B6B',
+                pointerEvents: 'none',
+                zIndex: 3,
+                transition: 'color 0.15s ease',
+              }}
+            >
+              {seg.label} hr
+            </div>
+          );
+        })}
+
+        {/* Inner Solid Pill (from minSegment to selectedSegments) - TRANSLUCENT GREEN */}
         <GlassPillCard
           borderRadius="9999px"
           padding="0"
           backgroundOpacity={0.6}
-          borderOpacity={0.18}
+          borderOpacity={0.4}
           style={{
             position: 'absolute',
             left: `calc(${innerPillLeft}% + 16px)`,
@@ -199,9 +207,12 @@ function NestedPillSegmentSelector({
             opacity: isDragging ? 0.8 : 1,
             cursor: isEditing && !disabled ? 'ew-resize' : 'default',
             zIndex: 0,
-          }}
+            '--border-color': '34, 197, 94',
+          } as React.CSSProperties}
           contentStyle={{
-            background: 'rgba(220, 38, 38, 0.25)',
+            background: 'rgba(34, 197, 94, 0.35)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
             width: '100%',
             height: '100%',
           }}
@@ -458,7 +469,56 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
 
   return (
     <CardContainer lightMode={true} borderRadius="1rem" padding="1rem">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Embedded header bar */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1rem 1rem 0 0', '0, 0, 0', 0.08)}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1rem 1rem 0 0', 0.6),
+                padding: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.6),
+                    padding: '6px 14px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Continuous Time on Role
+                </div>
+              </div>
+              <GlassPillButton
+                onClick={handleToggleEdit}
+                isSelected={false}
+                padding="6px 14px"
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: isEditing ? '#DC2626' : '#6B6B6B',
+                  }}
+                >
+                  {isEditing ? 'Done' : 'Edit'}
+                </span>
+              </GlassPillButton>
+            </div>
+          </div>
+        </div>
+
         {/* Error Banner */}
         {error && (
           <div
@@ -466,7 +526,6 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
               background: 'hsla(0, 84%, 60%, 0.1)',
               borderRadius: '8px',
               padding: '8px 12px',
-              marginBottom: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -490,46 +549,6 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
             </button>
           </div>
         )}
-
-        {/* Title Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          {/* Title Bubble */}
-          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-            <div
-              style={{
-                ...aiGlassLightContentStyle('9999px', 0.6),
-                padding: '6px 14px',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#2C2C2C',
-              }}
-            >
-              Continuous Time on Role
-            </div>
-          </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Edit/Done Button */}
-          <button
-            onClick={handleToggleEdit}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '13px',
-              fontWeight: 400,
-              color: isEditing ? '#DC2626' : '#6B6B6B',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = isEditing ? '#B91C1C' : '#2C2C2C')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = isEditing ? '#DC2626' : '#6B6B6B')}
-          >
-            {isEditing ? 'Done' : 'Edit'}
-          </button>
-        </div>
 
         {/* Roles List */}
         {rules.length === 0 ? (

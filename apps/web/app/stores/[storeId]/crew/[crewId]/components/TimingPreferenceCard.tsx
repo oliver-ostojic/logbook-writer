@@ -13,7 +13,7 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillCard, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -127,9 +127,10 @@ function DraggableRoleBubble({
       >
         <div
           style={{
-            background: 'rgba(34, 197, 94, 0.08)',
+            background: 'rgba(34, 197, 94, 0.15)',
             borderRadius: '9999px',
-            backdropFilter: 'blur(8px)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
             padding: '4px 10px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '12px',
@@ -150,9 +151,10 @@ function DragOverlayBubble({ roleName }: { roleName: string }) {
     <div className="ai-glass-border" style={{ boxShadow: 'inset 0 0 0 1px rgba(34, 197, 94, 0.4)', borderRadius: '9999px' }}>
       <div
         style={{
-          background: 'rgba(34, 197, 94, 0.08)',
+          background: 'rgba(34, 197, 94, 0.15)',
           borderRadius: '9999px',
-          backdropFilter: 'blur(8px)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
           padding: '4px 10px',
           fontFamily: 'var(--font-open-sans)',
           fontSize: '12px',
@@ -488,7 +490,142 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
 
   return (
     <CardContainer lightMode={true} borderRadius="1rem" padding="1rem">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col" style={{ gap: '1rem' }}>
+        {/* Embedded header bar */}
+        <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1rem 1rem 0 0', '0, 0, 0', 0.08)}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1rem 1rem 0 0', 0.6),
+                padding: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('9999px', 0.6),
+                      padding: '6px 14px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Timing
+                  </div>
+                </div>
+
+                {/* Add button (edit mode only) */}
+                {isEditing && unassignedRoles.length > 0 && (
+                  <div style={{ position: 'relative' }}>
+                    <GlassPillButton
+                      onClick={() => setShowAddDropdown(!showAddDropdown)}
+                      isSelected={false}
+                      padding="6px 14px"
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
+                        Add
+                      </span>
+                    </GlassPillButton>
+
+                    {/* Dropdown for role selection */}
+                    {showAddDropdown && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          marginTop: '4px',
+                          backgroundColor: 'white',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                          padding: '8px',
+                          zIndex: 100,
+                          minWidth: '160px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            color: '#9B9B9B',
+                            padding: '4px 8px',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          Select role to add
+                        </div>
+                        {unassignedRoles.map((role) => (
+                          <button
+                            key={role.id}
+                            onClick={() => handleAddRole(role.id, role.timingRuleId, 0)}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '8px 12px',
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '13px',
+                              color: '#2C2C2C',
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              borderRadius: '8px',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            {role.displayName || role.code}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <GlassPillButton
+                onClick={() => {
+                  setIsEditing(!isEditing);
+                  setShowAddDropdown(false);
+                }}
+                isSelected={false}
+                padding="6px 14px"
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: isEditing ? '#DC2626' : '#6B6B6B',
+                  }}
+                >
+                  {isEditing ? 'Done' : 'Edit'}
+                </span>
+              </GlassPillButton>
+            </div>
+          </div>
+        </div>
+
         {/* Error message */}
         {error && (
           <div
@@ -523,130 +660,6 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
             </button>
           </div>
         )}
-
-        {/* Title bubble and Edit/Add buttons row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.6),
-                  padding: '6px 14px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
-                }}
-              >
-                Timing
-              </div>
-            </div>
-            {isEditing && unassignedRoles.length > 0 && (
-              <div style={{ position: 'relative' }}>
-                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                  <button
-                    onClick={() => setShowAddDropdown(!showAddDropdown)}
-                    style={{
-                      ...aiGlassLightContentStyle('9999px', 0.4),
-                      padding: '6px 14px',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: '#6B6B6B',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ color: 'hsl(0, 84%, 60%)', fontSize: '16px', lineHeight: 1 }}>+</span>
-                    Add
-                  </button>
-                </div>
-
-                {/* Dropdown for role selection */}
-                {showAddDropdown && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      marginTop: '4px',
-                      backgroundColor: 'white',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                      padding: '8px',
-                      zIndex: 100,
-                      minWidth: '160px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '11px',
-                        fontWeight: 500,
-                        color: '#9B9B9B',
-                        padding: '4px 8px',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      Select role to add
-                    </div>
-                    {unassignedRoles.map((role) => (
-                      <button
-                        key={role.id}
-                        onClick={() => handleAddRole(role.id, role.timingRuleId, 0)} // Default to Middle
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '8px 12px',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '13px',
-                          color: '#2C2C2C',
-                          border: 'none',
-                          background: 'none',
-                          cursor: 'pointer',
-                          borderRadius: '8px',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      >
-                        {role.displayName || role.code}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Edit button */}
-          <button
-            onClick={() => {
-              setIsEditing(!isEditing);
-              setShowAddDropdown(false);
-            }}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '13px',
-              fontWeight: 400,
-              color: isEditing ? 'hsl(0, 84%, 60%)' : '#6B6B6B',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              if (!isEditing) e.currentTarget.style.color = '#2C2C2C';
-            }}
-            onMouseLeave={(e) => {
-              if (!isEditing) e.currentTarget.style.color = '#6B6B6B';
-            }}
-          >
-            {isEditing ? 'Done' : 'Edit'}
-          </button>
-        </div>
 
         {/* Three glass pill cards with title bubbles inside */}
         <DndContext

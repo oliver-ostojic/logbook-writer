@@ -87,7 +87,6 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                   textOnly
                   isActive={isUserMenuOpen}
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  isLast
                 />
               </div>
             </nav>

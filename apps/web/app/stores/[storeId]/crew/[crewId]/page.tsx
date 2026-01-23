@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { DashboardHeader } from '@/components/layouts';
-import { CardContainer, CardHeader, GlassPillButton, GlassPillCard, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { NavStatsCard } from '@/app/stores/[storeId]/home/components/NavStatsCard';
 import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard, RoleDistributionCard, AccountInfoCard } from './components';
 import { useAuthStore } from '@/lib/authStore';
+import { logout } from '@/lib/api/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -33,32 +34,57 @@ interface CrewPreference {
 
 export default function CrewPage() {
   const params = useParams();
+  const router = useRouter();
   const storeId = params.storeId as string;
   const crewId = params.crewId as string;
-  const { getNavLinks } = useAuthStore();
+  const { user, logout: logoutStore } = useAuthStore();
 
   const [crew, setCrew] = useState<Crew | null>(null);
   const [preferences, setPreferences] = useState<CrewPreference[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<CrewView>('none');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
+      if (isOutsideButton && isOutsideDropdown) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    }
+    logoutStore();
+    router.push('/login');
+  };
 
   const fetchCrewData = async () => {
     setLoading(true);
     try {
-      // Fetch crew member details
       const crewRes = await fetch(`${API_URL}/crew/${crewId}`);
       if (crewRes.ok) {
         const crewData = await crewRes.json();
         setCrew(crewData);
       }
 
-      // Fetch crew role rules to count preferences
       const roleRulesRes = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
       if (roleRulesRes.ok) {
         const roleRulesData = await roleRulesRes.json();
 
-        // Count all role preferences by CrewRoleRule ID
-        // Include TIMING, CANNOT_BE_ASSIGNED_AFTER, MIN_CONSECUTIVE_MINUTES, MAX_CONSECUTIVE_MINUTES, LIKE_ROLE_FOR_HOUR_X, DISLIKE_ROLE_FOR_HOUR_X
         const preferenceTypes = new Set([
           'TIMING',
           'CANNOT_BE_ASSIGNED_AFTER',
@@ -88,55 +114,81 @@ export default function CrewPage() {
     }
   }, [crewId]);
 
-  const navLinks = getNavLinks(storeId);
-
-  // Count preferences for display
   const preferencesCount = preferences.length;
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
-      <DashboardHeader navLinks={navLinks} activeItem="Crew" lightMode={true} />
 
-      <div className="px-6 lg:px-8 pt-24 pb-9">
-        <div className="max-w-5xl mx-auto">
-          <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem" borderOpacity={0.15}>
-            <div className="flex flex-col gap-6">
-              {/* Header */}
-              <CardHeader
-                title={crew?.name || 'Loading...'}
-                lightMode={true}
-                borderRadius="1.5rem"
-                titleStyle={{ color: '#2C2C2C' }}
-                borderOpacity={0.15}
-              />
-
-              {/* Content */}
-              {activeView === 'none' ? (
-                /* Sidebar / Options */
-                <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
-                  <div className="flex flex-col gap-3">
-                    {/* Title bubble */}
-                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 14px',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                        }}
-                      >
-                        Home
-                      </div>
+      <div className="px-6 lg:px-8 py-6">
+        <div className="mx-auto">
+          {/* Outer glass card */}
+          <div
+            className="ai-glass-border"
+            style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.15)}
+          >
+            <div
+              style={{
+                ...aiGlassLightContentStyle('1.5rem', 0.4),
+                padding: '1.5rem',
+              }}
+            >
+              <div className="flex flex-col gap-6">
+                {/* Top nav - same as home/settings */}
+                <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+                  <div
+                    className="ai-glass-border"
+                    style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
+                  >
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                        padding: '8px',
+                      }}
+                    >
+                      <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                        <NavStatsCard
+                          label="Home"
+                          textOnly
+                          isActive={true}
+                          onClick={() => router.push(`/stores/${storeId}/home`)}
+                          isFirst
+                        />
+                        <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+                          <NavStatsCard
+                            label="Account"
+                            textOnly
+                            isActive={isUserMenuOpen}
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            isLast
+                          />
+                        </div>
+                      </nav>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Rows */}
-                    <div className="flex flex-col gap-3" style={{ marginTop: '2px' }}>
+                {/* Content - Side panel layout */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: '1.5rem',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {/* List sidebar */}
+                  <div
+                    style={{
+                      width: activeView === 'none' ? '100%' : '30%',
+                      transition: 'width 0.3s ease',
+                      minWidth: 0,
+                    }}
+                  >
+                    <div className="flex flex-col gap-3">
                       <GlassPillButton
-                        onClick={() => setActiveView('accountInfo')}
-                        isSelected={false}
+                        onClick={() => setActiveView(activeView === 'accountInfo' ? 'none' : 'accountInfo')}
+                        isSelected={activeView === 'accountInfo'}
                         padding="12px 16px"
                         contentStyle={{ justifyContent: 'flex-start' }}
                       >
@@ -155,8 +207,8 @@ export default function CrewPage() {
                       </GlassPillButton>
 
                       <GlassPillButton
-                        onClick={() => setActiveView('preferences')}
-                        isSelected={false}
+                        onClick={() => setActiveView(activeView === 'preferences' ? 'none' : 'preferences')}
+                        isSelected={activeView === 'preferences'}
                         padding="12px 16px"
                         contentStyle={{ justifyContent: 'flex-start' }}
                       >
@@ -184,80 +236,209 @@ export default function CrewPage() {
                       </GlassPillButton>
                     </div>
                   </div>
-                </CardContainer>
-              ) : (
-                /* Detail Panel */
-                <GlassPillCard
-                  borderRadius="1.5rem"
-                  padding="1rem"
-                  style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)' }}
-                  contentStyle={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+
+                  {/* Detail panel */}
+                  {activeView !== 'none' && (
+                    <div
+                      style={{
+                        width: '70%',
+                        minWidth: 0,
+                      }}
+                    >
                       <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 14px',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                        }}
+                        className="ai-glass-border"
+                        style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.15)}
                       >
-                        {activeView === 'preferences' ? 'Role Preferences' : 'Account Info'}
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('1.5rem', 0.4),
+                            padding: '1rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1rem',
+                          }}
+                        >
+                          {/* Embedded header bar */}
+                          <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+                            <div
+                              className="ai-glass-border"
+                              style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
+                            >
+                              <div
+                                style={{
+                                  ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                                  padding: '1rem',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                                  <div
+                                    style={{
+                                      ...aiGlassLightContentStyle('9999px', 0.6),
+                                      padding: '6px 14px',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                      fontWeight: 500,
+                                      color: '#2C2C2C',
+                                    }}
+                                  >
+                                    {activeView === 'preferences' ? 'Role Preferences' : 'Account Info'}
+                                  </div>
+                                </div>
+                                <GlassPillButton
+                                  onClick={() => setActiveView('none')}
+                                  isSelected={false}
+                                  padding="6px 14px"
+                                >
+                                  <span
+                                    style={{
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '13px',
+                                      fontWeight: 500,
+                                      color: '#6B6B6B',
+                                    }}
+                                  >
+                                    Back
+                                  </span>
+                                </GlassPillButton>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex flex-col gap-4">
+                            {activeView === 'accountInfo' && (
+                              <AccountInfoCard crewId={crewId} storeId={storeId} />
+                            )}
+                            {activeView === 'preferences' && (
+                              <>
+                                <RoleDistributionCard crewId={crewId} onRefresh={fetchCrewData} />
+                                <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setActiveView('none')}
-                      style={{
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '13px',
-                        fontWeight: 400,
-                        color: '#6B6B6B',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#2C2C2C')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6B6B')}
-                    >
-                      Back
-                    </button>
-                  </div>
-                  {activeView === 'accountInfo' && (
-                    <AccountInfoCard crewId={crewId} storeId={storeId} />
                   )}
-                  {activeView === 'preferences' && (
-                    <>
-                      <RoleDistributionCard crewId={crewId} onRefresh={fetchCrewData} />
-                      <div style={{ marginTop: '1rem' }} />
-                      <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                      <div style={{ marginTop: '1rem' }} />
-                      <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                      <div style={{ marginTop: '1rem' }} />
-                      <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                      <div style={{ marginTop: '1rem' }} />
-                      <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                    </>
-                  )}
-                </GlassPillCard>
-              )}
+                </div>
+              </div>
             </div>
-          </CardContainer>
+          </div>
         </div>
       </div>
+
+      {/* User dropdown menu - rendered at root level with fixed positioning */}
+      {isUserMenuOpen && userMenuRef.current && (
+        <div
+          ref={(el) => {
+            userDropdownRef.current = el;
+            if (el && userMenuRef.current) {
+              const rect = userMenuRef.current.getBoundingClientRect();
+              el.style.top = `${rect.bottom + 6}px`;
+              el.style.left = `${rect.left}px`;
+              el.style.width = `${rect.width}px`;
+            }
+          }}
+          className="ai-glass-border"
+          style={{
+            ...aiGlassLightBorderStyle('1rem'),
+            position: 'fixed',
+            zIndex: 99999,
+          }}
+        >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1rem', 0.95),
+              padding: '8px',
+              position: 'relative',
+              zIndex: 5,
+            }}
+          >
+            {user && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                  marginBottom: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  {user.name}
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    color: '#6B6B6B',
+                    marginTop: '2px',
+                  }}
+                >
+                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                </div>
+              </div>
+            )}
+            {/* Back to stores - only for ADMIN */}
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  router.push('/admin');
+                }}
+                className="w-full transition-all"
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  color: '#2C2C2C',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                Back to stores
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full transition-all"
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                color: '#2C2C2C',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
