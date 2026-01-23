@@ -116,8 +116,9 @@ export default function CrewCombobox({ people, onSelectCrew, loading = false }: 
 
           {/* Options dropdown */}
           <ComboboxOptions
+            anchor={{ to: 'bottom start', gap: 4 }}
             transition
-            className="absolute z-50 mt-1 max-w-sm max-h-[264px] w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm"
+            className="!z-50 max-h-[264px] !min-w-[320px] overflow-auto rounded-md bg-white py-1 text-base shadow-lg outline outline-black/5 data-leave:transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0 sm:text-sm"
           >
             {loading && (
               <div className="px-10 pr-3 py-2 text-gray-500 sm:px-9">Loading crew…</div>
@@ -158,7 +159,7 @@ export default function CrewCombobox({ people, onSelectCrew, loading = false }: 
           type="button"
           onClick={() => setSortAsc((prev) => !prev)}
           className="flex shrink-0 items-center gap-x-1.5 rounded-r-full border-0 border-l border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500"
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-open-sans)' }}
         >
           {sortAsc ? (
             <BarsArrowUpIcon
