@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowRightOnRectangleIcon, BuildingStorefrontIcon } from '@heroicons/react/24/solid';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { StoreRulesSection, DefaultRolesSection, InviteCodesSection } from './components';
-import { RoleRuleForm, RoleRuleDetailView, NavStatsCard } from '../home/components';
+import { RoleRuleForm, RoleRuleDetailView, TopNavHeader } from '../home/components';
 import { useAuthStore } from '@/lib/authStore';
-import { logout } from '@/lib/api/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -15,9 +13,8 @@ type SettingsView = 'none' | 'defaultRoles' | 'storeRules' | 'addStoreRule' | 'v
 
 export default function SettingsPage() {
   const params = useParams();
-  const router = useRouter();
   const storeId = params.storeId as string;
-  const { user, canManageUsers, logout: logoutStore } = useAuthStore();
+  const { canManageUsers } = useAuthStore();
 
   const [storeRules, setStoreRules] = useState<any[]>([]);
   const [defaultRoles, setDefaultRoles] = useState<any[]>([]);
@@ -25,29 +22,6 @@ export default function SettingsPage() {
   const [activeView, setActiveView] = useState<SettingsView>('none');
   const [selectedRuleId, setSelectedRuleId] = useState<number | null>(null);
   const [selectedStoreRoleRuleId, setSelectedStoreRoleRuleId] = useState<number | null>(null);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    }
-    logoutStore();
-    router.push('/login');
-  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -112,54 +86,7 @@ export default function SettingsPage() {
             }}
           >
             <div className="flex flex-col gap-6">
-              {/* Top nav - bento style header */}
-              <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                <div
-                  className="ai-glass-border"
-                  style={{
-                    ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
-                  }}
-                >
-                  <div
-                    style={{
-                      ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
-                      padding: '6px',
-                    }}
-                  >
-                    {/* Main nav - 4 equal segments */}
-                    <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
-                      <NavStatsCard
-                        label="Home"
-                        textOnly
-                        isActive={false}
-                        onClick={() => router.push(`/stores/${storeId}/home`)}
-                        isFirst
-                      />
-                      <NavStatsCard
-                        label="System Health"
-                        textOnly
-                        isActive={false}
-                        onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
-                      />
-                      <NavStatsCard
-                        label="Settings"
-                        textOnly
-                        isActive={true}
-                        onClick={() => {}}
-                      />
-                      <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
-                        <NavStatsCard
-                          label="Account"
-                          textOnly
-                          isActive={isUserMenuOpen}
-                          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                          isLast
-                        />
-                      </div>
-                    </nav>
-                  </div>
-                </div>
-              </div>
+              <TopNavHeader storeId={storeId} activeNav="settings" />
 
               {/* Settings Content */}
               <div className="flex gap-4">
@@ -339,90 +266,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-
-      {/* User dropdown menu */}
-      {isUserMenuOpen && (
-        <div
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('1rem'),
-            position: 'fixed',
-            top: '100px',
-            right: '32px',
-            minWidth: '200px',
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1rem', 0.95),
-              padding: '8px',
-            }}
-          >
-            {user && (
-              <div
-                style={{
-                  padding: '10px 16px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  color: '#6B6B6B',
-                  borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-                  marginBottom: '4px',
-                }}
-              >
-                Signed in as <span style={{ color: '#2C2C2C', fontWeight: 500 }}>{user.username}</span>
-              </div>
-            )}
-            {user?.role === 'ADMIN' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  router.push('/admin');
-                }}
-                className="w-full flex items-center gap-3 transition-all"
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  color: '#2C2C2C',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <BuildingStorefrontIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
-                Back to stores
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 transition-all"
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                color: '#2C2C2C',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <ArrowRightOnRectangleIcon className="w-4 h-4" style={{ color: '#6B6B6B' }} />
-              Sign out
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

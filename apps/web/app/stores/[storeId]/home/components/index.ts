@@ -14,3 +14,4 @@ export { RunDetailView } from './RunDetailView';
 export { LogbookPdfViewer } from './LogbookPdfViewer';
 export { LogbookSupersededHistory } from './LogbookSupersededHistory';
 export { NavStatsCard, NavDivider } from './NavStatsCard';
+export { TopNavHeader } from './TopNavHeader';
