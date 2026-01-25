@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
+import { NavStatsCard, NavDivider } from '@/app/stores/[storeId]/home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { login } from '@/lib/api/auth';
 
@@ -100,52 +101,47 @@ export default function LoginPage() {
           }}
         >
           <div className="flex flex-col gap-6">
-            {/* Outer card header - Logbook writer title - bento style */}
+            {/* Outer card header - Logbook writer / Exit tabs */}
             <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-              <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('9999px', 0.6),
-                        padding: '6px 24px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
+              <div
+                className="ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
+                }}
+              >
+                <div
+                  style={{
+                    ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                    padding: '8px',
+                  }}
+                >
+                  <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                    <NavStatsCard
+                      label="Logbook writer"
+                      textOnly
+                      isActive={true}
+                      onClick={() => {}}
+                    />
+                    <NavStatsCard
+                      label="Exit"
+                      textOnly
+                      isActive={false}
+                      onClick={() => {
+                        // Send message to parent window to close overlay
+                        if (window.parent !== window) {
+                          window.parent.postMessage({ type: 'CLOSE_LOGBOOK_OVERLAY' }, '*');
+                        } else {
+                          // Fallback if not in iframe
+                          router.push('/');
+                        }
                       }}
-                    >
-                      Logbook writer
-                    </div>
-                  </div>
-                  {/* Close/Exit button */}
-                  <button
-                    type="button"
-                    onClick={() => router.push('/')}
-                    className="transition-all"
-                    style={{
-                      padding: '0 12px',
-                      height: '36px',
-                      border: 'none',
-                      background: 'transparent',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '16px',
-                      color: '#6B6B6B',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#2C2C2C'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#6B6B6B'}
-                  >
-                    ✕
-                  </button>
+                    />
+                  </nav>
                 </div>
-              </GlassPillCard>
+              </div>
             </div>
 
-            {/* Login form - inner card */}
+            {/* Login form card */}
             <div
               className="ai-glass-border rounded-[1.5rem]"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
@@ -158,55 +154,36 @@ export default function LoginPage() {
                 }}
               >
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                  {/* Header row - Sign in / Create account - bento style */}
+                  {/* Header row - Sign in / Create account tabs */}
                   <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                    <GlassPillCard padding="1rem 1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                      <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                        {/* Sign into your account - left */}
-                        <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                          <div
-                            style={{
-                              ...aiGlassLightContentStyle('9999px', 0.6),
-                              padding: '6px 14px',
-                              fontFamily: 'var(--font-open-sans)',
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              color: '#2C2C2C',
-                            }}
-                          >
-                            Sign into your account
-                          </div>
-                        </div>
-
-                        {/* Create account - right */}
-                        <a
-                          href="/register"
-                          className="ai-glass-border"
-                          style={{ ...aiGlassLightBorderStyle('9999px'), textDecoration: 'none' }}
-                        >
-                          <div
-                            style={{
-                              ...aiGlassLightContentStyle('9999px', 0.6),
-                              padding: '6px 14px',
-                              transition: 'filter 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-                            onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-                          >
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '13px',
-                                fontWeight: 500,
-                                color: 'hsl(0, 84%, 60%)',
-                              }}
-                            >
-                              Create account
-                            </span>
-                          </div>
-                        </a>
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                          padding: '8px',
+                        }}
+                      >
+                        <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                          <NavStatsCard
+                            label="Sign into your account"
+                            textOnly
+                            isActive={true}
+                            onClick={() => {}}
+                          />
+                          <NavStatsCard
+                            label="Create account"
+                            textOnly
+                            isActive={false}
+                            onClick={() => router.push('/register')}
+                          />
+                        </nav>
                       </div>
-                    </GlassPillCard>
+                    </div>
                   </div>
 
                   {/* Error message */}
@@ -225,70 +202,61 @@ export default function LoginPage() {
                     </div>
                   )}
 
-                  {/* Username and Password fields in glass pill card */}
-                  <div className="ai-glass-border rounded-[1.5rem]" style={aiGlassLightBorderStyle('1.5rem')}>
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('1.5rem', 0.6),
-                        padding: '24px',
-                      }}
-                    >
-                      <div className="flex flex-col gap-5">
-                        {/* Username field */}
-                        <div className="flex flex-col gap-2">
-                          <label style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B' }}>
-                            Username
-                          </label>
-                          <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                            <input
-                              type="text"
-                              value={username}
-                              onChange={(e) => setUsername(e.target.value)}
-                              onKeyDown={handleKeyDown}
-                              className="focus:outline-none focus:ring-0"
-                              disabled={isSubmitting}
-                              style={{
-                                ...aiGlassLightContentStyle('9999px', 0.4),
-                                padding: '10px 18px',
-                                width: '100%',
-                                border: 'none',
-                                outline: 'none',
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '14px',
-                                color: '#2C2C2C',
-                                fontWeight: 500,
-                              }}
-                            />
-                          </div>
-                        </div>
+                  {/* Username and Password fields */}
+                  <div className="flex flex-col gap-5">
+                    {/* Username field */}
+                    <div className="flex flex-col gap-2">
+                      <label style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B' }}>
+                        Username
+                      </label>
+                      <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          className="focus:outline-none focus:ring-0"
+                          disabled={isSubmitting}
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 0.4),
+                            padding: '10px 18px',
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: '#2C2C2C',
+                            fontWeight: 500,
+                          }}
+                        />
+                      </div>
+                    </div>
 
-                        {/* Password field */}
-                        <div className="flex flex-col gap-2">
-                          <label style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B' }}>
-                            Password
-                          </label>
-                          <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                            <input
-                              type="password"
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              onKeyDown={handleKeyDown}
-                              className="focus:outline-none focus:ring-0"
-                              disabled={isSubmitting}
-                              style={{
-                                ...aiGlassLightContentStyle('9999px', 0.4),
-                                padding: '10px 18px',
-                                width: '100%',
-                                border: 'none',
-                                outline: 'none',
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '14px',
-                                color: '#2C2C2C',
-                                fontWeight: 500,
-                              }}
-                            />
-                          </div>
-                        </div>
+                    {/* Password field */}
+                    <div className="flex flex-col gap-2">
+                      <label style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B' }}>
+                        Password
+                      </label>
+                      <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          className="focus:outline-none focus:ring-0"
+                          disabled={isSubmitting}
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 0.4),
+                            padding: '10px 18px',
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
+                            color: '#2C2C2C',
+                            fontWeight: 500,
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
