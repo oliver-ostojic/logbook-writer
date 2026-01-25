@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronDownIcon, PlusIcon, UserIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid';
-import Footer from '../../../../components/Footer';
-import { StatGraphCard, statGraphCardStyles, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, CrewQuickLookCarousel, RoleQuickLookCarousel, CrewQuickLookCardStatic, RoleQuickLookCardStatic, defaultCrewCards, defaultRoleCards, CrewCardData, RoleCardData, RoleHeatmap, CrewFairnessTable } from './components';
+import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations } from '@/components/ui/ai-glass';
+import { NavStatsCard } from '../home/components/NavStatsCard';
+import { useAuthStore } from '@/lib/authStore';
+import { logout } from '@/lib/api/auth';
 
 // =============================================================================
 // Dashboard API Response Types
@@ -54,247 +57,7 @@ interface DashboardApiResponse {
 }
 
 // =============================================================================
-// AI Glass Style Template - Reusable glass effect with border
-// =============================================================================
 
-// Border style - just sets up positioning for the pseudo-element border
-// borderColor: RGB values as string e.g. "255, 255, 255" for white, "100, 150, 255" for blue
-// borderOpacity: 0-1 value for border visibility
-const aiGlassBorderStyle = (
-  borderRadius: string | number = '1.5rem',
-  borderColor?: string,
-  borderOpacity?: number
-): React.CSSProperties => ({
-  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
-  position: 'relative' as const,
-  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
-  ...(borderColor && { '--border-color': borderColor } as React.CSSProperties),
-  ...(borderOpacity !== undefined && { '--border-opacity': borderOpacity } as React.CSSProperties),
-});
-
-// Inner content styles (translucent with backdrop blur)
-// opacity parameter: lower = more transparent/lighter, higher = more opaque/darker
-const aiGlassContentStyle = (borderRadius: string | number = '1.5rem', opacity: number = 0.85): React.CSSProperties => ({
-  width: '100%',
-  height: '100%',
-  background: `rgba(28, 27, 31, ${opacity})`,
-  backdropFilter: 'blur(5px)',
-  WebkitBackdropFilter: 'blur(5px)',
-  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
-});
-
-// Wrapper component for easy reuse
-interface AiGlassCardProps {
-  children: React.ReactNode;
-  borderRadius?: string | number;
-  className?: string;
-  style?: React.CSSProperties;
-  contentStyle?: React.CSSProperties;
-}
-
-const AiGlassCard: React.FC<AiGlassCardProps> = ({ 
-  children, 
-  borderRadius = '1.5rem', 
-  className = '',
-  style = {},
-  contentStyle = {},
-}) => (
-  <div className="ai-glass-border" style={{ ...aiGlassBorderStyle(borderRadius), ...style }} data-radius={typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius}>
-    <div 
-      className={className}
-      style={{ ...aiGlassContentStyle(borderRadius), ...contentStyle }}
-    >
-      {children}
-    </div>
-  </div>
-);
-
-// =============================================================================
-
-// Flowing gradient animation - colors morph into each other
-const blobAnimationStyles = `
-  .ai-glass-border {
-    position: relative;
-    --border-color: 255, 255, 255; /* Default: white, can be overridden inline */
-    --border-opacity: 0.11;
-  }
-  .ai-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  @keyframes flowingGradient {
-    0% {
-      background-position: 0% 50%;
-      filter: hue-rotate(0deg);
-    }
-    25% {
-      background-position: 50% 100%;
-    }
-    50% {
-      background-position: 100% 50%;
-      filter: hue-rotate(15deg);
-    }
-    75% {
-      background-position: 50% 0%;
-    }
-    100% {
-      background-position: 0% 50%;
-      filter: hue-rotate(0deg);
-    }
-  }
-  @keyframes flowingGradientReverse {
-    0% {
-      background-position: 100% 50%;
-      filter: hue-rotate(0deg);
-    }
-    25% {
-      background-position: 50% 0%;
-    }
-    50% {
-      background-position: 0% 50%;
-      filter: hue-rotate(-15deg);
-    }
-    75% {
-      background-position: 50% 100%;
-    }
-    100% {
-      background-position: 100% 50%;
-      filter: hue-rotate(0deg);
-    }
-  }
-  @keyframes flowDiagonal {
-    0% {
-      background-position: 0% 0%;
-    }
-    50% {
-      background-position: 100% 100%;
-    }
-    100% {
-      background-position: 0% 0%;
-    }
-  }
-  @keyframes flowDiagonalReverse {
-    0% {
-      background-position: 100% 0%;
-    }
-    50% {
-      background-position: 0% 100%;
-    }
-    100% {
-      background-position: 100% 0%;
-    }
-  }
-  @keyframes flowVertical {
-    0% {
-      background-position: 50% 0%;
-    }
-    50% {
-      background-position: 50% 100%;
-    }
-    100% {
-      background-position: 50% 0%;
-    }
-  }
-  @keyframes flowCircular {
-    0% {
-      background-position: 50% 0%;
-    }
-    25% {
-      background-position: 100% 50%;
-    }
-    50% {
-      background-position: 50% 100%;
-    }
-    75% {
-      background-position: 0% 50%;
-    }
-    100% {
-      background-position: 50% 0%;
-    }
-  }
-  @keyframes floatFree1 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    20% { transform: translate(15%, -25%) scale(1.2); }
-    40% { transform: translate(-10%, 20%) scale(0.8); }
-    60% { transform: translate(25%, 10%) scale(1.1); }
-    80% { transform: translate(-20%, -15%) scale(0.9); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes floatFree2 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    25% { transform: translate(-20%, 15%) scale(0.9); }
-    50% { transform: translate(10%, -20%) scale(1.3); }
-    75% { transform: translate(20%, 25%) scale(0.7); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes floatFree3 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    15% { transform: translate(20%, 20%) scale(1.1); }
-    35% { transform: translate(-15%, -10%) scale(0.85); }
-    55% { transform: translate(-25%, 15%) scale(1.25); }
-    75% { transform: translate(10%, -25%) scale(0.95); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes floatFree4 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    30% { transform: translate(-10%, -20%) scale(1.15); }
-    50% { transform: translate(25%, 5%) scale(0.8); }
-    70% { transform: translate(-5%, 25%) scale(1.2); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes floatFree5 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    20% { transform: translate(10%, 15%) scale(0.9); }
-    45% { transform: translate(-20%, -5%) scale(1.3); }
-    65% { transform: translate(15%, -20%) scale(0.85); }
-    85% { transform: translate(-15%, 10%) scale(1.1); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes floatFree6 {
-    0% { transform: translate(0%, 0%) scale(1); }
-    25% { transform: translate(-25%, -15%) scale(1.2); }
-    55% { transform: translate(20%, 20%) scale(0.75); }
-    80% { transform: translate(5%, -25%) scale(1.15); }
-    100% { transform: translate(0%, 0%) scale(1); }
-  }
-  @keyframes iosWiggle {
-    0% { transform: rotate(-1deg); }
-    25% { transform: rotate(1deg); }
-    50% { transform: rotate(-1deg); }
-    75% { transform: rotate(1deg); }
-    100% { transform: rotate(-1deg); }
-  }
-  .ios-wiggle {
-    animation: iosWiggle 0.3s ease-in-out infinite;
-  }
-  @keyframes settleDown {
-    0% {
-      transform: rotate(-1deg) scale(1.02);
-      filter: brightness(1.1);
-    }
-    50% {
-      transform: rotate(0deg) scale(1.05);
-      filter: brightness(1.15);
-    }
-    100% {
-      transform: rotate(0deg) scale(1);
-      filter: brightness(1);
-    }
-  }
-  .settle-animation {
-    animation: settleDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-`;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -438,117 +201,56 @@ const dashboardData: DashboardData = {
   },
 };
 
-// Helper component for list row with hover state
-function ListRowItem({ 
-  itemNumber, 
-  isFirst, 
-  isLast, 
-  children,
-  onClick
-}: { 
-  itemNumber: number; 
-  isFirst: boolean; 
-  isLast: boolean; 
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  return (
-    <div 
-      className="flex" 
-      style={{ position: 'relative', gap: 16 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
-    >
-      {/* Number column with lines */}
-      <div className="flex flex-col items-center" style={{ width: 24, position: 'relative' }}>
-        {/* Top line for first item - half height, faded at both ends */}
-        {isFirst && (
-          <div 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 1,
-              height: 'calc(50% - 12px)',
-              background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(255,255,255,0.15) 40%, transparent 95%, transparent 100%)',
-            }}
-          />
-        )}
-        {/* Number badge - centered */}
-        <div 
-          className="flex items-center justify-center rounded-full transition-all duration-200 circle-button-glass-border"
-          style={{
-            width: 24,
-            height: 24,
-            background: isHovered ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-            position: 'absolute',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 1,
-          }}
-        >
-          <span
-            className="text-[11px] transition-colors duration-200"
-            style={{
-              fontFamily: 'var(--font-open-sans)',
-              color: isHovered ? '#DBDADB' : '#7C7F82',
-              fontWeight: 350,
-            }}
-          >
-            {itemNumber}
-          </span>
-        </div>
-        {/* Connecting line to next number - spans from bottom of this number to top of next */}
-        {!isLast && (
-          <div 
-            style={{
-              position: 'absolute',
-              top: 'calc(50% + 12px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 1,
-              height: 'calc(100% - 24px + 12px)',
-              background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.15) 60%, transparent 95%, transparent 100%)',
-            }}
-          />
-        )}
-        {/* Bottom line for last item - half height, faded at both ends */}
-        {isLast && (
-          <div 
-            style={{
-              position: 'absolute',
-              top: 'calc(50% + 12px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 1,
-              height: 'calc(50% - 12px)',
-              background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, rgba(255,255,255,0.15) 60%, transparent 95%, transparent 100%)',
-            }}
-          />
-        )}
-      </div>
-      <div
-        className="flex-1 ai-glass-border"
-        style={{
-          ...aiGlassBorderStyle('1rem', '180, 170, 200', 0.15),
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ ...aiGlassContentStyle('1rem', 0.75), position: 'relative', zIndex: 0 }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function FairnessDashboardPage() {
   const params = useParams();
   const storeId = params.storeId as string;
+  const router = useRouter();
+  const { user, logout: logoutStore } = useAuthStore();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [isTimeWindowOpen, setIsTimeWindowOpen] = useState(false);
+  const timeWindowRef = useRef<HTMLDivElement>(null);
+  const timeWindowDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
+      if (isOutsideButton && isOutsideDropdown) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close time window dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const isOutsideButton = timeWindowRef.current && !timeWindowRef.current.contains(target);
+      const isOutsideDropdown = timeWindowDropdownRef.current && !timeWindowDropdownRef.current.contains(target);
+      if (isOutsideButton && isOutsideDropdown) {
+        setIsTimeWindowOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    }
+    logoutStore();
+    router.push('/login');
+  };
 
   // Helper to get localStorage key scoped to store
   const getStorageKey = (key: string) => `fairness-dashboard-${storeId}-${key}`;
@@ -582,7 +284,6 @@ export default function FairnessDashboardPage() {
   const [activeDashboard, setActiveDashboard] = useState<string>('Overview');
   const [activeView, setActiveView] = useState<string>('overview');
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>('none');
-  const [expandedQuickLook, setExpandedQuickLook] = useState<'crew' | 'roles' | 'none'>('none');
   const [selectedCrew, setSelectedCrew] = useState<CrewCardData | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
@@ -591,7 +292,6 @@ export default function FairnessDashboardPage() {
   const [rolePage, setRolePage] = useState(1);
   const [crewSearchQuery, setCrewSearchQuery] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   
   // Dashboard API data state
   const [dashboardApiData, setDashboardApiData] = useState<DashboardApiResponse | null>(null);
@@ -643,27 +343,26 @@ export default function FairnessDashboardPage() {
 
   const yearCardCount = availableYears.length;
 
-  // Generate month options for the selected year
+  // Generate month options for the selected year (includes monthIndex for selection mapping)
   const generateMonthOptions = (year: number) => {
     return [
-      { value: 'Jan', label: '', days: getDaysInMonth(year, 0), startDay: getMonthStartDay(year, 0) },
-      { value: 'Feb', label: '', days: getDaysInMonth(year, 1), startDay: getMonthStartDay(year, 1) },
-      { value: 'Mar', label: '', days: getDaysInMonth(year, 2), startDay: getMonthStartDay(year, 2) },
-      { value: 'Apr', label: '', days: getDaysInMonth(year, 3), startDay: getMonthStartDay(year, 3) },
-      { value: 'May', label: '', days: getDaysInMonth(year, 4), startDay: getMonthStartDay(year, 4) },
-      { value: 'Jun', label: '', days: getDaysInMonth(year, 5), startDay: getMonthStartDay(year, 5) },
-      { value: 'Jul', label: '', days: getDaysInMonth(year, 6), startDay: getMonthStartDay(year, 6) },
-      { value: 'Aug', label: '', days: getDaysInMonth(year, 7), startDay: getMonthStartDay(year, 7) },
-      { value: 'Sep', label: '', days: getDaysInMonth(year, 8), startDay: getMonthStartDay(year, 8) },
-      { value: 'Oct', label: '', days: getDaysInMonth(year, 9), startDay: getMonthStartDay(year, 9) },
-      { value: 'Nov', label: '', days: getDaysInMonth(year, 10), startDay: getMonthStartDay(year, 10) },
-      { value: 'Dec', label: '', days: getDaysInMonth(year, 11), startDay: getMonthStartDay(year, 11) },
+      { value: 'Jan', label: '', days: getDaysInMonth(year, 0), startDay: getMonthStartDay(year, 0), monthIndex: 0 },
+      { value: 'Feb', label: '', days: getDaysInMonth(year, 1), startDay: getMonthStartDay(year, 1), monthIndex: 1 },
+      { value: 'Mar', label: '', days: getDaysInMonth(year, 2), startDay: getMonthStartDay(year, 2), monthIndex: 2 },
+      { value: 'Apr', label: '', days: getDaysInMonth(year, 3), startDay: getMonthStartDay(year, 3), monthIndex: 3 },
+      { value: 'May', label: '', days: getDaysInMonth(year, 4), startDay: getMonthStartDay(year, 4), monthIndex: 4 },
+      { value: 'Jun', label: '', days: getDaysInMonth(year, 5), startDay: getMonthStartDay(year, 5), monthIndex: 5 },
+      { value: 'Jul', label: '', days: getDaysInMonth(year, 6), startDay: getMonthStartDay(year, 6), monthIndex: 6 },
+      { value: 'Aug', label: '', days: getDaysInMonth(year, 7), startDay: getMonthStartDay(year, 7), monthIndex: 7 },
+      { value: 'Sep', label: '', days: getDaysInMonth(year, 8), startDay: getMonthStartDay(year, 8), monthIndex: 8 },
+      { value: 'Oct', label: '', days: getDaysInMonth(year, 9), startDay: getMonthStartDay(year, 9), monthIndex: 9 },
+      { value: 'Nov', label: '', days: getDaysInMonth(year, 10), startDay: getMonthStartDay(year, 10), monthIndex: 10 },
+      { value: 'Dec', label: '', days: getDaysInMonth(year, 11), startDay: getMonthStartDay(year, 11), monthIndex: 11 },
     ];
   };
-  
+
   const selectedYear = availableYears[yearSelectionIndex] || new Date().getFullYear();
-  const monthOptions = generateMonthOptions(selectedYear);
-  const monthCardCount = monthOptions.length;
+  const allMonthOptions = generateMonthOptions(selectedYear);
 
   // Compute disabled days for the selected year (days without logbooks)
   // Map: monthIndex (0-11) -> Set of day numbers (1-31)
@@ -688,7 +387,65 @@ export default function FairnessDashboardPage() {
 
     return disabled;
   }, [availableDates, selectedYear]);
-  
+
+  // Filter months to only show those with at least one available date
+  const monthOptions = React.useMemo(() => {
+    return allMonthOptions.filter(option => {
+      const monthDisabled = disabledDays[option.monthIndex] || new Set();
+      // Month has data if at least one day is NOT disabled
+      for (let d = 1; d <= option.days; d++) {
+        if (!monthDisabled.has(d)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [allMonthOptions, disabledDays]);
+
+  const monthCardCount = monthOptions.length;
+
+  // Helper to get date range from selected days
+  const getSelectedDateRange = (): { earliest: string | null; latest: string | null } => {
+    const allSelectedDates: string[] = [];
+
+    Object.entries(selectedDays).forEach(([key, days]) => {
+      const [year, monthIndex] = key.split('-').map(Number);
+      days.forEach(day => {
+        const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        allSelectedDates.push(dateStr);
+      });
+    });
+
+    if (allSelectedDates.length === 0) {
+      return { earliest: null, latest: null };
+    }
+
+    allSelectedDates.sort();
+    return {
+      earliest: allSelectedDates[0],
+      latest: allSelectedDates[allSelectedDates.length - 1]
+    };
+  };
+
+  // Format date range as "25 Nov - 16 Dec, 2025" (year shown once if same)
+  const formatDateRangeForNav = (): string | undefined => {
+    const { earliest, latest } = getSelectedDateRange();
+    if (!earliest || !latest) return undefined;
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const [earliestYear, earliestMonth, earliestDay] = earliest.split('-').map(Number);
+    const [latestYear, latestMonth, latestDay] = latest.split('-').map(Number);
+
+    const earliestFormatted = `${earliestDay} ${months[earliestMonth - 1]}`;
+    const latestFormatted = `${latestDay} ${months[latestMonth - 1]}`;
+
+    if (earliestYear === latestYear) {
+      return `${earliestFormatted} - ${latestFormatted}, ${latestYear}`;
+    }
+    return `${earliestFormatted}, ${earliestYear} - ${latestFormatted}, ${latestYear}`;
+  };
+
   // Helper to create a composite key for year-month selection
   const getSelectionKey = (year: number, monthIndex: number) => `${year}-${monthIndex}`;
   
@@ -820,10 +577,14 @@ export default function FairnessDashboardPage() {
         setTimeDeckWidth(timeDeckRef.current.offsetWidth);
       }
     };
-    updateWidth();
+    // Small delay to allow dropdown to render before measuring
+    const timeoutId = setTimeout(updateWidth, 10);
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, [expandedPanel]);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, [expandedPanel, isTimeWindowOpen]);
   
   // Carousel navigation state
   const [carouselNav, setCarouselNav] = useState<{
@@ -1010,8 +771,8 @@ export default function FairnessDashboardPage() {
     });
 
     if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionCrewRollups?.length) {
-      console.log('📊 Using default crew cards (no snapshot data)');
-      return defaultCrewCards;
+      console.log('📊 No crew rollup data available');
+      return [];
     }
 
     const crewRollups = dashboardSnapshot.selection.selectionCrewRollups;
@@ -1177,8 +938,8 @@ export default function FairnessDashboardPage() {
   // Compute role cards from snapshot selection rollups
   const computedRoleCards: RoleCardData[] = React.useMemo(() => {
     if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionRoleRollups) {
-      console.log('📊 Using default role cards (no snapshot data)');
-      return defaultRoleCards;
+      console.log('📊 No role rollup data available');
+      return [];
     }
 
     const roleRollups = dashboardSnapshot.selection.selectionRoleRollups;
@@ -1600,7 +1361,6 @@ export default function FairnessDashboardPage() {
 
     // Load all persisted state
     setActiveDashboard(loadState('activeDashboard', 'Overview'));
-    setExpandedQuickLook(loadState('expandedQuickLook', 'none'));
     setCrewPage(loadState('crewPage', 1));
     setRolePage(loadState('rolePage', 1));
     setTimeSelectionIndex(loadState('timeSelectionIndex', 0));
@@ -1622,11 +1382,6 @@ export default function FairnessDashboardPage() {
     if (!mounted) return;
     saveState('activeDashboard', activeDashboard);
   }, [activeDashboard, mounted]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    saveState('expandedQuickLook', expandedQuickLook);
-  }, [expandedQuickLook, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -1913,238 +1668,141 @@ export default function FairnessDashboardPage() {
   }, [storeId, selectedDays, availableDates]);
 
   return (
-    <main className="bg-black min-h-screen">
-      <style dangerouslySetInnerHTML={{ __html: blobAnimationStyles + statGraphCardStyles }} />
-      <div className="bg-black min-h-screen">
-        {/* Floating pill header - positioned to align with dashboard content */}
-        <div className="fixed top-4 left-0 right-0 px-6 lg:px-8" style={{ zIndex: 200 }}>
-          {/* Flex container: empty left spacer, centered nav, right-aligned user button */}
-          <div className="flex items-center justify-between">
-            {/* Left spacer - same width as user button for centering */}
-            <div style={{ width: 48, height: 48 }} />
-            
-            {/* Centered nav menu */}
-            <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px') }}>
-              <nav
-                style={{
-                  ...aiGlassContentStyle('9999px'),
-                  padding: '12px 36px',
-                }}
-              >
-                <div className="flex items-center gap-9">
-                  <a
-                    href={`/stores/${storeId}/home`}
-                    className="text-base transition-colors"
-                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
-                  >
-                    Home
-                  </a>
-                  <a
-                    href={`/stores/${storeId}/fairness-dashboard`}
-                    className="text-base transition-colors"
-                    style={{ fontFamily: 'var(--font-open-sans)', color: '#FFFFFF', fontWeight: 500 }}
-                  >
-                    Dashboard
-                  </a>
-                  <a
-                    href={`/stores/${storeId}/settings`}
-                    className="text-base transition-colors"
-                    style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontWeight: 400 }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#9A999E'}
-                  >
-                    Settings
-                  </a>
-                </div>
-              </nav>
-            </div>
-          
-            {/* User account circle - right side */}
-            <div
-              className="ai-glass-border"
-              style={{
-                ...aiGlassBorderStyle('9999px'),
-                width: 48,
-                height: 48,
-              }}
-            >
-              <button
-                className="flex items-center justify-center transition-all"
-                style={{
-                  ...aiGlassContentStyle('9999px'),
-                  background: 'rgba(255, 255, 255, 0.01)',
-                  cursor: 'pointer',
-                  border: 'none',
-                  transition: 'background 0.2s ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'}
-              >
-                <UserIcon className="w-5 h-5" style={{ color: '#9A999E' }} />
-              </button>
-            </div>
-          </div>
-        </div>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
+      <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
+        <div className="px-6 lg:px-8 pt-12 lg:pt-16 pb-9 flex flex-col gap-6">
+          {/* Responsive panel width */}
+          <style>{`
+            @media (min-width: 1200px) {
+              .dashboard-outer-panel { flex: 0 0 80%; max-width: 80%; }
+            }
+          `}</style>
 
-        <div className="px-6 lg:px-8 pt-20 pb-9">
-          {/* Main content area */}
-          <div className="flex flex-col min-[1200px]:flex-row gap-3">
-            {/* Left card - dashboard (full width when stacked, 55% when side-by-side) */}
-            <div
-              className="w-full min-[1200px]:w-[55%] rounded-3xl px-4 py-4 relative"
-              style={{ 
-                background: '#141318',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-              }}
-            >
-              {/* Header card - Dashboard title, dropdown, and date */}
-              <div
-                className="flex flex-col mb-4 ai-glass-border"
-                style={{
-                  ...aiGlassBorderStyle('1.5rem', '180, 170, 200', 0.15),
-                  ...aiGlassContentStyle('1.5rem'),
-                  height: 'auto',
-                  padding: 16,
-                  zIndex: 50,
-                }}
-              >
-                <div className="relative flex items-center justify-center">
-                  {/* Left: Dropdown for view selection */}
-                  <Menu as="div" className="absolute left-0" style={{ zIndex: 100 }}>
-                    <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px') }}>
-                      <MenuButton
-                        className="inline-flex items-center text-med focus:outline-none focus:ring-0 transition-all"
-                        style={{
-                          position: 'relative' as const,
-                          zIndex: 0,
-                          width: '100%',
-                          height: '100%',
-                          background: 'hsla(0, 84%, 60%, 0.7)',
-                          backdropFilter: 'blur(8px)',
-                          WebkitBackdropFilter: 'blur(8px)',
-                          borderRadius: '9999px',
-                          fontFamily: 'var(--font-open-sans)',
-                          color: '#FFFFFF',
-                          fontWeight: 500,
-                          padding: '6px 14px',
-                          outline: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'hsla(0, 84%, 55%, 0.85)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'hsla(0, 84%, 60%, 0.7)'}
-                      >
-                        {DASHBOARD_VIEWS.find(v => v.id === activeView)?.name || 'Overview'}
-                      </MenuButton>
+          {/* Outer card - 80% width centered */}
+          <div className="flex flex-col min-[1200px]:flex-row min-[1200px]:justify-center">
+            <div className="ai-glass-border w-full dashboard-outer-panel" style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}>
+              <div style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), height: 'auto', padding: '24px' }}>
+                {/* Embedded dark mode nav header */}
+                <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}>
+                    <div style={{ ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6), height: 'auto', padding: '8px' }}>
+                      <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                        <NavStatsCard
+                          label="Home"
+                          textOnly
+                          darkMode
+                          isActive={false}
+                          onClick={() => router.push(`/stores/${storeId}/home`)}
+                          isFirst
+                        />
+                        <NavStatsCard
+                          label="System Health"
+                          textOnly
+                          darkMode
+                          isActive={true}
+                          onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
+                        />
+                        <NavStatsCard
+                          label="Settings"
+                          textOnly
+                          darkMode
+                          isActive={false}
+                          onClick={() => router.push(`/stores/${storeId}/settings`)}
+                        />
+                        <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+                          <NavStatsCard
+                            label="Account"
+                            textOnly
+                            darkMode
+                            isActive={isUserMenuOpen}
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                          />
+                        </div>
+                      </nav>
                     </div>
-                    <MenuItems
-                      anchor="bottom start"
-                      portal={false}
-                      transition
-                      className="w-40 origin-top-left shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                      style={{ 
-                        zIndex: 100,
-                        ...aiGlassBorderStyle('0.75rem'),
-                        marginTop: 8,
-                      }}
-                    >
-                      <div 
-                        className="py-1"
-                        style={{
-                          ...aiGlassContentStyle('0.75rem'),
-                        }}
-                      >
-                        {DASHBOARD_VIEWS.map((view) => (
-                          <MenuItem key={view.id}>
-                            <div className="flex items-center justify-between px-4 py-2">
-                              <button
-                                onClick={() => {
-                                  setActiveView(view.id);
-                                  setSelectedCrew(null);
-                                  setSelectedRole(null);
-                                  setSelectedCrewId(null);
-                                  setSelectedRoleId(null);
-                                  if (view.id === 'crew') {
-                                    setCrewPage(1);
-                                    setExpandedQuickLook('crew');
-                                  } else if (view.id === 'roles') {
-                                    setRolePage(1);
-                                    setExpandedQuickLook('roles');
-                                  } else {
-                                    setExpandedQuickLook('none');
-                                  }
-                                }}
-                                className="text-left text-sm focus:outline-none flex-1"
-                                style={{ 
-                                  fontFamily: 'var(--font-open-sans)',
-                                  color: activeView === view.id ? '#DBDADB' : '#7C7F82',
-                                  backgroundColor: 'transparent',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.parentElement!.style.backgroundColor = '#3D3C3F'}
-                                onMouseLeave={(e) => e.currentTarget.parentElement!.style.backgroundColor = 'transparent'}
-                              >
-                                {view.name}
-                              </button>
-                            </div>
-                          </MenuItem>
-                        ))}
-                      </div>
-                    </MenuItems>
-                  </Menu>
-
-                  {/* Center: Dashboard title */}
-                  <h2 className="text-med" style={{ fontFamily: 'var(--font-open-sans)', color: '#DBDADB', fontWeight: 350 }}>
-                    {!mounted ? 'Dashboard' : selectedCrew ? selectedCrew.title : selectedRole ? selectedRole.name : expandedQuickLook !== 'none' ? 'List view' : 'Dashboard'}
-                  </h2>
-
-                  {/* Right: Back button for non-overview views */}
-                  {activeView !== 'overview' && (
-                    <button
-                      onClick={() => {
-                        // If viewing individual crew/role, go back to their list view
-                        if (selectedCrew) {
-                          setSelectedCrew(null);
-                          setSelectedCrewId(null);
-                          setExpandedQuickLook('crew');
-                        } else if (selectedRole) {
-                          setSelectedRole(null);
-                          setSelectedRoleId(null);
-                          setExpandedQuickLook('roles');
-                        } else {
-                          // From list view, go back to overview
-                          setActiveView('overview');
-                          setExpandedQuickLook('none');
-                        }
-                      }}
-                      className="absolute right-0 transition-all duration-200"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        color: '#7C7F82',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#DBDADB';
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#7C7F82';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      Back
-                    </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-              
+
+                {/* Secondary nav - Overview/Crew/Roles */}
+                <div className="sticky top-7 z-40" style={{ marginTop: '24px' }}>
+                  <div
+                    className="ai-glass-border"
+                    style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
+                  >
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        height: 'auto',
+                        padding: '16px 8px',
+                        overflowX: 'auto',
+                      }}
+                    >
+                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', width: '100%' }}>
+                        <NavStatsCard
+                          icon={<ChartBarIcon />}
+                          label="Overview"
+                          subtext="Dashboard"
+                          isActive={activeView === 'overview'}
+                          onClick={() => {
+                            setActiveView('overview');
+                            setSelectedCrew(null);
+                            setSelectedRole(null);
+                            setSelectedCrewId(null);
+                            setSelectedRoleId(null);
+                          }}
+                          darkMode
+                          isFirst
+                        />
+                        <NavStatsCard
+                          icon={<UserGroupIcon />}
+                          label="Crew"
+                          count={computedCrewCards.length}
+                          isActive={activeView === 'crew'}
+                          onClick={() => {
+                            setActiveView('crew');
+                            setSelectedCrew(null);
+                            setSelectedRole(null);
+                            setSelectedCrewId(null);
+                            setSelectedRoleId(null);
+                            setCrewPage(1);
+                          }}
+                          darkMode
+                        />
+                        <NavStatsCard
+                          icon={<ShieldCheckIcon />}
+                          label="Roles"
+                          count={computedRoleCards.length}
+                          isActive={activeView === 'roles'}
+                          onClick={() => {
+                            setActiveView('roles');
+                            setSelectedCrew(null);
+                            setSelectedRole(null);
+                            setSelectedCrewId(null);
+                            setSelectedRoleId(null);
+                            setRolePage(1);
+                          }}
+                          darkMode
+                        />
+                        <div ref={timeWindowRef} style={{ display: 'flex' }}>
+                          <NavStatsCard
+                            label="Time window"
+                            subtext={formatDateRangeForNav()}
+                            darkMode
+                            isActive={isTimeWindowOpen}
+                            onClick={() => setIsTimeWindowOpen(!isTimeWindowOpen)}
+                            isLast
+                          />
+                        </div>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Two-panel layout */}
+                <div className="flex flex-col min-[1200px]:flex-row gap-6" style={{ marginTop: '24px', alignItems: 'flex-start' }}>
+                  {/* Left panel - dashboard content */}
+                  <div className="w-full min-[1200px]:flex-[0_0_55%] min-[1200px]:max-w-[55%]" style={{ minWidth: 0 }}>
               {/* Conditional content: Individual Crew Dashboard, Dashboard, or Expanded Quick Looks */}
               {selectedCrew ? (
                 /* Individual Crew Dashboard */
@@ -2154,13 +1812,11 @@ export default function FairnessDashboardPage() {
                 >
                   {/* 2 Mini cards in a row - wrapped in translucent card */}
                   <div
-                    className="graph-container-glass-border"
+                    className="ai-glass-border"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2219,13 +1875,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew preferences met by date line graph */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2270,13 +1924,11 @@ export default function FairnessDashboardPage() {
 
                     return (
                       <div
-                        className="mt-4 graph-container-glass-border"
+                        className="ai-glass-border mt-4"
                         style={{
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                          borderRadius: '1.5rem',
+                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                          ...aiGlassLightContentStyle('1.5rem', 0.6),
+                          height: 'auto',
                           padding: 16,
                         }}
                       >
@@ -2340,13 +1992,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Preferences met graph - individual crew level */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2370,13 +2020,11 @@ export default function FairnessDashboardPage() {
                 <>
                   {/* 2 Mini cards in a row - Fairness Index and Time Share */}
                   <div
-                    className="graph-container-glass-border"
+                    className="ai-glass-border"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2428,13 +2076,11 @@ export default function FairnessDashboardPage() {
                   {/* Crew mins distribution box plot */}
                   {computedRoleBoxPlot.hasDistribution && (
                     <div
-                      className="mt-4 graph-container-glass-border"
+                      className="ai-glass-border mt-4"
                       style={{
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        backdropFilter: 'blur(12px)',
-                        WebkitBackdropFilter: 'blur(12px)',
-                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                        borderRadius: '1.5rem',
+                        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        height: 'auto',
                         padding: 16,
                       }}
                     >
@@ -2448,13 +2094,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Role assignment heatmap */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2467,13 +2111,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew fairness details table */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2483,17 +2125,15 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                 </>
-              ) : expandedQuickLook === 'none' ? (
+              ) : (
                 <>
                   {/* Fairness Summary Section */}
                   <div
-                    className="graph-container-glass-border"
+                    className="ai-glass-border"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2505,13 +2145,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew Summary Section */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2523,13 +2161,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew preferences met by date line graph */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2541,13 +2177,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Satisfaction distribution box plot */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2562,13 +2196,11 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew preferences met graph */}
                   <div
-                    className="mt-4 graph-container-glass-border"
+                    className="ai-glass-border mt-4"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                      borderRadius: '1.5rem',
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      height: 'auto',
                       padding: 16,
                     }}
                   >
@@ -2578,1327 +2210,526 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                 </>
-              ) : (
-                /* Expanded Quick Looks - Single Column with Pagination */
-                <div 
-                  className="graph-container-glass-border"
-                  style={{ 
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                    borderRadius: '1.5rem',
-                    padding: 16,
-                    overflow: 'hidden',
-                  }}
-                >
-                <div className="flex flex-col flex-1 relative">
-                  {/* Search Button and Bar - Positioned in left corner above number circles */}
-                  <div 
-                    style={{ 
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 4,
-                      zIndex: 10,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 16,
-                    }}
-                  >
-                    {/* Search button - width matches number column (24px) for alignment */}
-                    <div
-                      className="ai-glass-border"
-                      style={{
-                        ...aiGlassBorderStyle('9999px'),
-                        width: 26,
-                        height: 26,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <button
-                        onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                        className="flex items-center justify-center transition-all"
-                        style={{
-                          ...aiGlassContentStyle('9999px'),
-                          cursor: 'pointer',
-                          border: 'none',
-                          transition: 'background 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-                      >
-                        <MagnifyingGlassIcon style={{ width: 14, height: 12, color: '#9A999E' }} />
-                      </button>
-                    </div>
-                    
-                    {/* Expanded search pill - appears next to button */}
-                    {isSearchExpanded && (
-                      <div
-                        className="ai-glass-border"
-                        style={{
-                          ...aiGlassBorderStyle('9999px'),
-                          flex: 1,
-                          height: 30,
-                        }}
-                      >
-                        <div
-                          className="flex items-center"
-                          style={{
-                            ...aiGlassContentStyle('9999px'),
-                            padding: '0 16px',
-                          }}
-                        >
-                          <input
-                            type="text"
-                            placeholder="Search"
-                            value={expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery}
-                            onChange={(e) => {
-                              if (expandedQuickLook === 'crew') {
-                                setCrewSearchQuery(e.target.value);
-                                setCrewPage(1);
-                              } else {
-                                setRoleSearchQuery(e.target.value);
-                                setRolePage(1);
-                              }
-                            }}
-                            onBlur={() => {
-                              const query = expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery;
-                              if (!query.trim()) {
-                                setIsSearchExpanded(false);
-                              }
-                            }}
-                            autoFocus
-                            className="focus:outline-none focus:ring-0 flex-1"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#FFFFFF',
-                              fontFamily: 'var(--font-open-sans)',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              width: '100%',
-                            }}
-                          />
-                          {(expandedQuickLook === 'crew' ? crewSearchQuery : roleSearchQuery) && (
-                            <button
-                              onClick={() => {
-                                if (expandedQuickLook === 'crew') {
-                                  setCrewSearchQuery('');
-                                  setCrewPage(1);
-                                } else {
-                                  setRoleSearchQuery('');
-                                  setRolePage(1);
-                                }
-                                setIsSearchExpanded(false);
-                              }}
-                              className="transition-all hover:brightness-125"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#9A999E',
-                                cursor: 'pointer',
-                                padding: 0,
-                                marginLeft: 12,
-                                fontSize: '16px',
-                                lineHeight: 1,
-                              }}
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div 
-                    className="flex flex-col gap-3 flex-1"
-                    style={{ 
-                      paddingRight: '4px',
-                      paddingTop: '46px',
-                    }}
-                  >
-                    {expandedQuickLook === 'crew' && (
-                      <>
-                        {(() => {
-                          const filteredCrewCards = computedCrewCards.filter(card =>
-                            card.title.toLowerCase().includes(crewSearchQuery.toLowerCase())
-                          );
-                          return filteredCrewCards
-                            .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
-                            .map((card, index, arr) => {
-                              const itemNumber = (crewPage - 1) * CREW_CARDS_PER_PAGE + index + 1;
-                              const isFirst = index === 0;
-                              const isLast = index === arr.length - 1;
-                              return (
-                                <ListRowItem
-                                  key={card.id}
-                                  itemNumber={itemNumber}
-                                  isFirst={isFirst}
-                                  isLast={isLast}
-                                  onClick={() => {
-                                    setSelectedCrew(card);
-                                    setSelectedRole(null); // Clear any selected role
-                                    setSelectedRoleId(null); // Clear role ID from localStorage
-                                    setExpandedQuickLook('none'); // Reset so expand button shows "expand"
-                                  setActiveView('crew'); // Sync dropdown to show "Crew"
-                                }}
-                              >
-                                <CrewQuickLookCardStatic 
-                                  card={card} 
-                                  onClick={() => {
-                                    setSelectedCrew(card);
-                                    setSelectedRole(null); // Clear any selected role
-                                    setSelectedRoleId(null); // Clear role ID from localStorage
-                                    setExpandedQuickLook('none'); // Reset so expand button shows "expand"
-                                    setActiveView('crew'); // Sync dropdown to show "Crew"
-                                  }}
-                                />
-                              </ListRowItem>
-                            );
-                          });
-                        })()}
-                      </>
-                    )}
-                    {expandedQuickLook === 'roles' && (
-                      <>
-                        {(() => {
-                          const filteredRoleCards = computedRoleCards.filter(card =>
-                            card.name.toLowerCase().includes(roleSearchQuery.toLowerCase())
-                          );
-                          return filteredRoleCards
-                            .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
-                            .map((card, index, arr) => {
-                              const itemNumber = (rolePage - 1) * ROLE_CARDS_PER_PAGE + index + 1;
-                              const isFirst = index === 0;
-                              const isLast = index === arr.length - 1;
-                              return (
-                                <ListRowItem 
-                                  key={card.id} 
-                                  itemNumber={itemNumber} 
-                                  isFirst={isFirst} 
-                                  isLast={isLast}
-                                  onClick={() => {
-                                    setSelectedRole(card);
-                                    setSelectedCrew(null);
-                                    setSelectedCrewId(null);
-                                    setExpandedQuickLook('none');
-                                    setActiveView('roles');
-                                  }}
-                                >
-                                  <RoleQuickLookCardStatic 
-                                    card={card} 
-                                    onClick={() => {
-                                      setSelectedRole(card);
-                                      setSelectedCrew(null);
-                                      setSelectedCrewId(null);
-                                      setExpandedQuickLook('none');
-                                      setActiveView('roles');
-                                    }}
-                                  />
-                                </ListRowItem>
-                              );
-                            });
-                        })()}
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Pagination buttons */}
-                  {(() => {
-                    const cardsPerPage = expandedQuickLook === 'crew' ? CREW_CARDS_PER_PAGE : ROLE_CARDS_PER_PAGE;
-                    const filteredCards = expandedQuickLook === 'crew'
-                      ? computedCrewCards.filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
-                      : computedRoleCards.filter(card => card.name.toLowerCase().includes(roleSearchQuery.toLowerCase()));
-                    const totalCards = filteredCards.length;
-                    const totalPages = Math.ceil(totalCards / cardsPerPage);
-                    const currentPage = expandedQuickLook === 'crew' ? crewPage : rolePage;
-                    const setPage = expandedQuickLook === 'crew' ? setCrewPage : setRolePage;
-
-                    if (totalPages <= 1) return null;
-
-                    return (
-                      <div className="flex items-center justify-center mt-4">
-                        <div className="ai-glass-border" style={aiGlassBorderStyle('9999px')}>
-                          <div
-                            className="flex items-center gap-1"
-                            style={{
-                              ...aiGlassContentStyle('9999px', 0.85),
-                              padding: '0 14px',
-                              height: '36px',
-                            }}
-                          >
-                            <button
-                              onClick={() => setPage(p => Math.max(1, p - 1))}
-                              disabled={currentPage === 1}
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '12px',
-                                color: currentPage === 1 ? '#7C7F82' : '#DBDADB',
-                                background: 'none',
-                                border: 'none',
-                                cursor: currentPage === 1 ? 'default' : 'pointer',
-                                padding: '0 4px',
-                              }}
-                            >
-                              ◀
-                            </button>
-                            {(() => {
-                              // Show all pages if 10 or fewer
-                              if (totalPages <= 10) {
-                                return Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                  <button
-                                    key={page}
-                                    onClick={() => setPage(page)}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '14px',
-                                      fontWeight: currentPage === page ? 600 : 400,
-                                      color: currentPage === page ? '#FFFFFF' : '#7C7F82',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                ));
-                              }
-
-                              // Use ellipsis for more than 10 pages
-                              const pages: (number | string)[] = [];
-                              pages.push(1);
-                              if (currentPage > 3) pages.push('...');
-                              for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-                                if (!pages.includes(i)) pages.push(i);
-                              }
-                              if (currentPage < totalPages - 2) pages.push('...');
-                              if (!pages.includes(totalPages)) pages.push(totalPages);
-
-                              return pages.map((page, idx) =>
-                                page === '...' ? (
-                                  <span
-                                    key={`ellipsis-${idx}`}
-                                    className="text-sm px-1"
-                                    style={{ color: '#7C7F82', fontFamily: 'var(--font-open-sans)' }}
-                                  >
-                                    ...
-                                  </span>
-                                ) : (
-                                  <button
-                                    key={page}
-                                    onClick={() => setPage(page as number)}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '14px',
-                                      fontWeight: currentPage === page ? 600 : 400,
-                                      color: currentPage === page ? '#FFFFFF' : '#7C7F82',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                )
-                              );
-                            })()}
-                            <button
-                              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                              disabled={currentPage === totalPages}
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '12px',
-                                color: currentPage === totalPages ? '#7C7F82' : '#DBDADB',
-                                background: 'none',
-                                border: 'none',
-                                cursor: currentPage === totalPages ? 'default' : 'pointer',
-                                padding: '0 4px',
-                              }}
-                            >
-                              ▶
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-                </div>
               )}
             </div>
 
-            {/* Right card - Quick Looks (full width when stacked, 45% when side-by-side) */}
-            <div
-              className="w-full min-[1200px]:w-[45%] rounded-3xl px-4 py-4 graph-container-glass-border" 
-              style={{ 
-                backgroundColor: '#141318',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-              }}
-            >
-              {/* Time Selection - always visible */}
-              <div className="flex flex-col graph-container-glass-border" style={{ 
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                    borderRadius: '1.5rem',
-                    overflow: 'visible',
-                    paddingTop: 16,
-                    paddingLeft: 16,
-                    paddingRight: 16,
-                    paddingBottom: 22,
-                    gap: 16,
-                  }}>
-                    {/* Title inside container */}
-                    <div className="flex items-center justify-between">
-                      <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px'), display: 'inline-block' }}>
-                        <div
-                          style={{
-                            ...aiGlassContentStyle('9999px'),
-                            padding: '6px 14px',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            color: '#DBDADB',
-                          }}
-                        >
-                          Time Selection
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Year carousel row */}
-                    <div className="flex items-center justify-center gap-2">
-                      <button 
-                        className="flex items-center justify-center transition-all circle-button-glass-border"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          opacity: yearSelectionIndex > 0 ? 1 : 0.3,
-                        }}
-                        onClick={() => {
-                          setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1));
-                          // Keep month selection the same when year changes
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                        disabled={yearSelectionIndex === 0}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                          <path d="M7.5 9L4.5 6L7.5 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                      
-                      {/* Year cards */}
-                      <div className="flex gap-2">
-                        {availableYears.map((year, index) => {
-                          const isSelected = index === yearSelectionIndex;
-                          
-                          // Check if all days in all months of this year are selected
-                          const yearMonthOptions = generateMonthOptions(year);
-                          let allDaysSelectedInYear = true;
-                          for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
-                            const key = getSelectionKey(year, monthIdx);
-                            const monthDays = yearMonthOptions[monthIdx].days;
-                            const monthDisabled = disabledDays[monthIdx] || new Set();
-                            const monthSelected = selectedDays[key] || new Set();
-                            for (let d = 1; d <= monthDays; d++) {
-                              if (!monthDisabled.has(d) && !monthSelected.has(d)) {
-                                allDaysSelectedInYear = false;
-                                break;
-                              }
-                            }
-                            if (!allDaysSelectedInYear) break;
-                          }
-                          
-                          return (
-                            <button
-                              key={year}
-                              onClick={() => {
-                                if (index === yearSelectionIndex) {
-                                  // Toggle all days in all months of this year
-                                  const yearMonths = generateMonthOptions(year);
-                                  const newSelectedDays = { ...selectedDays };
-
-                                  if (allDaysSelectedInYear) {
-                                    // Deselect all days in all months
-                                    for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
-                                      const key = getSelectionKey(year, monthIdx);
-                                      const monthDays = yearMonths[monthIdx].days;
-                                      const monthDisabled = disabledDays[monthIdx] || new Set();
-                                      const newMonthSelected = new Set(newSelectedDays[key] || []);
-                                      for (let d = 1; d <= monthDays; d++) {
-                                        if (!monthDisabled.has(d)) {
-                                          newMonthSelected.delete(d);
-                                        }
-                                      }
-                                      newSelectedDays[key] = newMonthSelected;
-                                    }
-                                  } else {
-                                    // Select all days in all months
-                                    for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
-                                      const key = getSelectionKey(year, monthIdx);
-                                      const monthDays = yearMonths[monthIdx].days;
-                                      const monthDisabled = disabledDays[monthIdx] || new Set();
-                                      const newMonthSelected = new Set(newSelectedDays[key] || []);
-                                      for (let d = 1; d <= monthDays; d++) {
-                                        if (!monthDisabled.has(d)) {
-                                          newMonthSelected.add(d);
-                                        }
-                                      }
-                                      newSelectedDays[key] = newMonthSelected;
-                                    }
-                                  }
-
-                                  setSelectedDays(newSelectedDays);
-                                } else {
-                                  setYearSelectionIndex(index);
-                                }
-                              }}
-                              className="px-4 py-1.5 rounded-lg transition-all duration-200"
-                              style={{
-                                background: allDaysSelectedInYear && isSelected
-                                  ? 'rgb(239, 68, 68)'
-                                  : isSelected ? 'rgb(39, 38, 41)' : 'rgb(28, 27, 31)',
-                                color: allDaysSelectedInYear && isSelected ? '#FFFFFF' : isSelected ? '#DBDADB' : '#7C7F82',
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '13px',
-                                fontWeight: 400,
-                                border: 'none',
-                                cursor: 'pointer',
-                                transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                                boxShadow: isSelected
-                                  ? '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
-                                  : '0 2px 6px rgba(0, 0, 0, 0.15)',
-                              }}
-                            >
-                              {year}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
-                      <button 
-                        className="flex items-center justify-center transition-all circle-button-glass-border"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.3,
-                        }}
-                        onClick={() => {
-                          setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1));
-                          // Keep month selection the same when year changes
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                        disabled={yearSelectionIndex >= yearCardCount - 1}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                          <path d="M4.5 3L7.5 6L4.5 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Month carousel with side arrows */}
-                    <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
-                      <button 
-                        className="flex items-center justify-center transition-all circle-button-glass-border"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          opacity: timeSelectionIndex > 0 ? 1 : 0.3,
-                          flexShrink: 0,
-                        }}
-                        onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                        disabled={timeSelectionIndex === 0}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                          <path d="M7.5 9L4.5 6L7.5 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-
-                      {/* Horizontal deck of overlapping cards */}
-                      <div className="flex-1 relative">
-                        {(() => {
-                      // Calculate card dimensions at container level
-                      const cardPadding = 12;
-                      const titleHeight = 16;
-                      
-                      // Monthly view dimensions
-                      const monthlyCircleSize = 24;
-                      const monthlyCircleGap = 5;
-                      const monthlyMaxRows = 6;
-                      const monthlyCols = 7;
-                      const monthlyGridHeight = (monthlyCircleSize * monthlyMaxRows) + (monthlyCircleGap * (monthlyMaxRows - 1));
-                      const monthlyCardHeight = cardPadding + titleHeight + cardPadding + monthlyGridHeight + cardPadding;
-                      const monthlyCardWidth = (monthlyCircleSize * monthlyCols) + (monthlyCircleGap * (monthlyCols - 1)) + (cardPadding * 2);
-                      
-                      // Yearly view dimensions (2 rows of 6 months)
-                      const yearlyBubbleWidth = 40;
-                      const yearlyBubbleHeight = 28;
-                      const yearlyGapX = 8;
-                      const yearlyGapY = 8;
-                      const yearlyCols = 6;
-                      const yearlyRows = 2;
-                      const yearlyGridWidth = (yearlyBubbleWidth * yearlyCols) + (yearlyGapX * (yearlyCols - 1));
-                      const yearlyGridHeight = (yearlyBubbleHeight * yearlyRows) + (yearlyGapY * (yearlyRows - 1));
-                      const yearlyCardHeight = cardPadding + titleHeight + cardPadding + yearlyGridHeight + cardPadding;
-                      const yearlyCardWidth = yearlyGridWidth + (cardPadding * 2);
-                      
-                      // Use monthly dimensions only now (yearly is in separate carousel)
-                      const cardHeight = monthlyCardHeight;
-                      const cardWidth = monthlyCardWidth;
-                      const cardCount = monthCardCount;
-                      
-                      return (
-                        <div ref={timeDeckRef} className="relative" style={{ overflow: 'visible', height: cardHeight }}>
-                          {timeDeckWidth > 0 && (() => {
-                            const containerWidth = timeDeckWidth;
-                            const minOverlap = 20;
-                            let overlap = minOverlap;
-                            
-                            // Recalculate overlap to fit container
-                            if (cardCount > 1) {
-                              const totalWidthNeeded = cardWidth * cardCount;
-                              const overlapNeeded = (totalWidthNeeded - containerWidth) / (cardCount - 1);
-                              overlap = Math.max(minOverlap, overlapNeeded);
-                            }
-
-                            // Calculate total width of the deck with the chosen overlap
-                            const totalDeckWidth = cardWidth + (cardCount - 1) * (cardWidth - overlap);
-                            // Calculate centering offset
-                            const centeringOffset = Math.max(0, (containerWidth - totalDeckWidth) / 2);
-                            
-                            return (
-                              <div 
-                                className="absolute inset-0 flex items-center"
-                                style={{ width: '100%' }}
-                              >
-                                {monthOptions.map((option, index) => {
-                                  const isSelected = index === timeSelectionIndex;
-                                  // Position cards left to right with computed overlap, centered in container
-                                  const leftOffset = centeringOffset + index * (cardWidth - overlap);
-                              
-                              // Z-index: selected card on top (100), others based on distance from selected
-                              const zIndex = isSelected 
-                                ? 100 
-                                : cardCount - Math.abs(index - timeSelectionIndex);
-                              
-                              // Calculate gradient colors based on distance from selected
-                              const distanceFromSelected = Math.abs(index - timeSelectionIndex);
-                              const maxDistance = Math.max(timeSelectionIndex, cardCount - 1 - timeSelectionIndex);
-
-                              // Background gradient: lerp from selected (#272629) toward container bg (lighter now)
-                              const t = maxDistance > 0 ? distanceFromSelected / maxDistance : 0;
-                              
-                              // Hover effect for selected card
-                              const isHovered = index === hoveredMonthCardIndex;
-                              const baseR = (isSelected && isHovered) ? 50 : 39;
-                              const baseG = (isSelected && isHovered) ? 49 : 38;
-                              const baseB = (isSelected && isHovered) ? 55 : 41;
-                              
-                              const bgR = isSelected ? baseR : Math.round(39 - t * (39 - 28));
-                              const bgG = isSelected ? baseG : Math.round(38 - t * (38 - 27));
-                              const bgB = isSelected ? baseB : Math.round(41 - t * (41 - 31));
-                              const bgColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
-                              
-                              // Text gradient: lerp toward muted (but still visible)
-                              const textR = isSelected ? 219 : Math.round(219 - t * (219 - 100));
-                              const textG = isSelected ? 218 : Math.round(218 - t * (218 - 99));
-                              const textB = isSelected ? 219 : Math.round(219 - t * (219 - 100));
-                              const textColor = `rgb(${textR}, ${textG}, ${textB})`;
-                              
-                              // Label gradient: lerp toward muted
-                              const labelR = isSelected ? 124 : Math.round(124 - t * (124 - 70));
-                              const labelG = isSelected ? 127 : Math.round(127 - t * (127 - 72));
-                              const labelB = isSelected ? 130 : Math.round(130 - t * (130 - 74));
-                              const labelColor = `rgb(${labelR}, ${labelG}, ${labelB})`;
-                              
-                              // Scale: selected is full size, shrinks by 1.5% per distance
-                              const cardScale = isSelected ? 1.02 : 1 - (distanceFromSelected * 0.015);
-                              
-                              // All monthly cards use the same max height (6 rows), top-aligned
-                              const thisCardHeight = cardHeight;
-                              const topOffset = 0;
-                              
-                              return (
-                                <div
-                                  key={index}
-                                  className="absolute flex flex-col quick-card-glass-border"
-                                  style={{
-                                    width: cardWidth,
-                                    height: thisCardHeight,
-                                    left: leftOffset,
-                                    top: topOffset,
-                                    background: bgColor,
-                                    boxShadow: isSelected
-                                      ? '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08)'
-                                      : '0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.02)',
-                                    borderRadius: '1.5rem',
-                                    zIndex,
-                                    transform: `scale(${cardScale})`,
-                                    transformOrigin: 'center center',
-                                    transition: 'background 250ms ease-out, transform 250ms ease-out, box-shadow 250ms ease-out, height 250ms ease-out, top 250ms ease-out',
-                                    padding: cardPadding,
-                                    cursor: 'pointer',
-                                  }}
-                                  onClick={(e) => {
-                                    // If we just finished dragging, don't trigger card click
-                                    if (justFinishedDraggingRef.current) return;
-
-                                    // Don't trigger if clicking on a day circle
-                                    const target = e.target as HTMLElement;
-                                    if (target.tagName === 'BUTTON' && target !== e.currentTarget) return;
-
-                                    if (index === timeSelectionIndex) {
-                                      // Toggle all days in this month
-                                      const days = option.days;
-                                      const key = getSelectionKey(selectedYear, index);
-                                      const currentSelected = selectedDays[key] || new Set();
-                                      const disabled = disabledDays[index] || new Set();
-
-                                      // Check if all available days are selected
-                                      let allSelected = true;
-                                      for (let d = 1; d <= days; d++) {
-                                        if (!disabled.has(d) && !currentSelected.has(d)) {
-                                          allSelected = false;
-                                          break;
-                                        }
-                                      }
-
-                                      const newSelected = new Set(currentSelected);
-                                      if (allSelected) {
-                                        // Deselect all available
-                                        for (let d = 1; d <= days; d++) {
-                                          if (!disabled.has(d)) {
-                                            newSelected.delete(d);
-                                          }
-                                        }
-                                      } else {
-                                        // Select all available
-                                        for (let d = 1; d <= days; d++) {
-                                          if (!disabled.has(d)) {
-                                            newSelected.add(d);
-                                          }
-                                        }
-                                      }
-
-                                      setSelectedDays(prev => ({
-                                        ...prev,
-                                        [key]: newSelected
-                                      }));
-                                    } else {
-                                      setTimeSelectionIndex(index);
-                                    }
-                                  }}
-                                  onMouseEnter={() => setHoveredMonthCardIndex(index)}
-                                  onMouseLeave={() => setHoveredMonthCardIndex(null)}
-                                >
-                                  {/* Month label at top */}
-                                  <span 
-                                    className="month-label" 
-                                    style={{ 
-                                      fontFamily: 'var(--font-open-sans)', 
-                                      color: textColor,
-                                      fontSize: 14,
-                                      fontWeight: 350,
-                                      transition: 'color 250ms ease-out',
-                                      height: titleHeight,
-                                      lineHeight: `${titleHeight}px`,
-                                      marginBottom: cardPadding,
-                                    }}
-                                  >
-                                    {option.value}
-                                  </span>
-                                  
-                                  {/* Day circles grid - 7 columns (calendar layout) */}
-                                  {(() => {
-                                    const days = option.days;
-                                    const startDay = option.startDay;
-                                    const totalCells = startDay + days;
-                                    const rows = Math.ceil(totalCells / monthlyCols);
-                                    
-                                    const fontSize = Math.max(8, Math.min(12, monthlyCircleSize * 0.4));
-                                    
-                                    const key = getSelectionKey(selectedYear, index);
-                                    const monthSelectedDays = selectedDays[key] || new Set();
-                                    const isAnyHoveredInMonth = hoveredDay?.month === index;
-                                    
-                                    return (
-                                      <div 
-                                        style={{ 
-                                          display: 'grid',
-                                          gridTemplateColumns: `repeat(${monthlyCols}, ${monthlyCircleSize}px)`,
-                                          gridTemplateRows: `repeat(${rows}, ${monthlyCircleSize}px)`,
-                                          gap: `${monthlyCircleGap}px`,
-                                          pointerEvents: isSelected ? 'auto' : 'none',
-                                        }}
-                                        onMouseEnter={() => {
-                                          // When entering the calendar grid, clear card hover
-                                          if (isSelected) setHoveredMonthCardIndex(null);
-                                        }}
-                                        onMouseLeave={() => {
-                                          if (isSelected) {
-                                            setHoveredDay(null);
-                                            // Re-enable card hover when leaving grid back to card
-                                            setHoveredMonthCardIndex(index);
-                                          }
-                                        }}
-                                      >
-                                        {/* Empty cells for startDay offset */}
-                                        {Array.from({ length: startDay }, (_, i) => (
-                                          <div key={`empty-${i}`} style={{ width: monthlyCircleSize, height: monthlyCircleSize }} />
-                                        ))}
-                                        
-                                        {/* Day circles */}
-                                        {Array.from({ length: days }, (_, dayIdx) => {
-                                          const dayNum = dayIdx + 1;
-                                          const isDayDisabled = disabledDays[index]?.has(dayNum) ?? false;
-                                          const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
-                                          const isDayHovered = !isDayDisabled && hoveredDay?.month === index && hoveredDay?.day === dayNum;
-                                          
-                                          // Base circle colors (bright when card is selected)
-                                          // Disabled days use colors very close to card bg
-                                          const baseCircleR = isDayDisabled ? bgR + 8 : isDaySelected ? 239 : 79;
-                                          const baseCircleG = isDayDisabled ? bgG + 8 : isDaySelected ? 68 : 78;
-                                          const baseCircleB = isDayDisabled ? bgB + 10 : isDaySelected ? 68 : 83;
-                                          
-                                          // Fade circles toward card bg based on card's distance (t)
-                                          const circleR = Math.round(baseCircleR - t * (baseCircleR - bgR));
-                                          const circleG = Math.round(baseCircleG - t * (baseCircleG - bgG));
-                                          const circleB = Math.round(baseCircleB - t * (baseCircleB - bgB));
-                                          
-                                          const finalCircleColor = `rgb(${circleR}, ${circleG}, ${circleB})`;
-                                          
-                                          // Text color - also fade based on t, disabled days are very dim
-                                          const baseTextBrightness = isDayDisabled ? 50 : isDaySelected ? 255 : 180;
-                                          const fadedTextBrightness = Math.round(baseTextBrightness - t * (baseTextBrightness - (isDayDisabled ? 30 : 60)));
-                                          const circleTextColor = `rgb(${fadedTextBrightness}, ${fadedTextBrightness}, ${fadedTextBrightness})`;
-                                          
-                                          return (
-                                            <button
-                                              key={dayNum}
-                                              className="flex items-center justify-center transition-all duration-150"
-                                              disabled={isDayDisabled}
-                                              style={{
-                                                width: monthlyCircleSize,
-                                                height: monthlyCircleSize,
-                                                borderRadius: '50%',
-                                                background: finalCircleColor,
-                                                boxShadow: isDayDisabled
-                                                  ? 'none'
-                                                  : isDaySelected
-                                                    ? 'inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2)'
-                                                    : 'inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
-                                                border: 'none',
-                                                cursor: isDayDisabled ? 'not-allowed' : isSelected ? 'pointer' : 'default',
-                                                transform: isDayHovered && !isDayDisabled ? 'scale(1.2)' : 'scale(1)',
-                                                zIndex: isDayHovered ? 10 : 1,
-                                                userSelect: 'none',
-                                                fontSize: `${fontSize}px`,
-                                                fontFamily: 'var(--font-open-sans)',
-                                                fontWeight: 400,
-                                                color: circleTextColor,
-                                              }}
-                                              onMouseDown={(e) => {
-                                                if (!isSelected || isDayDisabled) return;
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleDragStart(index, dayNum);
-                                              }}
-                                              onMouseEnter={() => {
-                                                if (!isSelected || isDayDisabled) return;
-                                                setHoveredDay({ month: index, day: dayNum });
-                                                if (isDragging) {
-                                                  handleDragOver(index, dayNum);
-                                                }
-                                              }}
-                                            >
-                                              {dayNum}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })()}
-                      </div>
-
-                      <button 
-                        className="flex items-center justify-center transition-all circle-button-glass-border"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.3,
-                          flexShrink: 0,
-                        }}
-                        onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
-                        onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.25)'}
-                        onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                        disabled={timeSelectionIndex >= monthCardCount - 1}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                          <path d="M4.5 3L7.5 6L4.5 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-              {/* Quick Looks container */}
-              <div 
-                className="flex flex-col p-4 graph-container-glass-border"
-                style={{ 
-                  marginTop: '1.2rem',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.03)',
-                  borderRadius: '1.5rem',
-                }}
-              >
-                {/* Quick Looks title */}
-                <div className="mb-4">
-                  <div className="ai-glass-border" style={{ ...aiGlassBorderStyle('9999px'), display: 'inline-block' }}>
-                    <div
-                      style={{
-                        ...aiGlassContentStyle('9999px'),
-                        padding: '6px 14px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#DBDADB',
-                      }}
-                    >
-                      Quick Looks
-                    </div>
-                  </div>
-                </div>
-
-                {/* Two-column layout for Quick Looks content */}
-                <div className="flex gap-4">
-                  {/* Left column - fixed width for buttons/circles */}
-                  <div className="flex flex-col items-center" style={{ width: 24 }}>
-                  {/* Crew icon button */}
-                  <button
-                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125 circle-button-glass-border"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 24 24" 
-                      fill="#DBDADB" 
-                      className="w-3 h-3"
-                    >
-                      <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clipRule="evenodd" />
-                      <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
-                    </svg>
-                  </button>
-
-                  {/* Faded connecting line - extends to center arrows with main card */}
-                  <div
-                    style={{
-                      width: 1,
-                      height: 76,
-                      background: 'linear-gradient(to bottom, transparent 0%, transparent 10%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.15) 60%, transparent 90%, transparent 100%)',
-                    }}
-                  />
-
-                  {/* Up arrow button */}
-                  <button
-                    onClick={carouselNav.goUp}
-                    disabled={!carouselNav.canGoUp}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${carouselNav.canGoUp ? 'hover:brightness-125' : ''}`}
-                    style={{
-                      background: carouselNav.canGoUp ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: carouselNav.canGoUp ? '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)' : 'none',
-                      cursor: carouselNav.canGoUp ? 'pointer' : 'default',
-                      opacity: carouselNav.canGoUp ? 1 : 0.3,
-                    }}
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#DBDADB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="18 15 12 9 6 15" />
-                    </svg>
-                  </button>
-
-                  {/* Gap between arrows */}
-                  <div style={{ height: 6 }} />
-
-                  {/* Down arrow button */}
-                  <button
-                    onClick={carouselNav.goDown}
-                    disabled={!carouselNav.canGoDown}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 circle-button-glass-border ${carouselNav.canGoDown ? 'hover:brightness-125' : ''}`}
-                    style={{
-                      background: carouselNav.canGoDown ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: carouselNav.canGoDown ? '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)' : 'none',
-                      cursor: carouselNav.canGoDown ? 'pointer' : 'default',
-                      opacity: carouselNav.canGoDown ? 1 : 0.3,
-                    }}
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#DBDADB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-
-                  {/* Curved connecting line to expand button */}
-                  <svg
-                    width="24"
-                    height="92"
-                    style={{ overflow: 'visible' }}
-                  >
-                    <defs>
-                      <linearGradient id="curvedLineGradient" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="48" y2="84">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="35%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="65%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M 12 0 L 12 60 Q 12 84, 36 84 L 48 84"
-                      fill="none"
-                      stroke="url(#curvedLineGradient)"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-
-                  {/* Line segment from curved line to roles icon */}
-                  <div
-                    style={{
-                      width: 1,
-                      height: 51,
-                      marginTop: -32,
-                      background: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 60%, transparent 100%)',
-                    }}
-                  />
-
-                  {/* Roles icon button */}
-                  <button
-                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 24 24" 
-                      fill="#DBDADB" 
-                      className="w-3 h-3"
-                    >
-                      <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 2.682 2.282 16.975 16.975 0 0 0 1.145.742ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-
-                  {/* Line segment from roles icon to role arrows */}
-                  <div
-                    style={{
-                      width: 1,
-                      height: 86,
-                      background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.15) 60%, transparent 100%)',
-                    }}
-                  />
-
-                  {/* Role Up arrow button */}
-                  <button
-                    onClick={roleCarouselNav.goUp}
-                    disabled={!roleCarouselNav.canGoUp}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${roleCarouselNav.canGoUp ? 'hover:brightness-125' : ''}`}
-                    style={{
-                      background: roleCarouselNav.canGoUp ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: roleCarouselNav.canGoUp ? '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)' : 'none',
-                      cursor: roleCarouselNav.canGoUp ? 'pointer' : 'default',
-                      opacity: roleCarouselNav.canGoUp ? 1 : 0.3,
-                    }}
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#DBDADB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="18 15 12 9 6 15" />
-                    </svg>
-                  </button>
-
-                  {/* Gap between role arrows */}
-                  <div style={{ height: 6 }} />
-
-                  {/* Role Down arrow button */}
-                  <button
-                    onClick={roleCarouselNav.goDown}
-                    disabled={!roleCarouselNav.canGoDown}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${roleCarouselNav.canGoDown ? 'hover:brightness-125' : ''}`}
-                    style={{
-                      background: roleCarouselNav.canGoDown ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      boxShadow: roleCarouselNav.canGoDown ? '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)' : 'none',
-                      cursor: roleCarouselNav.canGoDown ? 'pointer' : 'default',
-                      opacity: roleCarouselNav.canGoDown ? 1 : 0.3,
-                    }}
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#DBDADB"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-
-                  {/* Curved connecting line to role expand button */}
-                  <svg
-                    width="24"
-                    height="112"
-                    style={{ overflow: 'visible' }}
-                  >
-                    <defs>
-                      <linearGradient id="rolesCurvedLineGradient" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="48" y2="104">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="35%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="65%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M 12 0 L 12 80 Q 12 104, 36 104 L 48 104"
-                      fill="none"
-                      stroke="url(#rolesCurvedLineGradient)"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
-
-                {/* Right column - flexible width for cards */}
-                <div className="flex-1 flex flex-col">
-                  {/* Crew members title */}
-                  <span 
-                    className="text-med mb-2" 
-                    style={{ 
-                      fontFamily: 'var(--font-open-sans)', 
-                      color: '#DBDADB', 
-                      fontWeight: 350 
-                    }}
-                  >
-                    Crew members
-                  </span>
-                  <CrewQuickLookCarousel
-                    cards={computedCrewCards}
-                    renderButtons={false}
-                    onNavigationChange={handleCarouselNavigationChange}
-                    onCardClick={(card) => {
-                      setSelectedCrew(card);
-                      setSelectedRole(null); // Clear any selected role
-                      setSelectedRoleId(null); // Clear role ID from localStorage
-                      setExpandedQuickLook('none'); // Reset so expand button shows "expand"
-                      setActiveView('crew'); // Sync dropdown to show "Crew"
-                    }}
-                  />
-
-                  {/* Expand/Collapse button */}
-                  <div className="flex items-center justify-start gap-2 mt-3">
-                    <button
-                      onClick={() => {
-                        setCrewPage(1);
-                        setSelectedCrew(null); // Clear individual crew selection
-                        setSelectedRole(null); // Clear individual role selection
-                        const newState = expandedQuickLook === 'crew' ? 'none' : 'crew';
-                        setExpandedQuickLook(newState);
-                        setActiveView(newState === 'none' ? 'overview' : 'crew'); // Sync dropdown
-                      }}
-                      className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.25)',
-                        backdropFilter: 'blur(12px)',
-                        WebkitBackdropFilter: 'blur(12px)',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#DBDADB"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        {/* Up and down arrows (expand symbol) */}
-                        <polyline points="17 8 12 3 7 8" />
-                        <polyline points="7 16 12 21 17 16" />
-                      </svg>
-                    </button>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        fontWeight: 350,
-                      }}
-                    >
-                      {expandedQuickLook === 'crew' ? 'Shrink' : 'Expand'} {carouselNav.totalCount - 1} more crew members
-                    </span>
-                  </div>
-
-                  {/* Roles section */}
-                  <div style={{ marginTop: '0.75rem' }}>
-                    {/* Roles title */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <span 
-                        className="text-med" 
-                        style={{ 
-                          fontFamily: 'var(--font-open-sans)', 
-                          color: '#DBDADB', 
-                          fontWeight: 350 
-                        }}
-                      >
-                        Roles
-                      </span>
-                    </div>
-                    
-                    <RoleQuickLookCarousel
-                      cards={computedRoleCards}
-                      renderButtons={false}
-                      onNavigationChange={handleRoleCarouselNavigationChange}
-                      onCardClick={(card) => {
-                        setSelectedRole(card);
-                        setSelectedCrew(null); // Clear any selected crew
-                        setSelectedCrewId(null); // Clear crew ID from localStorage
-                        setExpandedQuickLook('none'); // Reset so expand button shows "expand"
-                        setActiveView('roles'); // Sync dropdown to show "Roles"
-                      }}
-                    />
-
-                    {/* Role Expand/Collapse button */}
-                    <div className="flex items-center justify-start gap-2 mt-3">
-                      <button
-                        onClick={() => {
-                          setRolePage(1);
-                          setSelectedCrew(null); // Clear individual crew selection
-                          setSelectedRole(null); // Clear individual role selection
-                          const newState = expandedQuickLook === 'roles' ? 'none' : 'roles';
-                          setExpandedQuickLook(newState);
-                          setActiveView(newState === 'none' ? 'overview' : 'roles'); // Sync dropdown
-                        }}
-                        className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#DBDADB"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          {/* Up and down arrows (expand symbol) */}
-                          <polyline points="17 8 12 3 7 8" />
-                          <polyline points="7 16 12 21 17 16" />
-                        </svg>
-                      </button>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '14px',
-                          color: 'rgba(255, 255, 255, 0.5)',
-                          fontWeight: 350,
-                        }}
-                      >
-                        {expandedQuickLook === 'roles' ? 'Shrink' : 'Expand'} {roleCarouselNav.totalCount - 1} more roles
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </div>
+            {/* Right panel */}
+            <div className="w-full min-[1200px]:flex-[0_0_45%] min-[1200px]:max-w-[45%]" style={{ minWidth: 0 }}>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+          </div>
+        </div>
+        </div>
+      </main>
+
+      {/* User dropdown menu - rendered at root level with fixed positioning */}
+      {isUserMenuOpen && userMenuRef.current && (
+        <div
+          ref={(el) => {
+            userDropdownRef.current = el;
+            if (el && userMenuRef.current) {
+              const rect = userMenuRef.current.getBoundingClientRect();
+              el.style.top = `${rect.bottom + 16}px`;
+              el.style.left = `${rect.left}px`;
+              el.style.width = `${rect.width}px`;
+            }
+          }}
+          className="ai-glass-border"
+          style={{
+            ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
+            position: 'fixed',
+            zIndex: 99999,
+          }}
+        >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1rem', 0.6),
+              padding: '8px',
+              position: 'relative',
+              zIndex: 5,
+            }}
+          >
+            {user && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  marginBottom: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#DBDADB',
+                  }}
+                >
+                  {user.name}
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    color: '#7C7F82',
+                    marginTop: '2px',
+                  }}
+                >
+                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+                </div>
+              </div>
+            )}
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  router.push('/admin');
+                }}
+                className="w-full transition-all"
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '14px',
+                  color: '#DBDADB',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                Back to stores
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full transition-all"
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-open-sans)',
+                fontSize: '14px',
+                color: '#DBDADB',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Time window dropdown - rendered at root level with fixed positioning */}
+      {isTimeWindowOpen && timeWindowRef.current && (
+        <div
+          ref={(el) => {
+            timeWindowDropdownRef.current = el;
+            if (el && timeWindowRef.current) {
+              const rect = timeWindowRef.current.getBoundingClientRect();
+              el.style.top = `${rect.bottom + 16}px`;
+              el.style.right = `${window.innerWidth - rect.right}px`;
+            }
+          }}
+          className="ai-glass-border"
+          style={{
+            ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+            position: 'fixed',
+            zIndex: 1000,
+            width: '400px',
+          }}
+        >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1.5rem', 0.6),
+              padding: '16px',
+              maxHeight: '600px',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Year carousel row */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                className="flex items-center justify-center transition-all ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                  width: 28,
+                  height: 28,
+                  opacity: yearSelectionIndex > 0 ? 1 : 0.4,
+                }}
+                onClick={() => {
+                  setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1));
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                disabled={yearSelectionIndex === 0}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    ...aiGlassLightContentStyle('50%', 0.5),
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </button>
+
+              {/* Year cards */}
+              <div className="flex gap-2">
+                {availableYears.map((year, index) => {
+                  const isSelected = index === yearSelectionIndex;
+
+                  // Check if all days in all months of this year are selected
+                  const yearMonthOptions = generateMonthOptions(year);
+                  let allDaysSelectedInYear = true;
+                  for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
+                    const key = getSelectionKey(year, monthIdx);
+                    const monthDays = yearMonthOptions[monthIdx].days;
+                    const monthDisabled = disabledDays[monthIdx] || new Set();
+                    const monthSelected = selectedDays[key] || new Set();
+                    for (let d = 1; d <= monthDays; d++) {
+                      if (!monthDisabled.has(d) && !monthSelected.has(d)) {
+                        allDaysSelectedInYear = false;
+                        break;
+                      }
+                    }
+                    if (!allDaysSelectedInYear) break;
+                  }
+
+                  return (
+                    <button
+                      key={year}
+                      className={isSelected ? 'ai-glass-border' : ''}
+                      onClick={() => {
+                        if (index === yearSelectionIndex) {
+                          // Toggle all days in all months of this year
+                          const yearMonths = generateMonthOptions(year);
+                          const newSelectedDays = { ...selectedDays };
+
+                          if (allDaysSelectedInYear) {
+                            // Deselect all days in all months
+                            for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                              const key = getSelectionKey(year, monthIdx);
+                              const monthDays = yearMonths[monthIdx].days;
+                              const monthDisabled = disabledDays[monthIdx] || new Set();
+                              const newMonthSelected = new Set(newSelectedDays[key] || []);
+                              for (let d = 1; d <= monthDays; d++) {
+                                if (!monthDisabled.has(d)) {
+                                  newMonthSelected.delete(d);
+                                }
+                              }
+                              newSelectedDays[key] = newMonthSelected;
+                            }
+                          } else {
+                            // Select all days in all months
+                            for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                              const key = getSelectionKey(year, monthIdx);
+                              const monthDays = yearMonths[monthIdx].days;
+                              const monthDisabled = disabledDays[monthIdx] || new Set();
+                              const newMonthSelected = new Set(newSelectedDays[key] || []);
+                              for (let d = 1; d <= monthDays; d++) {
+                                if (!monthDisabled.has(d)) {
+                                  newMonthSelected.add(d);
+                                }
+                              }
+                              newSelectedDays[key] = newMonthSelected;
+                            }
+                          }
+
+                          setSelectedDays(newSelectedDays);
+                        } else {
+                          setYearSelectionIndex(index);
+                        }
+                      }}
+                      style={{
+                        ...(isSelected ? aiGlassLightBorderStyle('0.5rem', '0, 0, 0', 0.08) : {}),
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        transition: 'transform 200ms ease-out',
+                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '6px 16px',
+                          borderRadius: '0.5rem',
+                          background: isSelected ? 'rgb(239, 68, 68)' : 'transparent',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '13px',
+                          fontWeight: isSelected ? 500 : 400,
+                          color: isSelected ? '#FFFFFF' : '#7C7F82',
+                          transition: 'all 200ms ease-out',
+                        }}
+                      >
+                        {year}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                className="flex items-center justify-center transition-all ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                  width: 28,
+                  height: 28,
+                  opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.4,
+                }}
+                onClick={() => {
+                  setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1));
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                disabled={yearSelectionIndex >= yearCardCount - 1}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    ...aiGlassLightContentStyle('50%', 0.5),
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </button>
+            </div>
+
+            {/* Month card with navigation arrows */}
+            <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
+              <button
+                className="flex items-center justify-center transition-all ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                  width: 32,
+                  height: 32,
+                  flexShrink: 0,
+                  opacity: timeSelectionIndex > 0 ? 1 : 0.4,
+                }}
+                onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                disabled={timeSelectionIndex === 0}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    ...aiGlassLightContentStyle('50%', 0.5),
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </button>
+
+              {/* Single month card - glass style */}
+              <div className="flex-1 flex justify-center">
+                {(() => {
+                  const option = monthOptions[timeSelectionIndex];
+                  if (!option) return null;
+
+                  const cardPadding = 16;
+                  const circleSize = 28;
+                  const circleGap = 6;
+                  const cols = 7;
+
+                  const days = option.days;
+                  const startDay = option.startDay;
+                  const totalCells = startDay + days;
+                  const rows = Math.ceil(totalCells / cols);
+
+                  const key = getSelectionKey(selectedYear, option.monthIndex);
+                  const monthSelectedDays = selectedDays[key] || new Set();
+                  const monthDisabledDays = disabledDays[option.monthIndex] || new Set();
+
+                  // Check if all available days are selected
+                  let allDaysSelected = true;
+                  for (let d = 1; d <= days; d++) {
+                    if (!monthDisabledDays.has(d) && !monthSelectedDays.has(d)) {
+                      allDaysSelected = false;
+                      break;
+                    }
+                  }
+
+                  return (
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
+                        cursor: 'pointer',
+                      }}
+                      onClick={(e) => {
+                        // Don't trigger if clicking on a day button
+                        const target = e.target as HTMLElement;
+                        if (target.tagName === 'BUTTON') return;
+
+                        // Toggle all days in this month
+                        const newSelected = new Set(monthSelectedDays);
+                        if (allDaysSelected) {
+                          for (let d = 1; d <= days; d++) {
+                            if (!monthDisabledDays.has(d)) {
+                              newSelected.delete(d);
+                            }
+                          }
+                        } else {
+                          for (let d = 1; d <= days; d++) {
+                            if (!monthDisabledDays.has(d)) {
+                              newSelected.add(d);
+                            }
+                          }
+                        }
+                        setSelectedDays(prev => ({ ...prev, [key]: newSelected }));
+                      }}
+                    >
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('1rem', 0.5),
+                          padding: cardPadding,
+                        }}
+                      >
+                        {/* Month label */}
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '15px',
+                            fontWeight: 500,
+                            color: '#2C2C2C',
+                            marginBottom: 12,
+                            textAlign: 'center',
+                          }}
+                        >
+                          {option.value}
+                        </div>
+
+                        {/* Day grid */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${cols}, ${circleSize}px)`,
+                            gap: `${circleGap}px`,
+                          }}
+                        >
+                          {/* Empty cells for startDay offset */}
+                          {Array.from({ length: startDay }, (_, i) => (
+                            <div key={`empty-${i}`} style={{ width: circleSize, height: circleSize }} />
+                          ))}
+
+                          {/* Day buttons */}
+                          {Array.from({ length: days }, (_, dayIdx) => {
+                            const dayNum = dayIdx + 1;
+                            const isDayDisabled = monthDisabledDays.has(dayNum);
+                            const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
+                            const isDayHovered = !isDayDisabled && hoveredDay?.month === option.monthIndex && hoveredDay?.day === dayNum;
+
+                            return (
+                              <button
+                                key={dayNum}
+                                type="button"
+                                className="flex items-center justify-center transition-all duration-150"
+                                disabled={isDayDisabled}
+                                style={{
+                                  width: circleSize,
+                                  height: circleSize,
+                                  borderRadius: '50%',
+                                  border: 'none',
+                                  padding: 0,
+                                  cursor: isDayDisabled ? 'not-allowed' : 'pointer',
+                                  transform: isDayHovered ? 'scale(1.15)' : 'scale(1)',
+                                  zIndex: isDayHovered ? 10 : 1,
+                                  opacity: isDayDisabled ? 0.3 : 1,
+                                  background: isDaySelected
+                                    ? 'rgb(239, 68, 68)'
+                                    : isDayDisabled
+                                      ? 'rgba(200, 200, 200, 0.3)'
+                                      : 'rgba(255, 255, 255, 0.6)',
+                                  backdropFilter: 'blur(8px)',
+                                  WebkitBackdropFilter: 'blur(8px)',
+                                  boxShadow: isDaySelected
+                                    ? '0 2px 8px rgba(239, 68, 68, 0.3)'
+                                    : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                  fontFamily: 'var(--font-open-sans)',
+                                  fontSize: '11px',
+                                  fontWeight: 450,
+                                  color: isDaySelected ? '#FFFFFF' : isDayDisabled ? '#A0A0A0' : '#2C2C2C',
+                                }}
+                                onMouseDown={(e) => {
+                                  if (isDayDisabled) return;
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDragStart(option.monthIndex, dayNum);
+                                }}
+                                onMouseEnter={() => {
+                                  if (isDayDisabled) return;
+                                  setHoveredDay({ month: option.monthIndex, day: dayNum });
+                                  if (isDragging) {
+                                    handleDragOver(option.monthIndex, dayNum);
+                                  }
+                                }}
+                                onMouseLeave={() => setHoveredDay(null)}
+                              >
+                                {dayNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <button
+                className="flex items-center justify-center transition-all ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                  width: 32,
+                  height: 32,
+                  flexShrink: 0,
+                  opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.4,
+                }}
+                onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                disabled={timeSelectionIndex >= monthCardCount - 1}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    ...aiGlassLightContentStyle('50%', 0.5),
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
