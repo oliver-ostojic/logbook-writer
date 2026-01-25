@@ -541,7 +541,7 @@ export default function Home() {
   // Use API data if available, otherwise fall back to placeholder
   const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
   const effectiveRoles = (apiRoles.length > 0
-    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId }))
+    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId ? String(r.familyId) : null }))
     : rolesData.map(r => ({ ...r, familyId: null }))
   ).sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
 
@@ -553,20 +553,28 @@ export default function Home() {
   // Priority: PUBLISHED > DRAFT > SUPERSEDED
   const dedupeLogbooks = (logbooks: any[]) => {
     const statusPriority: Record<string, number> = { PUBLISHED: 3, DRAFT: 2, SUPERSEDED: 1 };
-    const byDate = new Map<string, any>();
+    const byDate = new Map<string, { logbook: any; versionCount: number }>();
 
     for (const l of logbooks) {
       const dateKey = new Date(l.date).toISOString().split('T')[0];
       const existing = byDate.get(dateKey);
       const currentPriority = statusPriority[l.status] || 0;
-      const existingPriority = existing ? (statusPriority[existing.status] || 0) : -1;
+      const existingPriority = existing ? (statusPriority[existing.logbook.status] || 0) : -1;
 
-      if (currentPriority > existingPriority) {
-        byDate.set(dateKey, l);
+      if (existing) {
+        existing.versionCount++;
+        if (currentPriority > existingPriority) {
+          existing.logbook = l;
+        }
+      } else {
+        byDate.set(dateKey, { logbook: l, versionCount: 1 });
       }
     }
 
-    return Array.from(byDate.values());
+    return Array.from(byDate.values()).map(({ logbook, versionCount }) => ({
+      ...logbook,
+      versionCount,
+    }));
   };
 
   const effectiveLogbooks = apiLogbooks.length > 0
@@ -574,9 +582,10 @@ export default function Home() {
         id: l.id,
         date: parseLocalDate(l.date),
         status: l.status,
-        hasSuperseded: l.hasSupersededVersions || false
+        hasSuperseded: l.hasSupersededVersions || false,
+        versionCount: l.versionCount,
       }))
-    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false }));
+    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false, versionCount: 1 }));
 
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'recent', label: 'Recent' },
@@ -1108,7 +1117,10 @@ export default function Home() {
     // Get subtitle for each item type
     const getSubtitle = (item: any): string => {
       if (type === 'crew') return 'Crew member';
-      if (type === 'logbooks') return formatLogbookDate(item.date);
+      if (type === 'logbooks') {
+        const count = item.versionCount || 1;
+        return count === 1 ? '1 version' : `${count} versions`;
+      }
       return '';
     };
 
