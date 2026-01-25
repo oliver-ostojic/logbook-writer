@@ -485,7 +485,7 @@ export function RoleQuickLookCarousel({ cards = [], onNavigationChange, renderBu
             <div
               key={card.id}
               ref={isMain ? mainCardRef : undefined}
-              className="absolute w-full quick-card-glass-border"
+              className="absolute w-full ai-glass-border"
               style={{
                 borderRadius: '1rem',
                 minHeight: baseCardHeight,

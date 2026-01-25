@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { aiGlassBorderStyle, aiGlassContentStyle, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 export interface NavStatsCardProps {
   /** Step number to show in circle (01, 02, etc.) - not used if icon is provided */
@@ -29,6 +29,8 @@ export interface NavStatsCardProps {
   compact?: boolean;
   /** Text-only mode - no icons/circles, just text with hover highlight */
   textOnly?: boolean;
+  /** Dark mode - light text on dark background */
+  darkMode?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   hideSubtext = false,
   compact = false,
   textOnly = false,
+  darkMode = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -72,7 +75,9 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
         <div
           className="ai-glass-border"
           style={{
-            ...aiGlassLightBorderStyle('20px', '0, 0, 0', 0.08),
+            ...(darkMode
+              ? aiGlassBorderStyle('20px', '180, 170, 200', 0.15)
+              : aiGlassLightBorderStyle('20px', '0, 0, 0', 0.08)),
             position: 'absolute',
             top: textOnly ? 0 : (compact ? -7 : -8),
             bottom: textOnly ? 0 : (compact ? -7 : -8),
@@ -83,12 +88,16 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
         >
           <div
             style={{
-              ...aiGlassLightContentStyle('20px', 1),
+              ...(darkMode
+                ? aiGlassContentStyle('20px', 0.85)
+                : aiGlassLightContentStyle('20px', 1)),
               width: '100%',
               height: '100%',
               backdropFilter: 'none',
               WebkitBackdropFilter: 'none',
-              background: isHovered && !isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.85)',
+              background: darkMode
+                ? (isHovered && !isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.25)')
+                : (isHovered && !isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.85)'),
             }}
           />
         </div>
@@ -154,7 +163,9 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
             fontFamily: 'var(--font-open-sans)',
             fontSize: textOnly ? (isActive ? '15px' : '14px') : labelFontSize,
             fontWeight: isActive ? 600 : 400,
-            color: isActive ? '#2C2C2C' : '#9A999E',
+            color: darkMode
+              ? (isActive ? '#DBDADB' : '#7C7F82')
+              : (isActive ? '#2C2C2C' : '#9A999E'),
             transition: 'all 0.15s ease',
           }}
         >
@@ -166,7 +177,7 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
               fontFamily: 'var(--font-open-sans)',
               fontSize: '13px',
               fontWeight: 400,
-              color: '#6B6B6B',
+              color: darkMode ? '#7C7F82' : '#6B6B6B',
             }}
           >
             {subtext ?? (count !== undefined ? `${count} total` : '')}

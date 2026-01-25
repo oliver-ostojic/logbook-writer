@@ -1,5 +1,5 @@
 import './globals.css';
-import { Roboto, Open_Sans } from 'next/font/google';
+import { Roboto, Open_Sans, Inter, Instrument_Serif } from 'next/font/google';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { GlassDevPanel } from '@/components/ui/ai-glass';
 
@@ -14,13 +14,28 @@ const openSans = Open_Sans({
   variable: '--font-open-sans',
 });
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
+
+const instrumentSerif = Instrument_Serif({
+  weight: '400',
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  variable: '--font-display',
+});
+
 export const metadata = {
   title: 'Logbook Writer',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${roboto.variable} ${openSans.variable}`} style={{ backgroundColor: 'transparent' }}>
+    <html lang="en" className={`${roboto.variable} ${openSans.variable} ${inter.variable} ${instrumentSerif.variable}`} style={{ backgroundColor: 'transparent' }}>
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/umd6txf.css" />
+      </head>
       <body style={{ backgroundColor: 'transparent' }}>
         <AuthProvider>{children}</AuthProvider>
         <GlassDevPanel />

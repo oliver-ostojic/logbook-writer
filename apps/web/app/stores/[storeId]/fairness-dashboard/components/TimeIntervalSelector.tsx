@@ -2,6 +2,7 @@
 
 import { ChevronDown } from 'lucide-react';
 import { type TimeInterval } from './RoleGiniGraph';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 // =============================================================================
 // Types
@@ -58,18 +59,31 @@ export function TimeIntervalSelector({
 }: TimeIntervalSelectorProps) {
   return (
     <div className={`relative inline-block ${className}`}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as TimeInterval)}
-        className="appearance-none rounded-lg border border-gray-300 bg-white pl-3 pr-9 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
-      >
-        {TIME_INTERVAL_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+      <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as TimeInterval)}
+          style={{
+            ...aiGlassLightContentStyle('9999px', 0.6),
+            padding: '8px 32px 8px 14px',
+            border: 'none',
+            outline: 'none',
+            fontFamily: 'var(--font-open-sans)',
+            fontSize: '14px',
+            color: '#2C2C2C',
+            fontWeight: 500,
+            cursor: 'pointer',
+            appearance: 'none',
+          }}
+        >
+          {TIME_INTERVAL_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 /**
  * TitleBubble
@@ -21,17 +22,14 @@ export function TitleBubble({
     <div
       className={`inline-flex items-center ai-glass-border ${className}`}
       style={{
-        borderRadius: 9999,
+        ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08),
         ...style,
       }}
     >
       <div
         style={{
-          borderRadius: 9999,
+          ...aiGlassLightContentStyle('9999px', 0.6),
           padding: '6px 12px',
-          background: 'rgba(255, 255, 255, 0.06)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
         <span
@@ -39,7 +37,7 @@ export function TitleBubble({
             fontFamily: 'var(--font-open-sans)',
             fontSize: '14px',
             fontWeight: 500,
-            color: '#DBDADB',
+            color: '#2C2C2C',
             lineHeight: 1,
             letterSpacing: '0.2px',
             userSelect: 'none',

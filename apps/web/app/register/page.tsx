@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
+import { NavStatsCard, NavDivider } from '@/app/stores/[storeId]/home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { register } from '@/lib/api/auth';
 
@@ -132,26 +133,36 @@ export default function RegisterPage() {
             }}
           >
             <div className="flex flex-col gap-6">
-              {/* Outer card header - Logbook writer title - bento style */}
+              {/* Outer card header - Logbook writer / Exit tabs */}
               <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                <GlassPillCard padding="1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                  <div className="flex items-center justify-start" style={{ width: '100%' }}>
-                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '6px 24px',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '16px',
-                          fontWeight: 600,
-                          color: '#2C2C2C',
-                        }}
-                      >
-                        Logbook writer
-                      </div>
-                    </div>
+                <div
+                  className="ai-glass-border"
+                  style={{
+                    ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
+                  }}
+                >
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                      padding: '8px',
+                    }}
+                  >
+                    <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                      <NavStatsCard
+                        label="Logbook writer"
+                        textOnly
+                        isActive={true}
+                        onClick={() => {}}
+                      />
+                      <NavStatsCard
+                        label="Exit"
+                        textOnly
+                        isActive={false}
+                        onClick={() => router.push('/')}
+                      />
+                    </nav>
                   </div>
-                </GlassPillCard>
+                </div>
               </div>
 
               {/* Form inner card */}
@@ -167,55 +178,36 @@ export default function RegisterPage() {
                   }}
                 >
                   <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                    {/* Header row - Create account / Sign in - bento style */}
+                    {/* Header row - Sign in / Create account tabs */}
                     <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                      <GlassPillCard padding="1rem 1.5rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                          {/* Create your account - left */}
-                          <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                            <div
-                              style={{
-                                ...aiGlassLightContentStyle('9999px', 0.6),
-                                padding: '6px 14px',
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '13px',
-                                fontWeight: 500,
-                                color: '#2C2C2C',
-                              }}
-                            >
-                              Create your account
-                            </div>
-                          </div>
-
-                          {/* Sign in - right */}
-                          <a
-                            href="/login"
-                            className="ai-glass-border"
-                            style={{ ...aiGlassLightBorderStyle('9999px'), textDecoration: 'none' }}
-                          >
-                            <div
-                              style={{
-                                ...aiGlassLightContentStyle('9999px', 0.6),
-                                padding: '6px 14px',
-                                transition: 'filter 0.2s ease',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.94)'}
-                              onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-                            >
-                              <span
-                                style={{
-                                  fontFamily: 'var(--font-open-sans)',
-                                  fontSize: '13px',
-                                  fontWeight: 500,
-                                  color: 'hsl(0, 84%, 60%)',
-                                }}
-                              >
-                                Sign in
-                              </span>
-                            </div>
-                          </a>
+                      <div
+                        className="ai-glass-border"
+                        style={{
+                          ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
+                        }}
+                      >
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                            padding: '8px',
+                          }}
+                        >
+                          <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                            <NavStatsCard
+                              label="Sign into your account"
+                              textOnly
+                              isActive={false}
+                              onClick={() => router.push('/login')}
+                            />
+                            <NavStatsCard
+                              label="Create account"
+                              textOnly
+                              isActive={true}
+                              onClick={() => {}}
+                            />
+                          </nav>
                         </div>
-                      </GlassPillCard>
+                      </div>
                     </div>
 
                     {/* Error message */}
@@ -234,68 +226,7 @@ export default function RegisterPage() {
                       </div>
                     )}
 
-                    {/* Mode toggle */}
-                    <div className="ai-glass-border rounded-[9999px]" style={aiGlassLightBorderStyle('9999px')}>
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('9999px', 0.6),
-                          padding: '12px',
-                        }}
-                      >
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setMode('crew')}
-                            className="flex-1"
-                            style={{
-                              borderRadius: '9999px',
-                              background: mode === 'crew' ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
-                              border: 'none',
-                              padding: '10px 16px',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s ease',
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '13px',
-                                fontWeight: mode === 'crew' ? 600 : 400,
-                                color: mode === 'crew' ? '#2C2C2C' : '#6B6B6B',
-                              }}
-                            >
-                              I have a Crew ID
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setMode('invite')}
-                            className="flex-1"
-                            style={{
-                              borderRadius: '9999px',
-                              background: mode === 'invite' ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
-                              border: 'none',
-                              padding: '10px 16px',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s ease',
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-open-sans)',
-                                fontSize: '13px',
-                                fontWeight: mode === 'invite' ? 600 : 400,
-                                color: mode === 'invite' ? '#2C2C2C' : '#6B6B6B',
-                              }}
-                            >
-                              I have an Invite Code
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Form fields */}
+                    {/* Form fields card */}
                     <div className="ai-glass-border rounded-[1.5rem]" style={aiGlassLightBorderStyle('1.5rem')}>
                       <div
                         style={{
@@ -303,7 +234,41 @@ export default function RegisterPage() {
                           padding: '24px',
                         }}
                       >
-                        <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-6">
+                          {/* Mode toggle header */}
+                          <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+                            <div
+                              className="ai-glass-border"
+                              style={{
+                                ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
+                              }}
+                            >
+                              <div
+                                style={{
+                                  ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
+                                  padding: '8px',
+                                }}
+                              >
+                                <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                                  <NavStatsCard
+                                    label="I have a Crew ID"
+                                    textOnly
+                                    isActive={mode === 'crew'}
+                                    onClick={() => setMode('crew')}
+                                  />
+                                  <NavStatsCard
+                                    label="I have an Invite Code"
+                                    textOnly
+                                    isActive={mode === 'invite'}
+                                    onClick={() => setMode('invite')}
+                                  />
+                                </nav>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Form fields */}
+                          <div className="flex flex-col gap-5">
                           {/* Crew ID or Invite Code field */}
                           <div className="flex flex-col gap-2">
                             <label style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B' }}>
@@ -448,6 +413,7 @@ export default function RegisterPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
                   </form>
                 </div>
               </div>

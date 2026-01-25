@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
+import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon, ClockIcon } from '@heroicons/react/20/solid';
 import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
@@ -1439,7 +1439,7 @@ export default function FairnessDashboardPage() {
     const crew = computedCrewCards.find(c => c.id === selectedCrewId);
     if (crew) {
       setSelectedCrew(crew);
-      setExpandedQuickLook('crew');
+      setExpandedPanel('crew');
     }
   }, [dashboardSnapshot, selectedCrewId, selectedCrew, computedCrewCards]);
 
@@ -1448,7 +1448,7 @@ export default function FairnessDashboardPage() {
     const role = computedRoleCards.find(r => r.id === selectedRoleId);
     if (role) {
       setSelectedRole(role);
-      setExpandedQuickLook('roles');
+      setExpandedPanel('roles');
     }
   }, [dashboardSnapshot, selectedRoleId, selectedRole, computedRoleCards]);
 
@@ -1691,7 +1691,6 @@ export default function FairnessDashboardPage() {
                         <NavStatsCard
                           label="Home"
                           textOnly
-                          darkMode
                           isActive={false}
                           onClick={() => router.push(`/stores/${storeId}/home`)}
                           isFirst
@@ -1699,14 +1698,12 @@ export default function FairnessDashboardPage() {
                         <NavStatsCard
                           label="System Health"
                           textOnly
-                          darkMode
                           isActive={true}
                           onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
                         />
                         <NavStatsCard
                           label="Settings"
                           textOnly
-                          darkMode
                           isActive={false}
                           onClick={() => router.push(`/stores/${storeId}/settings`)}
                         />
@@ -1714,7 +1711,6 @@ export default function FairnessDashboardPage() {
                           <NavStatsCard
                             label="Account"
                             textOnly
-                            darkMode
                             isActive={isUserMenuOpen}
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                           />
@@ -1751,7 +1747,6 @@ export default function FairnessDashboardPage() {
                             setSelectedCrewId(null);
                             setSelectedRoleId(null);
                           }}
-                          darkMode
                           isFirst
                         />
                         <NavStatsCard
@@ -1767,7 +1762,6 @@ export default function FairnessDashboardPage() {
                             setSelectedRoleId(null);
                             setCrewPage(1);
                           }}
-                          darkMode
                         />
                         <NavStatsCard
                           icon={<ShieldCheckIcon />}
@@ -1782,13 +1776,12 @@ export default function FairnessDashboardPage() {
                             setSelectedRoleId(null);
                             setRolePage(1);
                           }}
-                          darkMode
                         />
                         <div ref={timeWindowRef} style={{ display: 'flex' }}>
                           <NavStatsCard
                             label="Time window"
                             subtext={formatDateRangeForNav()}
-                            darkMode
+                            icon={<ClockIcon />}
                             isActive={isTimeWindowOpen}
                             onClick={() => setIsTimeWindowOpen(!isTimeWindowOpen)}
                             isLast
@@ -1799,10 +1792,12 @@ export default function FairnessDashboardPage() {
                   </div>
                 </div>
 
-                {/* Two-panel layout */}
-                <div className="flex flex-col min-[1200px]:flex-row gap-6" style={{ marginTop: '24px', alignItems: 'flex-start' }}>
-                  {/* Left panel - dashboard content */}
-                  <div className="w-full min-[1200px]:flex-[0_0_55%] min-[1200px]:max-w-[55%]" style={{ minWidth: 0 }}>
+                {/* Main content area with optional time window panel */}
+                <div className="flex" style={{ marginTop: '24px', alignItems: 'flex-start', gap: isTimeWindowOpen ? '24px' : '0px' }}>
+                  {/* Main content - takes remaining space */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Dashboard content - full width */}
+                    <div>
               {/* Conditional content: Individual Crew Dashboard, Dashboard, or Expanded Quick Looks */}
               {selectedCrew ? (
                 /* Individual Crew Dashboard */
@@ -2127,38 +2122,331 @@ export default function FairnessDashboardPage() {
                 </>
               ) : (
                 <>
-                  {/* Fairness Summary Section */}
-                  <div
-                    className="ai-glass-border"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
-                  >
-                    <div className="grid grid-cols-2 gap-3">
-                      <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
-                      <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
+                  {/* Top section: Mini cards + Time window side by side */}
+                  <div className="flex" style={{ gap: isTimeWindowOpen ? '24px' : '0px', alignItems: 'stretch' }}>
+                    {/* Left: Mini card rows */}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Fairness Summary Section */}
+                      <div
+                        className="ai-glass-border"
+                        style={{
+                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                          ...aiGlassLightContentStyle('1.5rem', 0.6),
+                          height: 'auto',
+                          padding: 16,
+                          flex: 1,
+                        }}
+                      >
+                        <div className="grid grid-cols-2 gap-3">
+                          <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
+                          <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
+                        </div>
+                      </div>
+
+                      {/* Crew Summary Section */}
+                      <div
+                        className="ai-glass-border"
+                        style={{
+                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                          ...aiGlassLightContentStyle('1.5rem', 0.6),
+                          height: 'auto',
+                          padding: 16,
+                          flex: 1,
+                        }}
+                      >
+                        <div className="grid grid-cols-2 gap-3">
+                          <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
+                          <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Time window panel (overview only) */}
+                    <div
+                      ref={timeWindowDropdownRef}
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                        width: isTimeWindowOpen ? '361px' : '0px',
+                        height: 320,
+                        opacity: isTimeWindowOpen ? 1 : 0,
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        transition: 'width 0.3s ease, opacity 0.2s ease',
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      {isTimeWindowOpen && (
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('1.5rem', 0.6),
+                            padding: '18px 19px',
+                            width: '361px',
+                            height: '100%',
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {/* Year carousel row */}
+                          <div className="flex items-center justify-center gap-3">
+                            <button
+                              className="flex items-center justify-center transition-all ai-glass-border"
+                              style={{
+                                ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                                width: 22,
+                                height: 22,
+                                opacity: yearSelectionIndex > 0 ? 1 : 0.4,
+                              }}
+                              onClick={() => setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1))}
+                              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                              disabled={yearSelectionIndex === 0}
+                            >
+                              <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('50%', 0.5), width: '100%', height: '100%' }}>
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
+                                  <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </button>
+
+                            {/* Year cards */}
+                            <div className="flex gap-2">
+                              {availableYears.map((year, index) => {
+                                const isSelected = index === yearSelectionIndex;
+                                const yearMonthOptions = generateMonthOptions(year);
+                                let allDaysSelectedInYear = true;
+                                for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
+                                  const key = getSelectionKey(year, monthIdx);
+                                  const monthDays = yearMonthOptions[monthIdx].days;
+                                  const monthDisabled = disabledDays[monthIdx] || new Set();
+                                  const monthSelected = selectedDays[key] || new Set();
+                                  for (let d = 1; d <= monthDays; d++) {
+                                    if (!monthDisabled.has(d) && !monthSelected.has(d)) {
+                                      allDaysSelectedInYear = false;
+                                      break;
+                                    }
+                                  }
+                                  if (!allDaysSelectedInYear) break;
+                                }
+
+                                return (
+                                  <button
+                                    key={year}
+                                    type="button"
+                                    onClick={() => {
+                                      if (index === yearSelectionIndex) {
+                                        const yearMonths = generateMonthOptions(year);
+                                        const newSelectedDays = { ...selectedDays };
+                                        if (allDaysSelectedInYear) {
+                                          for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                            const key = getSelectionKey(year, monthIdx);
+                                            const monthDays = yearMonths[monthIdx].days;
+                                            const monthDisabled = disabledDays[monthIdx] || new Set();
+                                            const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                            for (let d = 1; d <= monthDays; d++) {
+                                              if (!monthDisabled.has(d)) newMonthSelected.delete(d);
+                                            }
+                                            newSelectedDays[key] = newMonthSelected;
+                                          }
+                                        } else {
+                                          for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                            const key = getSelectionKey(year, monthIdx);
+                                            const monthDays = yearMonths[monthIdx].days;
+                                            const monthDisabled = disabledDays[monthIdx] || new Set();
+                                            const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                            for (let d = 1; d <= monthDays; d++) {
+                                              if (!monthDisabled.has(d)) newMonthSelected.add(d);
+                                            }
+                                            newSelectedDays[key] = newMonthSelected;
+                                          }
+                                        }
+                                        setSelectedDays(newSelectedDays);
+                                      } else {
+                                        setYearSelectionIndex(index);
+                                      }
+                                    }}
+                                    style={{
+                                      cursor: 'pointer',
+                                      background: allDaysSelectedInYear ? 'rgb(239, 68, 68)' : 'rgba(255, 255, 255, 0.6)',
+                                      border: 'none',
+                                      borderRadius: '0.5rem',
+                                      padding: '5px 14px',
+                                      outline: 'none',
+                                      WebkitAppearance: 'none',
+                                      appearance: 'none',
+                                      backdropFilter: allDaysSelectedInYear ? 'none' : 'blur(8px)',
+                                      WebkitBackdropFilter: allDaysSelectedInYear ? 'none' : 'blur(8px)',
+                                      boxShadow: allDaysSelectedInYear ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                      transition: 'all 200ms ease-out',
+                                      transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '11px',
+                                      fontWeight: isSelected ? 500 : 400,
+                                      color: allDaysSelectedInYear ? '#FFFFFF' : '#2C2C2C',
+                                    }}
+                                  >
+                                    {year}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <button
+                              className="flex items-center justify-center transition-all ai-glass-border"
+                              style={{
+                                ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                                width: 22,
+                                height: 22,
+                                opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.4,
+                              }}
+                              onClick={() => setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1))}
+                              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                              disabled={yearSelectionIndex >= yearCardCount - 1}
+                            >
+                              <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('50%', 0.5), width: '100%', height: '100%' }}>
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
+                                  <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </button>
+                          </div>
+
+                          {/* Month card with navigation arrows */}
+                          <div className="flex items-center justify-between" style={{ marginTop: 18 }}>
+                            <button
+                              className="flex items-center justify-center transition-all ai-glass-border"
+                              style={{
+                                ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                                width: 26,
+                                height: 26,
+                                flexShrink: 0,
+                                opacity: timeSelectionIndex > 0 ? 1 : 0.4,
+                              }}
+                              onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
+                              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                              disabled={timeSelectionIndex === 0}
+                            >
+                              <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('50%', 0.5), width: '100%', height: '100%' }}>
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                  <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </button>
+
+                            {/* Single month card */}
+                            <div>
+                              {(() => {
+                                const option = monthOptions[timeSelectionIndex];
+                                if (!option) return null;
+                                const cardPadding = 16;
+                                const circleSize = 24;
+                                const circleGap = 6;
+                                const cols = 7;
+                                const days = option.days;
+                                const startDay = option.startDay;
+                                const key = getSelectionKey(selectedYear, option.monthIndex);
+                                const monthSelectedDays = selectedDays[key] || new Set();
+                                const monthDisabledDays = disabledDays[option.monthIndex] || new Set();
+                                let allDaysSelected = true;
+                                for (let d = 1; d <= days; d++) {
+                                  if (!monthDisabledDays.has(d) && !monthSelectedDays.has(d)) {
+                                    allDaysSelected = false;
+                                    break;
+                                  }
+                                }
+
+                                return (
+                                  <div
+                                    className="ai-glass-border"
+                                    style={{ ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08), cursor: 'pointer' }}
+                                    onClick={(e) => {
+                                      const target = e.target as HTMLElement;
+                                      if (target.tagName === 'BUTTON') return;
+                                      const newSelected = new Set(monthSelectedDays);
+                                      if (allDaysSelected) {
+                                        for (let d = 1; d <= days; d++) {
+                                          if (!monthDisabledDays.has(d)) newSelected.delete(d);
+                                        }
+                                      } else {
+                                        for (let d = 1; d <= days; d++) {
+                                          if (!monthDisabledDays.has(d)) newSelected.add(d);
+                                        }
+                                      }
+                                      setSelectedDays(prev => ({ ...prev, [key]: newSelected }));
+                                    }}
+                                  >
+                                    <div style={{ ...aiGlassLightContentStyle('1rem', 0.5), padding: cardPadding }}>
+                                      <div style={{ fontFamily: 'var(--font-open-sans)', fontSize: '15px', fontWeight: 500, color: '#2C2C2C', marginBottom: 12, textAlign: 'center' }}>
+                                        {option.value}
+                                      </div>
+                                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${circleSize}px)`, gap: `${circleGap}px` }}>
+                                        {Array.from({ length: startDay }, (_, i) => (
+                                          <div key={`empty-${i}`} style={{ width: circleSize, height: circleSize }} />
+                                        ))}
+                                        {Array.from({ length: days }, (_, dayIdx) => {
+                                          const dayNum = dayIdx + 1;
+                                          const isDayDisabled = monthDisabledDays.has(dayNum);
+                                          const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
+                                          const isDayHovered = !isDayDisabled && hoveredDay?.month === option.monthIndex && hoveredDay?.day === dayNum;
+                                          return (
+                                            <button
+                                              key={dayNum}
+                                              type="button"
+                                              className="flex items-center justify-center transition-all duration-150"
+                                              disabled={isDayDisabled}
+                                              style={{
+                                                width: circleSize, height: circleSize, borderRadius: '50%', border: 'none', padding: 0, outline: 'none',
+                                                WebkitAppearance: 'none', appearance: 'none', cursor: isDayDisabled ? 'not-allowed' : 'pointer',
+                                                transform: isDayHovered ? 'scale(1.15)' : 'scale(1)', zIndex: isDayHovered ? 10 : 1, opacity: isDayDisabled ? 0.3 : 1,
+                                                background: isDaySelected ? 'rgb(239, 68, 68)' : isDayDisabled ? 'rgba(200, 200, 200, 0.3)' : 'rgba(255, 255, 255, 0.6)',
+                                                backdropFilter: isDaySelected ? 'none' : 'blur(8px)', WebkitBackdropFilter: isDaySelected ? 'none' : 'blur(8px)',
+                                                boxShadow: isDaySelected ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                fontFamily: 'var(--font-open-sans)', fontSize: '11px', fontWeight: 450,
+                                                color: isDaySelected ? '#FFFFFF' : isDayDisabled ? '#A0A0A0' : '#2C2C2C',
+                                              }}
+                                              onMouseDown={(e) => { if (isDayDisabled) return; e.preventDefault(); e.stopPropagation(); handleDragStart(option.monthIndex, dayNum); }}
+                                              onMouseEnter={() => { if (isDayDisabled) return; setHoveredDay({ month: option.monthIndex, day: dayNum }); if (isDragging) handleDragOver(option.monthIndex, dayNum); }}
+                                              onMouseLeave={() => setHoveredDay(null)}
+                                            >
+                                              {dayNum}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            <button
+                              className="flex items-center justify-center transition-all ai-glass-border"
+                              style={{
+                                ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                                width: 26,
+                                height: 26,
+                                flexShrink: 0,
+                                opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.4,
+                              }}
+                              onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
+                              onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                              disabled={timeSelectionIndex >= monthCardCount - 1}
+                            >
+                              <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('50%', 0.5), width: '100%', height: '100%' }}>
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                  <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Crew Summary Section */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
-                  >
-                    <div className="grid grid-cols-2 gap-3">
-                      <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
-                      <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
-                    </div>
-                  </div>
-
+                  {/* Bottom section: Graphs at FULL WIDTH */}
                   {/* Crew preferences met by date line graph */}
                   <div
                     className="ai-glass-border mt-4"
@@ -2211,15 +2499,399 @@ export default function FairnessDashboardPage() {
                   </div>
                 </>
               )}
-            </div>
+                    </div>
+                  </div>
 
-            {/* Right panel */}
-            <div className="w-full min-[1200px]:flex-[0_0_45%] min-[1200px]:max-w-[45%]" style={{ minWidth: 0 }}>
+                  {/* Time window expansion panel - only for non-overview views */}
+                  {(selectedCrew || selectedRole) && (
+                  <div
+                    ref={timeWindowDropdownRef}
+                    className="ai-glass-border"
+                    style={{
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      width: isTimeWindowOpen ? '400px' : '0px',
+                      opacity: isTimeWindowOpen ? 1 : 0,
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      transition: 'width 0.3s ease, opacity 0.2s ease',
+                      alignSelf: 'flex-start',
+                    }}
+                  >
+                    {isTimeWindowOpen && (
+                      <div
+                        style={{
+                          ...aiGlassLightContentStyle('1.5rem', 0.6),
+                          padding: '18px 19px',
+                          width: '400px',
+                          maxHeight: '600px',
+                          overflowY: 'auto',
+                        }}
+                      >
+                        {/* Year carousel row */}
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            className="flex items-center justify-center transition-all ai-glass-border"
+                            style={{
+                              ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                              width: 28,
+                              height: 28,
+                              opacity: yearSelectionIndex > 0 ? 1 : 0.4,
+                            }}
+                            onClick={() => {
+                              setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1));
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                            disabled={yearSelectionIndex === 0}
+                          >
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                ...aiGlassLightContentStyle('50%', 0.5),
+                                width: '100%',
+                                height: '100%',
+                              }}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* Year cards */}
+                          <div className="flex gap-2">
+                            {availableYears.map((year, index) => {
+                              const isSelected = index === yearSelectionIndex;
+
+                              const yearMonthOptions = generateMonthOptions(year);
+                              let allDaysSelectedInYear = true;
+                              for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
+                                const key = getSelectionKey(year, monthIdx);
+                                const monthDays = yearMonthOptions[monthIdx].days;
+                                const monthDisabled = disabledDays[monthIdx] || new Set();
+                                const monthSelected = selectedDays[key] || new Set();
+                                for (let d = 1; d <= monthDays; d++) {
+                                  if (!monthDisabled.has(d) && !monthSelected.has(d)) {
+                                    allDaysSelectedInYear = false;
+                                    break;
+                                  }
+                                }
+                                if (!allDaysSelectedInYear) break;
+                              }
+
+                              return (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    if (index === yearSelectionIndex) {
+                                      const yearMonths = generateMonthOptions(year);
+                                      const newSelectedDays = { ...selectedDays };
+
+                                      if (allDaysSelectedInYear) {
+                                        for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                          const key = getSelectionKey(year, monthIdx);
+                                          const monthDays = yearMonths[monthIdx].days;
+                                          const monthDisabled = disabledDays[monthIdx] || new Set();
+                                          const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                          for (let d = 1; d <= monthDays; d++) {
+                                            if (!monthDisabled.has(d)) {
+                                              newMonthSelected.delete(d);
+                                            }
+                                          }
+                                          newSelectedDays[key] = newMonthSelected;
+                                        }
+                                      } else {
+                                        for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
+                                          const key = getSelectionKey(year, monthIdx);
+                                          const monthDays = yearMonths[monthIdx].days;
+                                          const monthDisabled = disabledDays[monthIdx] || new Set();
+                                          const newMonthSelected = new Set(newSelectedDays[key] || []);
+                                          for (let d = 1; d <= monthDays; d++) {
+                                            if (!monthDisabled.has(d)) {
+                                              newMonthSelected.add(d);
+                                            }
+                                          }
+                                          newSelectedDays[key] = newMonthSelected;
+                                        }
+                                      }
+
+                                      setSelectedDays(newSelectedDays);
+                                    } else {
+                                      setYearSelectionIndex(index);
+                                    }
+                                  }}
+                                  style={{
+                                    cursor: 'pointer',
+                                    background: allDaysSelectedInYear ? 'rgb(239, 68, 68)' : 'rgba(255, 255, 255, 0.6)',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    padding: '6px 16px',
+                                    outline: 'none',
+                                    WebkitAppearance: 'none',
+                                    appearance: 'none',
+                                    backdropFilter: allDaysSelectedInYear ? 'none' : 'blur(8px)',
+                                    WebkitBackdropFilter: allDaysSelectedInYear ? 'none' : 'blur(8px)',
+                                    boxShadow: allDaysSelectedInYear ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                    transition: 'all 200ms ease-out',
+                                    transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '13px',
+                                    fontWeight: isSelected ? 500 : 400,
+                                    color: allDaysSelectedInYear ? '#FFFFFF' : '#2C2C2C',
+                                  }}
+                                >
+                                  {year}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            className="flex items-center justify-center transition-all ai-glass-border"
+                            style={{
+                              ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                              width: 28,
+                              height: 28,
+                              opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.4,
+                            }}
+                            onClick={() => {
+                              setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1));
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                            disabled={yearSelectionIndex >= yearCardCount - 1}
+                          >
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                ...aiGlassLightContentStyle('50%', 0.5),
+                                width: '100%',
+                                height: '100%',
+                              }}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
+
+                        {/* Month card with navigation arrows */}
+                        <div className="flex items-center" style={{ marginTop: 18 }}>
+                          <button
+                            className="flex items-center justify-center transition-all ai-glass-border"
+                            style={{
+                              ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                              width: 32,
+                              height: 32,
+                              flexShrink: 0,
+                              marginRight: 19,
+                              opacity: timeSelectionIndex > 0 ? 1 : 0.4,
+                            }}
+                            onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                            disabled={timeSelectionIndex === 0}
+                          >
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                ...aiGlassLightContentStyle('50%', 0.5),
+                                width: '100%',
+                                height: '100%',
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* Single month card - glass style */}
+                          <div className="flex-1 flex justify-center">
+                            {(() => {
+                              const option = monthOptions[timeSelectionIndex];
+                              if (!option) return null;
+
+                              const cardPadding = 16;
+                              const circleSize = 28;
+                              const circleGap = 6;
+                              const cols = 7;
+                              const days = option.days;
+                              const startDay = option.startDay;
+
+                              const key = getSelectionKey(selectedYear, option.monthIndex);
+                              const monthSelectedDays = selectedDays[key] || new Set();
+                              const monthDisabledDays = disabledDays[option.monthIndex] || new Set();
+
+                              let allDaysSelected = true;
+                              for (let d = 1; d <= days; d++) {
+                                if (!monthDisabledDays.has(d) && !monthSelectedDays.has(d)) {
+                                  allDaysSelected = false;
+                                  break;
+                                }
+                              }
+
+                              return (
+                                <div
+                                  className="ai-glass-border"
+                                  style={{
+                                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (target.tagName === 'BUTTON') return;
+
+                                    const newSelected = new Set(monthSelectedDays);
+                                    if (allDaysSelected) {
+                                      for (let d = 1; d <= days; d++) {
+                                        if (!monthDisabledDays.has(d)) {
+                                          newSelected.delete(d);
+                                        }
+                                      }
+                                    } else {
+                                      for (let d = 1; d <= days; d++) {
+                                        if (!monthDisabledDays.has(d)) {
+                                          newSelected.add(d);
+                                        }
+                                      }
+                                    }
+                                    setSelectedDays(prev => ({ ...prev, [key]: newSelected }));
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      ...aiGlassLightContentStyle('1rem', 0.5),
+                                      padding: cardPadding,
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontFamily: 'var(--font-open-sans)',
+                                        fontSize: '15px',
+                                        fontWeight: 500,
+                                        color: '#2C2C2C',
+                                        marginBottom: 12,
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      {option.value}
+                                    </div>
+
+                                    <div
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: `repeat(${cols}, ${circleSize}px)`,
+                                        gap: `${circleGap}px`,
+                                      }}
+                                    >
+                                      {Array.from({ length: startDay }, (_, i) => (
+                                        <div key={`empty-${i}`} style={{ width: circleSize, height: circleSize }} />
+                                      ))}
+
+                                      {Array.from({ length: days }, (_, dayIdx) => {
+                                        const dayNum = dayIdx + 1;
+                                        const isDayDisabled = monthDisabledDays.has(dayNum);
+                                        const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
+                                        const isDayHovered = !isDayDisabled && hoveredDay?.month === option.monthIndex && hoveredDay?.day === dayNum;
+
+                                        return (
+                                          <button
+                                            key={dayNum}
+                                            type="button"
+                                            className="flex items-center justify-center transition-all duration-150"
+                                            disabled={isDayDisabled}
+                                            style={{
+                                              width: circleSize,
+                                              height: circleSize,
+                                              borderRadius: '50%',
+                                              border: 'none',
+                                              padding: 0,
+                                              outline: 'none',
+                                              WebkitAppearance: 'none',
+                                              appearance: 'none',
+                                              cursor: isDayDisabled ? 'not-allowed' : 'pointer',
+                                              transform: isDayHovered ? 'scale(1.15)' : 'scale(1)',
+                                              zIndex: isDayHovered ? 10 : 1,
+                                              opacity: isDayDisabled ? 0.3 : 1,
+                                              background: isDaySelected
+                                                ? 'rgb(239, 68, 68)'
+                                                : isDayDisabled
+                                                  ? 'rgba(200, 200, 200, 0.3)'
+                                                  : 'rgba(255, 255, 255, 0.6)',
+                                              backdropFilter: isDaySelected ? 'none' : 'blur(8px)',
+                                              WebkitBackdropFilter: isDaySelected ? 'none' : 'blur(8px)',
+                                              boxShadow: isDaySelected ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                              fontFamily: 'var(--font-open-sans)',
+                                              fontSize: '11px',
+                                              fontWeight: 450,
+                                              color: isDaySelected ? '#FFFFFF' : isDayDisabled ? '#A0A0A0' : '#2C2C2C',
+                                            }}
+                                            onMouseDown={(e) => {
+                                              if (isDayDisabled) return;
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleDragStart(option.monthIndex, dayNum);
+                                            }}
+                                            onMouseEnter={() => {
+                                              if (isDayDisabled) return;
+                                              setHoveredDay({ month: option.monthIndex, day: dayNum });
+                                              if (isDragging) {
+                                                handleDragOver(option.monthIndex, dayNum);
+                                              }
+                                            }}
+                                            onMouseLeave={() => setHoveredDay(null)}
+                                          >
+                                            {dayNum}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          <button
+                            className="flex items-center justify-center transition-all ai-glass-border"
+                            style={{
+                              ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
+                              width: 32,
+                              height: 32,
+                              flexShrink: 0,
+                              marginLeft: 19,
+                              opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.4,
+                            }}
+                            onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
+                            disabled={timeSelectionIndex >= monthCardCount - 1}
+                          >
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                ...aiGlassLightContentStyle('50%', 0.5),
+                                width: '100%',
+                                height: '100%',
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-          </div>
-        </div>
         </div>
       </main>
 
@@ -2329,407 +3001,6 @@ export default function FairnessDashboardPage() {
         </div>
       )}
 
-      {/* Time window dropdown - rendered at root level with fixed positioning */}
-      {isTimeWindowOpen && timeWindowRef.current && (
-        <div
-          ref={(el) => {
-            timeWindowDropdownRef.current = el;
-            if (el && timeWindowRef.current) {
-              const rect = timeWindowRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 16}px`;
-              el.style.right = `${window.innerWidth - rect.right}px`;
-            }
-          }}
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-            position: 'fixed',
-            zIndex: 1000,
-            width: '400px',
-          }}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1.5rem', 0.6),
-              padding: '16px',
-              maxHeight: '600px',
-              overflowY: 'auto',
-            }}
-          >
-            {/* Year carousel row */}
-            <div className="flex items-center justify-center gap-3">
-              <button
-                className="flex items-center justify-center transition-all ai-glass-border"
-                style={{
-                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
-                  width: 28,
-                  height: 28,
-                  opacity: yearSelectionIndex > 0 ? 1 : 0.4,
-                }}
-                onClick={() => {
-                  setYearSelectionIndex(Math.max(0, yearSelectionIndex - 1));
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                disabled={yearSelectionIndex === 0}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    ...aiGlassLightContentStyle('50%', 0.5),
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                    <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-
-              {/* Year cards */}
-              <div className="flex gap-2">
-                {availableYears.map((year, index) => {
-                  const isSelected = index === yearSelectionIndex;
-
-                  // Check if all days in all months of this year are selected
-                  const yearMonthOptions = generateMonthOptions(year);
-                  let allDaysSelectedInYear = true;
-                  for (let monthIdx = 0; monthIdx < yearMonthOptions.length; monthIdx++) {
-                    const key = getSelectionKey(year, monthIdx);
-                    const monthDays = yearMonthOptions[monthIdx].days;
-                    const monthDisabled = disabledDays[monthIdx] || new Set();
-                    const monthSelected = selectedDays[key] || new Set();
-                    for (let d = 1; d <= monthDays; d++) {
-                      if (!monthDisabled.has(d) && !monthSelected.has(d)) {
-                        allDaysSelectedInYear = false;
-                        break;
-                      }
-                    }
-                    if (!allDaysSelectedInYear) break;
-                  }
-
-                  return (
-                    <button
-                      key={year}
-                      className={isSelected ? 'ai-glass-border' : ''}
-                      onClick={() => {
-                        if (index === yearSelectionIndex) {
-                          // Toggle all days in all months of this year
-                          const yearMonths = generateMonthOptions(year);
-                          const newSelectedDays = { ...selectedDays };
-
-                          if (allDaysSelectedInYear) {
-                            // Deselect all days in all months
-                            for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
-                              const key = getSelectionKey(year, monthIdx);
-                              const monthDays = yearMonths[monthIdx].days;
-                              const monthDisabled = disabledDays[monthIdx] || new Set();
-                              const newMonthSelected = new Set(newSelectedDays[key] || []);
-                              for (let d = 1; d <= monthDays; d++) {
-                                if (!monthDisabled.has(d)) {
-                                  newMonthSelected.delete(d);
-                                }
-                              }
-                              newSelectedDays[key] = newMonthSelected;
-                            }
-                          } else {
-                            // Select all days in all months
-                            for (let monthIdx = 0; monthIdx < yearMonths.length; monthIdx++) {
-                              const key = getSelectionKey(year, monthIdx);
-                              const monthDays = yearMonths[monthIdx].days;
-                              const monthDisabled = disabledDays[monthIdx] || new Set();
-                              const newMonthSelected = new Set(newSelectedDays[key] || []);
-                              for (let d = 1; d <= monthDays; d++) {
-                                if (!monthDisabled.has(d)) {
-                                  newMonthSelected.add(d);
-                                }
-                              }
-                              newSelectedDays[key] = newMonthSelected;
-                            }
-                          }
-
-                          setSelectedDays(newSelectedDays);
-                        } else {
-                          setYearSelectionIndex(index);
-                        }
-                      }}
-                      style={{
-                        ...(isSelected ? aiGlassLightBorderStyle('0.5rem', '0, 0, 0', 0.08) : {}),
-                        cursor: 'pointer',
-                        background: 'transparent',
-                        border: 'none',
-                        padding: 0,
-                        transition: 'transform 200ms ease-out',
-                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: '6px 16px',
-                          borderRadius: '0.5rem',
-                          background: isSelected ? 'rgb(239, 68, 68)' : 'transparent',
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '13px',
-                          fontWeight: isSelected ? 500 : 400,
-                          color: isSelected ? '#FFFFFF' : '#7C7F82',
-                          transition: 'all 200ms ease-out',
-                        }}
-                      >
-                        {year}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                className="flex items-center justify-center transition-all ai-glass-border"
-                style={{
-                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
-                  width: 28,
-                  height: 28,
-                  opacity: yearSelectionIndex < yearCardCount - 1 ? 1 : 0.4,
-                }}
-                onClick={() => {
-                  setYearSelectionIndex(Math.min(yearCardCount - 1, yearSelectionIndex + 1));
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                disabled={yearSelectionIndex >= yearCardCount - 1}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    ...aiGlassLightContentStyle('50%', 0.5),
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                    <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-            </div>
-
-            {/* Month card with navigation arrows */}
-            <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
-              <button
-                className="flex items-center justify-center transition-all ai-glass-border"
-                style={{
-                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
-                  width: 32,
-                  height: 32,
-                  flexShrink: 0,
-                  opacity: timeSelectionIndex > 0 ? 1 : 0.4,
-                }}
-                onClick={() => setTimeSelectionIndex(Math.max(0, timeSelectionIndex - 1))}
-                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                disabled={timeSelectionIndex === 0}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    ...aiGlassLightContentStyle('50%', 0.5),
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M7.5 9L4.5 6L7.5 3" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-
-              {/* Single month card - glass style */}
-              <div className="flex-1 flex justify-center">
-                {(() => {
-                  const option = monthOptions[timeSelectionIndex];
-                  if (!option) return null;
-
-                  const cardPadding = 16;
-                  const circleSize = 28;
-                  const circleGap = 6;
-                  const cols = 7;
-
-                  const days = option.days;
-                  const startDay = option.startDay;
-                  const totalCells = startDay + days;
-                  const rows = Math.ceil(totalCells / cols);
-
-                  const key = getSelectionKey(selectedYear, option.monthIndex);
-                  const monthSelectedDays = selectedDays[key] || new Set();
-                  const monthDisabledDays = disabledDays[option.monthIndex] || new Set();
-
-                  // Check if all available days are selected
-                  let allDaysSelected = true;
-                  for (let d = 1; d <= days; d++) {
-                    if (!monthDisabledDays.has(d) && !monthSelectedDays.has(d)) {
-                      allDaysSelected = false;
-                      break;
-                    }
-                  }
-
-                  return (
-                    <div
-                      className="ai-glass-border"
-                      style={{
-                        ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
-                        cursor: 'pointer',
-                      }}
-                      onClick={(e) => {
-                        // Don't trigger if clicking on a day button
-                        const target = e.target as HTMLElement;
-                        if (target.tagName === 'BUTTON') return;
-
-                        // Toggle all days in this month
-                        const newSelected = new Set(monthSelectedDays);
-                        if (allDaysSelected) {
-                          for (let d = 1; d <= days; d++) {
-                            if (!monthDisabledDays.has(d)) {
-                              newSelected.delete(d);
-                            }
-                          }
-                        } else {
-                          for (let d = 1; d <= days; d++) {
-                            if (!monthDisabledDays.has(d)) {
-                              newSelected.add(d);
-                            }
-                          }
-                        }
-                        setSelectedDays(prev => ({ ...prev, [key]: newSelected }));
-                      }}
-                    >
-                      <div
-                        style={{
-                          ...aiGlassLightContentStyle('1rem', 0.5),
-                          padding: cardPadding,
-                        }}
-                      >
-                        {/* Month label */}
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '15px',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                            marginBottom: 12,
-                            textAlign: 'center',
-                          }}
-                        >
-                          {option.value}
-                        </div>
-
-                        {/* Day grid */}
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: `repeat(${cols}, ${circleSize}px)`,
-                            gap: `${circleGap}px`,
-                          }}
-                        >
-                          {/* Empty cells for startDay offset */}
-                          {Array.from({ length: startDay }, (_, i) => (
-                            <div key={`empty-${i}`} style={{ width: circleSize, height: circleSize }} />
-                          ))}
-
-                          {/* Day buttons */}
-                          {Array.from({ length: days }, (_, dayIdx) => {
-                            const dayNum = dayIdx + 1;
-                            const isDayDisabled = monthDisabledDays.has(dayNum);
-                            const isDaySelected = !isDayDisabled && monthSelectedDays.has(dayNum);
-                            const isDayHovered = !isDayDisabled && hoveredDay?.month === option.monthIndex && hoveredDay?.day === dayNum;
-
-                            return (
-                              <button
-                                key={dayNum}
-                                type="button"
-                                className="flex items-center justify-center transition-all duration-150"
-                                disabled={isDayDisabled}
-                                style={{
-                                  width: circleSize,
-                                  height: circleSize,
-                                  borderRadius: '50%',
-                                  border: 'none',
-                                  padding: 0,
-                                  cursor: isDayDisabled ? 'not-allowed' : 'pointer',
-                                  transform: isDayHovered ? 'scale(1.15)' : 'scale(1)',
-                                  zIndex: isDayHovered ? 10 : 1,
-                                  opacity: isDayDisabled ? 0.3 : 1,
-                                  background: isDaySelected
-                                    ? 'rgb(239, 68, 68)'
-                                    : isDayDisabled
-                                      ? 'rgba(200, 200, 200, 0.3)'
-                                      : 'rgba(255, 255, 255, 0.6)',
-                                  backdropFilter: 'blur(8px)',
-                                  WebkitBackdropFilter: 'blur(8px)',
-                                  boxShadow: isDaySelected
-                                    ? '0 2px 8px rgba(239, 68, 68, 0.3)'
-                                    : '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                  fontFamily: 'var(--font-open-sans)',
-                                  fontSize: '11px',
-                                  fontWeight: 450,
-                                  color: isDaySelected ? '#FFFFFF' : isDayDisabled ? '#A0A0A0' : '#2C2C2C',
-                                }}
-                                onMouseDown={(e) => {
-                                  if (isDayDisabled) return;
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDragStart(option.monthIndex, dayNum);
-                                }}
-                                onMouseEnter={() => {
-                                  if (isDayDisabled) return;
-                                  setHoveredDay({ month: option.monthIndex, day: dayNum });
-                                  if (isDragging) {
-                                    handleDragOver(option.monthIndex, dayNum);
-                                  }
-                                }}
-                                onMouseLeave={() => setHoveredDay(null)}
-                              >
-                                {dayNum}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <button
-                className="flex items-center justify-center transition-all ai-glass-border"
-                style={{
-                  ...aiGlassLightBorderStyle('50%', '0, 0, 0', 0.08),
-                  width: 32,
-                  height: 32,
-                  flexShrink: 0,
-                  opacity: timeSelectionIndex < monthCardCount - 1 ? 1 : 0.4,
-                }}
-                onClick={() => setTimeSelectionIndex(Math.min(monthCardCount - 1, timeSelectionIndex + 1))}
-                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                disabled={timeSelectionIndex >= monthCardCount - 1}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    ...aiGlassLightContentStyle('50%', 0.5),
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M4.5 3L7.5 6L4.5 9" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

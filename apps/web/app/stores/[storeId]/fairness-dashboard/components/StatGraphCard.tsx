@@ -1,116 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-// =============================================================================
-// AI Glass Border Style - Faded corner border effect
-// =============================================================================
-const aiGlassBorderStyle = (
-  borderRadius: string | number = '1rem',
-  borderColor?: string,
-  borderOpacity?: number
-): React.CSSProperties => ({
-  borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
-  position: 'relative' as const,
-  ...(borderColor && { '--border-color': borderColor } as React.CSSProperties),
-  ...(borderOpacity !== undefined && { '--border-opacity': borderOpacity } as React.CSSProperties),
-});
-
-// CSS for the glass border pseudo-element (must be injected into the page)
-export const statGraphCardStyles = `
-  .stat-card-glass-border {
-    position: relative;
-    --border-color: 255, 255, 255;
-    --border-opacity: 0.08;
-  }
-  .stat-card-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .graph-container-glass-border {
-    position: relative;
-    --border-color: 255, 255, 255;
-    --border-opacity: 0.08;
-  }
-  .graph-container-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .circle-button-glass-border {
-    position: relative;
-    --border-color: 255, 255, 255;
-    --border-opacity: 0.12;
-  }
-  .circle-button-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .icon-button-glass-border {
-    position: relative;
-    --border-color: 255, 255, 255;
-    --border-opacity: 0.12;
-  }
-  .icon-button-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .quick-card-glass-border {
-    --border-color: 255, 255, 255;
-    --border-opacity: 0.08;
-  }
-  .quick-card-glass-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(20deg, transparent 0%, rgba(var(--border-color), var(--border-opacity)) 22%, rgba(var(--border-color), var(--border-opacity)) 78%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-`;
+import { CardSmall, aiGlassLightBorderStyle } from '@/components/ui/ai-glass';
 
 interface SparklineCardData {
   type: 'sparkline';
@@ -509,29 +398,23 @@ export function StatGraphCard({ data, children }: StatGraphCardProps) {
   const selectedStatusBarData = data.type === 'statusBar' ? data.barData[displayedBarIndex] : null;
 
   return (
-    <div 
-      className="stat-card-glass-border" 
-      style={{ 
-        ...aiGlassBorderStyle('1rem', '255, 255, 255', 0.08),
-        height: 120,
-      }}
+    <CardSmall
+      lightMode={true}
+      style={{ height: 120 }}
+      contentStyle={{ padding: 0, position: 'relative' }}
     >
-      <div 
-        className="relative w-full h-full" 
-        style={{ 
-          borderRadius: '1rem', 
-          overflow: 'hidden',
-          background: 'rgba(255, 255, 255, 0.05)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
-        }}
-      >
         {/* Top left - Icon */}
-        <div 
-          className="absolute flex items-center justify-center rounded-md icon-button-glass-border"
-        style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', width: 24, height: 24, top: 16, left: 16 }}
-      >
+        <div
+          className="absolute flex items-center justify-center rounded-md ai-glass-border"
+          style={{
+            ...aiGlassLightBorderStyle('0.375rem', '0, 0, 0', 0.12),
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            width: 24,
+            height: 24,
+            top: 16,
+            left: 16
+          }}
+        >
         <span style={{ color: '#8a8a8f' }}>
           {data.icon || <DefaultIcon />}
         </span>
@@ -648,7 +531,6 @@ export function StatGraphCard({ data, children }: StatGraphCardProps) {
         )}
       </div>
       {children}
-    </div>
-    </div>
+    </CardSmall>
   );
 }

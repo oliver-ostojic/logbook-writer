@@ -110,8 +110,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   background: linear-gradient(
     135deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.35) var(--border-fade),
-    rgba(255, 255, 255, 0.35) calc(100% - var(--border-fade)),
+    rgba(var(--border-color), var(--border-opacity)) var(--border-fade),
+    rgba(var(--border-color), var(--border-opacity)) calc(100% - var(--border-fade)),
     transparent 100%
   );
   /* Mask to only show as border */
