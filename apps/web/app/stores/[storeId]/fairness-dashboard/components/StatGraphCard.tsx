@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CardSmall, aiGlassLightBorderStyle } from '@/components/ui/ai-glass';
+import { CardSmall, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 interface SparklineCardData {
   type: 'sparkline';
@@ -47,14 +47,6 @@ interface StatGraphCardProps {
   children?: React.ReactNode;
 }
 
-const DefaultIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-    <path d="M11.625 16.5a1.875 1.875 0 1 0 0-3.75 1.875 1.875 0 0 0 0 3.75Z" />
-    <path fillRule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875Zm6 16.5c.66 0 1.277-.19 1.797-.518l1.048 1.048a.75.75 0 0 0 1.06-1.06l-1.047-1.048A3.375 3.375 0 1 0 11.625 18Z" clipRule="evenodd" />
-    <path d="M14.25 5.25a5.23 5.23 0 0 0-1.279-3.434 9.768 9.768 0 0 1 6.963 6.963A5.23 5.23 0 0 0 16.5 7.5h-1.875a.375.375 0 0 1-.375-.375V5.25Z" />
-  </svg>
-);
-
 // Mini sparkline component - interactive line chart with dots
 function MiniSparkline({ 
   data,
@@ -75,14 +67,18 @@ function MiniSparkline({
   onHoverPoint: (index: number | null) => void;
   onHoverChart: (isHovering: boolean) => void;
 }) {
-  const width = 90;
-  const height = 36;
+  const width = 100;
+  const height = 43;
   const padding = 6; // Increased padding to prevent dot clipping at edges
   
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
   
+  const dotRadius = 3;
+  const dotStrokeWidth = 3;
+  const dotOuterRadius = dotRadius + dotStrokeWidth / 2; // Outer edge of the ring
+
   // Calculate points
   const points = data.map((value, index) => {
     // For single point, position at right edge; otherwise distribute across width
@@ -92,14 +88,31 @@ function MiniSparkline({
     const y = height - padding - ((value - min) / range) * (height - padding * 2);
     return { x, y };
   });
-  
-  // Create path
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  
+
+  // Calculate line segments that stop at circle outer edges
+  const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 0) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      segments.push({
+        x1: p1.x + nx * dotOuterRadius,
+        y1: p1.y + ny * dotOuterRadius,
+        x2: p2.x - nx * dotOuterRadius,
+        y2: p2.y - ny * dotOuterRadius,
+      });
+    }
+  }
+
   return (
-    <svg 
-      width={width} 
-      height={height} 
+    <svg
+      width={width}
+      height={height}
       className="flex-shrink-0"
       onMouseEnter={() => onHoverChart(true)}
       onMouseLeave={() => {
@@ -107,15 +120,19 @@ function MiniSparkline({
         onHoverPoint(null);
       }}
     >
-      {/* Line */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke="#464548"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Line segments between dots */}
+      {segments.map((seg, i) => (
+        <line
+          key={i}
+          x1={seg.x1}
+          y1={seg.y1}
+          x2={seg.x2}
+          y2={seg.y2}
+          stroke="#464548"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+      ))}
       {/* Dots */}
       {points.map((p, i) => {
         const isHovered = i === hoveredIndex;
@@ -129,13 +146,13 @@ function MiniSparkline({
             key={i}
             cx={p.x}
             cy={p.y}
-            r={isHovered ? 4 : 3}
-            fill="#262628"
-            stroke={isHovered || isLastHovered || showAsSelected ? '#888596' : '#464548'}
-            strokeWidth={2}
-            style={{ 
+            r={dotRadius}
+            fill="none"
+            stroke={isHovered || isLastHovered || showAsSelected ? '#ef4444' : '#464548'}
+            strokeWidth={dotStrokeWidth}
+            style={{
               cursor: 'pointer',
-              transition: 'r 0.15s ease, stroke 0.15s ease',
+              transition: 'stroke 0.15s ease',
             }}
             onClick={() => onSelectPoint(i)}
             onMouseEnter={() => onHoverPoint(i)}
@@ -148,7 +165,7 @@ function MiniSparkline({
 
 // Mini pie chart component - simple donut showing met vs not met
 function MiniPieChart({ data }: { data: { met: number; notMet: number } }) {
-  const size = 44;
+  const size = 42;
   const strokeWidth = 7;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -175,7 +192,7 @@ function MiniPieChart({ data }: { data: { met: number; notMet: number } }) {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#888596"
+        stroke="#ef4444"
         strokeWidth={strokeWidth}
         strokeDasharray={`${metLength} ${notMetLength}`}
         strokeLinecap="round"
@@ -185,8 +202,8 @@ function MiniPieChart({ data }: { data: { met: number; notMet: number } }) {
 }
 
 // Mini bar chart component - interactive vertical bars for role distribution
-function MiniBarChart({ 
-  data, 
+function MiniBarChart({
+  data,
   selectedIndex,
   hoveredIndex,
   lastHoveredIndex,
@@ -194,8 +211,8 @@ function MiniBarChart({
   onSelectBar,
   onHoverBar,
   onHoverChart,
-}: { 
-  data: { role: string; hours: number }[]; 
+}: {
+  data: { role: string; hours: number }[];
   selectedIndex: number;
   hoveredIndex: number | null;
   lastHoveredIndex: number | null;
@@ -204,12 +221,12 @@ function MiniBarChart({
   onHoverBar: (index: number | null) => void;
   onHoverChart: (isHovering: boolean) => void;
 }) {
-  const width = 96;
-  const height = 44;
+  const width = 100;
+  const height = 47;
   const barGap = 3;
   const barCount = data.length;
   const barWidth = (width - (barCount - 1) * barGap) / barCount;
-  
+
   const max = Math.max(...data.map(d => d.hours));
   
   return (
@@ -241,8 +258,8 @@ function MiniBarChart({
             width={barWidth}
             height={isHovered ? barHeight + 2 : barHeight}
             rx={barWidth / 2}
-            fill={isHovered || isLastHovered || showAsSelected ? '#888596' : '#464548'}
-            style={{ 
+            fill={isHovered || isLastHovered || showAsSelected ? '#ef4444' : '#464548'}
+            style={{
               cursor: 'pointer',
               transition: 'y 0.15s ease, height 0.15s ease, fill 0.15s ease',
             }}
@@ -256,8 +273,8 @@ function MiniBarChart({
 }
 
 // Mini status bar chart component - shows role fairness with status labels
-function MiniStatusBar({ 
-  data, 
+function MiniStatusBar({
+  data,
   selectedIndex,
   hoveredIndex,
   lastHoveredIndex,
@@ -265,8 +282,8 @@ function MiniStatusBar({
   onSelectBar,
   onHoverBar,
   onHoverChart,
-}: { 
-  data: { role: string; value: number; status: string }[]; 
+}: {
+  data: { role: string; value: number; status: string }[];
   selectedIndex: number;
   hoveredIndex: number | null;
   lastHoveredIndex: number | null;
@@ -275,12 +292,12 @@ function MiniStatusBar({
   onHoverBar: (index: number | null) => void;
   onHoverChart: (isHovering: boolean) => void;
 }) {
-  const width = 96;
-  const height = 44;
+  const width = 100;
+  const height = 47;
   const barGap = 3;
   const barCount = data.length;
   const barWidth = (width - (barCount - 1) * barGap) / barCount;
-  
+
   const max = Math.max(...data.map(d => d.value));
   
   return (
@@ -311,8 +328,8 @@ function MiniStatusBar({
             width={barWidth}
             height={isHovered ? barHeight + 2 : barHeight}
             rx={barWidth / 2}
-            fill={isHovered || isLastHovered || showAsSelected ? '#888596' : '#464548'}
-            style={{ 
+            fill={isHovered || isLastHovered || showAsSelected ? '#ef4444' : '#464548'}
+            style={{
               cursor: 'pointer',
               transition: 'y 0.15s ease, height 0.15s ease, fill 0.15s ease',
             }}
@@ -400,32 +417,62 @@ export function StatGraphCard({ data, children }: StatGraphCardProps) {
   return (
     <CardSmall
       lightMode={true}
-      style={{ height: 120 }}
+      borderRadius="1.5rem"
+      style={{ height: 128 }}
       contentStyle={{ padding: 0, position: 'relative' }}
     >
-        {/* Top left - Icon */}
-        <div
-          className="absolute flex items-center justify-center rounded-md ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('0.375rem', '0, 0, 0', 0.12),
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            width: 24,
-            height: 24,
-            top: 16,
-            left: 16
-          }}
-        >
-        <span style={{ color: '#8a8a8f' }}>
-          {data.icon || <DefaultIcon />}
-        </span>
+      {/* Top - Outer glass card wrapping title and status bubbles */}
+      <div className="absolute" style={{ top: 0, left: 0, right: 0 }}>
+        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08) }}>
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.4),
+              padding: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            {/* Title bubble */}
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+              <div
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.5),
+                  padding: '8px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {data.title}
+              </div>
+            </div>
+            {/* Status bubble */}
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+              <div
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.5),
+                  padding: '8px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  color: '#2C2C2C',
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {data.type === 'bar' ? (selectedBarData ? selectedBarData.role : data.status) :
+                 data.type === 'statusBar' ? (selectedStatusBarData ? selectedStatusBarData.role : data.status) :
+                 data.status}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      {/* Top right - Status */}
-      <span className="absolute text-[13px]" style={{ fontFamily: 'var(--font-open-sans)', color: '#7C7F82', fontWeight: 350, top: 16, right: 16, lineHeight: 1, textAlign: 'right' }}>
-        {data.type === 'bar' ? (selectedBarData ? selectedBarData.role : data.status) :
-         data.type === 'statusBar' ? (selectedStatusBarData ? selectedStatusBarData.role : data.status) :
-         data.status}
-      </span>
       
       {/* Bottom right - Graph (positioned from bottom edge of graph) */}
       <div className="absolute" style={{ bottom: 16, right: 16 }}>
@@ -468,66 +515,56 @@ export function StatGraphCard({ data, children }: StatGraphCardProps) {
         )}
       </div>
       
-      {/* Bottom left - Text content (offset by ~6px to account for text descender space) */}
-      <div className="absolute" style={{ bottom: 10, left: 16 }}>
+      {/* Bottom left - Value */}
+      <div className="absolute" style={{ bottom: 12, left: 16 }}>
         {data.type === 'statusBar' ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="text-[14px]" style={{ fontFamily: 'var(--font-open-sans)', color: '#7C7F82', fontWeight: 350 }}>
-              {data.title}
-            </span>
-            <span className="text-2xl" style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 500, color: (() => {
-              const status = selectedStatusBarData?.status.toLowerCase() || '';
-              if (status.includes('excellent')) return '#4ade80'; // green
-              if (status.includes('good')) return '#60a5fa'; // blue
-              if (status.includes('ok')) return '#fbbf24'; // yellow
-              if (status.includes('bad')) return '#f87171'; // red
-              return '#DBDADB'; // default
-            })() }}>
-              {selectedStatusBarData ? selectedStatusBarData.status : ''}
-            </span>
-          </div>
+          <span className="text-3xl" style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 500, lineHeight: 1, color: (() => {
+            const status = selectedStatusBarData?.status.toLowerCase() || '';
+            if (status.includes('excellent')) return '#4ade80'; // green
+            if (status.includes('good')) return '#60a5fa'; // blue
+            if (status.includes('ok')) return '#fbbf24'; // yellow
+            if (status.includes('bad')) return '#f87171'; // red
+            return '#DBDADB'; // default
+          })() }}>
+            {selectedStatusBarData ? selectedStatusBarData.status : ''}
+          </span>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="text-[14px]" style={{ fontFamily: 'var(--font-open-sans)', color: '#7C7F82', fontWeight: 350 }}>
-              {data.title}
-            </span>
-            <span className="text-2xl" style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 500, color: '#FFFFFF' }}>
-              {(() => {
-                // Handle sparkline - show selected/hovered point value
-                if (data.type === 'sparkline' && selectedSparklineData !== null && selectedSparklineData !== undefined) {
-                  return <>{selectedSparklineData}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
-                }
-                // Fallback to data.value for sparkline when no valid point is selected
-                if (data.type === 'sparkline') {
-                  return <>{data.value}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
-                }
-                if (data.type === 'bar' && selectedBarData) {
-                  const mins = selectedBarData.hours;
-                  const hrs = Math.floor(mins / 60);
-                  const remainingMins = mins % 60;
-                  // Use barUnit if provided and NOT 'min' (e.g., "crew" for histograms)
-                  // For 'min' or no barUnit, show hr/min format
-                  if (data.barUnit && data.barUnit !== 'min') {
-                    return <>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.barUnit}</span></>;
-                  } else if (hrs > 0 && remainingMins > 0) {
-                    return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr </span>{remainingMins}<span className="text-lg" style={{ color: '#7C7F82' }}> min</span></>;
-                  } else if (hrs > 0) {
-                    return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr</span></>;
-                  } else {
-                    return <>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> min</span></>;
-                  }
-                }
-                // Handle string values like "1 hr 30" from data.value
-                if (typeof data.value === 'string' && data.value.includes(' hr ')) {
-                  const parts = data.value.split(' hr ');
-                  const hrs = parts[0];
-                  const mins = parts[1];
-                  return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr </span>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
-                }
+          <span className="text-3xl" style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 500, lineHeight: 1, color: '#2C2C2C' }}>
+            {(() => {
+              // Handle sparkline - show selected/hovered point value
+              if (data.type === 'sparkline' && selectedSparklineData !== null && selectedSparklineData !== undefined) {
+                return <>{selectedSparklineData}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
+              }
+              // Fallback to data.value for sparkline when no valid point is selected
+              if (data.type === 'sparkline') {
                 return <>{data.value}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
-              })()}
-            </span>
-          </div>
+              }
+              if (data.type === 'bar' && selectedBarData) {
+                const mins = selectedBarData.hours;
+                const hrs = Math.floor(mins / 60);
+                const remainingMins = mins % 60;
+                // Use barUnit if provided and NOT 'min' (e.g., "crew" for histograms)
+                // For 'min' or no barUnit, show hr/min format
+                if (data.barUnit && data.barUnit !== 'min') {
+                  return <>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.barUnit}</span></>;
+                } else if (hrs > 0 && remainingMins > 0) {
+                  return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr </span>{remainingMins}<span className="text-lg" style={{ color: '#7C7F82' }}> min</span></>;
+                } else if (hrs > 0) {
+                  return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr</span></>;
+                } else {
+                  return <>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> min</span></>;
+                }
+              }
+              // Handle string values like "1 hr 30" from data.value
+              if (typeof data.value === 'string' && data.value.includes(' hr ')) {
+                const parts = data.value.split(' hr ');
+                const hrs = parts[0];
+                const mins = parts[1];
+                return <>{hrs}<span className="text-lg" style={{ color: '#7C7F82' }}> hr </span>{mins}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
+              }
+              return <>{data.value}<span className="text-lg" style={{ color: '#7C7F82' }}> {data.unit}</span></>;
+            })()}
+          </span>
         )}
       </div>
       {children}
