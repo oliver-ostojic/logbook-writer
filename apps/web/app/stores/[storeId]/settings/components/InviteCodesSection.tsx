@@ -288,13 +288,13 @@ export function InviteCodesSection({ storeId }: InviteCodesSectionProps) {
                   key={code.id}
                   className="ai-glass-border"
                   style={{
-                    ...aiGlassLightBorderStyle('10px', '0, 0, 0', 0.08),
+                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
                     opacity: isActive ? 1 : 0.6,
                   }}
                 >
                   <div
                     style={{
-                      ...aiGlassLightContentStyle('10px', 0.4),
+                      ...aiGlassLightContentStyle('1rem', 0.4),
                       padding: '12px 16px',
                     }}
                   >
