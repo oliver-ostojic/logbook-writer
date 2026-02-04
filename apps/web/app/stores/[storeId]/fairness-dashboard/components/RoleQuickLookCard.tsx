@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 // Trend types for the 5-option system
 type FairnessTrend = 
@@ -1256,3 +1257,329 @@ export function RoleQuickLookCardStatic({ card, onClick }: { card: RoleCardData;
 
 // Export RoleCardData type
 export type { RoleCardData };
+
+// Glass UI version for light mode list views
+export function RoleQuickLookCardGlass({ card, onClick }: { card: RoleCardData; onClick?: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="rounded-2xl px-4 py-3 flex flex-col gap-3"
+      style={{
+        ...aiGlassLightContentStyle('1rem', isHovered ? 0.7 : 0.6),
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+    >
+      {/* Role name - top */}
+      <span
+        style={{
+          fontFamily: 'var(--font-open-sans)',
+          color: '#2C2C2C',
+          fontWeight: 500,
+          fontSize: 14,
+        }}
+      >
+        {card.name}
+      </span>
+
+      {/* Stats grid and Lorenz curve - responsive flex layout */}
+      <div className="flex items-center gap-3" style={{ minHeight: 0 }}>
+        {/* Stats: 2 cols × 3 rows with divider */}
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          {/* Column 1 */}
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Fairness
+              </span>
+              <span
+                className="text-[13px] font-mono"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: getGiniColorLight(card.giniCoefficient),
+                  fontWeight: 500,
+                }}
+              >
+                {((1 - card.giniCoefficient) * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Vs roles
+              </span>
+              <span
+                className="text-[13px] font-mono"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: card.vsRoleAvgPct !== null ? getVsRoleAvgColorLight(card.vsRoleAvgPct) : '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                {card.vsRoleAvgPct !== null
+                  ? `${card.vsRoleAvgPct >= 0 ? '+' : ''}${card.vsRoleAvgPct.toFixed(1)}%`
+                  : 'N/A'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Avg shift time
+              </span>
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#2C2C2C',
+                  fontWeight: 350,
+                }}
+              >
+                {formatMinutesToReadable(card.avgMinutes)}
+              </span>
+            </div>
+          </div>
+
+          {/* Divider between stat columns */}
+          <div
+            className="hidden sm:block"
+            style={{
+              width: 1,
+              height: 72,
+              background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
+            }}
+          />
+
+          {/* Column 2 */}
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Trend
+              </span>
+              <div className="flex items-center gap-1">
+                {getTrendIconLight(card.trend)}
+                <span
+                  className="text-[12px]"
+                  style={{
+                    fontFamily: 'var(--font-open-sans)',
+                    color: getTrendColorLight(card.trend),
+                    fontWeight: 350,
+                  }}
+                >
+                  {getTrendLabel(card.trend)}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Total hrs
+              </span>
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#2C2C2C',
+                  fontWeight: 350,
+                }}
+              >
+                {card.medianHours}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Crew assigned
+              </span>
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#2C2C2C',
+                  fontWeight: 350,
+                }}
+              >
+                {card.crewCount}/{card.totalCrew || card.crewCount + 2}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider before graph */}
+        <div
+          className="hidden sm:block"
+          style={{
+            width: 1,
+            height: 72,
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
+          }}
+        />
+
+        {/* Lorenz Curve Graph */}
+        <div className="flex items-center justify-center flex-shrink-0" style={{ width: 100, height: 72 }}>
+          {(() => {
+            const data = card.lorenzData || [
+              { crewPct: 0, hoursPct: 0 },
+              { crewPct: 20, hoursPct: 10 },
+              { crewPct: 40, hoursPct: 25 },
+              { crewPct: 60, hoursPct: 45 },
+              { crewPct: 80, hoursPct: 70 },
+              { crewPct: 100, hoursPct: 100 },
+            ];
+            const width = 100;
+            const height = 72;
+            const padding = 8;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+
+            // Equality line (diagonal)
+            const equalityPoints = `${padding},${height - padding} ${width - padding},${padding}`;
+
+            // Lorenz curve path
+            const lorenzPath = data.map((point, i) => {
+              const x = padding + (point.crewPct / 100) * graphWidth;
+              const y = height - padding - (point.hoursPct / 100) * graphHeight;
+              return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ');
+
+            // Area below the Lorenz curve (gradient drops below like sparkline)
+            const areaPath = data.map((point, i) => {
+              const x = padding + (point.crewPct / 100) * graphWidth;
+              const y = height - padding - (point.hoursPct / 100) * graphHeight;
+              return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ') + ` L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+
+            const giniColor = getGiniColorLight(card.giniCoefficient);
+            const gradientId = `lorenzGradientGlass-${card.id}`;
+
+            return (
+              <svg width={width} height={height} style={{ overflow: 'visible' }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor={giniColor} stopOpacity="0.3" />
+                    <stop offset="100%" stopColor={giniColor} stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+
+                {/* Equality line (perfect fairness) */}
+                <polyline
+                  points={equalityPoints}
+                  fill="none"
+                  stroke="rgba(0,0,0,0.15)"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                />
+
+                {/* Area fill below curve */}
+                <path
+                  d={areaPath}
+                  fill={`url(#${gradientId})`}
+                />
+
+                {/* Lorenz curve */}
+                <path
+                  d={lorenzPath}
+                  fill="none"
+                  stroke={giniColor}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* End dot */}
+                <circle
+                  cx={width - padding}
+                  cy={padding}
+                  r="2.5"
+                  fill={giniColor}
+                />
+              </svg>
+            );
+          })()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Light mode color helpers
+function getGiniColorLight(gini: number): string {
+  // Low gini (< 0.2) = very fair = green, high gini (> 0.4) = unfair = red
+  if (gini < 0.2) return '#16a34a';  // green-600
+  if (gini < 0.35) return '#ca8a04'; // yellow-600
+  return '#dc2626';  // red-600
+}
+
+function getVsRoleAvgColorLight(pct: number): string {
+  if (pct >= 0) return '#16a34a';  // green-600
+  return '#dc2626';  // red-600
+}
+
+function getTrendColorLight(trend: FairnessTrend): string {
+  switch (trend) {
+    case 'significantly_improving':
+    case 'improving':
+      return '#16a34a';  // green-600
+    case 'stable':
+      return '#6B6B6B';  // neutral gray
+    case 'worsening':
+    case 'significantly_worsening':
+      return '#dc2626';  // red-600
+  }
+}
+
+function getTrendIconLight(trend: FairnessTrend) {
+  switch (trend) {
+    case 'significantly_improving':
+      return <span style={{ color: '#16a34a', fontSize: '10px' }}>▲▲</span>;
+    case 'improving':
+      return <span style={{ color: '#16a34a', fontSize: '10px' }}>▲</span>;
+    case 'stable':
+      return <span style={{ color: '#6B6B6B', fontSize: '10px' }}>●</span>;
+    case 'worsening':
+      return <span style={{ color: '#dc2626', fontSize: '10px' }}>▼</span>;
+    case 'significantly_worsening':
+      return <span style={{ color: '#dc2626', fontSize: '10px' }}>▼▼</span>;
+  }
+}

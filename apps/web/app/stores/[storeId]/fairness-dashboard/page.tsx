@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
@@ -2489,128 +2489,298 @@ export default function FairnessDashboardPage() {
                 </>
               ) : activeView === 'crew' ? (
                 /* Crew List View - Paginated */
-                <div
-                  className="ai-glass-border"
-                  style={{
-                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                    ...aiGlassLightContentStyle('1.5rem', 0.6),
-                    padding: 16,
-                  }}
-                >
-                  {/* Card rows */}
-                  <div className="flex flex-col gap-3">
-                    {computedCrewCards
-                      .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
-                      .map((card) => (
-                        <div
-                          key={card.id}
-                          className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
-                          style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
-                          onClick={() => {
-                            setSelectedCrewId(card.id);
-                            setSelectedCrew(card);
-                            setActiveView('overview');
-                          }}
-                        >
-                          <CrewQuickLookCardStatic card={card} />
-                        </div>
-                      ))}
-                  </div>
-                  {/* Pagination */}
-                  {computedCrewCards.length > CREW_CARDS_PER_PAGE && (
-                    <div className="flex items-center justify-center gap-2 mt-4">
-                      <button
-                        onClick={() => setCrewPage(p => Math.max(1, p - 1))}
-                        disabled={crewPage === 1}
-                        className="px-3 py-1 rounded-lg text-sm"
-                        style={{
-                          background: crewPage === 1 ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
-                          color: crewPage === 1 ? '#9A999E' : '#2C2C2C',
-                          cursor: crewPage === 1 ? 'default' : 'pointer',
-                        }}
-                      >
-                        ◀ Prev
-                      </button>
-                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
-                        Page {crewPage} of {Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE)}
-                      </span>
-                      <button
-                        onClick={() => setCrewPage(p => Math.min(Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE), p + 1))}
-                        disabled={crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE)}
-                        className="px-3 py-1 rounded-lg text-sm"
-                        style={{
-                          background: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
-                          color: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? '#9A999E' : '#2C2C2C',
-                          cursor: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? 'default' : 'pointer',
-                        }}
-                      >
-                        Next ▶
-                      </button>
+                (() => {
+                  // Filter and sort crew cards alphabetically by name
+                  const filteredCrewCards = computedCrewCards
+                    .filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
+                    .sort((a, b) => a.title.localeCompare(b.title));
+                  const crewTotalPages = Math.ceil(filteredCrewCards.length / CREW_CARDS_PER_PAGE);
+                  const showCrewPagination = filteredCrewCards.length > CREW_CARDS_PER_PAGE;
+
+                  return (
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      }}
+                    >
+                      {/* Embedded header with search bar and pagination */}
+                      <div style={{ margin: '0', width: '100%' }}>
+                        <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+                          <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
+                            {/* Search bar - fills available space */}
+                            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flex: 1, minWidth: 0 }}>
+                              <div
+                                className="flex items-center"
+                                style={{
+                                  ...aiGlassLightContentStyle('9999px', 0.6),
+                                  padding: '0 14px',
+                                  height: '36px',
+                                  width: '100%',
+                                }}
+                              >
+                                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                                <input
+                                  type="text"
+                                  placeholder="Search crew..."
+                                  value={crewSearchQuery}
+                                  onChange={(e) => {
+                                    setCrewSearchQuery(e.target.value);
+                                    setCrewPage(1);
+                                  }}
+                                  className="focus:outline-none focus:ring-0 flex-1"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#2C2C2C',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '14px',
+                                    fontWeight: 400,
+                                    width: '100%',
+                                    marginLeft: '8px',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {/* Pagination - right aligned, only show if needed */}
+                            {showCrewPagination && (
+                              <div
+                                className="ai-glass-border"
+                                style={{
+                                  ...aiGlassLightBorderStyle('9999px'),
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <div
+                                  className="flex items-center gap-1"
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.4),
+                                    padding: '0 6px',
+                                    height: '36px',
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => setCrewPage(p => Math.max(1, p - 1))}
+                                    disabled={crewPage === 1}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0 8px',
+                                      cursor: crewPage === 1 ? 'default' : 'pointer',
+                                      color: crewPage === 1 ? '#9A999E' : '#6B6B6B',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                    }}
+                                  >
+                                    ◀
+                                  </button>
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '0 4px' }}>
+                                    {crewPage} / {crewTotalPages}
+                                  </span>
+                                  <button
+                                    onClick={() => setCrewPage(p => Math.min(crewTotalPages, p + 1))}
+                                    disabled={crewPage >= crewTotalPages}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0 8px',
+                                      cursor: crewPage >= crewTotalPages ? 'default' : 'pointer',
+                                      color: crewPage >= crewTotalPages ? '#9A999E' : '#6B6B6B',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                    }}
+                                  >
+                                    ▶
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </GlassPillCard>
+                      </div>
+                      {/* Card rows */}
+                      <div className="flex flex-col gap-3" style={{ padding: '16px' }}>
+                        {filteredCrewCards
+                          .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
+                          .map((card) => (
+                            <div
+                              key={card.id}
+                              className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
+                              style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
+                              onClick={() => {
+                                setSelectedCrewId(card.id);
+                                setSelectedCrew(card);
+                                setActiveView('overview');
+                              }}
+                            >
+                              <CrewQuickLookCardGlass card={card} />
+                            </div>
+                          ))}
+                        {filteredCrewCards.length === 0 && (
+                          <div
+                            style={{
+                              textAlign: 'center',
+                              padding: '2rem',
+                              color: '#6B6B6B',
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            No crew members found
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : activeView === 'roles' ? (
                 /* Roles List View - Paginated */
-                <div
-                  className="ai-glass-border"
-                  style={{
-                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                    ...aiGlassLightContentStyle('1.5rem', 0.6),
-                    padding: 16,
-                  }}
-                >
-                  {/* Card rows */}
-                  <div className="flex flex-col gap-3">
-                    {computedRoleCards
-                      .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
-                      .map((card) => (
-                        <div
-                          key={card.id}
-                          className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
-                          style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
-                          onClick={() => {
-                            setSelectedRoleId(card.id);
-                            setSelectedRole(card);
-                            setActiveView('overview');
-                          }}
-                        >
-                          <RoleQuickLookCardStatic card={card} />
-                        </div>
-                      ))}
-                  </div>
-                  {/* Pagination */}
-                  {computedRoleCards.length > ROLE_CARDS_PER_PAGE && (
-                    <div className="flex items-center justify-center gap-2 mt-4">
-                      <button
-                        onClick={() => setRolePage(p => Math.max(1, p - 1))}
-                        disabled={rolePage === 1}
-                        className="px-3 py-1 rounded-lg text-sm"
-                        style={{
-                          background: rolePage === 1 ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
-                          color: rolePage === 1 ? '#9A999E' : '#2C2C2C',
-                          cursor: rolePage === 1 ? 'default' : 'pointer',
-                        }}
-                      >
-                        ◀ Prev
-                      </button>
-                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
-                        Page {rolePage} of {Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE)}
-                      </span>
-                      <button
-                        onClick={() => setRolePage(p => Math.min(Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE), p + 1))}
-                        disabled={rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE)}
-                        className="px-3 py-1 rounded-lg text-sm"
-                        style={{
-                          background: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
-                          color: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? '#9A999E' : '#2C2C2C',
-                          cursor: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? 'default' : 'pointer',
-                        }}
-                      >
-                        Next ▶
-                      </button>
+                (() => {
+                  // Filter role cards by search query
+                  const filteredRoleCards = computedRoleCards.filter(card =>
+                    card.name.toLowerCase().includes(roleSearchQuery.toLowerCase())
+                  );
+                  const roleTotalPages = Math.ceil(filteredRoleCards.length / ROLE_CARDS_PER_PAGE);
+                  const showRolePagination = filteredRoleCards.length > ROLE_CARDS_PER_PAGE;
+
+                  return (
+                    <div
+                      className="ai-glass-border"
+                      style={{
+                        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      }}
+                    >
+                      {/* Embedded header with search bar and pagination */}
+                      <div style={{ margin: '0', width: '100%' }}>
+                        <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+                          <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
+                            {/* Search bar - fills available space */}
+                            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flex: 1, minWidth: 0 }}>
+                              <div
+                                className="flex items-center"
+                                style={{
+                                  ...aiGlassLightContentStyle('9999px', 0.6),
+                                  padding: '0 14px',
+                                  height: '36px',
+                                  width: '100%',
+                                }}
+                              >
+                                <MagnifyingGlassIcon style={{ width: 14, height: 14, color: '#6B6B6B', flexShrink: 0 }} />
+                                <input
+                                  type="text"
+                                  placeholder="Search roles..."
+                                  value={roleSearchQuery}
+                                  onChange={(e) => {
+                                    setRoleSearchQuery(e.target.value);
+                                    setRolePage(1);
+                                  }}
+                                  className="focus:outline-none focus:ring-0 flex-1"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#2C2C2C',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '14px',
+                                    fontWeight: 400,
+                                    width: '100%',
+                                    marginLeft: '8px',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {/* Pagination - right aligned, only show if needed */}
+                            {showRolePagination && (
+                              <div
+                                className="ai-glass-border"
+                                style={{
+                                  ...aiGlassLightBorderStyle('9999px'),
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <div
+                                  className="flex items-center gap-1"
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.4),
+                                    padding: '0 6px',
+                                    height: '36px',
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => setRolePage(p => Math.max(1, p - 1))}
+                                    disabled={rolePage === 1}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0 8px',
+                                      cursor: rolePage === 1 ? 'default' : 'pointer',
+                                      color: rolePage === 1 ? '#9A999E' : '#6B6B6B',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                    }}
+                                  >
+                                    ◀
+                                  </button>
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '0 4px' }}>
+                                    {rolePage} / {roleTotalPages}
+                                  </span>
+                                  <button
+                                    onClick={() => setRolePage(p => Math.min(roleTotalPages, p + 1))}
+                                    disabled={rolePage >= roleTotalPages}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0 8px',
+                                      cursor: rolePage >= roleTotalPages ? 'default' : 'pointer',
+                                      color: rolePage >= roleTotalPages ? '#9A999E' : '#6B6B6B',
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '14px',
+                                    }}
+                                  >
+                                    ▶
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </GlassPillCard>
+                      </div>
+                      {/* Card rows */}
+                      <div className="flex flex-col gap-3" style={{ padding: '16px' }}>
+                        {filteredRoleCards
+                          .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
+                          .map((card) => (
+                            <div
+                              key={card.id}
+                              className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
+                              style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
+                              onClick={() => {
+                                setSelectedRoleId(card.id);
+                                setSelectedRole(card);
+                                setActiveView('overview');
+                              }}
+                            >
+                              <RoleQuickLookCardGlass card={card} />
+                            </div>
+                          ))}
+                        {filteredRoleCards.length === 0 && (
+                          <div
+                            style={{
+                              textAlign: 'center',
+                              padding: '2rem',
+                              color: '#6B6B6B',
+                              fontFamily: 'var(--font-open-sans)',
+                              fontSize: '14px',
+                            }}
+                          >
+                            No roles found
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : (
                 <>
                   {/* Outer glass card wrapper with embedded header */}
