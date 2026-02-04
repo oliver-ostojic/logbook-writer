@@ -1765,10 +1765,7 @@ export default function FairnessDashboardPage() {
               {/* Conditional content: Individual Crew Dashboard, Dashboard, or Expanded Quick Looks */}
               {selectedCrew ? (
                 /* Individual Crew Dashboard */
-                <div
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-300"
-                  style={{ animationFillMode: 'both' }}
-                >
+                <>
                   {/* Outer glass card wrapper with embedded header */}
                   <div
                     className="ai-glass-border"
@@ -2176,7 +2173,7 @@ export default function FairnessDashboardPage() {
                     </div>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
-                </div>
+                </>
               ) : selectedRole ? (
                 /* Individual Role Dashboard */
                 <>
