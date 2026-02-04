@@ -4,11 +4,11 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon, ClockIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard } from '@/components/ui/ai-glass';
 import { NavStatsCard } from '../home/components/NavStatsCard';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
@@ -212,6 +212,22 @@ export default function FairnessDashboardPage() {
   const [isTimeWindowOpen, setIsTimeWindowOpen] = useState(false);
   const timeWindowRef = useRef<HTMLDivElement>(null);
   const timeWindowDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Placeholder state for embedded header controls (visual only for now)
+  const [headerPage, setHeaderPage] = useState(1);
+  const [headerFilter1, setHeaderFilter1] = useState<'everyone' | 'mine'>('everyone');
+  const [headerFilter2, setHeaderFilter2] = useState<'recent' | 'today' | 'oneweek' | 'onemonth'>('recent');
+  const totalHeaderPages = 3;
+  const HEADER_FILTER1_OPTIONS = [
+    { id: 'everyone' as const, label: 'Everyone' },
+    { id: 'mine' as const, label: 'Mine' },
+  ];
+  const HEADER_FILTER2_OPTIONS = [
+    { id: 'recent' as const, label: 'Recent' },
+    { id: 'today' as const, label: 'Today' },
+    { id: 'oneweek' as const, label: 'One week' },
+    { id: 'onemonth' as const, label: 'One month' },
+  ];
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -2120,44 +2136,352 @@ export default function FairnessDashboardPage() {
                     />
                   </div>
                 </>
+              ) : activeView === 'crew' ? (
+                /* Crew List View - Paginated */
+                <div
+                  className="ai-glass-border"
+                  style={{
+                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: 16,
+                  }}
+                >
+                  {/* Card rows */}
+                  <div className="flex flex-col gap-3">
+                    {computedCrewCards
+                      .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
+                      .map((card) => (
+                        <div
+                          key={card.id}
+                          className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
+                          style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
+                          onClick={() => {
+                            setSelectedCrewId(card.id);
+                            setSelectedCrew(card);
+                            setActiveView('overview');
+                          }}
+                        >
+                          <CrewQuickLookCardStatic card={card} />
+                        </div>
+                      ))}
+                  </div>
+                  {/* Pagination */}
+                  {computedCrewCards.length > CREW_CARDS_PER_PAGE && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <button
+                        onClick={() => setCrewPage(p => Math.max(1, p - 1))}
+                        disabled={crewPage === 1}
+                        className="px-3 py-1 rounded-lg text-sm"
+                        style={{
+                          background: crewPage === 1 ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
+                          color: crewPage === 1 ? '#9A999E' : '#2C2C2C',
+                          cursor: crewPage === 1 ? 'default' : 'pointer',
+                        }}
+                      >
+                        ◀ Prev
+                      </button>
+                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
+                        Page {crewPage} of {Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE)}
+                      </span>
+                      <button
+                        onClick={() => setCrewPage(p => Math.min(Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE), p + 1))}
+                        disabled={crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE)}
+                        className="px-3 py-1 rounded-lg text-sm"
+                        style={{
+                          background: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
+                          color: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? '#9A999E' : '#2C2C2C',
+                          cursor: crewPage >= Math.ceil(computedCrewCards.length / CREW_CARDS_PER_PAGE) ? 'default' : 'pointer',
+                        }}
+                      >
+                        Next ▶
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : activeView === 'roles' ? (
+                /* Roles List View - Paginated */
+                <div
+                  className="ai-glass-border"
+                  style={{
+                    ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                    ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    padding: 16,
+                  }}
+                >
+                  {/* Card rows */}
+                  <div className="flex flex-col gap-3">
+                    {computedRoleCards
+                      .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
+                      .map((card) => (
+                        <div
+                          key={card.id}
+                          className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
+                          style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
+                          onClick={() => {
+                            setSelectedRoleId(card.id);
+                            setSelectedRole(card);
+                            setActiveView('overview');
+                          }}
+                        >
+                          <RoleQuickLookCardStatic card={card} />
+                        </div>
+                      ))}
+                  </div>
+                  {/* Pagination */}
+                  {computedRoleCards.length > ROLE_CARDS_PER_PAGE && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <button
+                        onClick={() => setRolePage(p => Math.max(1, p - 1))}
+                        disabled={rolePage === 1}
+                        className="px-3 py-1 rounded-lg text-sm"
+                        style={{
+                          background: rolePage === 1 ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
+                          color: rolePage === 1 ? '#9A999E' : '#2C2C2C',
+                          cursor: rolePage === 1 ? 'default' : 'pointer',
+                        }}
+                      >
+                        ◀ Prev
+                      </button>
+                      <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B' }}>
+                        Page {rolePage} of {Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE)}
+                      </span>
+                      <button
+                        onClick={() => setRolePage(p => Math.min(Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE), p + 1))}
+                        disabled={rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE)}
+                        className="px-3 py-1 rounded-lg text-sm"
+                        style={{
+                          background: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)',
+                          color: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? '#9A999E' : '#2C2C2C',
+                          cursor: rolePage >= Math.ceil(computedRoleCards.length / ROLE_CARDS_PER_PAGE) ? 'default' : 'pointer',
+                        }}
+                      >
+                        Next ▶
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
+                  {/* Outer glass card wrapper with embedded header */}
+                  <div
+                    className="ai-glass-border"
+                    style={{
+                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
+                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                    }}
+                  >
+                    {/* Embedded header - matches activity header from home page */}
+                    <div style={{ margin: '0', width: '100%' }}>
+                      <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
+                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
+                          {/* Pagination - left aligned */}
+                          <div>
+                            {totalHeaderPages > 1 && (
+                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <div
+                                  className="flex items-center gap-1"
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.6),
+                                    padding: '0 14px',
+                                    height: '36px',
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => setHeaderPage(p => Math.max(1, p - 1))}
+                                    disabled={headerPage === 1}
+                                    style={{
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '12px',
+                                      color: headerPage === 1 ? '#9A999E' : '#6B6B6B',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: headerPage === 1 ? 'default' : 'pointer',
+                                      padding: '0 4px',
+                                    }}
+                                  >
+                                    ◀
+                                  </button>
+                                  {Array.from({ length: totalHeaderPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                      key={page}
+                                      onClick={() => setHeaderPage(page)}
+                                      style={{
+                                        fontFamily: 'var(--font-open-sans)',
+                                        fontSize: '14px',
+                                        fontWeight: headerPage === page ? 600 : 400,
+                                        color: headerPage === page ? '#2C2C2C' : '#9A999E',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '0 4px',
+                                      }}
+                                    >
+                                      {page}
+                                    </button>
+                                  ))}
+                                  <button
+                                    onClick={() => setHeaderPage(p => Math.min(totalHeaderPages, p + 1))}
+                                    disabled={headerPage === totalHeaderPages}
+                                    style={{
+                                      fontFamily: 'var(--font-open-sans)',
+                                      fontSize: '12px',
+                                      color: headerPage === totalHeaderPages ? '#9A999E' : '#6B6B6B',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: headerPage === totalHeaderPages ? 'default' : 'pointer',
+                                      padding: '0 4px',
+                                    }}
+                                  >
+                                    ▶
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Filter dropdowns - right aligned */}
+                          <div className="flex items-center gap-6">
+                            {/* Filter 1 dropdown */}
+                            <Menu as="div" style={{ zIndex: 100 }}>
+                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <MenuButton
+                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.6),
+                                    padding: '0 14px',
+                                    height: '36px',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    color: '#6B6B6B',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {HEADER_FILTER1_OPTIONS.find(o => o.id === headerFilter1)?.label}
+                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </MenuButton>
+                              </div>
+                              <MenuItems
+                                anchor="bottom end"
+                                portal={false}
+                                transition
+                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                                style={{
+                                  zIndex: 100,
+                                  ...aiGlassLightBorderStyle('0.75rem'),
+                                  marginTop: '8px',
+                                }}
+                              >
+                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
+                                  {HEADER_FILTER1_OPTIONS.map((option) => (
+                                    <MenuItem key={option.id}>
+                                      {({ active }) => (
+                                        <button
+                                          onClick={() => setHeaderFilter1(option.id)}
+                                          style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            textAlign: 'left',
+                                            fontFamily: 'var(--font-open-sans)',
+                                            fontSize: '14px',
+                                            color: headerFilter1 === option.id ? '#2C2C2C' : '#6B6B6B',
+                                            fontWeight: headerFilter1 === option.id ? 600 : 400,
+                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
+                                            border: 'none',
+                                            borderRadius: '0.5rem',
+                                            cursor: 'pointer',
+                                          }}
+                                        >
+                                          {option.label}
+                                        </button>
+                                      )}
+                                    </MenuItem>
+                                  ))}
+                                </div>
+                              </MenuItems>
+                            </Menu>
+
+                            {/* Filter 2 dropdown */}
+                            <Menu as="div" style={{ zIndex: 100 }}>
+                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                                <MenuButton
+                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
+                                  style={{
+                                    ...aiGlassLightContentStyle('9999px', 0.6),
+                                    padding: '0 14px',
+                                    height: '36px',
+                                    fontFamily: 'var(--font-open-sans)',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    color: '#6B6B6B',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {HEADER_FILTER2_OPTIONS.find(o => o.id === headerFilter2)?.label}
+                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </MenuButton>
+                              </div>
+                              <MenuItems
+                                anchor="bottom end"
+                                portal={false}
+                                transition
+                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
+                                style={{
+                                  zIndex: 100,
+                                  ...aiGlassLightBorderStyle('0.75rem'),
+                                  marginTop: '8px',
+                                }}
+                              >
+                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
+                                  {HEADER_FILTER2_OPTIONS.map((option) => (
+                                    <MenuItem key={option.id}>
+                                      {({ active }) => (
+                                        <button
+                                          onClick={() => setHeaderFilter2(option.id)}
+                                          style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            textAlign: 'left',
+                                            fontFamily: 'var(--font-open-sans)',
+                                            fontSize: '14px',
+                                            color: headerFilter2 === option.id ? '#2C2C2C' : '#6B6B6B',
+                                            fontWeight: headerFilter2 === option.id ? 600 : 400,
+                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
+                                            border: 'none',
+                                            borderRadius: '0.5rem',
+                                            cursor: 'pointer',
+                                          }}
+                                        >
+                                          {option.label}
+                                        </button>
+                                      )}
+                                    </MenuItem>
+                                  ))}
+                                </div>
+                              </MenuItems>
+                            </Menu>
+                          </div>
+                        </div>
+                      </GlassPillCard>
+                    </div>
+
+                    {/* Dashboard content */}
+                    <div style={{ padding: '16px' }}>
                   {/* Top section: Mini cards + Time window side by side */}
                   <div className="flex" style={{ gap: isTimeWindowOpen ? '24px' : '0px', alignItems: 'stretch' }}>
-                    {/* Left: Mini card rows */}
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {/* Fairness Summary Section */}
-                      <div
-                        className="ai-glass-border"
-                        style={{
-                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                          ...aiGlassLightContentStyle('1.5rem', 0.6),
-                          height: 'auto',
-                          padding: 16,
-                          flex: 1,
-                        }}
-                      >
-                        <div className="grid grid-cols-2 gap-3">
-                          <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
-                          <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
-                        </div>
-                      </div>
-
-                      {/* Crew Summary Section */}
-                      <div
-                        className="ai-glass-border"
-                        style={{
-                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                          ...aiGlassLightContentStyle('1.5rem', 0.6),
-                          height: 'auto',
-                          padding: 16,
-                          flex: 1,
-                        }}
-                      >
-                        <div className="grid grid-cols-2 gap-3">
-                          <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
-                          <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
-                        </div>
+                    {/* Mini cards - 2x2 grid */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="grid grid-cols-2 gap-4">
+                        <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
+                        <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
+                        <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
+                        <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
                       </div>
                     </div>
 
@@ -2497,6 +2821,8 @@ export default function FairnessDashboardPage() {
                       preferenceData={computedPreferenceData}
                     />
                   </div>
+                    </div>{/* End dashboard content */}
+                  </div>{/* End outer glass card */}
                 </>
               )}
                     </div>
