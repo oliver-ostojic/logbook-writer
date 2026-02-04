@@ -2183,61 +2183,7 @@ export default function Home() {
             }}
           >
           <div className="flex flex-col gap-6">
-            {/* Top nav - bento style header */}
-            <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-              <div
-                className="ai-glass-border"
-                style={{
-                  ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),
-                }}
-              >
-                <div
-                  style={{
-                    ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
-                    padding: '8px',
-                  }}
-                >
-                  {/* Main nav - 4 equal segments */}
-                  <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
-                    <NavStatsCard
-                      label="Home"
-                      textOnly
-                      isActive={activeTopNav === 'home'}
-                      onClick={() => {
-                        setActiveTopNav('home');
-                        router.push(`/stores/${storeId}/home`);
-                      }}
-                    />
-                    <NavStatsCard
-                      label="System Health"
-                      textOnly
-                      isActive={activeTopNav === 'dashboard'}
-                      onClick={() => {
-                        setActiveTopNav('dashboard');
-                        router.push(`/stores/${storeId}/fairness-dashboard`);
-                      }}
-                    />
-                    <NavStatsCard
-                      label="Settings"
-                      textOnly
-                      isActive={activeTopNav === 'settings'}
-                      onClick={() => {
-                        setActiveTopNav('settings');
-                        router.push(`/stores/${storeId}/settings`);
-                      }}
-                    />
-                    <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
-                      <NavStatsCard
-                        label="Account"
-                        textOnly
-                        isActive={isUserMenuOpen}
-                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      />
-                    </div>
-                  </nav>
-                </div>
-              </div>
-            </div>
+            <TopNavHeader storeId={storeId} activeNav="home" />
 
             {/* Secondary nav - Activity/Crew/Logbooks */}
             <div className="sticky top-7 z-50">

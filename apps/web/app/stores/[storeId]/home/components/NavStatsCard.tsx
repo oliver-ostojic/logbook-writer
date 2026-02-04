@@ -31,6 +31,8 @@ export interface NavStatsCardProps {
   textOnly?: boolean;
   /** Dark mode - light text on dark background */
   darkMode?: boolean;
+  /** Custom active color (defaults to #2C2C2C in light mode, #DBDADB in dark mode) */
+  activeColor?: string;
 }
 
 /**
@@ -51,6 +53,7 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   compact = false,
   textOnly = false,
   darkMode = false,
+  activeColor,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -81,8 +84,8 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
             position: 'absolute',
             top: textOnly ? 0 : (compact ? -7 : -8),
             bottom: textOnly ? 0 : (compact ? -7 : -8),
-            left: textOnly ? 0 : (compact ? -7 : (isFirst ? 0 : 4)),
-            right: textOnly ? 0 : (compact ? -7 : (isLast ? 0 : 4)),
+            left: textOnly ? (isFirst ? 0 : 4) : (compact ? (isFirst ? -7 : 4) : (isFirst ? 0 : 4)),
+            right: textOnly ? (isLast ? 0 : 4) : (compact ? (isLast ? -7 : 4) : (isLast ? 0 : 4)),
             zIndex: -1,
           }}
         >
@@ -164,8 +167,8 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
             fontSize: textOnly ? (isActive ? '15px' : '14px') : labelFontSize,
             fontWeight: isActive ? 600 : 400,
             color: darkMode
-              ? (isActive ? '#DBDADB' : '#7C7F82')
-              : (isActive ? '#2C2C2C' : '#9A999E'),
+              ? (isActive ? (activeColor ?? '#DBDADB') : '#7C7F82')
+              : (isActive ? (activeColor ?? '#2C2C2C') : '#9A999E'),
             transition: 'all 0.15s ease',
           }}
         >

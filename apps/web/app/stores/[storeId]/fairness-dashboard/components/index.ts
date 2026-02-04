@@ -32,3 +32,6 @@ export * from './CrewFairnessTable';
 
 // TitleBubble
 export * from './TitleBubble';
+
+// TimeWindowHeader
+export * from './TimeWindowHeader';

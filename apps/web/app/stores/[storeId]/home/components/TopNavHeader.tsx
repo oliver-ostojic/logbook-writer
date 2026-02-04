@@ -61,7 +61,7 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
             }}
           >
             {/* Main nav - 4 equal segments */}
-            <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+            <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', width: '100%' }}>
               <NavStatsCard
                 label="Home"
                 textOnly
@@ -81,12 +81,13 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                 isActive={activeNav === 'settings'}
                 onClick={() => router.push(`/stores/${storeId}/settings`)}
               />
-              <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+              <div ref={userMenuRef} style={{ display: 'flex' }}>
                 <NavStatsCard
                   label="Account"
                   textOnly
                   isActive={isUserMenuOpen}
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  isLast
                 />
               </div>
             </nav>

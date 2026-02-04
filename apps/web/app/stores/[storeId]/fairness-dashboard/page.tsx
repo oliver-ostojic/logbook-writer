@@ -4,12 +4,12 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard } from '@/components/ui/ai-glass';
-import { NavStatsCard } from '../home/components/NavStatsCard';
+import { NavStatsCard, TopNavHeader } from '../home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
 
@@ -312,6 +312,9 @@ export default function FairnessDashboardPage() {
 
   // Available dates from API (logbook dates)
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+
+  // Selected dates for TimeWindowHeader (controlled by the header component)
+  const [timeSelectedDates, setTimeSelectedDates] = useState<string[]>([]);
 
   const CREW_CARDS_PER_PAGE = 7;
   const ROLE_CARDS_PER_PAGE = 6;
@@ -1507,26 +1510,11 @@ export default function FairnessDashboardPage() {
       setDashboardError(null);
 
       try {
-        // Build array of selected dates from calendar
-        const selectedDateStrings: string[] = [];
-        for (const [key, daysSet] of Object.entries(selectedDays)) {
-          // Key format is "year-monthIndex"
-          const [yearStr, monthIndexStr] = key.split('-');
-          const year = parseInt(yearStr, 10);
-          const monthIndex = parseInt(monthIndexStr, 10);
-
-          // Add each selected day
-          for (const day of Array.from(daysSet)) {
-            const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            selectedDateStrings.push(dateStr);
-          }
-        }
-
-        // If no dates selected, use available dates (all logbook dates)
-        const datesToFetch = selectedDateStrings.length > 0 ? selectedDateStrings : availableDates;
+        // Use timeSelectedDates from TimeWindowHeader, or fallback to all available dates
+        const datesToFetch = timeSelectedDates.length > 0 ? timeSelectedDates : availableDates;
 
         console.log('📊 Fetching data for dates:', {
-          selectedCount: selectedDateStrings.length,
+          selectedCount: timeSelectedDates.length,
           availableCount: availableDates.length,
           usingDates: datesToFetch.length,
           sampleDates: datesToFetch.slice(0, 3),
@@ -1622,7 +1610,7 @@ export default function FairnessDashboardPage() {
     }
 
     fetchDashboardData();
-  }, [storeId, selectedDays, availableDates]);
+  }, [storeId, timeSelectedDates, availableDates]);
 
   return (
     <>
@@ -1640,43 +1628,7 @@ export default function FairnessDashboardPage() {
           <div className="flex flex-col min-[1200px]:flex-row min-[1200px]:justify-center">
             <div className="ai-glass-border w-full dashboard-outer-panel" style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}>
               <div style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), height: 'auto', padding: '24px' }}>
-                {/* Embedded dark mode nav header */}
-                <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}>
-                    <div style={{ ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6), height: 'auto', padding: '8px' }}>
-                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', width: '100%' }}>
-                        <NavStatsCard
-                          label="Home"
-                          textOnly
-                          isActive={false}
-                          onClick={() => router.push(`/stores/${storeId}/home`)}
-                          isFirst
-                        />
-                        <NavStatsCard
-                          label="System Health"
-                          textOnly
-                          isActive={true}
-                          onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
-                        />
-                        <NavStatsCard
-                          label="Settings"
-                          textOnly
-                          isActive={false}
-                          onClick={() => router.push(`/stores/${storeId}/settings`)}
-                        />
-                        <div ref={userMenuRef} style={{ display: 'flex' }}>
-                          <NavStatsCard
-                            label="Account"
-                            textOnly
-                            isActive={isUserMenuOpen}
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            isLast
-                          />
-                        </div>
-                      </nav>
-                    </div>
-                  </div>
-                </div>
+                <TopNavHeader storeId={storeId} activeNav="dashboard" />
 
                 {/* Secondary nav - Overview/Crew/Roles */}
                 <div className="sticky top-7 z-40" style={{ marginTop: '24px' }}>
@@ -1748,6 +1700,7 @@ export default function FairnessDashboardPage() {
                               isActive={true}
                               onClick={() => {}}
                               isLast
+                              activeColor="#dc2626"
                             />
                           </div>
                         )}
@@ -1774,206 +1727,13 @@ export default function FairnessDashboardPage() {
                       ...aiGlassLightContentStyle('1.5rem', 0.6),
                     }}
                   >
-                    {/* Embedded header - matches activity header from home page */}
-                    <div style={{ margin: '0', width: '100%' }}>
-                      <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                          {/* Pagination - left aligned */}
-                          <div>
-                            {totalHeaderPages > 1 && (
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <div
-                                  className="flex items-center gap-1"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                  }}
-                                >
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.max(1, p - 1))}
-                                    disabled={headerPage === 1}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === 1 ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === 1 ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ◀
-                                  </button>
-                                  {Array.from({ length: totalHeaderPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                      key={page}
-                                      onClick={() => setHeaderPage(page)}
-                                      style={{
-                                        fontFamily: 'var(--font-open-sans)',
-                                        fontSize: '14px',
-                                        fontWeight: headerPage === page ? 600 : 400,
-                                        color: headerPage === page ? '#2C2C2C' : '#9A999E',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '0 4px',
-                                      }}
-                                    >
-                                      {page}
-                                    </button>
-                                  ))}
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.min(totalHeaderPages, p + 1))}
-                                    disabled={headerPage === totalHeaderPages}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === totalHeaderPages ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === totalHeaderPages ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ▶
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Filter dropdowns - right aligned */}
-                          <div className="flex items-center gap-6">
-                            {/* Filter 1 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER1_OPTIONS.find(o => o.id === headerFilter1)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER1_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter1(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter1 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter1 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-
-                            {/* Filter 2 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER2_OPTIONS.find(o => o.id === headerFilter2)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER2_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter2(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter2 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter2 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-                          </div>
-                        </div>
-                      </GlassPillCard>
-                    </div>
+                    {/* Time Window Header */}
+                    <TimeWindowHeader
+                      availableDates={availableDates}
+                      selectedDates={timeSelectedDates}
+                      onSelectionChange={setTimeSelectedDates}
+                      borderRadius="1.5rem 1.5rem 0 0"
+                    />
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
@@ -2185,206 +1945,13 @@ export default function FairnessDashboardPage() {
                       ...aiGlassLightContentStyle('1.5rem', 0.6),
                     }}
                   >
-                    {/* Embedded header - matches activity header from home page */}
-                    <div style={{ margin: '0', width: '100%' }}>
-                      <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                          {/* Pagination - left aligned */}
-                          <div>
-                            {totalHeaderPages > 1 && (
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <div
-                                  className="flex items-center gap-1"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                  }}
-                                >
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.max(1, p - 1))}
-                                    disabled={headerPage === 1}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === 1 ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === 1 ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ◀
-                                  </button>
-                                  {Array.from({ length: totalHeaderPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                      key={page}
-                                      onClick={() => setHeaderPage(page)}
-                                      style={{
-                                        fontFamily: 'var(--font-open-sans)',
-                                        fontSize: '14px',
-                                        fontWeight: headerPage === page ? 600 : 400,
-                                        color: headerPage === page ? '#2C2C2C' : '#9A999E',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '0 4px',
-                                      }}
-                                    >
-                                      {page}
-                                    </button>
-                                  ))}
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.min(totalHeaderPages, p + 1))}
-                                    disabled={headerPage === totalHeaderPages}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === totalHeaderPages ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === totalHeaderPages ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ▶
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Filter dropdowns - right aligned */}
-                          <div className="flex items-center gap-6">
-                            {/* Filter 1 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER1_OPTIONS.find(o => o.id === headerFilter1)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER1_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter1(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter1 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter1 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-
-                            {/* Filter 2 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER2_OPTIONS.find(o => o.id === headerFilter2)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER2_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter2(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter2 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter2 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-                          </div>
-                        </div>
-                      </GlassPillCard>
-                    </div>
+                    {/* Time Window Header */}
+                    <TimeWindowHeader
+                      availableDates={availableDates}
+                      selectedDates={timeSelectedDates}
+                      onSelectionChange={setTimeSelectedDates}
+                      borderRadius="1.5rem 1.5rem 0 0"
+                    />
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
@@ -2792,206 +2359,13 @@ export default function FairnessDashboardPage() {
                       ...aiGlassLightContentStyle('1.5rem', 0.6),
                     }}
                   >
-                    {/* Embedded header - matches activity header from home page */}
-                    <div style={{ margin: '0', width: '100%' }}>
-                      <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                          {/* Pagination - left aligned */}
-                          <div>
-                            {totalHeaderPages > 1 && (
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <div
-                                  className="flex items-center gap-1"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                  }}
-                                >
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.max(1, p - 1))}
-                                    disabled={headerPage === 1}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === 1 ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === 1 ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ◀
-                                  </button>
-                                  {Array.from({ length: totalHeaderPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                      key={page}
-                                      onClick={() => setHeaderPage(page)}
-                                      style={{
-                                        fontFamily: 'var(--font-open-sans)',
-                                        fontSize: '14px',
-                                        fontWeight: headerPage === page ? 600 : 400,
-                                        color: headerPage === page ? '#2C2C2C' : '#9A999E',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '0 4px',
-                                      }}
-                                    >
-                                      {page}
-                                    </button>
-                                  ))}
-                                  <button
-                                    onClick={() => setHeaderPage(p => Math.min(totalHeaderPages, p + 1))}
-                                    disabled={headerPage === totalHeaderPages}
-                                    style={{
-                                      fontFamily: 'var(--font-open-sans)',
-                                      fontSize: '12px',
-                                      color: headerPage === totalHeaderPages ? '#9A999E' : '#6B6B6B',
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: headerPage === totalHeaderPages ? 'default' : 'pointer',
-                                      padding: '0 4px',
-                                    }}
-                                  >
-                                    ▶
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Filter dropdowns - right aligned */}
-                          <div className="flex items-center gap-6">
-                            {/* Filter 1 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER1_OPTIONS.find(o => o.id === headerFilter1)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER1_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter1(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter1 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter1 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-
-                            {/* Filter 2 dropdown */}
-                            <Menu as="div" style={{ zIndex: 100 }}>
-                              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                                <MenuButton
-                                  className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
-                                  style={{
-                                    ...aiGlassLightContentStyle('9999px', 0.6),
-                                    padding: '0 14px',
-                                    height: '36px',
-                                    fontFamily: 'var(--font-open-sans)',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#6B6B6B',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {HEADER_FILTER2_OPTIONS.find(o => o.id === headerFilter2)?.label}
-                                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </MenuButton>
-                              </div>
-                              <MenuItems
-                                anchor="bottom end"
-                                portal={false}
-                                transition
-                                className="w-32 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                                style={{
-                                  zIndex: 100,
-                                  ...aiGlassLightBorderStyle('0.75rem'),
-                                  marginTop: '8px',
-                                }}
-                              >
-                                <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.6), padding: '4px' }}>
-                                  {HEADER_FILTER2_OPTIONS.map((option) => (
-                                    <MenuItem key={option.id}>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => setHeaderFilter2(option.id)}
-                                          style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '8px 12px',
-                                            textAlign: 'left',
-                                            fontFamily: 'var(--font-open-sans)',
-                                            fontSize: '14px',
-                                            color: headerFilter2 === option.id ? '#2C2C2C' : '#6B6B6B',
-                                            fontWeight: headerFilter2 === option.id ? 600 : 400,
-                                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {option.label}
-                                        </button>
-                                      )}
-                                    </MenuItem>
-                                  ))}
-                                </div>
-                              </MenuItems>
-                            </Menu>
-                          </div>
-                        </div>
-                      </GlassPillCard>
-                    </div>
+                    {/* Time Window Header */}
+                    <TimeWindowHeader
+                      availableDates={availableDates}
+                      selectedDates={timeSelectedDates}
+                      onSelectionChange={setTimeSelectedDates}
+                      borderRadius="1.5rem 1.5rem 0 0"
+                    />
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
