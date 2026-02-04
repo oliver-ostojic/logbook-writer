@@ -1692,12 +1692,12 @@ export default function FairnessDashboardPage() {
                         overflowX: 'auto',
                       }}
                     >
-                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', width: '100%' }}>
+                      <nav style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedCrew || selectedRole ? 4 : 3}, 1fr)`, width: '100%' }}>
                         <NavStatsCard
                           icon={<ChartBarIcon />}
                           label="Overview"
                           subtext="Dashboard"
-                          isActive={activeView === 'overview'}
+                          isActive={activeView === 'overview' && !selectedCrew && !selectedRole}
                           onClick={() => {
                             setActiveView('overview');
                             setSelectedCrew(null);
@@ -1711,7 +1711,7 @@ export default function FairnessDashboardPage() {
                           icon={<UserGroupIcon />}
                           label="Crew"
                           count={computedCrewCards.length}
-                          isActive={activeView === 'crew'}
+                          isActive={activeView === 'crew' && !selectedCrew}
                           onClick={() => {
                             setActiveView('crew');
                             setSelectedCrew(null);
@@ -1725,7 +1725,7 @@ export default function FairnessDashboardPage() {
                           icon={<ShieldCheckIcon />}
                           label="Roles"
                           count={computedRoleCards.length}
-                          isActive={activeView === 'roles'}
+                          isActive={activeView === 'roles' && !selectedRole}
                           onClick={() => {
                             setActiveView('roles');
                             setSelectedCrew(null);
@@ -1734,8 +1734,17 @@ export default function FairnessDashboardPage() {
                             setSelectedRoleId(null);
                             setRolePage(1);
                           }}
-                          isLast
+                          isLast={!selectedCrew && !selectedRole}
                         />
+                        {(selectedCrew || selectedRole) && (
+                          <NavStatsCard
+                            label={selectedCrew ? selectedCrew.title : selectedRole?.name || ''}
+                            subtext="Statistics"
+                            isActive={true}
+                            onClick={() => {}}
+                            isLast
+                          />
+                        )}
                       </nav>
                     </div>
                   </div>
