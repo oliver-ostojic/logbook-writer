@@ -2490,8 +2490,9 @@ export default function FairnessDashboardPage() {
               ) : activeView === 'crew' ? (
                 /* Crew List View - Paginated */
                 (() => {
-                  // Filter and sort crew cards alphabetically by name
+                  // Filter crew cards: must have 1+ preferences, match search query, sort alphabetically
                   const filteredCrewCards = computedCrewCards
+                    .filter(card => (card.preferencesTotal ?? 0) > 0)
                     .filter(card => card.title.toLowerCase().includes(crewSearchQuery.toLowerCase()))
                     .sort((a, b) => a.title.localeCompare(b.title));
                   const crewTotalPages = Math.ceil(filteredCrewCards.length / CREW_CARDS_PER_PAGE);
