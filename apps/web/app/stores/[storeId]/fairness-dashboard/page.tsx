@@ -1644,7 +1644,7 @@ export default function FairnessDashboardPage() {
                 <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
                   <div className="ai-glass-border" style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}>
                     <div style={{ ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6), height: 'auto', padding: '8px' }}>
-                      <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', width: '100%' }}>
                         <NavStatsCard
                           label="Home"
                           textOnly
@@ -1664,12 +1664,13 @@ export default function FairnessDashboardPage() {
                           isActive={false}
                           onClick={() => router.push(`/stores/${storeId}/settings`)}
                         />
-                        <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+                        <div ref={userMenuRef} style={{ display: 'flex' }}>
                           <NavStatsCard
                             label="Account"
                             textOnly
                             isActive={isUserMenuOpen}
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            isLast
                           />
                         </div>
                       </nav>
@@ -1691,7 +1692,7 @@ export default function FairnessDashboardPage() {
                         overflowX: 'auto',
                       }}
                     >
-                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', width: '100%' }}>
+                      <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', width: '100%' }}>
                         <NavStatsCard
                           icon={<ChartBarIcon />}
                           label="Overview"
@@ -1965,8 +1966,7 @@ export default function FairnessDashboardPage() {
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
                   {/* 2 Mini cards in a row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                       {/* Time per shift bar chart - uses avgMinutesPerRole (matches overview format) */}
                       {(() => {
                         const roleData = selectedCrew.avgMinutesPerRole || [];
@@ -2016,7 +2016,6 @@ export default function FairnessDashboardPage() {
                           ),
                         }}
                       />
-                    </div>
                   </div>
 
                   {/* Crew preferences met by date line graph */}
@@ -2378,7 +2377,7 @@ export default function FairnessDashboardPage() {
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
                   {/* 2 Mini cards in a row - Fairness Index and Time Share */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <StatGraphCard
                       data={{
                         type: 'sparkline',
