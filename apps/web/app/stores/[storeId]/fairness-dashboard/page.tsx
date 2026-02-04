@@ -1692,7 +1692,7 @@ export default function FairnessDashboardPage() {
                         overflowX: 'auto',
                       }}
                     >
-                      <nav style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedCrew || selectedRole ? 4 : 3}, 1fr)`, width: '100%' }}>
+                      <nav style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedCrew || selectedRole ? 4 : 3}, 1fr)`, width: '100%', transition: 'grid-template-columns 200ms ease-out' }}>
                         <NavStatsCard
                           icon={<ChartBarIcon />}
                           label="Overview"
@@ -1736,14 +1736,20 @@ export default function FairnessDashboardPage() {
                           }}
                           isLast={!selectedCrew && !selectedRole}
                         />
+                        {/* Animated 4th nav button for individual views */}
                         {(selectedCrew || selectedRole) && (
-                          <NavStatsCard
-                            label={selectedCrew ? selectedCrew.title : selectedRole?.name || ''}
-                            subtext="Statistics"
-                            isActive={true}
-                            onClick={() => {}}
-                            isLast
-                          />
+                          <div
+                            className="animate-in fade-in slide-in-from-right-4 duration-200"
+                            style={{ animationFillMode: 'both' }}
+                          >
+                            <NavStatsCard
+                              label={selectedCrew ? selectedCrew.title : selectedRole?.name || ''}
+                              subtext="Statistics"
+                              isActive={true}
+                              onClick={() => {}}
+                              isLast
+                            />
+                          </div>
                         )}
                       </nav>
                     </div>
