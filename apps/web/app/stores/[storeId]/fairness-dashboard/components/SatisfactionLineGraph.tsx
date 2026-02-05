@@ -410,7 +410,7 @@ function SatisfactionLineChart({
         textAnchor="start"
         style={{
           fontFamily: 'var(--font-open-sans)',
-          fontSize: '16px',
+          fontSize: '18px',
           fontWeight: 350,
           fill: '#7C7F82',
         }}
