@@ -35,3 +35,9 @@ export * from './TitleBubble';
 
 // TimeWindowHeader
 export * from './TimeWindowHeader';
+
+// LargeGraphCard
+export * from './LargeGraphCard';
+
+// PreferenceLegend
+export * from './PreferenceLegend';

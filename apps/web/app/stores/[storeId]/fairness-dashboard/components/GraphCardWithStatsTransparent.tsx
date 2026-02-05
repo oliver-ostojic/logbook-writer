@@ -15,14 +15,20 @@ interface BoxPlotData {
 type HoveredPart = 'min' | 'q1' | 'median' | 'q3' | 'max' | 'box' | null;
 
 // BoxPlot component matching the simplistic aesthetic of mini card graphs
-function BoxPlot({ 
-  data, 
-  hoveredPart, 
-  onHover 
-}: { 
-  data: BoxPlotData; 
+function BoxPlot({
+  data,
+  hoveredPart,
+  onHover,
+  selectedPart,
+  onSelectPart,
+  isHoveringChart,
+}: {
+  data: BoxPlotData;
   hoveredPart: HoveredPart;
   onHover: (part: HoveredPart) => void;
+  selectedPart?: HoveredPart;
+  onSelectPart?: (part: HoveredPart) => void;
+  isHoveringChart: boolean;
 }) {
   const boxAreaHeight = 64; // Height of actual box plot content
   const baselineGap = 16; // Gap between box and baseline (matches gap below baseline to labels)
@@ -250,16 +256,21 @@ function BoxPlot({
         y1={boxAreaHeight / 2 - 16}
         x2={`${minPos}%`}
         y2={boxAreaHeight / 2 + 16}
-        stroke={hoveredPart === 'min' ? '#FFFFFF' : '#C3C3CB'}
+        stroke={
+          hoveredPart === 'min' ? '#ef4444' :
+          (!isHoveringChart && selectedPart === 'min') ? '#ef4444' :
+          '#C3C3CB'
+        }
         strokeWidth={6}
         strokeLinecap="round"
-        style={{ 
+        style={{
           cursor: 'pointer',
           opacity: hoveredPart === null ? 1 : (hoveredPart === 'min' ? 1 : 0.3),
           transition: 'opacity 0.15s ease, stroke 0.15s ease',
         }}
         onMouseEnter={() => onHover('min')}
         onMouseLeave={() => onHover(null)}
+        onClick={() => onSelectPart?.('min')}
       />
       
       {/* Max whisker cap */}
@@ -268,16 +279,21 @@ function BoxPlot({
         y1={boxAreaHeight / 2 - 16}
         x2={`${maxPos}%`}
         y2={boxAreaHeight / 2 + 16}
-        stroke={hoveredPart === 'max' ? '#FFFFFF' : '#C3C3CB'}
+        stroke={
+          hoveredPart === 'max' ? '#ef4444' :
+          (!isHoveringChart && selectedPart === 'max') ? '#ef4444' :
+          '#C3C3CB'
+        }
         strokeWidth={6}
         strokeLinecap="round"
-        style={{ 
+        style={{
           cursor: 'pointer',
           opacity: hoveredPart === null ? 1 : (hoveredPart === 'max' ? 1 : 0.3),
           transition: 'opacity 0.15s ease, stroke 0.15s ease',
         }}
         onMouseEnter={() => onHover('max')}
         onMouseLeave={() => onHover(null)}
+        onClick={() => onSelectPart?.('max')}
       />
       
       {/* Box (Q1 to Q3) - solid gradient matching stacked bars */}
@@ -288,14 +304,15 @@ function BoxPlot({
         height={boxAreaHeight - 16}
         rx={13}
         ry={13}
-        fill={hoveredPart === 'box' ? 'url(#boxGradient)' : 'url(#boxGradient)'}
-        style={{ 
+        fill="url(#boxGradient)"
+        style={{
           cursor: 'pointer',
           opacity: hoveredPart === null ? 1 : (hoveredPart === 'box' ? 1 : 0.3),
           transition: 'opacity 0.15s ease',
         }}
         onMouseEnter={() => onHover('box')}
         onMouseLeave={() => onHover(null)}
+        onClick={() => onSelectPart?.('box')}
       />
       
       {/* Median line - pill shaped like whisker caps */}
@@ -304,16 +321,21 @@ function BoxPlot({
         y1={2}
         x2={`${medianPos}%`}
         y2={boxAreaHeight - 2}
-        stroke={hoveredPart === 'median' ? '#FFFFFF' : '#C3C3CB'}
+        stroke={
+          hoveredPart === 'median' ? '#ef4444' :
+          (!isHoveringChart && selectedPart === 'median') ? '#ef4444' :
+          '#C3C3CB'
+        }
         strokeWidth={6}
         strokeLinecap="round"
-        style={{ 
+        style={{
           cursor: 'pointer',
           opacity: hoveredPart === null ? 1 : (hoveredPart === 'median' ? 1 : 0.3),
           transition: 'opacity 0.15s ease, stroke 0.15s ease',
         }}
         onMouseEnter={() => onHover('median')}
         onMouseLeave={() => onHover(null)}
+        onClick={() => onSelectPart?.('median')}
       />
       
       {/* Outliers */}
@@ -333,7 +355,7 @@ function BoxPlot({
 }
 
 interface GraphCardWithStatsTransparentProps {
-  title: string;
+  title?: string;  // Made optional since title now rendered by LargeGraphCard
   stats?: {
     label: string;
     value: string | number;
@@ -343,6 +365,8 @@ interface GraphCardWithStatsTransparentProps {
   boxPlotType?: 'satisfaction' | 'time'; // Type of box plot for hover descriptions
   isSingleCrew?: boolean; // Whether this is for a single crew member (affects description wording)
   children?: React.ReactNode;
+  selectedPart?: HoveredPart;  // Selected part of box plot
+  onSelectPart?: (part: HoveredPart) => void;
 }
 
 export function GraphCardWithStatsTransparent({
@@ -351,9 +375,12 @@ export function GraphCardWithStatsTransparent({
   boxPlotData,
   boxPlotType = 'time', // Default to time-based for backward compatibility
   isSingleCrew = false, // Default to multiple crew context
-  children
+  children,
+  selectedPart = 'median',  // Default to median
+  onSelectPart,
 }: GraphCardWithStatsTransparentProps) {
   const [hoveredPart, setHoveredPart] = useState<HoveredPart>(null);
+  const [isHoveringChart, setIsHoveringChart] = useState(false);
 
   // Format minutes to readable string (e.g., "30 min", "1 hr 10 min", "2 hr")
   const formatMinutesToReadable = (minutes: number): string => {
@@ -433,82 +460,27 @@ export function GraphCardWithStatsTransparent({
   const hoverDescription = getHoverDescription();
 
   return (
-    <div 
+    <div
       className="flex flex-col"
-      style={{ 
+      style={{
         backgroundColor: 'transparent',
-        borderRadius: '1rem', 
-        padding: '1rem',
         minHeight: 200,
       }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08), display: 'inline-block' }}>
-          <div
-            style={{
-              ...aiGlassLightContentStyle('9999px', 0.6),
-              padding: '6px 14px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#2C2C2C',
-            }}
-          >
-            {title}
-          </div>
-        </div>
-        
-        {/* Stats row */}
-        {stats.length > 0 && (
-          <div className="flex gap-4">
-            {stats.map((stat, index) => (
-              <div key={index} className="flex items-baseline gap-1">
-                <span 
-                  className="text-[12px]" 
-                  style={{ 
-                    fontFamily: 'var(--font-open-sans)', 
-                    color: '#7C7F82', 
-                    fontWeight: 350 
-                  }}
-                >
-                  {stat.label}:
-                </span>
-                <span 
-                  className="text-[14px]" 
-                  style={{ 
-                    fontFamily: 'var(--font-open-sans)', 
-                    color: '#DBDADB', 
-                    fontWeight: 500 
-                  }}
-                >
-                  {stat.value}
-                </span>
-                {stat.unit && (
-                  <span 
-                    className="text-[12px]" 
-                    style={{ 
-                      fontFamily: 'var(--font-open-sans)', 
-                      color: '#7C7F82', 
-                      fontWeight: 350 
-                    }}
-                  >
-                    {stat.unit}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      
       {/* Graph area */}
-      <div className="flex-1 w-full">
+      <div
+        className="flex-1 w-full"
+        onMouseEnter={() => setIsHoveringChart(true)}
+        onMouseLeave={() => setIsHoveringChart(false)}
+      >
         {boxPlotData && (
-          <BoxPlot 
-            data={boxPlotData} 
+          <BoxPlot
+            data={boxPlotData}
             hoveredPart={hoveredPart}
             onHover={setHoveredPart}
+            selectedPart={selectedPart}
+            onSelectPart={onSelectPart}
+            isHoveringChart={isHoveringChart}
           />
         )}
         {children}

@@ -224,7 +224,7 @@ export default function AdminPage() {
   // Determine panel widths
   const showCompanyPanel = companyViewMode !== 'list';
   const showStoresPanel = storeViewMode !== 'none' && !showCompanyPanel;
-  const showStoreDetailPanel = (storeViewMode === 'view' || storeViewMode === 'add' || storeViewMode === 'edit') && storeViewMode !== 'list';
+  const showStoreDetailPanel = storeViewMode === 'view' || storeViewMode === 'add' || storeViewMode === 'edit';
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>

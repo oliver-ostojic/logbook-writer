@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
@@ -286,6 +286,10 @@ export default function FairnessDashboardPage() {
   const [selectedCrew, setSelectedCrew] = useState<CrewCardData | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+  const [crewLineGraphActiveData, setCrewLineGraphActiveData] = useState<{shiftDate?: string} | null>(null);
+  const [overviewLineGraphActiveData, setOverviewLineGraphActiveData] = useState<{shiftDate?: string} | null>(null);
+  const [crewLineGraphSelectedIndex, setCrewLineGraphSelectedIndex] = useState<number | undefined>(undefined);
+  const [overviewLineGraphSelectedIndex, setOverviewLineGraphSelectedIndex] = useState<number | undefined>(undefined);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolePage, setRolePage] = useState(1);
@@ -695,10 +699,10 @@ export default function FairnessDashboardPage() {
       // Preferences met
       {
         type: 'pie',
-        title: 'Preferences met',
+        title: 'Avg. preferences met',
         value: Math.round((aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0) * 100) / 100,
         unit: '%',
-        status: 'Crew',
+        status: 'All crew',
         pieData: {
           met: Math.round((aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0) * 100) / 100,
           notMet: Math.round((100 - (aggregates.crewAveragesPerStore.preferencesMetPctAvg || 0)) * 100) / 100,
@@ -1615,8 +1619,9 @@ export default function FairnessDashboardPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
-      <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
-        <div className="px-6 lg:px-8 pt-12 lg:pt-16 pb-9 flex flex-col gap-6">
+      <div style={{ isolation: 'isolate' }}>
+        <main className="min-h-screen" style={{ backgroundColor: 'transparent' }}>
+          <div className="px-6 lg:px-8 pt-12 lg:pt-16 pb-9 flex flex-col gap-6">
           {/* Responsive panel width */}
           <style>{`
             @media (min-width: 1200px) {
@@ -1791,17 +1796,32 @@ export default function FairnessDashboardPage() {
                   </div>
 
                   {/* Crew preferences met by date line graph */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Preferences met"
+                    legend={
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 0.5),
+                            padding: '8px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '12px',
+                            fontWeight: 400,
+                            color: '#2C2C2C',
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {crewLineGraphActiveData?.shiftDate || 'Crew'}
+                        </div>
+                      </div>
+                    }
+                    className="mt-4"
                   >
                     <SatisfactionLineGraph
-                      title="Crew preferences met by date"
+                      onActiveDataChange={setCrewLineGraphActiveData}
+                      selectedIndex={crewLineGraphSelectedIndex}
+                      onSelectIndex={setCrewLineGraphSelectedIndex}
                       data={(() => {
                           const satByDate = selectedCrew.satisfactionByDate || [];
                           if (satByDate.length === 0) {
@@ -1825,7 +1845,7 @@ export default function FairnessDashboardPage() {
                           });
                         })()}
                       />
-                    </div>
+                    </LargeGraphCard>
 
                   {/* Satisfaction distribution box plot - only show if there's variance */}
                   {(() => {
@@ -1840,14 +1860,9 @@ export default function FairnessDashboardPage() {
                     }
 
                     return (
-                      <div
-                        className="ai-glass-border mt-4"
-                        style={{
-                          ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                          ...aiGlassLightContentStyle('1.5rem', 0.6),
-                          height: 'auto',
-                          padding: 16,
-                        }}
+                      <LargeGraphCard
+                        title="Shift satisfaction spread"
+                        className="mt-4"
                       >
                         {(() => {
                           // Compute box plot stats from satisfactionByDate
@@ -1889,7 +1904,6 @@ export default function FairnessDashboardPage() {
 
                           return (
                             <GraphCardWithStatsTransparent
-                              title="Shift satisfaction spread"
                               boxPlotType="satisfaction"
                               isSingleCrew={true}
                               boxPlotData={{
@@ -1903,22 +1917,17 @@ export default function FairnessDashboardPage() {
                             />
                           );
                         })()}
-                      </div>
+                      </LargeGraphCard>
                     );
                   })()}
 
                   {/* Preferences met graph - individual crew level */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Preferences met"
+                    legend={<PreferenceLegend />}
+                    className="mt-4"
                   >
                     <GraphCardSimple
-                      title="Preferences met"
                       preferenceData={(selectedCrew.preferenceBreakdownByRuleType || []).map(b => {
                         // Find a roleRule of this type to get its description
                         const rule = roleRules.find(r => r.type === b.ruleType);
@@ -1930,7 +1939,7 @@ export default function FairnessDashboardPage() {
                         };
                       })}
                       />
-                    </div>
+                    </LargeGraphCard>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
                 </>
@@ -2002,55 +2011,37 @@ export default function FairnessDashboardPage() {
 
                   {/* Crew mins distribution box plot */}
                   {computedRoleBoxPlot.hasDistribution && (
-                    <div
-                      className="ai-glass-border mt-4"
-                      style={{
-                        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                        ...aiGlassLightContentStyle('1.5rem', 0.6),
-                        height: 'auto',
-                        padding: 16,
-                      }}
+                    <LargeGraphCard
+                      title="Crew mins/shift spread"
+                      className="mt-4"
                     >
                       <GraphCardWithStatsTransparent
-                        title="Crew mins/shift spread"
                         boxPlotData={computedRoleBoxPlot}
                         boxPlotType="time"
                       />
-                    </div>
+                    </LargeGraphCard>
                   )}
 
                   {/* Role assignment heatmap */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Avg hours/crew by day"
+                    className="mt-4"
                   >
                     <RoleHeatmap
-                      title="Avg hours/crew by day"
                       weeks={computedRoleHeatmap.weeks}
                       data={computedRoleHeatmap.data}
                     />
-                  </div>
+                  </LargeGraphCard>
 
                   {/* Crew fairness details table */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Assignment info"
+                    className="mt-4"
                   >
                     <CrewFairnessTable
-                      title="Assignment info"
                       data={computedCrewFairnessTable}
                     />
-                  </div>
+                  </LargeGraphCard>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
                 </>
@@ -2379,55 +2370,59 @@ export default function FairnessDashboardPage() {
 
                   {/* Graphs section */}
                   {/* Crew preferences met by date line graph */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Preferences met"
+                    legend={
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('9999px', 0.5),
+                            padding: '8px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '12px',
+                            fontWeight: 400,
+                            color: '#2C2C2C',
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {overviewLineGraphActiveData?.shiftDate || 'All crew'}
+                        </div>
+                      </div>
+                    }
+                    className="mt-4"
                   >
                     <SatisfactionLineGraph
-                      title="Crew preferences met by date"
+                      onActiveDataChange={setOverviewLineGraphActiveData}
+                      selectedIndex={overviewLineGraphSelectedIndex}
+                      onSelectIndex={setOverviewLineGraphSelectedIndex}
                       data={computedSatisfactionByDate}
                     />
-                  </div>
+                  </LargeGraphCard>
 
                   {/* Satisfaction distribution box plot */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Satisfaction distribution"
+                    className="mt-4"
                   >
                     <GraphCardWithStatsTransparent
-                      title="Satisfaction distribution"
                       boxPlotData={computedSatisfactionBoxPlot}
                       boxPlotType="satisfaction"
                     >
                       {/* Additional graph content can go here */}
                     </GraphCardWithStatsTransparent>
-                  </div>
+                  </LargeGraphCard>
 
                   {/* Crew preferences met graph */}
-                  <div
-                    className="ai-glass-border mt-4"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                      height: 'auto',
-                      padding: 16,
-                    }}
+                  <LargeGraphCard
+                    title="Crew preferences met"
+                    legend={<PreferenceLegend />}
+                    className="mt-4"
                   >
                     <GraphCardSimple
-                      title="Crew preferences met"
                       preferenceData={computedPreferenceData}
                     />
-                  </div>
+                  </LargeGraphCard>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
                 </>
@@ -2546,7 +2541,7 @@ export default function FairnessDashboardPage() {
           </div>
         </div>
       )}
-
+      </div>
     </>
   );
 }

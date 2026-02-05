@@ -56,14 +56,20 @@ function calculateNiceTicks(maxValue: number, targetTickCount: number = 5): numb
 }
 
 // Stacked bar chart - each bar shows satisfied vs not satisfied for a preference
-function PreferenceStackedBars({ 
-  data, 
-  hoveredIndex, 
-  onHover 
-}: { 
+function PreferenceStackedBars({
+  data,
+  hoveredIndex,
+  onHover,
+  selectedIndex,
+  onSelectIndex,
+  isHoveringChart,
+}: {
   data: PreferenceBarData[];
   hoveredIndex: number | null;
   onHover: (index: number | null) => void;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+  isHoveringChart: boolean;
 }) {
   const maxCount = Math.max(...data.map(d => d.totalCount), 1); // Ensure at least 1 to avoid division by zero
 
@@ -208,6 +214,8 @@ function PreferenceStackedBars({
         const clipId = `clipTop${index}`;
 
         const isHovered = hoveredIndex === index;
+        const isSelected = selectedIndex === index;
+        const showAsSelected = !isHoveringChart && isSelected;
 
         // Calculate column bounds (includes half gap on each side for easier hovering)
         const columnStart = index === 0
@@ -218,11 +226,15 @@ function PreferenceStackedBars({
           : x + barWidth + gap / 2;
         const columnWidth = columnEnd - columnStart;
 
+        // Determine if bar should be highlighted (hovered or selected when not hovering)
+        const shouldHighlight = isHovered || showAsSelected;
+
         return (
           <g
             key={index}
             onMouseEnter={() => onHover(index)}
             onMouseLeave={() => onHover(null)}
+            onClick={() => onSelectIndex?.(index)}
             style={{ cursor: 'pointer', opacity: hoveredIndex === null || isHovered ? 1 : 0.5, transition: 'opacity 0.15s ease' }}
           >
             {/* Invisible hover area covering full column */}
@@ -324,24 +336,22 @@ function PreferenceStackedBars({
 }
 
 interface GraphCardSimpleProps {
-  title: string;
+  title?: string;  // Made optional since title now rendered by LargeGraphCard
   preferenceData?: PreferenceBarData[];
   children?: React.ReactNode;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
 }
 
 export function GraphCardSimple({
   title,
   preferenceData,
-  children
+  children,
+  selectedIndex = preferenceData ? preferenceData.length - 1 : 0,
+  onSelectIndex,
 }: GraphCardSimpleProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
-  // Calculate right edge position for legend alignment
-  const viewBoxWidth = 600;
-  const viewBoxHeight = 220;
-  const barScaleFactor = 0.9;
-  const graphRightEdge = viewBoxWidth - 28; // Symmetric margins
-  const rightEdgePercent = (graphRightEdge / viewBoxWidth) * 100;
+  const [isHoveringChart, setIsHoveringChart] = useState(false);
 
   // Get the hovered preference description (or label as fallback)
   const hoveredText = hoveredIndex !== null && preferenceData
@@ -352,74 +362,23 @@ export function GraphCardSimple({
   const maxCount = preferenceData ? Math.max(...preferenceData.map(d => d.totalCount), 1) : 1;
   const ticks = calculateNiceTicks(maxCount, 4);
   const tickMax = ticks[ticks.length - 1];
+  const barScaleFactor = 0.9; // Bars scale to 90% of chart height
 
   return (
-    <div 
+    <div
       className="flex flex-col"
-      style={{ 
+      style={{
         backgroundColor: 'transparent',
-        borderRadius: '1rem', 
-        padding: '1rem',
         minHeight: 200,
       }}
     >
-      {/* Title row with legend */}
-      <div className="mb-4 flex items-center">
-        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08), display: 'inline-block' }}>
-          <div
-            style={{
-              ...aiGlassLightContentStyle('9999px', 0.6),
-              padding: '6px 14px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#2C2C2C',
-            }}
-          >
-            {title}
-          </div>
-        </div>
-        
-        {/* Legend - positioned to align with right edge of graph */}
-        {preferenceData && (
-          <div 
-            className="flex gap-4 ml-auto"
-            style={{
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '16px',
-              fontWeight: 350,
-              color: '#7C7F82',
-              marginRight: `${100 - rightEdgePercent}%`,
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <div 
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 3,
-                  background: 'linear-gradient(to bottom, #A09FA3, #6A696D)',
-                }}
-              />
-              <span>Met</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div 
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 3,
-                  background: 'linear-gradient(to top, rgba(255,255,255,0.05), rgba(255,255,255,0.15))',
-                }}
-              />
-              <span>Not met</span>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Graph area - two column layout */}
-      <div className="flex-1 flex items-stretch" style={{ gap: '16px' }}>
+      <div
+        className="flex-1 flex items-stretch"
+        style={{ gap: '16px' }}
+        onMouseEnter={() => setIsHoveringChart(true)}
+        onMouseLeave={() => setIsHoveringChart(false)}
+      >
         {/* Left column: Graph (stretches) */}
         <div className="flex-1">
           {preferenceData && (
@@ -427,6 +386,9 @@ export function GraphCardSimple({
               data={preferenceData}
               hoveredIndex={hoveredIndex}
               onHover={setHoveredIndex}
+              selectedIndex={selectedIndex}
+              onSelectIndex={onSelectIndex}
+              isHoveringChart={isHoveringChart}
             />
           )}
           {children}

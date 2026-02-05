@@ -10,7 +10,7 @@ interface HeatmapCell {
 }
 
 interface RoleHeatmapProps {
-  title: string;
+  title?: string;
   data: HeatmapCell[];
   weeks: string[];
 }
@@ -47,24 +47,6 @@ export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
 
   return (
     <div style={{ padding: '16px' }}>
-      {/* Title */}
-      <div className="mb-4">
-        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08), display: 'inline-block' }}>
-          <div
-            style={{
-              ...aiGlassLightContentStyle('9999px', 0.6),
-              padding: '6px 14px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#2C2C2C',
-            }}
-          >
-            {title}
-          </div>
-        </div>
-      </div>
-      
       {/* Heatmap grid */}
       <div style={{ display: 'flex', gap: '10px', paddingLeft: '4%' }}>
         {/* Week labels (left column) */}

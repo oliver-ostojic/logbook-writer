@@ -27,7 +27,7 @@ function formatMinutesToReadable(minutes: number): string {
 }
 
 interface CrewFairnessTableProps {
-  title: string;
+  title?: string;
   data: CrewFairnessRow[];
   middleRows?: number; // How many fully visible rows in the middle (default 6)
   stackedBehind?: number; // How many stacked/faded rows behind (default 2)
@@ -262,41 +262,6 @@ export function CrewFairnessTable({ title, data, middleRows = 6, stackedBehind =
 
   return (
     <div style={{ padding: '8px 0', paddingRight: '4%' }}>
-      {/* Title with circle indicator and connecting line */}
-      <div className="flex items-center" style={{ gap: 16 }}>
-        {/* Circle indicator with vertical line going down */}
-        <div className="flex flex-col items-center">
-          <div 
-            className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 hover:brightness-125 circle-button-glass-border"
-            style={{
-              background: 'rgba(255, 255, 255, 0.25)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-              cursor: 'pointer',
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#DBDADB" style={{ width: 12, height: 12 }}>
-              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 0 1 .67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 1 1-.671-1.34l.041-.022ZM12 9a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </div>
-        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08), display: 'inline-block' }}>
-          <div
-            style={{
-              ...aiGlassLightContentStyle('9999px', 0.6),
-              padding: '6px 14px',
-              fontFamily: 'var(--font-open-sans)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#2C2C2C',
-            }}
-          >
-            {title}
-          </div>
-        </div>
-      </div>
-      
       {/* Content area with continuous vertical line */}
       <div className="flex items-stretch gap-3">
         {/* Left column: vertical line + arrows */}
