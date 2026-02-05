@@ -111,9 +111,9 @@ function SatisfactionLineChart({
   const viewBoxWidth = 1000;
   const pointCount = data.length;
 
-  // Symmetric margins INSIDE the SVG like GraphCardSimple
+  // Margins INSIDE the SVG
   const graphLeftEdge = 28; // Left margin inside SVG
-  const graphRightEdge = viewBoxWidth - 28; // Right margin inside SVG (symmetric)
+  const graphRightEdge = viewBoxWidth - 1; // Minimal right margin for tight spacing
   const chartWidth = graphRightEdge - graphLeftEdge;
 
   // Use same spacing logic as GraphCardSimple bars
@@ -362,13 +362,13 @@ function SatisfactionLineChart({
 
       {/* Average line - dashed with pill-shaped dashes */}
       {(() => {
-        const dashWidth = 8;
-        const dashHeight = 1.5;
-        const numDashes = 40;
+        const dashWidth = 16; // Doubled from 8
+        const dashHeight = 3.75; // Match graph line thickness
+        const numDashes = 25; // Adjusted for balanced spacing
 
         return Array.from({ length: numDashes }).map((_, i) => {
           const progressPercent = i / (numDashes - 1);
-          const xPos = graphLeftEdge + progressPercent * (rightEdge - graphLeftEdge);
+          const xPos = graphLeftEdge + progressPercent * (graphRightEdge - graphLeftEdge);
 
           // Calculate opacity - fade in and out at edges
           let opacity = 0.6;
@@ -573,7 +573,7 @@ export function SatisfactionLineGraph({
                 position: 'relative',
                 width: '56px',
                 flexShrink: 0,
-                paddingLeft: '8px',
+                paddingLeft: '0px', // No padding for tight spacing
               }}
             >
               {yLabels.map((label) => (
