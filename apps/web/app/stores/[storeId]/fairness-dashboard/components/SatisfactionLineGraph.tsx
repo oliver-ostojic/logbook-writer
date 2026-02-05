@@ -125,7 +125,13 @@ function SatisfactionLineChart({
   const rightEdge = sideGap + pointCount * (pointWidth + gap) - gap / 2;
 
   // Dynamic Y-axis range based on data
-  const satisfactionValues = data.map(d => d.satisfaction);
+  const satisfactionValues = data.map(d => d.satisfaction).filter(v => !isNaN(v) && isFinite(v));
+
+  // Guard against empty or invalid data
+  if (satisfactionValues.length === 0) {
+    return null; // Don't render chart if no valid data
+  }
+
   const dataMin = Math.min(...satisfactionValues);
   const dataMax = Math.max(...satisfactionValues);
   const dataRange = dataMax - dataMin;
