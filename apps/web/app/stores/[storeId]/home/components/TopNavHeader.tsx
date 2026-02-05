@@ -33,6 +33,29 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Update dropdown position on window resize/scroll
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+
+    const updatePosition = () => {
+      if (userDropdownRef.current && userMenuRef.current) {
+        const rect = userMenuRef.current.getBoundingClientRect();
+        const parentRect = userDropdownRef.current.offsetParent?.getBoundingClientRect();
+
+        if (parentRect) {
+          userDropdownRef.current.style.top = `${rect.bottom - parentRect.top + 15}px`;
+          userDropdownRef.current.style.left = `${rect.left - parentRect.left}px`;
+          userDropdownRef.current.style.width = `${rect.width}px`;
+        }
+      }
+    };
+
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isUserMenuOpen]);
+
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     try {
@@ -45,7 +68,7 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
   };
 
   return (
-    <>
+    <div style={{ position: 'relative' }}>
       {/* Top nav - bento style header */}
       <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
         <div
@@ -66,20 +89,20 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                 label="Home"
                 textOnly
                 isActive={activeNav === 'home'}
-                onClick={() => router.push(`/stores/${storeId}/home`)}
+                onClick={() => router.push(`/stores/${storeId}/home`, { scroll: false })}
                 isFirst
               />
               <NavStatsCard
                 label="System Health"
                 textOnly
                 isActive={activeNav === 'dashboard'}
-                onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
+                onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`, { scroll: false })}
               />
               <NavStatsCard
                 label="Settings"
                 textOnly
                 isActive={activeNav === 'settings'}
-                onClick={() => router.push(`/stores/${storeId}/settings`)}
+                onClick={() => router.push(`/stores/${storeId}/settings`, { scroll: false })}
               />
               <div ref={userMenuRef} style={{ display: 'flex' }}>
                 <NavStatsCard
@@ -102,15 +125,19 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
             userDropdownRef.current = el;
             if (el && userMenuRef.current) {
               const rect = userMenuRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 16}px`;
-              el.style.left = `${rect.left}px`;
-              el.style.width = `${rect.width}px`;
+              const parentRect = el.offsetParent?.getBoundingClientRect();
+
+              if (parentRect) {
+                el.style.top = `${rect.bottom - parentRect.top + 15}px`;
+                el.style.left = `${rect.left - parentRect.left}px`;
+                el.style.width = `${rect.width}px`;
+              }
             }
           }}
           className="ai-glass-border"
           style={{
             ...aiGlassLightBorderStyle('1rem'),
-            position: 'fixed',
+            position: 'absolute',
             zIndex: 99999,
           }}
         >
@@ -201,6 +228,6 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
