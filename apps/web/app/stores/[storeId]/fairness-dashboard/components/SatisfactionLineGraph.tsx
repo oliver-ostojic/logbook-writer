@@ -65,7 +65,11 @@ function calculateNiceTicks(min: number, max: number, targetCount: number = 3): 
     return [min];
   }
 
-  const roughStep = range / (targetCount - 1);
+  // Always return exactly 3 ticks at 0%, 50%, 100% of the range
+  const positions = [0, 0.5, 1.0];
+
+  // Determine nice step size for rounding
+  const roughStep = range / 2; // Distance between ticks
   const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
   const residual = roughStep / magnitude;
 
@@ -75,17 +79,12 @@ function calculateNiceTicks(min: number, max: number, targetCount: number = 3): 
   else if (residual <= 7) niceStep = 5 * magnitude;
   else niceStep = 10 * magnitude;
 
-  const ticks: number[] = [];
-  // Use CEIL to start at nearest nice number AT or ABOVE min (never below)
-  let tick = Math.ceil(min / niceStep) * niceStep;
-  while (tick <= max) {
-    ticks.push(Math.round(tick * 100) / 100);
-    tick += niceStep;
-  }
-  // Always include max if it's not already there
-  if (ticks.length === 0 || ticks[ticks.length - 1] < max) {
-    ticks.push(Math.round(max * 100) / 100);
-  }
+  const ticks = positions.map(pos => {
+    const value = min + range * pos;
+    // Round to nearest nice number
+    const rounded = Math.round(value / niceStep) * niceStep;
+    return Math.round(rounded * 100) / 100;
+  });
 
   return ticks;
 }
