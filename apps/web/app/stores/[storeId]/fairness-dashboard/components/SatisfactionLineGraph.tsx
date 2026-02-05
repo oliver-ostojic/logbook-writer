@@ -550,13 +550,30 @@ export function SatisfactionLineGraph({
                   <div
                     className="ai-glass-border"
                     style={{
-                      ...aiGlassLightBorderStyle('9999px'),
+                      ...aiGlassLightBorderStyle('12px'),
+                      overflow: 'hidden',
                     }}
                   >
+                    {/* Red header with date */}
                     <div
                       style={{
-                        ...aiGlassLightContentStyle('9999px', 0.5),
-                        padding: '8px 12px',
+                        background: '#dc2626',
+                        padding: '6px 12px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: '#FFFFFF',
+                        textAlign: 'center',
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      {activeData.shiftDate || 'No date'}
+                    </div>
+                    {/* Percentage content */}
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('0px', 0.5),
+                        padding: '10px 12px',
                         fontFamily: 'var(--font-open-sans)',
                         fontSize: '20px',
                         fontWeight: 500,
