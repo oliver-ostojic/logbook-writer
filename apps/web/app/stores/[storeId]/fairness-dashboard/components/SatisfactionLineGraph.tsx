@@ -550,14 +550,14 @@ export function SatisfactionLineGraph({
                   <div
                     className="ai-glass-border"
                     style={{
-                      ...aiGlassLightBorderStyle('12px'),
+                      ...aiGlassLightBorderStyle('1.5rem'),
                       overflow: 'hidden',
                     }}
                   >
                     {/* Red header with date */}
                     <div
                       style={{
-                        background: '#dc2626',
+                        background: '#ef4444',
                         padding: '6px 12px',
                         fontFamily: 'var(--font-open-sans)',
                         fontSize: '12px',
@@ -582,7 +582,8 @@ export function SatisfactionLineGraph({
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {activeData.satisfaction.toFixed(2)} %
+                      {activeData.satisfaction.toFixed(2)}{' '}
+                      <span style={{ fontSize: '14px', color: '#7C7F82' }}>%</span>
                     </div>
                   </div>
                 </div>

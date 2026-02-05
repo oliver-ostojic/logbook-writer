@@ -8,7 +8,7 @@ import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, Satisfac
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard, CardSmall } from '@/components/ui/ai-glass';
 import { NavStatsCard, TopNavHeader } from '../home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
@@ -1742,8 +1742,14 @@ export default function FairnessDashboardPage() {
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
-                  {/* 2 Mini cards in a row */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Mini cards wrapper */}
+                  <CardSmall
+                    lightMode={true}
+                    borderRadius="1.5rem"
+                    contentStyle={{ padding: '16px' }}
+                  >
+                    {/* 2 Mini cards in a row */}
+                    <div className="grid grid-cols-2 gap-4">
                       {/* Time per shift bar chart - uses avgMinutesPerRole (matches overview format) */}
                       {(() => {
                         const roleData = selectedCrew.avgMinutesPerRole || [];
@@ -1793,33 +1799,18 @@ export default function FairnessDashboardPage() {
                           ),
                         }}
                       />
-                  </div>
+                    </div>
+                  </CardSmall>
 
                   {/* Crew preferences met by date line graph */}
                   <LargeGraphCard
                     title="Preferences met"
                     legend={
-                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('12px'), width: 'fit-content', overflow: 'hidden' }}>
-                        {/* Red header with date */}
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
                         <div
                           style={{
-                            background: '#dc2626',
-                            padding: '8px 16px',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: '#FFFFFF',
-                            textAlign: 'center',
-                            letterSpacing: '0.01em',
-                          }}
-                        >
-                          {crewLineGraphActiveData?.shiftDate || 'No date selected'}
-                        </div>
-                        {/* Content with "All crew" */}
-                        <div
-                          style={{
-                            ...aiGlassLightContentStyle('0px', 0.5),
-                            padding: '10px 16px',
+                            ...aiGlassLightContentStyle('9999px', 0.5),
+                            padding: '8px 12px',
                             fontFamily: 'var(--font-open-sans)',
                             fontSize: '14px',
                             fontWeight: 400,
@@ -1980,12 +1971,18 @@ export default function FairnessDashboardPage() {
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
-                  {/* 2 Mini cards in a row - Fairness Index and Time Share */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <StatGraphCard
-                      data={{
-                        type: 'sparkline',
-                        title: 'Fairness index',
+                  {/* Mini cards wrapper */}
+                  <CardSmall
+                    lightMode={true}
+                    borderRadius="1.5rem"
+                    contentStyle={{ padding: '16px' }}
+                  >
+                    {/* 2 Mini cards in a row - Fairness Index and Time Share */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <StatGraphCard
+                        data={{
+                          type: 'sparkline',
+                          title: 'Fairness index',
                         value: selectedRole.avgFairnessIndexPct !== null && selectedRole.avgFairnessIndexPct !== undefined
                           ? Math.round(selectedRole.avgFairnessIndexPct * 100) / 100
                           : Math.round((1 - selectedRole.giniCoefficient) * 10000) / 100,
@@ -2022,8 +2019,9 @@ export default function FairnessDashboardPage() {
                           </svg>
                         ),
                       }}
-                    />
+                      />
                     </div>
+                  </CardSmall>
 
                   {/* Crew mins distribution box plot */}
                   {computedRoleBoxPlot.hasDistribution && (
@@ -2376,40 +2374,31 @@ export default function FairnessDashboardPage() {
 
                     {/* Dashboard content */}
                     <div style={{ padding: '16px' }}>
-                  {/* Mini cards - 2x2 grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
-                    <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
-                    <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
-                    <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
-                  </div>
+                  {/* Mini cards wrapper */}
+                  <CardSmall
+                    lightMode={true}
+                    borderRadius="1.5rem"
+                    contentStyle={{ padding: '16px' }}
+                  >
+                    {/* Mini cards - 2x2 grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
+                      <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
+                      <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
+                      <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
+                    </div>
+                  </CardSmall>
 
                   {/* Graphs section */}
                   {/* Crew preferences met by date line graph */}
                   <LargeGraphCard
                     title="Preferences met"
                     legend={
-                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('12px'), width: 'fit-content', overflow: 'hidden' }}>
-                        {/* Red header with date */}
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
                         <div
                           style={{
-                            background: '#dc2626',
-                            padding: '8px 16px',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: '#FFFFFF',
-                            textAlign: 'center',
-                            letterSpacing: '0.01em',
-                          }}
-                        >
-                          {overviewLineGraphActiveData?.shiftDate || 'No date selected'}
-                        </div>
-                        {/* Content with "All crew" */}
-                        <div
-                          style={{
-                            ...aiGlassLightContentStyle('0px', 0.5),
-                            padding: '10px 16px',
+                            ...aiGlassLightContentStyle('9999px', 0.5),
+                            padding: '8px 12px',
                             fontFamily: 'var(--font-open-sans)',
                             fontSize: '14px',
                             fontWeight: 400,
