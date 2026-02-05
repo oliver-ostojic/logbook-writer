@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronDownIcon } from '@heroicons/react/20/solid';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
 
 // =============================================================================
@@ -77,6 +78,53 @@ function parseAvailableDates(dates: string[]): ParsedDates {
     ),
     datesByYearMonth,
   };
+}
+
+/**
+ * Format selected date range intelligently
+ * - Furthest date from today first, closest to today last
+ * - Same month: "9-10 Jan 2026"
+ * - Different months, same year: "9 Jan - 10 Mar 2026"
+ * - Different years: "9 Jan 2025 - 10 Mar 2026"
+ */
+function formatDateRange(selectedDates: string[], availableDates: string[]): string {
+  if (selectedDates.length === 0 || selectedDates.length === availableDates.length) return 'All dates';
+
+  // Parse dates and sort
+  const dates = selectedDates.map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime());
+  const earliest = dates[0];
+  const latest = dates[dates.length - 1];
+  const today = new Date();
+
+  // Determine which is furthest from today
+  const earliestDist = Math.abs(earliest.getTime() - today.getTime());
+  const latestDist = Math.abs(latest.getTime() - today.getTime());
+  const [furthest, closest] = earliestDist > latestDist ? [earliest, latest] : [latest, earliest];
+
+  const furthestDay = furthest.getDate();
+  const furthestMonth = furthest.getMonth();
+  const furthestYear = furthest.getFullYear();
+  const closestDay = closest.getDate();
+  const closestMonth = closest.getMonth();
+  const closestYear = closest.getFullYear();
+
+  // Single date
+  if (selectedDates.length === 1) {
+    return `${furthestDay} ${MONTH_NAMES[furthestMonth]} ${furthestYear}`;
+  }
+
+  // Same month and year: "9-10 Jan 2026"
+  if (furthestMonth === closestMonth && furthestYear === closestYear) {
+    return `${furthestDay}-${closestDay} ${MONTH_NAMES[furthestMonth]} ${furthestYear}`;
+  }
+
+  // Same year, different months: "9 Jan - 10 Mar 2026"
+  if (furthestYear === closestYear) {
+    return `${furthestDay} ${MONTH_NAMES[furthestMonth]} - ${closestDay} ${MONTH_NAMES[closestMonth]} ${furthestYear}`;
+  }
+
+  // Different years: "9 Jan 2025 - 10 Mar 2026"
+  return `${furthestDay} ${MONTH_NAMES[furthestMonth]} ${furthestYear} - ${closestDay} ${MONTH_NAMES[closestMonth]} ${closestYear}`;
 }
 
 /**
@@ -201,8 +249,11 @@ export function TimeWindowHeader({
   onSelectionChange,
   borderRadius = '1.5rem 1.5rem 0 0',
 }: TimeWindowHeaderProps) {
-  // View mode: "months" or "days"
-  const [viewMode, setViewMode] = useState<'months' | 'days'>('months');
+  // Calendar dropdown state
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonthIndex, setCalendarMonthIndex] = useState(0);
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+  const calendarButtonRef = useRef<HTMLDivElement>(null);
 
   // Parse available dates
   const parsedDates = useMemo(() => parseAvailableDates(availableDates), [availableDates]);
@@ -228,10 +279,32 @@ export function TimeWindowHeader({
     return parsedDates.monthsByYear[selectedYear] || [];
   }, [parsedDates, selectedYear]);
 
-  // Reset month start index when year changes
+  // Reset month start index and calendar month index when year changes
   useEffect(() => {
     setMonthStartIndex(0);
+    setCalendarMonthIndex(0);
   }, [selectedYear]);
+
+  // Update calendar position on window resize
+  useEffect(() => {
+    if (!isCalendarOpen) return;
+
+    const updatePosition = () => {
+      if (calendarRef.current && calendarButtonRef.current) {
+        const rect = calendarButtonRef.current.getBoundingClientRect();
+        calendarRef.current.style.top = `${rect.bottom + window.scrollY + 32}px`;
+        calendarRef.current.style.right = `${window.innerWidth - rect.right}px`;
+      }
+    };
+
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
+    };
+  }, [isCalendarOpen]);
+
 
   // Calculate visible months (limited to MONTHS_PER_PAGE)
   const visibleMonths = useMemo(() => {
@@ -268,8 +341,21 @@ export function TimeWindowHeader({
     setMonthStartIndex(prev => Math.min(monthsWithData.length - MONTHS_PER_PAGE, prev + MONTHS_PER_PAGE));
   };
 
+  // Calendar navigation
+  const calendarCanGoLeft = calendarMonthIndex > 0;
+  const calendarCanGoRight = calendarMonthIndex < monthsWithData.length - 1;
+  const currentCalendarMonth = monthsWithData[calendarMonthIndex];
+
+  const handleCalendarPrev = () => {
+    if (calendarCanGoLeft) setCalendarMonthIndex(i => i - 1);
+  };
+
+  const handleCalendarNext = () => {
+    if (calendarCanGoRight) setCalendarMonthIndex(i => i + 1);
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       {/* Header */}
       <div style={{ margin: '0', width: '100%' }}>
         <GlassPillCard padding="1rem" borderRadius={borderRadius} contentStyle={{ width: '100%' }}>
@@ -466,10 +552,11 @@ export function TimeWindowHeader({
                 </MenuItems>
               </Menu>
 
-              {/* View Mode Dropdown */}
-              <Menu as="div" style={{ position: 'relative', zIndex: 100 }}>
+              {/* All Dates Button */}
+              <div ref={calendarButtonRef} style={{ flexShrink: 0 }}>
                 <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                  <MenuButton
+                  <button
+                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
                     className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
                     style={{
                       ...aiGlassLightContentStyle('9999px', 0.6),
@@ -481,194 +568,174 @@ export function TimeWindowHeader({
                       color: '#6B6B6B',
                       cursor: 'pointer',
                       border: 'none',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {viewMode === 'months' ? 'Months' : 'Days'}
-                    <ChevronDownIcon className="ml-2 h-4 w-4" />
-                  </MenuButton>
+                    {formatDateRange(selectedDates, availableDates)}
+                    {isCalendarOpen ? (
+                      <ChevronUpIcon className="ml-2 h-4 w-4" />
+                    ) : (
+                      <ChevronDownIcon className="ml-2 h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-
-                <MenuItems
-                  anchor="bottom end"
-                  portal={false}
-                  transition
-                  className="w-28 origin-top-right shadow-lg transition data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in focus:outline-none ai-glass-border"
-                  style={{
-                    zIndex: 100,
-                    ...aiGlassLightBorderStyle('0.75rem'),
-                    marginTop: 8,
-                  }}
-                >
-                  <div style={{ ...aiGlassLightContentStyle('0.75rem', 0.9), padding: '4px' }}>
-                    <MenuItem>
-                      {({ active }) => (
-                        <button
-                          onClick={() => setViewMode('months')}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '8px 12px',
-                            textAlign: 'left',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            color: viewMode === 'months' ? '#2C2C2C' : '#6B6B6B',
-                            fontWeight: viewMode === 'months' ? 600 : 400,
-                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Months
-                        </button>
-                      )}
-                    </MenuItem>
-                    <MenuItem>
-                      {({ active }) => (
-                        <button
-                          onClick={() => setViewMode('days')}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '8px 12px',
-                            textAlign: 'left',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            color: viewMode === 'days' ? '#2C2C2C' : '#6B6B6B',
-                            fontWeight: viewMode === 'days' ? 600 : 400,
-                            background: active ? 'rgba(0,0,0,0.05)' : 'transparent',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Days
-                        </button>
-                      )}
-                    </MenuItem>
-                  </div>
-                </MenuItems>
-              </Menu>
+              </div>
             </div>
           </div>
         </GlassPillCard>
       </div>
 
-      {/* Calendar Panel (shown when viewMode === 'days') */}
-      {viewMode === 'days' && (
-        <div
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('0 0 1.5rem 1.5rem'),
-            marginTop: '-1px', // Overlap with header border
-          }}
-        >
+      {/* Calendar dropdown - portal to document.body, absolute positioning to scroll with page */}
+      {isCalendarOpen && calendarButtonRef.current && currentCalendarMonth !== undefined && typeof document !== 'undefined' &&
+        createPortal(
           <div
+            ref={(el) => {
+              calendarRef.current = el;
+              if (el && calendarButtonRef.current) {
+                const rect = calendarButtonRef.current.getBoundingClientRect();
+                // Use absolute positioning with scroll offset so it scrolls with the page
+                // Align top with bottom of the header (where mini cards start)
+                el.style.top = `${rect.bottom + window.scrollY + 32}px`;
+                el.style.right = `${window.innerWidth - rect.right}px`;
+              }
+            }}
+            className="ai-glass-border"
             style={{
-              ...aiGlassLightContentStyle('0 0 1.5rem 1.5rem', 0.8),
-              padding: '16px',
-              maxHeight: '400px',
-              overflowY: 'auto',
+              ...aiGlassLightBorderStyle('1.5rem'),
+              position: 'absolute',
+              zIndex: 99999,
             }}
           >
+          <div
+            style={{
+              ...aiGlassLightContentStyle('1.5rem', 0.95),
+              padding: '14px 18px',
+            }}
+          >
+            {/* Month Header with Arrows */}
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '14px',
+                marginBottom: '14px',
               }}
             >
-              {monthsWithData.map((monthIndex) => {
-                const key = `${selectedYear}-${monthIndex}`;
-                const datesInMonth = parsedDates.datesByYearMonth[key] || [];
-                const daysInMonth = getDaysInMonth(selectedYear, monthIndex);
-                const startDay = getMonthStartDay(selectedYear, monthIndex);
-                const availableDatesSet = new Set(datesInMonth);
-
-                return (
-                  <div key={monthIndex}>
-                    {/* Month name */}
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      {FULL_MONTH_NAMES[monthIndex]}
-                    </div>
-
-                    {/* Day grid */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(7, 1fr)',
-                        gap: '2px',
-                      }}
-                    >
-                      {/* Day headers */}
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            textAlign: 'center',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '10px',
-                            color: '#9A999E',
-                            padding: '2px',
-                          }}
-                        >
-                          {d}
-                        </div>
-                      ))}
-
-                      {/* Empty cells for start offset */}
-                      {Array.from({ length: startDay }).map((_, i) => (
-                        <div key={`empty-${i}`} />
-                      ))}
-
-                      {/* Day cells */}
-                      {Array.from({ length: daysInMonth }).map((_, i) => {
-                        const day = i + 1;
-                        const dateStr = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const hasData = availableDatesSet.has(dateStr);
-                        const isSelected = selectedDatesSet.has(dateStr);
-
-                        return (
-                          <button
-                            key={day}
-                            onClick={() => hasData && handleDayClick(dateStr)}
-                            disabled={!hasData}
-                            style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              border: 'none',
-                              background: isSelected ? 'rgba(44, 44, 44, 0.15)' : 'transparent',
-                              color: hasData ? (isSelected ? '#2C2C2C' : '#6B6B6B') : '#D1D1D1',
-                              fontFamily: 'var(--font-open-sans)',
-                              fontSize: '11px',
-                              fontWeight: isSelected ? 600 : 400,
-                              cursor: hasData ? 'pointer' : 'default',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+              <button
+                onClick={handleCalendarPrev}
+                disabled={!calendarCanGoLeft}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '5px',
+                  cursor: calendarCanGoLeft ? 'pointer' : 'default',
+                  color: calendarCanGoLeft ? '#6B6B6B' : '#D1D1D1',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-open-sans)',
+                }}
+              >
+                ◀
+              </button>
+              <span
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  minWidth: '92px',
+                  textAlign: 'center',
+                }}
+              >
+                {FULL_MONTH_NAMES[currentCalendarMonth]}
+              </span>
+              <button
+                onClick={handleCalendarNext}
+                disabled={!calendarCanGoRight}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '5px',
+                  cursor: calendarCanGoRight ? 'pointer' : 'default',
+                  color: calendarCanGoRight ? '#6B6B6B' : '#D1D1D1',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-open-sans)',
+                }}
+              >
+                ▶
+              </button>
             </div>
+
+                {/* Day Grid */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    gap: '5px',
+                  }}
+                >
+                  {/* Day headers */}
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        textAlign: 'center',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '12px',
+                        color: '#9A999E',
+                        padding: '5px',
+                      }}
+                    >
+                      {d}
+                    </div>
+                  ))}
+
+                  {/* Empty cells for start offset */}
+                  {Array.from({ length: getMonthStartDay(selectedYear, currentCalendarMonth) }).map((_, i) => (
+                    <div key={`empty-${i}`} />
+                  ))}
+
+                  {/* Day cells */}
+                  {Array.from({ length: getDaysInMonth(selectedYear, currentCalendarMonth) }).map((_, i) => {
+                    const day = i + 1;
+                    const dateStr = `${selectedYear}-${String(currentCalendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const key = `${selectedYear}-${currentCalendarMonth}`;
+                    const datesInMonth = parsedDates.datesByYearMonth[key] || [];
+                    const availableDatesSet = new Set(datesInMonth);
+                    const hasData = availableDatesSet.has(dateStr);
+                    const isSelected = selectedDatesSet.has(dateStr);
+
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => hasData && handleDayClick(dateStr)}
+                        disabled={!hasData}
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '50%',
+                          border: 'none',
+                          background: isSelected ? 'hsl(var(--brand-h) var(--brand-s) var(--brand-l))' : 'transparent',
+                          color: hasData ? (isSelected ? 'white' : '#6B6B6B') : '#D1D1D1',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '13px',
+                          fontWeight: isSelected ? 600 : 400,
+                          cursor: hasData ? 'pointer' : 'default',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mixBlendMode: isSelected ? 'multiply' : 'normal',
+                        }}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
