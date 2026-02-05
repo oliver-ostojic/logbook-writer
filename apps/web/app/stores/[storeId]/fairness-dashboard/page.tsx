@@ -1799,20 +1799,36 @@ export default function FairnessDashboardPage() {
                   <LargeGraphCard
                     title="Preferences met"
                     legend={
-                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('12px'), width: 'fit-content', overflow: 'hidden' }}>
+                        {/* Red header with date */}
                         <div
                           style={{
-                            ...aiGlassLightContentStyle('9999px', 0.5),
-                            padding: '8px',
+                            background: '#dc2626',
+                            padding: '8px 16px',
                             fontFamily: 'var(--font-open-sans)',
-                            fontSize: '12px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#FFFFFF',
+                            textAlign: 'center',
+                            letterSpacing: '0.01em',
+                          }}
+                        >
+                          {crewLineGraphActiveData?.shiftDate || 'No date selected'}
+                        </div>
+                        {/* Content with "All crew" */}
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('0px', 0.5),
+                            padding: '10px 16px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
                             fontWeight: 400,
                             color: '#2C2C2C',
                             lineHeight: 1,
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {crewLineGraphActiveData?.shiftDate || 'Crew'}
+                          All crew
                         </div>
                       </div>
                     }
@@ -2373,20 +2389,36 @@ export default function FairnessDashboardPage() {
                   <LargeGraphCard
                     title="Preferences met"
                     legend={
-                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('12px'), width: 'fit-content', overflow: 'hidden' }}>
+                        {/* Red header with date */}
                         <div
                           style={{
-                            ...aiGlassLightContentStyle('9999px', 0.5),
-                            padding: '8px',
+                            background: '#dc2626',
+                            padding: '8px 16px',
                             fontFamily: 'var(--font-open-sans)',
-                            fontSize: '12px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#FFFFFF',
+                            textAlign: 'center',
+                            letterSpacing: '0.01em',
+                          }}
+                        >
+                          {overviewLineGraphActiveData?.shiftDate || 'No date selected'}
+                        </div>
+                        {/* Content with "All crew" */}
+                        <div
+                          style={{
+                            ...aiGlassLightContentStyle('0px', 0.5),
+                            padding: '10px 16px',
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '14px',
                             fontWeight: 400,
                             color: '#2C2C2C',
                             lineHeight: 1,
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {overviewLineGraphActiveData?.shiftDate || 'All crew'}
+                          All crew
                         </div>
                       </div>
                     }
