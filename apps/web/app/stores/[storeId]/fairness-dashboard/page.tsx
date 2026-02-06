@@ -2411,7 +2411,6 @@ export default function FairnessDashboardPage() {
                     </div>
                   </CardSmall>
 
-                  {/* Graphs section */}
                   {/* Crew preferences met by date line graph */}
                   <LargeGraphCard
                     title="Preferences met"

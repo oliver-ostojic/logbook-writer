@@ -1150,8 +1150,8 @@ export default function Home() {
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col">
-          {/* Embedded search header with title and add button */}
-          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPage, handleAddClick)}
+          {/* Embedded search header with title, add button, and pagination */}
+          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick)}
 
           {/* Paginated list */}
           <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
@@ -1213,115 +1213,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {/* Pagination buttons */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center mt-4">
-              <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
-                <div
-                  className="flex items-center gap-1"
-                  style={{
-                    ...aiGlassLightContentStyle('9999px', 0.6),
-                    padding: '0 14px',
-                    height: '36px',
-                  }}
-                >
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '12px',
-                      color: currentPage === 1 ? '#9A999E' : '#6B6B6B',
-                      background: 'none',
-                      border: 'none',
-                      cursor: currentPage === 1 ? 'default' : 'pointer',
-                      padding: '0 4px',
-                    }}
-                  >
-                    ◀
-                  </button>
-                  {(() => {
-                    // Show all pages if 10 or fewer
-                    if (totalPages <= 10) {
-                      return Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setPage(page)}
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: currentPage === page ? 600 : 400,
-                            color: currentPage === page ? '#2C2C2C' : '#9A999E',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '0 4px',
-                          }}
-                        >
-                          {page}
-                        </button>
-                      ));
-                    }
-
-                    // Use ellipsis for more than 10 pages
-                    const pages: (number | string)[] = [];
-                    pages.push(1);
-                    if (currentPage > 3) pages.push('...');
-                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-                      if (!pages.includes(i)) pages.push(i);
-                    }
-                    if (currentPage < totalPages - 2) pages.push('...');
-                    if (!pages.includes(totalPages)) pages.push(totalPages);
-
-                    return pages.map((page, idx) =>
-                      page === '...' ? (
-                        <span
-                          key={`ellipsis-${idx}`}
-                          className="text-sm px-1"
-                          style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <button
-                          key={page}
-                          onClick={() => setPage(page as number)}
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: currentPage === page ? 600 : 400,
-                            color: currentPage === page ? '#2C2C2C' : '#9A999E',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '0 4px',
-                          }}
-                        >
-                          {page}
-                        </button>
-                      )
-                    );
-                  })()}
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      fontFamily: 'var(--font-open-sans)',
-                      fontSize: '12px',
-                      color: currentPage === totalPages ? '#9A999E' : '#6B6B6B',
-                      background: 'none',
-                      border: 'none',
-                      cursor: currentPage === totalPages ? 'default' : 'pointer',
-                      padding: '0 4px',
-                    }}
-                  >
-                    ▶
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </CardContainer>
     );
@@ -1695,8 +1586,8 @@ export default function Home() {
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Embedded search header with title and add button */}
-          {hasSearchData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, setPreferencesPage, handleAddClick)}
+          {/* Embedded search header with title and add button (no pagination - shows all grouped items) */}
+          {hasSearchData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, 1, 1, setPreferencesPage, handleAddClick)}
 
         {/* Grouped list - card per type */}
         <div className="flex flex-col gap-4" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
@@ -1823,17 +1714,21 @@ export default function Home() {
   };
 
   // Embedded search header for list views - bento style with rounded top corners
-  // Add button on left, search bar fills remaining space
+  // Add button on left, search bar fills remaining space, pagination on right
   const renderEmbeddedSearchHeader = (
     searchValue: string,
     onSearchChange: (value: string) => void,
-    setPage: (page: number) => void,
+    currentPage: number,
+    totalPages: number,
+    setPage: (page: number | ((p: number) => number)) => void,
     onAddClick: () => void
   ) => {
+    const showPagination = totalPages > 1;
+
     return (
       <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
         <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
-          {/* Single row: Add button on left, Search bar fills remaining space */}
+          {/* Single row: Add button on left, Search bar fills remaining space, Pagination on right */}
           <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
             {/* Add button */}
             <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
@@ -1892,6 +1787,59 @@ export default function Home() {
                 />
               </div>
             </div>
+            {/* Pagination - right aligned, only show if needed */}
+            {showPagination && (
+              <div
+                className="ai-glass-border"
+                style={{
+                  ...aiGlassLightBorderStyle('9999px'),
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  className="flex items-center gap-1"
+                  style={{
+                    ...aiGlassLightContentStyle('9999px', 0.4),
+                    padding: '0 6px',
+                    height: '36px',
+                  }}
+                >
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '0 8px',
+                      cursor: currentPage === 1 ? 'default' : 'pointer',
+                      color: currentPage === 1 ? '#9A999E' : '#6B6B6B',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                    }}
+                  >
+                    ◀
+                  </button>
+                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '0 4px' }}>
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '0 8px',
+                      cursor: currentPage >= totalPages ? 'default' : 'pointer',
+                      color: currentPage >= totalPages ? '#9A999E' : '#6B6B6B',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '14px',
+                    }}
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </GlassPillCard>
       </div>
@@ -2029,8 +1977,8 @@ export default function Home() {
     return (
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          {/* Embedded search header with title and add button */}
-          {hasSearchData && renderEmbeddedSearchHeader(rolesSearchQuery, setRolesSearchQuery, setRolesPage, handleAddClick)}
+          {/* Embedded search header with title, add button, and pagination */}
+          {hasSearchData && renderEmbeddedSearchHeader(rolesSearchQuery, setRolesSearchQuery, rolesPage, totalPages, setRolesPage, handleAddClick)}
 
           {/* Paginated list */}
           <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasSearchData ? '16px' : 0 }}>
@@ -2088,74 +2036,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {/* Pagination buttons */}
-          {totalPages > 1 && (
-            <div
-              className="flex items-center justify-center gap-2 mt-4 pt-3"
-              style={{
-                position: 'relative',
-              }}
-            >
-              {/* Faded divider line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 1,
-                  background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.08) 60%, transparent 100%)',
-                }}
-              />
-              {getPageNumbers().map((page, idx) =>
-                page === '...' ? (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="text-sm px-1"
-                    style={{ color: '#6B6B6B', fontFamily: 'var(--font-open-sans)' }}
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setRolesPage(page as number)}
-                    className="flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200"
-                    style={{
-                      background: rolesPage === page ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(0, 0, 0, 0.06)',
-                      cursor: 'pointer',
-                      opacity: rolesPage === page ? 1 : 0.6,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (rolesPage !== page) {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
-                        e.currentTarget.style.opacity = '0.8';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (rolesPage !== page) {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
-                        e.currentTarget.style.opacity = '0.6';
-                      }
-                    }}
-                  >
-                    <span
-                      className="text-[12px]"
-                      style={{
-                        fontFamily: 'var(--font-open-sans)',
-                        color: '#2C2C2C',
-                        fontWeight: rolesPage === page ? 500 : 350,
-                      }}
-                    >
-                      {page}
-                    </span>
-                  </button>
-                )
-              )}
-            </div>
-          )}
         </div>
       </CardContainer>
     );

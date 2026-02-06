@@ -292,7 +292,7 @@ function BoxPlotChart({
         const showBoxAsSelected = !isHoveringChart && isBoxSelected;
         const shouldHighlightBox = isBoxHovered || showBoxAsSelected;
         const boxStrokeColor = shouldHighlightBox ? '#ef4444' : '#464548';
-        const boxFillColor = shouldHighlightBox ? 'rgba(239, 68, 68, 0.19)' : 'rgba(70, 69, 72, 0.19)';
+        const boxFillColor = shouldHighlightBox ? 'rgba(239, 68, 68, 0.35)' : 'rgba(70, 69, 72, 0.35)';
 
         // Calculate the median marker exclusion zone (with 5px padding)
         const hoverPadding = 5;
@@ -374,7 +374,7 @@ function BoxPlotChart({
         const showAsSelected = !isHoveringChart && isSelected;
         const shouldHighlight = isHovered || showAsSelected;
         const strokeColor = shouldHighlight ? '#ef4444' : '#464548';
-        const fillColor = shouldHighlight ? 'rgba(239, 68, 68, 0.19)' : 'rgba(70, 69, 72, 0.19)';
+        const fillColor = shouldHighlight ? 'rgba(239, 68, 68, 0.35)' : 'rgba(70, 69, 72, 0.35)';
 
         // Median is taller
         const height = stat === 'median' ? medianHeight : minMaxHeight;
