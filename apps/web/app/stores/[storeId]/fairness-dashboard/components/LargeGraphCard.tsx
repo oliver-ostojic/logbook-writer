@@ -5,7 +5,8 @@ import { CardSmall, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/
 
 export interface LargeGraphCardProps {
   title: string;
-  highlightLabel?: string; // Red text shown after title (e.g., "Median", "1 Jun, 25")
+  highlightLabel?: string; // Text shown after title (e.g., "Median", "1 Jun, 25")
+  highlightLabelColor?: string; // Color for highlightLabel (default: red)
   legend?: React.ReactNode;
   stats?: { label: string; value: string | number; unit?: string }[];
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export interface LargeGraphCardProps {
 export function LargeGraphCard({
   title,
   highlightLabel,
+  highlightLabelColor = '#ef4444',
   legend,
   stats,
   children,
@@ -69,7 +71,7 @@ export function LargeGraphCard({
             </div>
           </div>
 
-          {/* Right bubble: highlightLabel (red) when active, otherwise legend */}
+          {/* Right bubble: highlightLabel when active, otherwise legend */}
           {highlightLabel ? (
             <div
               className="ai-glass-border"
@@ -84,8 +86,8 @@ export function LargeGraphCard({
                   padding: '8px 12px',
                   fontFamily: 'var(--font-open-sans)',
                   fontSize: '12px',
-                  fontWeight: 400,
-                  color: '#ef4444',
+                  fontWeight: 600,
+                  color: highlightLabelColor,
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
                 }}

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph, StackedPillBarGraph } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
@@ -296,6 +296,8 @@ export default function FairnessDashboardPage() {
   const [roleBoxPlotLabel, setRoleBoxPlotLabel] = useState<string | null>(null);
   const [overviewLineGraphLabel, setOverviewLineGraphLabel] = useState<string | null>(null);
   const [overviewBoxPlotLabel, setOverviewBoxPlotLabel] = useState<string | null>(null);
+  const [crewPreferencesLabel, setCrewPreferencesLabel] = useState<string | null>(null);
+  const [overviewPreferencesLabel, setOverviewPreferencesLabel] = useState<string | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolePage, setRolePage] = useState(1);
@@ -1934,10 +1936,11 @@ export default function FairnessDashboardPage() {
                   {/* Preferences met graph - individual crew level */}
                   <LargeGraphCard
                     title="Preferences met"
-                    legend={<PreferenceLegend />}
+                    highlightLabel={crewPreferencesLabel ?? undefined}
+                    highlightLabelColor="#2C2C2C"
                     className="mt-4"
                   >
-                    <GraphCardSimple
+                    <StackedPillBarGraph
                       preferenceData={(selectedCrew.preferenceBreakdownByRuleType || []).map(b => {
                         // Find a roleRule of this type to get its description
                         const rule = roleRules.find(r => r.type === b.ruleType);
@@ -1948,7 +1951,8 @@ export default function FairnessDashboardPage() {
                           satisfiedCount: b.met,
                         };
                       })}
-                      />
+                      onActiveLabelChange={setCrewPreferencesLabel}
+                    />
                     </LargeGraphCard>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
@@ -2474,11 +2478,13 @@ export default function FairnessDashboardPage() {
                   {/* Crew preferences met graph */}
                   <LargeGraphCard
                     title="Crew preferences met"
-                    legend={<PreferenceLegend />}
+                    highlightLabel={overviewPreferencesLabel ?? undefined}
+                    highlightLabelColor="#2C2C2C"
                     className="mt-4"
                   >
-                    <GraphCardSimple
+                    <StackedPillBarGraph
                       preferenceData={computedPreferenceData}
+                      onActiveLabelChange={setOverviewPreferencesLabel}
                     />
                   </LargeGraphCard>
                     </div>{/* End dashboard content */}

@@ -44,3 +44,6 @@ export * from './PreferenceLegend';
 
 // BoxPlotGraph
 export * from './BoxPlotGraph';
+
+// StackedPillBarGraph
+export * from './StackedPillBarGraph';
