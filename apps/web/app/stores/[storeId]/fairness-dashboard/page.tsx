@@ -2064,7 +2064,7 @@ export default function FairnessDashboardPage() {
 
                   {/* Role assignment heatmap */}
                   <LargeGraphCard
-                    title="Avg hours/crew by day"
+                    title={`Avg hours each crew worked on ${selectedRole?.name?.toLowerCase() || 'role'}`}
                     className="mt-4"
                   >
                     <RoleHeatmap

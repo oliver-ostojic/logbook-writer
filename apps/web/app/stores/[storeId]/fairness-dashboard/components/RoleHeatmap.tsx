@@ -31,18 +31,19 @@ export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
     return data.find(d => d.week === week && d.dayOfWeek === day);
   };
   
-  // Get color based on hours - matching box plot gradient style
-  // Uses same colors as boxGradient: #A09FA3 to #6A696D with varying opacity
+  // Get color based on hours - using theme red color
   const getCellColor = (hours: number) => {
-    if (hours === 0) return 'rgba(106, 105, 109, 0.05)'; // #6A696D at very low opacity
+    if (hours === 0) {
+      // Empty cells stay grey
+      return 'rgba(106, 105, 109, 0.05)';
+    }
     // Scale from minHours to maxHours instead of 0 to maxHours
     const intensity = hoursRange > 0 ? (hours - minHours) / hoursRange : 1;
-    // Frosty white at max, subtle at min
-    const baseOpacity = 0.12;
-    const maxOpacity = 0.55;
+    // Theme red at varying intensity
+    const baseOpacity = 0.2;
+    const maxOpacity = 0.85;
     const opacity = baseOpacity + (maxOpacity - baseOpacity) * intensity;
-    // Use white for frosty look
-    return `rgba(255, 255, 255, ${opacity})`;
+    return `rgba(239, 68, 68, ${opacity})`;
   };
 
   return (
@@ -118,7 +119,7 @@ export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
                 const cell = getCell(week, day);
                 const hours = cell?.avgHours || 0;
                 const isHovered = hoveredCell?.week === week && hoveredCell?.day === day;
-                
+
                 return (
                   <div
                     key={`${week}-${day}`}
@@ -182,7 +183,7 @@ export function RoleHeatmap({ title, data, weeks }: RoleHeatmapProps) {
             width: '80px',
             height: '8px',
             borderRadius: '4px',
-            background: 'linear-gradient(to right, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.55))',
+            background: 'linear-gradient(to right, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.85))',
           }}
         />
         <span
