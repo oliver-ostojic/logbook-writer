@@ -2074,14 +2074,11 @@ export default function FairnessDashboardPage() {
                   </LargeGraphCard>
 
                   {/* Crew fairness details table */}
-                  <LargeGraphCard
-                    title="Assignment info"
-                    className="mt-4"
-                  >
+                  <div className="mt-4">
                     <CrewFairnessTable
                       data={computedCrewFairnessTable}
                     />
-                  </LargeGraphCard>
+                  </div>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
                 </>
