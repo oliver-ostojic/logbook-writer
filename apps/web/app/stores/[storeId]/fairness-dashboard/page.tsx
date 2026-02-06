@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
@@ -290,6 +290,12 @@ export default function FairnessDashboardPage() {
   const [overviewLineGraphActiveData, setOverviewLineGraphActiveData] = useState<{shiftDate?: string} | null>(null);
   const [crewLineGraphSelectedIndex, setCrewLineGraphSelectedIndex] = useState<number | undefined>(undefined);
   const [overviewLineGraphSelectedIndex, setOverviewLineGraphSelectedIndex] = useState<number | undefined>(undefined);
+  // Active labels for graph title bubbles (date or stat name)
+  const [crewLineGraphLabel, setCrewLineGraphLabel] = useState<string | null>(null);
+  const [crewBoxPlotLabel, setCrewBoxPlotLabel] = useState<string | null>(null);
+  const [roleBoxPlotLabel, setRoleBoxPlotLabel] = useState<string | null>(null);
+  const [overviewLineGraphLabel, setOverviewLineGraphLabel] = useState<string | null>(null);
+  const [overviewBoxPlotLabel, setOverviewBoxPlotLabel] = useState<string | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [crewPage, setCrewPage] = useState(1);
   const [rolePage, setRolePage] = useState(1);
@@ -1805,6 +1811,7 @@ export default function FairnessDashboardPage() {
                   {/* Crew preferences met by date line graph */}
                   <LargeGraphCard
                     title="Preferences met"
+                    highlightLabel={crewLineGraphLabel ?? undefined}
                     legend={
                       <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
                         <div
@@ -1827,6 +1834,7 @@ export default function FairnessDashboardPage() {
                   >
                     <SatisfactionLineGraph
                       onActiveDataChange={setCrewLineGraphActiveData}
+                      onActiveLabelChange={setCrewLineGraphLabel}
                       selectedIndex={crewLineGraphSelectedIndex}
                       onSelectIndex={setCrewLineGraphSelectedIndex}
                       data={(() => {
@@ -1866,64 +1874,59 @@ export default function FairnessDashboardPage() {
                       return null;
                     }
 
+                    // Compute box plot stats
+                    const min = values[0];
+                    const max = values[values.length - 1];
+
+                    const median = values.length % 2 === 0
+                      ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
+                      : values[Math.floor(values.length / 2)];
+
+                    const lowerHalf = values.slice(0, Math.floor(values.length / 2));
+                    const q1 = lowerHalf.length > 0
+                      ? (lowerHalf.length % 2 === 0
+                        ? (lowerHalf[lowerHalf.length / 2 - 1] + lowerHalf[lowerHalf.length / 2]) / 2
+                        : lowerHalf[Math.floor(lowerHalf.length / 2)])
+                      : min;
+
+                    const upperHalf = values.slice(Math.ceil(values.length / 2));
+                    const q3 = upperHalf.length > 0
+                      ? (upperHalf.length % 2 === 0
+                        ? (upperHalf[upperHalf.length / 2 - 1] + upperHalf[upperHalf.length / 2]) / 2
+                        : upperHalf[Math.floor(upperHalf.length / 2)])
+                      : max;
+
+                    const iqr = q3 - q1;
+                    const lowerBound = q1 - 1.5 * iqr;
+                    const upperBound = q3 + 1.5 * iqr;
+                    const whiskerMin = values.find(v => v >= lowerBound) ?? min;
+                    const whiskerMax = [...values].reverse().find(v => v <= upperBound) ?? max;
+
                     return (
                       <LargeGraphCard
-                        title="Shift satisfaction spread"
+                        title="Shift Satisfaction Spread"
+                        highlightLabel={crewBoxPlotLabel ?? undefined}
+                        legend={
+                          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                            <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                              {selectedCrew.name}
+                            </div>
+                          </div>
+                        }
                         className="mt-4"
                       >
-                        {(() => {
-                          // Compute box plot stats from satisfactionByDate
-                          console.log('📊 Box plot - selectedCrew.satisfactionByDate:', selectedCrew.satisfactionByDate);
-                          console.log('📊 Box plot - values after sort:', values);
-
-                          const min = values[0];
-                          const max = values[values.length - 1];
-
-                          const median = values.length % 2 === 0
-                            ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
-                            : values[Math.floor(values.length / 2)];
-
-                          // Q1: median of lower half
-                          const lowerHalf = values.slice(0, Math.floor(values.length / 2));
-                          const q1 = lowerHalf.length > 0
-                            ? (lowerHalf.length % 2 === 0
-                              ? (lowerHalf[lowerHalf.length / 2 - 1] + lowerHalf[lowerHalf.length / 2]) / 2
-                              : lowerHalf[Math.floor(lowerHalf.length / 2)])
-                            : min;
-
-                          // Q3: median of upper half
-                          const upperHalf = values.slice(Math.ceil(values.length / 2));
-                          const q3 = upperHalf.length > 0
-                            ? (upperHalf.length % 2 === 0
-                              ? (upperHalf[upperHalf.length / 2 - 1] + upperHalf[upperHalf.length / 2]) / 2
-                              : upperHalf[Math.floor(upperHalf.length / 2)])
-                            : max;
-
-                          // Outliers: values outside 1.5 * IQR
-                          const iqr = q3 - q1;
-                          const lowerBound = q1 - 1.5 * iqr;
-                          const upperBound = q3 + 1.5 * iqr;
-                          const outliers = values.filter(v => v < lowerBound || v > upperBound);
-
-                          // Adjust min/max to exclude outliers for whiskers
-                          const whiskerMin = values.find(v => v >= lowerBound) ?? min;
-                          const whiskerMax = [...values].reverse().find(v => v <= upperBound) ?? max;
-
-                          return (
-                            <GraphCardWithStatsTransparent
-                              boxPlotType="satisfaction"
-                              isSingleCrew={true}
-                              boxPlotData={{
-                                min: Math.round(whiskerMin * 100) / 100,
-                                q1: Math.round(q1 * 100) / 100,
-                                median: Math.round(median * 100) / 100,
-                                q3: Math.round(q3 * 100) / 100,
-                                max: Math.round(whiskerMax * 100) / 100,
-                                outliers: outliers.map(o => Math.round(o * 100) / 100),
-                              }}
-                            />
-                          );
-                        })()}
+                        <BoxPlotGraph
+                          data={[{
+                            label: selectedCrew.name,
+                            min: Math.round(whiskerMin * 100) / 100,
+                            q1: Math.round(q1 * 100) / 100,
+                            median: Math.round(median * 100) / 100,
+                            q3: Math.round(q3 * 100) / 100,
+                            max: Math.round(whiskerMax * 100) / 100,
+                          }]}
+                          unit="%"
+                          onActiveLabelChange={setCrewBoxPlotLabel}
+                        />
                       </LargeGraphCard>
                     );
                   })()}
@@ -2026,12 +2029,31 @@ export default function FairnessDashboardPage() {
                   {/* Crew mins distribution box plot */}
                   {computedRoleBoxPlot.hasDistribution && (
                     <LargeGraphCard
-                      title="Crew mins/shift spread"
+                      title="Crew Mins/Shift Spread"
+                      highlightLabel={roleBoxPlotLabel ?? undefined}
+                      legend={
+                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                          <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                            {selectedRole?.name || 'Role'}
+                          </div>
+                        </div>
+                      }
                       className="mt-4"
                     >
-                      <GraphCardWithStatsTransparent
-                        boxPlotData={computedRoleBoxPlot}
-                        boxPlotType="time"
+                      <BoxPlotGraph
+                        data={[{
+                          label: selectedRole?.name || 'Role',
+                          min: computedRoleBoxPlot.min,
+                          q1: computedRoleBoxPlot.q1,
+                          median: computedRoleBoxPlot.median,
+                          q3: computedRoleBoxPlot.q3,
+                          max: computedRoleBoxPlot.max,
+                        }]}
+                        unit=""
+                        valueFormatter={formatMinutesToReadable}
+                        xAxisFormatter={formatMinutesToReadable}
+                        onActiveLabelChange={setRoleBoxPlotLabel}
+                        insetXAxisLabels
                       />
                     </LargeGraphCard>
                   )}
@@ -2393,6 +2415,7 @@ export default function FairnessDashboardPage() {
                   {/* Crew preferences met by date line graph */}
                   <LargeGraphCard
                     title="Preferences met"
+                    highlightLabel={overviewLineGraphLabel ?? undefined}
                     legend={
                       <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
                         <div
@@ -2415,6 +2438,7 @@ export default function FairnessDashboardPage() {
                   >
                     <SatisfactionLineGraph
                       onActiveDataChange={setOverviewLineGraphActiveData}
+                      onActiveLabelChange={setOverviewLineGraphLabel}
                       selectedIndex={overviewLineGraphSelectedIndex}
                       onSelectIndex={setOverviewLineGraphSelectedIndex}
                       data={computedSatisfactionByDate}
@@ -2423,15 +2447,29 @@ export default function FairnessDashboardPage() {
 
                   {/* Satisfaction distribution box plot */}
                   <LargeGraphCard
-                    title="Satisfaction distribution"
+                    title="Crew Preference Distribution"
+                    highlightLabel={overviewBoxPlotLabel ?? undefined}
+                    legend={
+                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
+                        <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                          All crew
+                        </div>
+                      </div>
+                    }
                     className="mt-4"
                   >
-                    <GraphCardWithStatsTransparent
-                      boxPlotData={computedSatisfactionBoxPlot}
-                      boxPlotType="satisfaction"
-                    >
-                      {/* Additional graph content can go here */}
-                    </GraphCardWithStatsTransparent>
+                    <BoxPlotGraph
+                      data={[{
+                        label: 'All Crew',
+                        min: computedSatisfactionBoxPlot.min,
+                        q1: computedSatisfactionBoxPlot.q1,
+                        median: computedSatisfactionBoxPlot.median,
+                        q3: computedSatisfactionBoxPlot.q3,
+                        max: computedSatisfactionBoxPlot.max,
+                      }]}
+                      unit="%"
+                      onActiveLabelChange={setOverviewBoxPlotLabel}
+                    />
                   </LargeGraphCard>
 
                   {/* Crew preferences met graph */}

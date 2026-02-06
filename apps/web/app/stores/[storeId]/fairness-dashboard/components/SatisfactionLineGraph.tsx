@@ -15,6 +15,7 @@ interface SatisfactionLineGraphProps {
   selectedIndex?: number;
   onSelectIndex?: (index: number) => void;
   onActiveDataChange?: (data: ShiftSatisfactionData | null) => void; // Callback for active data
+  onActiveLabelChange?: (label: string | null) => void; // Callback for active date label
 }
 
 interface YAxisConfig {
@@ -57,7 +58,8 @@ function generateRandomGradient(seed: number): Array<{ offset: number; opacity: 
 }
 
 // Calculate nice tick values for Y-axis
-// Uses ROUND instead of FLOOR to prevent extending too far below min
+// First and last are rounded to nice numbers (for labels)
+// Middle is exactly centered (no label, just visual)
 function calculateNiceTicks(min: number, max: number, targetCount: number = 3): number[] {
   const range = max - min;
   if (range === 0) {
@@ -65,11 +67,8 @@ function calculateNiceTicks(min: number, max: number, targetCount: number = 3): 
     return [min];
   }
 
-  // Always return exactly 3 ticks at 0%, 50%, 100% of the range
-  const positions = [0, 0.5, 1.0];
-
-  // Determine nice step size for rounding
-  const roughStep = range / 2; // Distance between ticks
+  // Determine nice step size for rounding first/last ticks
+  const roughStep = range / 2;
   const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
   const residual = roughStep / magnitude;
 
@@ -79,14 +78,18 @@ function calculateNiceTicks(min: number, max: number, targetCount: number = 3): 
   else if (residual <= 7) niceStep = 5 * magnitude;
   else niceStep = 10 * magnitude;
 
-  const ticks = positions.map(pos => {
-    const value = min + range * pos;
-    // Round to nearest nice number
-    const rounded = Math.round(value / niceStep) * niceStep;
-    return Math.round(rounded * 100) / 100;
-  });
+  // Round first and last to nice numbers
+  const firstTick = Math.round(min / niceStep) * niceStep;
+  const lastTick = Math.round(max / niceStep) * niceStep;
 
-  return ticks;
+  // Middle tick is exactly halfway between first and last (for visual centering)
+  const middleTick = (firstTick + lastTick) / 2;
+
+  return [
+    Math.round(firstTick * 100) / 100,
+    Math.round(middleTick * 100) / 100,
+    Math.round(lastTick * 100) / 100,
+  ];
 }
 
 function SatisfactionLineChart({
@@ -359,7 +362,6 @@ function SatisfactionLineChart({
             fill="transparent"
             style={{ cursor: 'pointer' }}
             onMouseEnter={() => onHover(i)}
-            onMouseLeave={() => onHover(null)}
             onClick={() => onSelectIndex?.(i)}
           />
         );
@@ -427,6 +429,7 @@ export function SatisfactionLineGraph({
   selectedIndex = data.length - 1,
   onSelectIndex,
   onActiveDataChange,
+  onActiveLabelChange,
 }: SatisfactionLineGraphProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isHoveringChart, setIsHoveringChart] = useState(false);
@@ -440,6 +443,15 @@ export function SatisfactionLineGraph({
   useEffect(() => {
     onActiveDataChange?.(activeData);
   }, [activeData, onActiveDataChange]);
+
+  // Notify parent of active label changes (date string)
+  useEffect(() => {
+    if (activeData) {
+      onActiveLabelChange?.(activeData.shiftDate || null);
+    } else {
+      onActiveLabelChange?.(null);
+    }
+  }, [activeData, onActiveLabelChange]);
 
   // Chart dimensions for percentage calculations
   const chartHeight = 220;
@@ -484,11 +496,12 @@ export function SatisfactionLineGraph({
 
   const bubblePosition = getBubblePosition();
 
-  // Y-axis labels from dynamic ticks
-  const yLabels = yAxisConfig?.ticks.map((tickValue) => {
+  // Y-axis labels from dynamic ticks (only first and last get labels)
+  const yLabels = yAxisConfig?.ticks.map((tickValue, index) => {
     const fraction = (tickValue - yAxisConfig.yMin) / yAxisConfig.yRange;
     const y = chartHeight * (1 - fraction * barScaleFactor);
-    return { y, value: tickValue };
+    const isFirstOrLast = index === 0 || index === yAxisConfig.ticks.length - 1;
+    return { y, value: tickValue, showLabel: isFirstOrLast };
   }) ?? [];
 
   return (
@@ -505,7 +518,10 @@ export function SatisfactionLineGraph({
         className="flex items-stretch"
         style={{ gap: '16px', position: 'relative' }}
         onMouseEnter={() => setIsHoveringChart(true)}
-        onMouseLeave={() => setIsHoveringChart(false)}
+        onMouseLeave={() => {
+          setIsHoveringChart(false);
+          setHoveredIndex(null); // Clear hover when leaving chart area
+        }}
       >
         {/* Chart and Y-axis wrapper - aspect ratio container for consistent positioning */}
         <div
@@ -551,28 +567,11 @@ export function SatisfactionLineGraph({
                     className="ai-glass-border"
                     style={{
                       ...aiGlassLightBorderStyle('1.5rem'),
-                      overflow: 'hidden',
                     }}
                   >
-                    {/* Red header with date */}
                     <div
                       style={{
-                        background: '#ef4444',
-                        padding: '6px 12px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        color: '#FFFFFF',
-                        textAlign: 'center',
-                        letterSpacing: '0.01em',
-                      }}
-                    >
-                      {activeData.shiftDate || 'No date'}
-                    </div>
-                    {/* Percentage content */}
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('0px', 0.5),
+                        ...aiGlassLightContentStyle('1.5rem', 0.5),
                         padding: '10px 12px',
                         fontFamily: 'var(--font-open-sans)',
                         fontSize: '20px',
@@ -599,7 +598,7 @@ export function SatisfactionLineGraph({
                 paddingLeft: '0px', // No padding for tight spacing
               }}
             >
-              {yLabels.map((label) => (
+              {yLabels.filter(label => label.showLabel).map((label) => (
                 <div
                   key={`y-label-${label.value}`}
                   style={{

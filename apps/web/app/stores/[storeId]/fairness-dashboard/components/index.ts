@@ -41,3 +41,6 @@ export * from './LargeGraphCard';
 
 // PreferenceLegend
 export * from './PreferenceLegend';
+
+// BoxPlotGraph
+export * from './BoxPlotGraph';

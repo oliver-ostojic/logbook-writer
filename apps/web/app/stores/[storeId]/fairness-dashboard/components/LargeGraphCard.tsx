@@ -5,6 +5,7 @@ import { CardSmall, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/
 
 export interface LargeGraphCardProps {
   title: string;
+  highlightLabel?: string; // Red text shown after title (e.g., "Median", "1 Jun, 25")
   legend?: React.ReactNode;
   stats?: { label: string; value: string | number; unit?: string }[];
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export interface LargeGraphCardProps {
 
 export function LargeGraphCard({
   title,
+  highlightLabel,
   legend,
   stats,
   children,
@@ -67,8 +69,31 @@ export function LargeGraphCard({
             </div>
           </div>
 
-          {/* Legend or Stats */}
-          {legend}
+          {/* Right bubble: highlightLabel (red) when active, otherwise legend */}
+          {highlightLabel ? (
+            <div
+              className="ai-glass-border"
+              style={{
+                ...aiGlassLightBorderStyle('9999px'),
+                width: 'fit-content'
+              }}
+            >
+              <div
+                style={{
+                  ...aiGlassLightContentStyle('9999px', 0.5),
+                  padding: '8px 12px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  color: '#ef4444',
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {highlightLabel}
+              </div>
+            </div>
+          ) : legend}
           {stats && stats.length > 0 && (
             <div className="flex gap-4">
               {stats.map((stat, index) => (
