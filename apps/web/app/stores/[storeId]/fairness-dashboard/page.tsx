@@ -1128,14 +1128,15 @@ export default function FairnessDashboardPage() {
 
   // Compute role dashboard box plot data (crew mins/shift spread for selected role)
   const computedRoleBoxPlot = React.useMemo(() => {
-    if (!dashboardSnapshot || !selectedRole) {
+    const roleToUse = selectedRole ?? rolePanelCard;
+    if (!dashboardSnapshot || !roleToUse) {
       return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [], hasDistribution: false };
     }
 
     // Gather all crew minutes for this role across all logbooks (per-day granularity)
     const allCrewMinutes: number[] = dashboardSnapshot.selection.logbooks.flatMap(lb =>
       lb.crewStats
-        .map(cs => cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0)
+        .map(cs => cs.avgMinutesPerAssignmentByRole[roleToUse.id] || 0)
         .filter(minutes => minutes > 0)
     );
 
@@ -1180,7 +1181,7 @@ export default function FairnessDashboardPage() {
       outliers: outliers.map(o => Math.round(o * 100) / 100),
       hasDistribution: true,
     };
-  }, [dashboardSnapshot, selectedRole]);
+  }, [dashboardSnapshot, selectedRole, rolePanelCard]);
 
   // Compute role heatmap data (avg hours per crew per day for selected role)
   // Uses selectedRole for full-page dashboard, or rolePanelCard for split panel
