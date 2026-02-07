@@ -107,10 +107,11 @@ function StackedPillBarChart({
     onYAxisConfig?.({ yMax, ticks });
   }, [yMax, JSON.stringify(ticks), onYAxisConfig]);
 
-  // Bar dimensions
+  // Bar dimensions - dynamic max width based on bar count
   const barCount = data.length;
   const totalBarSpace = chartWidth * 0.85;
-  const pillWidth = Math.min(42, totalBarSpace / barCount * 0.73);
+  const maxPillWidth = barCount <= 5 ? 80 : 42;
+  const pillWidth = Math.min(maxPillWidth, totalBarSpace / barCount * 0.73);
   const barSpacing = (chartWidth - pillWidth * barCount) / (barCount + 1);
 
   // Get Y position from value (inverted - higher values = lower y)
@@ -338,7 +339,8 @@ export function StackedPillBarGraph({
 
     const barCount = data.length;
     const chartWidthPercent = graphRightPercent - graphLeftPercent;
-    const pillWidthPercent = Math.min(4.2, chartWidthPercent * 0.85 / barCount * 0.73);
+    const maxPillWidthPercent = barCount <= 5 ? 8.0 : 4.2;
+    const pillWidthPercent = Math.min(maxPillWidthPercent, chartWidthPercent * 0.85 / barCount * 0.73);
     const barSpacingPercent = (chartWidthPercent - pillWidthPercent * barCount) / (barCount + 1);
 
     const xPercent = graphLeftPercent + barSpacingPercent + activeIndex * (pillWidthPercent + barSpacingPercent) + pillWidthPercent / 2;
@@ -375,7 +377,8 @@ export function StackedPillBarGraph({
   const xLabels = data.map((item, i) => {
     const barCount = data.length;
     const chartWidthPercent = graphRightPercent - graphLeftPercent;
-    const pillWidthPercent = Math.min(4.2, chartWidthPercent * 0.85 / barCount * 0.73);
+    const maxPillWidthPercent = barCount <= 5 ? 8.0 : 4.2;
+    const pillWidthPercent = Math.min(maxPillWidthPercent, chartWidthPercent * 0.85 / barCount * 0.73);
     const barSpacingPercent = (chartWidthPercent - pillWidthPercent * barCount) / (barCount + 1);
     const xPercent = graphLeftPercent + barSpacingPercent + i * (pillWidthPercent + barSpacingPercent) + pillWidthPercent / 2;
     return { x: xPercent, label: item.label };
