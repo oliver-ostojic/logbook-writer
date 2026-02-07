@@ -1906,7 +1906,7 @@ export default function FairnessDashboardPage() {
                           className="flex flex-col gap-3"
                           style={{
                             width: hasCrewPanel ? '20%' : '100%',
-                            transition: 'width 0.3s ease',
+                            transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                             flexShrink: 0,
                           }}
                         >
@@ -1957,10 +1957,10 @@ export default function FairnessDashboardPage() {
                         <div
                           style={{
                             width: hasCrewPanel ? '80%' : '0%',
-                            opacity: hasCrewPanel ? 1 : 0,
                             overflow: 'hidden',
                             borderRadius: '1.5rem',
-                            transition: 'width 0.3s ease, opacity 0.3s ease',
+                            transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            willChange: 'width',
                           }}
                         >
                           {crewPanelCard && (
@@ -2109,7 +2109,7 @@ export default function FairnessDashboardPage() {
                           className="flex flex-col gap-3"
                           style={{
                             width: hasRolePanel ? '20%' : '100%',
-                            transition: 'width 0.3s ease',
+                            transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                             flexShrink: 0,
                           }}
                         >
@@ -2160,10 +2160,10 @@ export default function FairnessDashboardPage() {
                         <div
                           style={{
                             width: hasRolePanel ? '80%' : '0%',
-                            opacity: hasRolePanel ? 1 : 0,
                             overflow: 'hidden',
                             borderRadius: '1.5rem',
-                            transition: 'width 0.3s ease, opacity 0.3s ease',
+                            transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            willChange: 'width',
                           }}
                         >
                           {rolePanelCard && (
