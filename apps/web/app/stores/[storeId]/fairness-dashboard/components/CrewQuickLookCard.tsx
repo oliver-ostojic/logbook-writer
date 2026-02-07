@@ -776,7 +776,7 @@ export function CrewQuickLookCardStatic({ card, onClick }: { card: CardData; onC
 export type { CardData as CrewCardData };
 
 // Glass UI version for light mode list views
-export function CrewQuickLookCardGlass({ card, onClick }: { card: CardData; onClick?: () => void }) {
+export function CrewQuickLookCardGlass({ card, onClick, condensed = false }: { card: CardData; onClick?: () => void; condensed?: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -806,7 +806,7 @@ export function CrewQuickLookCardGlass({ card, onClick }: { card: CardData; onCl
       {/* Stats and graph - responsive flex layout */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Column 1 - min width for wrapping */}
-        <div className="flex-1 flex flex-col gap-2" style={{ minWidth: 120 }}>
+        <div className="flex-1 flex flex-col gap-2" style={{ minWidth: condensed ? undefined : 120 }}>
           <div className="flex items-center justify-between gap-2">
             <span
               className="text-[13px]"
@@ -853,141 +853,149 @@ export function CrewQuickLookCardGlass({ card, onClick }: { card: CardData; onCl
           </div>
         </div>
 
-        {/* Divider 1 - hidden on wrap */}
-        <div
-          className="hidden sm:block"
-          style={{
-            width: 1,
-            height: 48,
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
-          }}
-        />
+        {/* Divider 1 - hidden when condensed */}
+        {!condensed && (
+          <div
+            className="hidden sm:block"
+            style={{
+              width: 1,
+              height: 48,
+              background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
+            }}
+          />
+        )}
 
-        {/* Column 2 - min width for wrapping */}
-        <div className="flex-1 flex flex-col gap-2" style={{ minWidth: 120 }}>
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className="text-[13px]"
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                color: '#6B6B6B',
-                fontWeight: 350,
-              }}
-            >
-              Preferences
-            </span>
-            <span
-              className="text-[13px] text-right"
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                color: '#2C2C2C',
-                fontWeight: 350,
-              }}
-            >
-              {card.preferencesTotal ?? '—'}
-            </span>
+        {/* Column 2 - hidden when condensed */}
+        {!condensed && (
+          <div className="flex-1 flex flex-col gap-2" style={{ minWidth: 120 }}>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Preferences
+              </span>
+              <span
+                className="text-[13px] text-right"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#2C2C2C',
+                  fontWeight: 350,
+                }}
+              >
+                {card.preferencesTotal ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-[13px]"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#6B6B6B',
+                  fontWeight: 350,
+                }}
+              >
+                Satisfaction rank
+              </span>
+              <span
+                className="text-[13px] text-right"
+                style={{
+                  fontFamily: 'var(--font-open-sans)',
+                  color: '#2C2C2C',
+                  fontWeight: 350,
+                }}
+              >
+                {card.satisfactionRank !== undefined && card.totalRankedCrew !== undefined
+                  ? `${card.satisfactionRank}/${card.totalRankedCrew}`
+                  : '—'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className="text-[13px]"
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                color: '#6B6B6B',
-                fontWeight: 350,
-              }}
-            >
-              Satisfaction rank
-            </span>
-            <span
-              className="text-[13px] text-right"
-              style={{
-                fontFamily: 'var(--font-open-sans)',
-                color: '#2C2C2C',
-                fontWeight: 350,
-              }}
-            >
-              {card.satisfactionRank !== undefined && card.totalRankedCrew !== undefined
-                ? `${card.satisfactionRank}/${card.totalRankedCrew}`
-                : '—'}
-            </span>
+        )}
+
+        {/* Divider 2 - hidden when condensed */}
+        {!condensed && (
+          <div
+            className="hidden sm:block"
+            style={{
+              width: 1,
+              height: 48,
+              background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
+            }}
+          />
+        )}
+
+        {/* Graph - hidden when condensed */}
+        {!condensed && (
+          <div className="flex items-start justify-center flex-shrink-0" style={{ width: 100 }}>
+            {(() => {
+              const data = card.satisfactionHistory || [70, 72, 75, 73, 78, 80, 77, 82, 85, 83];
+              const width = 100;
+              const height = 50;
+              const padding = 4;
+
+              // Calculate min/max for scaling (with some padding)
+              const minVal = Math.min(...data) - 5;
+              const maxVal = Math.max(...data) + 5;
+              const range = maxVal - minVal;
+
+              // Generate points for the line
+              const points = data.map((val, i) => {
+                const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+                const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
+                return `${x},${y}`;
+              }).join(' ');
+
+              // Generate area path (line + bottom fill)
+              const areaPath = data.map((val, i) => {
+                const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+                const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
+                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ') + ` L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+
+              // Determine trend color based on first vs last value
+              const trend = data[data.length - 1] - data[0];
+              const lineColor = trend >= 0 ? '#16a34a' : '#dc2626';  // green-600 / red-600 for light mode
+              const gradientId = `sparkGradientGlass-${card.id}`;
+
+              return (
+                <svg width={width} height={height} style={{ overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor={lineColor} stopOpacity="0.3" />
+                      <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {/* Area fill */}
+                  <path
+                    d={areaPath}
+                    fill={`url(#${gradientId})`}
+                  />
+                  {/* Line */}
+                  <polyline
+                    points={points}
+                    fill="none"
+                    stroke={lineColor}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* End dot */}
+                  <circle
+                    cx={width - padding}
+                    cy={height - padding - ((data[data.length - 1] - minVal) / range) * (height - padding * 2)}
+                    r="2.5"
+                    fill={lineColor}
+                  />
+                </svg>
+              );
+            })()}
           </div>
-        </div>
-
-        {/* Divider 2 - hidden on wrap */}
-        <div
-          className="hidden sm:block"
-          style={{
-            width: 1,
-            height: 48,
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)',
-          }}
-        />
-
-        {/* Graph - flexible width with minimum */}
-        <div className="flex items-start justify-center flex-shrink-0" style={{ width: 100 }}>
-          {(() => {
-            const data = card.satisfactionHistory || [70, 72, 75, 73, 78, 80, 77, 82, 85, 83];
-            const width = 100;
-            const height = 50;
-            const padding = 4;
-
-            // Calculate min/max for scaling (with some padding)
-            const minVal = Math.min(...data) - 5;
-            const maxVal = Math.max(...data) + 5;
-            const range = maxVal - minVal;
-
-            // Generate points for the line
-            const points = data.map((val, i) => {
-              const x = padding + (i / (data.length - 1)) * (width - padding * 2);
-              const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
-              return `${x},${y}`;
-            }).join(' ');
-
-            // Generate area path (line + bottom fill)
-            const areaPath = data.map((val, i) => {
-              const x = padding + (i / (data.length - 1)) * (width - padding * 2);
-              const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
-              return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-            }).join(' ') + ` L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
-
-            // Determine trend color based on first vs last value
-            const trend = data[data.length - 1] - data[0];
-            const lineColor = trend >= 0 ? '#16a34a' : '#dc2626';  // green-600 / red-600 for light mode
-            const gradientId = `sparkGradientGlass-${card.id}`;
-
-            return (
-              <svg width={width} height={height} style={{ overflow: 'visible' }}>
-                <defs>
-                  <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor={lineColor} stopOpacity="0.3" />
-                    <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {/* Area fill */}
-                <path
-                  d={areaPath}
-                  fill={`url(#${gradientId})`}
-                />
-                {/* Line */}
-                <polyline
-                  points={points}
-                  fill="none"
-                  stroke={lineColor}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {/* End dot */}
-                <circle
-                  cx={width - padding}
-                  cy={height - padding - ((data[data.length - 1] - minVal) / range) * (height - padding * 2)}
-                  r="2.5"
-                  fill={lineColor}
-                />
-              </svg>
-            );
-          })()}
-        </div>
+        )}
       </div>
     </div>
   );

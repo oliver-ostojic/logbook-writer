@@ -47,3 +47,9 @@ export * from './BoxPlotGraph';
 
 // StackedPillBarGraph
 export * from './StackedPillBarGraph';
+
+// CrewDashboardContent
+export * from './CrewDashboardContent';
+
+// RoleDashboardContent
+export * from './RoleDashboardContent';

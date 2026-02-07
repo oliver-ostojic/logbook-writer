@@ -786,7 +786,7 @@ export default function AdminPage() {
                     marginTop: '2px',
                   }}
                 >
-                  {user.email}
+                  {user.username}
                 </div>
               </div>
             )}

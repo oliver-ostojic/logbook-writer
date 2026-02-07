@@ -1,4 +1,4 @@
-import StatsCard from "./components/StatsCard";
+import StatsCard from "./Components/StatsCard";
 
 export default function FairnessTracker() {
   return (

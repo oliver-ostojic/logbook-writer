@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { CardSmall, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
-interface CrewFairnessRow {
+export interface CrewFairnessRow {
   name: string;
   minsPerShift: number;
   lastAssignedDays: number; // days ago

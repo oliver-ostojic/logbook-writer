@@ -366,7 +366,7 @@ function formatActivityDate(dateString: string | null): string {
 type EditableItem = {
   id: string;
   name: string;
-  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'runs';
+  type: 'crew' | 'roles' | 'roleFamilies' | 'logbooks' | 'preferences' | 'runs' | 'companies' | 'stores';
 };
 
 type SelectedItem = EditableItem & {
@@ -970,7 +970,7 @@ export default function Home() {
         ) : selectedItem.type === 'companies' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
           <CompanyForm
             mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
-            companyId={selectedItem.mode === 'edit' ? selectedItem.id : undefined}
+            companyId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
             onSuccess={(newCompany?: any) => {
               refreshData();
               if (selectedItem.mode === 'add' && newCompany) {
@@ -992,13 +992,13 @@ export default function Home() {
           />
         ) : selectedItem.type === 'companies' && selectedItem.mode === 'view' ? (
           <CompanyDetailView
-            companyId={selectedItem.id}
+            companyId={Number(selectedItem.id)}
             onDelete={() => setDeleteConfirmItem({ id: selectedItem.id, name: selectedItem.name, type: 'companies' })}
           />
         ) : selectedItem.type === 'stores' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
           <StoreForm
             mode={selectedItem.mode === 'add' ? 'add' : 'edit'}
-            storeId={selectedItem.mode === 'edit' ? selectedItem.id : undefined}
+            storeId={selectedItem.mode === 'edit' ? Number(selectedItem.id) : undefined}
             onSuccess={(newStore?: any) => {
               refreshData();
               if (selectedItem.mode === 'add' && newStore) {
@@ -2775,8 +2775,11 @@ export default function Home() {
                         setPreviousView(null);
                       } else {
                         // Go back to the list view for this item type
-                        // Role families go back to roles view
-                        setActiveView(selectedItem.type === 'roleFamilies' ? 'roles' : selectedItem.type);
+                        // Role families go back to roles view, stores/companies go to home
+                        const targetView = selectedItem.type === 'roleFamilies' ? 'roles'
+                          : selectedItem.type === 'stores' || selectedItem.type === 'companies' ? 'home'
+                          : selectedItem.type;
+                        setActiveView(targetView as ViewId);
                         setSelectedItem(null);
                       }
                     }}
@@ -2944,12 +2947,12 @@ export default function Home() {
                         mode: 'view',
                       });
                     } else {
-                      setActiveView('companies');
+                      setActiveView('companies' as ViewId);
                       setSelectedItem(null);
                     }
                   }}
                   onCancel={() => {
-                    setActiveView('companies');
+                    setActiveView('companies' as ViewId);
                     setSelectedItem(null);
                   }}
                 />
@@ -2972,12 +2975,12 @@ export default function Home() {
                         mode: 'view',
                       });
                     } else {
-                      setActiveView('stores');
+                      setActiveView('stores' as ViewId);
                       setSelectedItem(null);
                     }
                   }}
                   onCancel={() => {
-                    setActiveView('stores');
+                    setActiveView('stores' as ViewId);
                     setSelectedItem(null);
                   }}
                 />

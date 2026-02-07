@@ -94,6 +94,8 @@ export const GlassPill: React.FC<GlassPillProps> = ({
 export interface GlassPillButtonProps extends Omit<GlassPillProps, 'onClick'> {
   /** Click handler (required for button) */
   onClick: () => void;
+  /** Whether the button is disabled */
+  disabled?: boolean;
 }
 
 /**
@@ -101,8 +103,19 @@ export interface GlassPillButtonProps extends Omit<GlassPillProps, 'onClick'> {
  *
  * Same as GlassPill but with required onClick.
  */
-export const GlassPillButton: React.FC<GlassPillButtonProps> = (props) => {
-  return <GlassPill {...props} />;
+export const GlassPillButton: React.FC<GlassPillButtonProps> = ({ disabled, onClick, style, ...props }) => {
+  return (
+    <GlassPill
+      {...props}
+      onClick={disabled ? undefined : onClick}
+      style={{
+        ...style,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        pointerEvents: disabled ? 'none' : undefined,
+      }}
+    />
+  );
 };
 
 export interface GlassPillCardProps extends Omit<GlassPillProps, 'onClick' | 'isSelected'> {}

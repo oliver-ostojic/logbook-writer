@@ -8,6 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 interface StoreFormProps {
   mode: 'add' | 'edit';
   storeId?: number;
+  companyId?: number;
   onSuccess?: (newStore?: any) => void;
   onCancel?: () => void;
 }
@@ -40,13 +41,13 @@ const timeToMinutes = (time: string): number => {
   return (hours || 0) * 60 + (mins || 0);
 };
 
-export function StoreForm({ mode, storeId, onSuccess, onCancel }: StoreFormProps) {
+export function StoreForm({ mode, storeId, companyId, onSuccess, onCancel }: StoreFormProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     timezone: 'EST',
     openMinutesFromMidnight: 480, // 08:00
     closeMinutesFromMidnight: 1260, // 21:00
-    companyId: 0,
+    companyId: companyId || 0,
   });
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);

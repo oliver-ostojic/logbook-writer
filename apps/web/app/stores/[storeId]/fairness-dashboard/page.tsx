@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
-import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph, StackedPillBarGraph } from './components';
+import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph, StackedPillBarGraph, CrewDashboardContent, RoleDashboardContent } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
 import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
@@ -285,6 +285,12 @@ export default function FairnessDashboardPage() {
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>('none');
   const [selectedCrew, setSelectedCrew] = useState<CrewCardData | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleCardData | null>(null);
+  // Split panel state - for showing dashboard in side panel without navigating away
+  const [crewPanelCard, setCrewPanelCard] = useState<CrewCardData | null>(null);
+  const [rolePanelCard, setRolePanelCard] = useState<RoleCardData | null>(null);
+  // Hover state for list view cards
+  const [hoveredCrewCardId, setHoveredCrewCardId] = useState<string | null>(null);
+  const [hoveredRoleCardId, setHoveredRoleCardId] = useState<string | null>(null);
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
   const [crewLineGraphActiveData, setCrewLineGraphActiveData] = useState<{shiftDate?: string} | null>(null);
   const [overviewLineGraphActiveData, setOverviewLineGraphActiveData] = useState<{shiftDate?: string} | null>(null);
@@ -1177,8 +1183,10 @@ export default function FairnessDashboardPage() {
   }, [dashboardSnapshot, selectedRole]);
 
   // Compute role heatmap data (avg hours per crew per day for selected role)
+  // Uses selectedRole for full-page dashboard, or rolePanelCard for split panel
   const computedRoleHeatmap = React.useMemo(() => {
-    if (!dashboardSnapshot || !selectedRole) {
+    const roleToUse = selectedRole ?? rolePanelCard;
+    if (!dashboardSnapshot || !roleToUse) {
       return { weeks: [], data: [] };
     }
 
@@ -1224,11 +1232,11 @@ export default function FairnessDashboardPage() {
 
       // Calculate average hours for this role on this date
       const roleStats = lb.crewStats.filter(cs => {
-        const minutes = cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0;
+        const minutes = cs.avgMinutesPerAssignmentByRole[roleToUse.id] || 0;
         return minutes > 0;
       });
 
-      const totalMinutes = roleStats.reduce((sum, cs) => sum + (cs.avgMinutesPerAssignmentByRole[selectedRole.id] || 0), 0);
+      const totalMinutes = roleStats.reduce((sum, cs) => sum + (cs.avgMinutesPerAssignmentByRole[roleToUse.id] || 0), 0);
       const avgHours = roleStats.length > 0 ? totalMinutes / roleStats.length / 60 : 0;
 
       weekMap.get(weekKey)!.dates.push({
@@ -1258,16 +1266,18 @@ export default function FairnessDashboardPage() {
     });
 
     return { weeks, data };
-  }, [dashboardSnapshot, selectedRole]);
+  }, [dashboardSnapshot, selectedRole, rolePanelCard]);
 
   // Compute crew fairness table data for selected role
+  // Uses selectedRole for full-page dashboard, or rolePanelCard for split panel
   const computedCrewFairnessTable = React.useMemo(() => {
-    if (!dashboardSnapshot || !selectedRole) {
+    const roleToUse = selectedRole ?? rolePanelCard;
+    if (!dashboardSnapshot || !roleToUse) {
       return [];
     }
 
     const crewRollups = dashboardSnapshot.selection.selectionCrewRollups;
-    const roleId = selectedRole.id;
+    const roleId = roleToUse.id;
 
     // Filter crew who have been assigned to this role
     const crewWithRole = crewRollups.filter(crew => {
@@ -1313,7 +1323,7 @@ export default function FairnessDashboardPage() {
         deviation,
       };
     });
-  }, [dashboardSnapshot, selectedRole]);
+  }, [dashboardSnapshot, selectedRole, rolePanelCard]);
 
   // Get current dashboard data
   const currentDashboard = computedDashboardData.expandedDashboards[activeDashboard];
@@ -1657,7 +1667,7 @@ export default function FairnessDashboardPage() {
                         overflowX: 'auto',
                       }}
                     >
-                      <nav style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedCrew || selectedRole ? 4 : 3}, 1fr)`, width: '100%', transition: 'grid-template-columns 200ms ease-out' }}>
+                      <nav style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedCrew || selectedRole || crewPanelCard || rolePanelCard ? 4 : 3}, 1fr)`, width: '100%', transition: 'grid-template-columns 200ms ease-out' }}>
                         <NavStatsCard
                           icon={<ChartBarIcon />}
                           label="Overview"
@@ -1669,6 +1679,8 @@ export default function FairnessDashboardPage() {
                             setSelectedRole(null);
                             setSelectedCrewId(null);
                             setSelectedRoleId(null);
+                            setCrewPanelCard(null);
+                            setRolePanelCard(null);
                           }}
                           isFirst
                         />
@@ -1676,13 +1688,15 @@ export default function FairnessDashboardPage() {
                           icon={<UserGroupIcon />}
                           label="Crew"
                           count={computedCrewCards.length}
-                          isActive={activeView === 'crew' && !selectedCrew}
+                          isActive={activeView === 'crew' && !selectedCrew && !crewPanelCard}
                           onClick={() => {
                             setActiveView('crew');
                             setSelectedCrew(null);
                             setSelectedRole(null);
                             setSelectedCrewId(null);
                             setSelectedRoleId(null);
+                            setCrewPanelCard(null);
+                            setRolePanelCard(null);
                             setCrewPage(1);
                           }}
                         />
@@ -1690,25 +1704,27 @@ export default function FairnessDashboardPage() {
                           icon={<ShieldCheckIcon />}
                           label="Roles"
                           count={computedRoleCards.length}
-                          isActive={activeView === 'roles' && !selectedRole}
+                          isActive={activeView === 'roles' && !selectedRole && !rolePanelCard}
                           onClick={() => {
                             setActiveView('roles');
                             setSelectedCrew(null);
                             setSelectedRole(null);
                             setSelectedCrewId(null);
                             setSelectedRoleId(null);
+                            setCrewPanelCard(null);
+                            setRolePanelCard(null);
                             setRolePage(1);
                           }}
-                          isLast={!selectedCrew && !selectedRole}
+                          isLast={!selectedCrew && !selectedRole && !crewPanelCard && !rolePanelCard}
                         />
                         {/* Animated 4th nav button for individual views */}
-                        {(selectedCrew || selectedRole) && (
+                        {(selectedCrew || selectedRole || crewPanelCard || rolePanelCard) && (
                           <div
                             className="animate-in fade-in slide-in-from-right-4 duration-200"
                             style={{ animationFillMode: 'both' }}
                           >
                             <NavStatsCard
-                              label={selectedCrew ? selectedCrew.title : selectedRole?.name || ''}
+                              label={selectedCrew?.title || crewPanelCard?.title || selectedRole?.name || rolePanelCard?.name || ''}
                               subtext="Statistics"
                               isActive={true}
                               onClick={() => {}}
@@ -1731,359 +1747,44 @@ export default function FairnessDashboardPage() {
               {/* Conditional content: Individual Crew Dashboard, Dashboard, or Expanded Quick Looks */}
               {selectedCrew ? (
                 /* Individual Crew Dashboard */
-                <>
-                  {/* Outer glass card wrapper with embedded header */}
-                  <div
-                    className="ai-glass-border"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                    }}
-                  >
-                    {/* Time Window Header */}
-                    <TimeWindowHeader
-                      availableDates={availableDates}
-                      selectedDates={timeSelectedDates}
-                      onSelectionChange={setTimeSelectedDates}
-                      borderRadius="1.5rem 1.5rem 0 0"
-                    />
-
-                    {/* Dashboard content */}
-                    <div style={{ padding: '16px' }}>
-                  {/* Mini cards wrapper */}
-                  <CardSmall
-                    lightMode={true}
-                    borderRadius="1.5rem"
-                    contentStyle={{ padding: '16px' }}
-                  >
-                    {/* 2 Mini cards in a row */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Time per shift bar chart - uses avgMinutesPerRole (matches overview format) */}
-                      {(() => {
-                        const roleData = selectedCrew.avgMinutesPerRole || [];
-                        const avgMinutes = roleData.length > 0 
-                          ? Math.round(roleData.reduce((sum, r) => sum + r.avgMinutes, 0) / roleData.length)
-                          : 0;
-                        
-                        return (
-                          <StatGraphCard 
-                            data={{
-                              type: 'bar',
-                              title: 'Avg shift time',
-                              value: avgMinutes,
-                              unit: 'min',
-                              status: 'Roles',
-                              barData: roleData.map(r => ({
-                                role: r.roleName,
-                                hours: Math.round(r.avgMinutes),
-                              })),
-                              barUnit: 'min',
-                              icon: (
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
-                                </svg>
-                              ),
-                            }}
-                          />
-                        );
-                      })()}
-                      {/* Preferences met pie chart - uses satisfactionScore */}
-                      <StatGraphCard 
-                        data={{
-                          type: 'pie',
-                          title: 'Preferences met',
-                          value: selectedCrew.satisfactionScore ?? 67.5,
-                          unit: '%',
-                          status: `${selectedCrew.preferencesMetCount ?? 0}/${selectedCrew.preferencesTotal ?? 0}`,
-                          pieData: { 
-                            met: selectedCrew.satisfactionScore ?? 67.5, 
-                            notMet: 100 - (selectedCrew.satisfactionScore ?? 67.5) 
-                          },
-                          icon: (
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                              <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clipRule="evenodd" />
-                              <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
-                            </svg>
-                          ),
-                        }}
-                      />
-                    </div>
-                  </CardSmall>
-
-                  {/* Crew preferences met by date line graph */}
-                  <LargeGraphCard
-                    title="Preferences met"
-                    highlightLabel={crewLineGraphLabel ?? undefined}
-                    legend={
-                      <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                        <div
-                          style={{
-                            ...aiGlassLightContentStyle('9999px', 0.5),
-                            padding: '8px 12px',
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            color: '#2C2C2C',
-                            lineHeight: 1,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          All crew
-                        </div>
-                      </div>
-                    }
-                    className="mt-4"
-                  >
-                    <SatisfactionLineGraph
-                      onActiveDataChange={setCrewLineGraphActiveData}
-                      onActiveLabelChange={setCrewLineGraphLabel}
-                      selectedIndex={crewLineGraphSelectedIndex}
-                      onSelectIndex={setCrewLineGraphSelectedIndex}
-                      data={(() => {
-                          const satByDate = selectedCrew.satisfactionByDate || [];
-                          if (satByDate.length === 0) {
-                            // Fallback to placeholder data
-                            return [
-                              { shiftNumber: 1, shiftDate: '—', satisfaction: 70 },
-                            ];
-                          }
-                          return satByDate.map((d, index) => {
-                            // Parse date string manually to avoid timezone issues
-                            // Date format is "YYYY-MM-DD"
-                            const [year, month, day] = d.date.split('-').map(Number);
-                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
-                            const yearShort = String(year).slice(-2);
-                            return {
-                              shiftNumber: index + 1,
-                              shiftDate: `${day} ${monthName}, ${yearShort}`,
-                              satisfaction: Math.round(d.satisfactionPct * 100) / 100,
-                            };
-                          });
-                        })()}
-                      />
-                    </LargeGraphCard>
-
-                  {/* Satisfaction distribution box plot - only show if there's variance */}
-                  {(() => {
-                    // Check if there's variance before rendering the entire section
-                    const values = (selectedCrew.satisfactionByDate || [])
-                      .map(d => d.satisfactionPct)
-                      .sort((a, b) => a - b);
-
-                    // Don't show box plot if no data or no variance
-                    if (values.length === 0 || values[0] === values[values.length - 1]) {
-                      return null;
-                    }
-
-                    // Compute box plot stats
-                    const min = values[0];
-                    const max = values[values.length - 1];
-
-                    const median = values.length % 2 === 0
-                      ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
-                      : values[Math.floor(values.length / 2)];
-
-                    const lowerHalf = values.slice(0, Math.floor(values.length / 2));
-                    const q1 = lowerHalf.length > 0
-                      ? (lowerHalf.length % 2 === 0
-                        ? (lowerHalf[lowerHalf.length / 2 - 1] + lowerHalf[lowerHalf.length / 2]) / 2
-                        : lowerHalf[Math.floor(lowerHalf.length / 2)])
-                      : min;
-
-                    const upperHalf = values.slice(Math.ceil(values.length / 2));
-                    const q3 = upperHalf.length > 0
-                      ? (upperHalf.length % 2 === 0
-                        ? (upperHalf[upperHalf.length / 2 - 1] + upperHalf[upperHalf.length / 2]) / 2
-                        : upperHalf[Math.floor(upperHalf.length / 2)])
-                      : max;
-
-                    const iqr = q3 - q1;
-                    const lowerBound = q1 - 1.5 * iqr;
-                    const upperBound = q3 + 1.5 * iqr;
-                    const whiskerMin = values.find(v => v >= lowerBound) ?? min;
-                    const whiskerMax = [...values].reverse().find(v => v <= upperBound) ?? max;
-
-                    return (
-                      <LargeGraphCard
-                        title="Shift Satisfaction Spread"
-                        highlightLabel={crewBoxPlotLabel ?? undefined}
-                        legend={
-                          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                            <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                              {selectedCrew.name}
-                            </div>
-                          </div>
-                        }
-                        className="mt-4"
-                      >
-                        <BoxPlotGraph
-                          data={[{
-                            label: selectedCrew.name,
-                            min: Math.round(whiskerMin * 100) / 100,
-                            q1: Math.round(q1 * 100) / 100,
-                            median: Math.round(median * 100) / 100,
-                            q3: Math.round(q3 * 100) / 100,
-                            max: Math.round(whiskerMax * 100) / 100,
-                          }]}
-                          unit="%"
-                          onActiveLabelChange={setCrewBoxPlotLabel}
-                        />
-                      </LargeGraphCard>
-                    );
-                  })()}
-
-                  {/* Preferences met graph - individual crew level */}
-                  <LargeGraphCard
-                    title="Preferences met"
-                    highlightLabel={crewPreferencesLabel ?? undefined}
-                    highlightLabelColor="#2C2C2C"
-                    className="mt-4"
-                  >
-                    <StackedPillBarGraph
-                      preferenceData={(selectedCrew.preferenceBreakdownByRuleType || []).map(b => {
-                        // Find a roleRule of this type to get its description
-                        const rule = roleRules.find(r => r.type === b.ruleType);
-                        return {
-                          label: formatRuleTypeLabel(b.ruleType),
-                          description: rule?.description,
-                          totalCount: b.total,
-                          satisfiedCount: b.met,
-                        };
-                      })}
-                      onActiveLabelChange={setCrewPreferencesLabel}
-                    />
-                    </LargeGraphCard>
-                    </div>{/* End dashboard content */}
-                  </div>{/* End outer glass card */}
-                </>
+                <CrewDashboardContent
+                  crew={selectedCrew}
+                  availableDates={availableDates}
+                  selectedDates={timeSelectedDates}
+                  onSelectionChange={setTimeSelectedDates}
+                  crewLineGraphLabel={crewLineGraphLabel}
+                  setCrewLineGraphActiveData={setCrewLineGraphActiveData}
+                  setCrewLineGraphLabel={setCrewLineGraphLabel}
+                  crewLineGraphSelectedIndex={crewLineGraphSelectedIndex}
+                  setCrewLineGraphSelectedIndex={setCrewLineGraphSelectedIndex}
+                  crewBoxPlotLabel={crewBoxPlotLabel}
+                  setCrewBoxPlotLabel={setCrewBoxPlotLabel}
+                  crewPreferencesLabel={crewPreferencesLabel}
+                  setCrewPreferencesLabel={setCrewPreferencesLabel}
+                  roleRules={roleRules}
+                  formatRuleTypeLabel={formatRuleTypeLabel}
+                />
               ) : selectedRole ? (
                 /* Individual Role Dashboard */
-                <>
-                  {/* Outer glass card wrapper with embedded header */}
-                  <div
-                    className="ai-glass-border"
-                    style={{
-                      ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
-                    }}
-                  >
-                    {/* Time Window Header */}
-                    <TimeWindowHeader
-                      availableDates={availableDates}
-                      selectedDates={timeSelectedDates}
-                      onSelectionChange={setTimeSelectedDates}
-                      borderRadius="1.5rem 1.5rem 0 0"
-                    />
-
-                    {/* Dashboard content */}
-                    <div style={{ padding: '16px' }}>
-                  {/* Mini cards wrapper */}
-                  <CardSmall
-                    lightMode={true}
-                    borderRadius="1.5rem"
-                    contentStyle={{ padding: '16px' }}
-                  >
-                    {/* 2 Mini cards in a row - Fairness Index and Time Share */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <StatGraphCard
-                        data={{
-                          type: 'sparkline',
-                          title: 'Fairness index',
-                        value: selectedRole.avgFairnessIndexPct !== null && selectedRole.avgFairnessIndexPct !== undefined
-                          ? Math.round(selectedRole.avgFairnessIndexPct * 100) / 100
-                          : Math.round((1 - selectedRole.giniCoefficient) * 10000) / 100,
-                        unit: '%',
-                        status: selectedRole.trend === 'improving' ? 'Good' : selectedRole.trend === 'worsening' ? 'Alert' : 'Stable',
-                        sparklineData: dashboardSnapshot?.selection.logbooks.map(lb => {
-                          const roleStats = lb.roleStats.find((r: any) => r.roleId === selectedRole.id);
-                          if (!roleStats || roleStats.giniCoefficient === null) return 0;
-                          const fairnessIndex = (1 - roleStats.giniCoefficient) * 100;
-                          return Math.round(fairnessIndex * 100) / 100;
-                        }) || [0],
-                        icon: (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm4.5 7.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0V12Zm2.25-3a.75.75 0 0 1 .75.75v6.75a.75.75 0 0 1-1.5 0V9.75A.75.75 0 0 1 13.5 9Zm3.75-1.5a.75.75 0 0 0-1.5 0v9a.75.75 0 0 0 1.5 0v-9Z" clipRule="evenodd" />
-                          </svg>
-                        ),
-                      }}
-                    />
-                    <StatGraphCard
-                      data={{
-                        type: 'pie',
-                        title: 'Time share',
-                        value: Math.round((selectedRole.minutesOnRoleVsTotalWorkPct || 0) * 100) / 100,
-                        unit: '%',
-                        status: `${Math.round((selectedRole.minutesWorkedOnRoleTotal || 0) / 60 * 10) / 10} / ${Math.round((selectedRole.totalMinutesWorkedSelection || 0) / 60 * 10) / 10} hr`,
-                        pieData: { 
-                          met: selectedRole.minutesOnRoleVsTotalWorkPct || 0, 
-                          notMet: 100 - (selectedRole.minutesOnRoleVsTotalWorkPct || 0) 
-                        },
-                        icon: (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M2.25 13.5a8.25 8.25 0 0 1 8.25-8.25.75.75 0 0 1 .75.75v6.75H18a.75.75 0 0 1 .75.75 8.25 8.25 0 0 1-16.5 0Z" clipRule="evenodd" />
-                            <path fillRule="evenodd" d="M12.75 3a.75.75 0 0 1 .75-.75 8.25 8.25 0 0 1 8.25 8.25.75.75 0 0 1-.75.75h-7.5a.75.75 0 0 1-.75-.75V3Z" clipRule="evenodd" />
-                          </svg>
-                        ),
-                      }}
-                      />
-                    </div>
-                  </CardSmall>
-
-                  {/* Crew mins distribution box plot */}
-                  {computedRoleBoxPlot.hasDistribution && (
-                    <LargeGraphCard
-                      title="Crew Mins/Shift Spread"
-                      highlightLabel={roleBoxPlotLabel ?? undefined}
-                      legend={
-                        <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                          <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                            {selectedRole?.name || 'Role'}
-                          </div>
-                        </div>
-                      }
-                      className="mt-4"
-                    >
-                      <BoxPlotGraph
-                        data={[{
-                          label: selectedRole?.name || 'Role',
-                          min: computedRoleBoxPlot.min,
-                          q1: computedRoleBoxPlot.q1,
-                          median: computedRoleBoxPlot.median,
-                          q3: computedRoleBoxPlot.q3,
-                          max: computedRoleBoxPlot.max,
-                        }]}
-                        unit=""
-                        valueFormatter={formatMinutesToReadable}
-                        xAxisFormatter={formatMinutesToReadable}
-                        onActiveLabelChange={setRoleBoxPlotLabel}
-                        insetXAxisLabels
-                      />
-                    </LargeGraphCard>
-                  )}
-
-                  {/* Role assignment heatmap */}
-                  <LargeGraphCard
-                    title={`Avg hours each crew worked on ${selectedRole?.name?.toLowerCase() || 'role'}`}
-                    className="mt-4"
-                  >
-                    <RoleHeatmap
-                      weeks={computedRoleHeatmap.weeks}
-                      data={computedRoleHeatmap.data}
-                    />
-                  </LargeGraphCard>
-
-                  {/* Crew fairness details table */}
-                  <div className="mt-4">
-                    <CrewFairnessTable
-                      data={computedCrewFairnessTable}
-                    />
-                  </div>
-                    </div>{/* End dashboard content */}
-                  </div>{/* End outer glass card */}
-                </>
+                <RoleDashboardContent
+                  role={selectedRole}
+                  availableDates={availableDates}
+                  selectedDates={timeSelectedDates}
+                  onSelectionChange={setTimeSelectedDates}
+                  roleBoxPlotLabel={roleBoxPlotLabel}
+                  setRoleBoxPlotLabel={setRoleBoxPlotLabel}
+                  computedRoleBoxPlot={computedRoleBoxPlot}
+                  computedRoleHeatmap={computedRoleHeatmap}
+                  computedCrewFairnessTable={computedCrewFairnessTable}
+                  formatMinutesToReadable={formatMinutesToReadable}
+                  sparklineData={dashboardSnapshot?.selection.logbooks.map(lb => {
+                    const roleStats = lb.roleStats.find((r: any) => r.roleId === selectedRole.id);
+                    if (!roleStats || roleStats.giniCoefficient === null) return 0;
+                    return Math.round((1 - roleStats.giniCoefficient) * 10000) / 100;
+                  }) || [0]}
+                />
               ) : activeView === 'crew' ? (
-                /* Crew List View - Paginated */
+                /* Crew List View - Split Panel Layout (inside single card) */
                 (() => {
                   // Filter crew cards: must have 1+ preferences, match search query, sort alphabetically
                   const filteredCrewCards = computedCrewCards
@@ -2092,6 +1793,7 @@ export default function FairnessDashboardPage() {
                     .sort((a, b) => a.title.localeCompare(b.title));
                   const crewTotalPages = Math.ceil(filteredCrewCards.length / CREW_CARDS_PER_PAGE);
                   const showCrewPagination = filteredCrewCards.length > CREW_CARDS_PER_PAGE;
+                  const hasCrewPanel = crewPanelCard !== null;
 
                   return (
                     <div
@@ -2099,6 +1801,7 @@ export default function FairnessDashboardPage() {
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
                         ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        minHeight: '400px',
                       }}
                     >
                       {/* Embedded header with search bar and pagination */}
@@ -2195,43 +1898,97 @@ export default function FairnessDashboardPage() {
                           </div>
                         </GlassPillCard>
                       </div>
-                      {/* Card rows */}
-                      <div className="flex flex-col gap-3" style={{ padding: '16px' }}>
-                        {filteredCrewCards
-                          .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
-                          .map((card) => (
+
+                      {/* Content area - flex row with list and panel side by side */}
+                      <div className="flex" style={{ padding: '16px', gap: '16px' }}>
+                        {/* List column - shrinks when panel open */}
+                        <div
+                          className="flex flex-col gap-3"
+                          style={{
+                            width: hasCrewPanel ? '20%' : '100%',
+                            transition: 'width 0.3s ease',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {filteredCrewCards
+                            .slice((crewPage - 1) * CREW_CARDS_PER_PAGE, crewPage * CREW_CARDS_PER_PAGE)
+                            .map((card) => {
+                              const isSelected = crewPanelCard?.id === card.id;
+                              const isHovered = hoveredCrewCardId === card.id;
+                              return (
+                                <div
+                                  key={card.id}
+                                  className="ai-glass-border cursor-pointer transition-all"
+                                  style={{
+                                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', isSelected || isHovered ? 0 : 0.08),
+                                    filter: isSelected || isHovered ? 'brightness(0.94)' : undefined,
+                                    transform: isSelected || isHovered ? 'scale(1.01)' : undefined,
+                                  }}
+                                  onMouseEnter={() => setHoveredCrewCardId(card.id)}
+                                  onMouseLeave={() => setHoveredCrewCardId(null)}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setCrewPanelCard(null);
+                                    } else {
+                                      setCrewPanelCard(card);
+                                    }
+                                  }}
+                                >
+                                  <CrewQuickLookCardGlass card={card} condensed={hasCrewPanel} />
+                                </div>
+                              );
+                            })}
+                          {filteredCrewCards.length === 0 && (
                             <div
-                              key={card.id}
-                              className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
-                              style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
-                              onClick={() => {
-                                setSelectedCrewId(card.id);
-                                setSelectedCrew(card);
-                                setActiveView('overview');
+                              style={{
+                                textAlign: 'center',
+                                padding: '2rem',
+                                color: '#6B6B6B',
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '14px',
                               }}
                             >
-                              <CrewQuickLookCardGlass card={card} />
+                              No crew members found
                             </div>
-                          ))}
-                        {filteredCrewCards.length === 0 && (
-                          <div
-                            style={{
-                              textAlign: 'center',
-                              padding: '2rem',
-                              color: '#6B6B6B',
-                              fontFamily: 'var(--font-open-sans)',
-                              fontSize: '14px',
-                            }}
-                          >
-                            No crew members found
-                          </div>
-                        )}
+                          )}
+                        </div>
+
+                        {/* Detail panel - expands in from right */}
+                        <div
+                          style={{
+                            width: hasCrewPanel ? '80%' : '0%',
+                            opacity: hasCrewPanel ? 1 : 0,
+                            overflow: 'hidden',
+                            borderRadius: '1.5rem',
+                            transition: 'width 0.3s ease, opacity 0.3s ease',
+                          }}
+                        >
+                          {crewPanelCard && (
+                            <CrewDashboardContent
+                              crew={crewPanelCard}
+                              availableDates={availableDates}
+                              selectedDates={timeSelectedDates}
+                              onSelectionChange={setTimeSelectedDates}
+                              crewLineGraphLabel={crewLineGraphLabel}
+                              setCrewLineGraphActiveData={setCrewLineGraphActiveData}
+                              setCrewLineGraphLabel={setCrewLineGraphLabel}
+                              crewLineGraphSelectedIndex={crewLineGraphSelectedIndex}
+                              setCrewLineGraphSelectedIndex={setCrewLineGraphSelectedIndex}
+                              crewBoxPlotLabel={crewBoxPlotLabel}
+                              setCrewBoxPlotLabel={setCrewBoxPlotLabel}
+                              crewPreferencesLabel={crewPreferencesLabel}
+                              setCrewPreferencesLabel={setCrewPreferencesLabel}
+                              roleRules={roleRules}
+                              formatRuleTypeLabel={formatRuleTypeLabel}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
                 })()
               ) : activeView === 'roles' ? (
-                /* Roles List View - Paginated */
+                /* Roles List View - Split Panel Layout (inside single card) */
                 (() => {
                   // Filter role cards by search query
                   const filteredRoleCards = computedRoleCards.filter(card =>
@@ -2239,6 +1996,7 @@ export default function FairnessDashboardPage() {
                   );
                   const roleTotalPages = Math.ceil(filteredRoleCards.length / ROLE_CARDS_PER_PAGE);
                   const showRolePagination = filteredRoleCards.length > ROLE_CARDS_PER_PAGE;
+                  const hasRolePanel = rolePanelCard !== null;
 
                   return (
                     <div
@@ -2246,6 +2004,7 @@ export default function FairnessDashboardPage() {
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
                         ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        minHeight: '400px',
                       }}
                     >
                       {/* Embedded header with search bar and pagination */}
@@ -2342,37 +2101,91 @@ export default function FairnessDashboardPage() {
                           </div>
                         </GlassPillCard>
                       </div>
-                      {/* Card rows */}
-                      <div className="flex flex-col gap-3" style={{ padding: '16px' }}>
-                        {filteredRoleCards
-                          .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
-                          .map((card) => (
+
+                      {/* Content area - flex row with list and panel side by side */}
+                      <div className="flex" style={{ padding: '16px', gap: '16px' }}>
+                        {/* List column - shrinks when panel open */}
+                        <div
+                          className="flex flex-col gap-3"
+                          style={{
+                            width: hasRolePanel ? '20%' : '100%',
+                            transition: 'width 0.3s ease',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {filteredRoleCards
+                            .slice((rolePage - 1) * ROLE_CARDS_PER_PAGE, rolePage * ROLE_CARDS_PER_PAGE)
+                            .map((card) => {
+                              const isSelected = rolePanelCard?.id === card.id;
+                              const isHovered = hoveredRoleCardId === card.id;
+                              return (
+                                <div
+                                  key={card.id}
+                                  className="ai-glass-border cursor-pointer transition-all"
+                                  style={{
+                                    ...aiGlassLightBorderStyle('1rem', '0, 0, 0', isSelected || isHovered ? 0 : 0.08),
+                                    filter: isSelected || isHovered ? 'brightness(0.94)' : undefined,
+                                    transform: isSelected || isHovered ? 'scale(1.01)' : undefined,
+                                  }}
+                                  onMouseEnter={() => setHoveredRoleCardId(card.id)}
+                                  onMouseLeave={() => setHoveredRoleCardId(null)}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setRolePanelCard(null);
+                                    } else {
+                                      setRolePanelCard(card);
+                                    }
+                                  }}
+                                >
+                                  <RoleQuickLookCardGlass card={card} condensed={hasRolePanel} />
+                                </div>
+                              );
+                            })}
+                          {filteredRoleCards.length === 0 && (
                             <div
-                              key={card.id}
-                              className="ai-glass-border cursor-pointer transition-all hover:scale-[1.01]"
-                              style={aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08)}
-                              onClick={() => {
-                                setSelectedRoleId(card.id);
-                                setSelectedRole(card);
-                                setActiveView('overview');
+                              style={{
+                                textAlign: 'center',
+                                padding: '2rem',
+                                color: '#6B6B6B',
+                                fontFamily: 'var(--font-open-sans)',
+                                fontSize: '14px',
                               }}
                             >
-                              <RoleQuickLookCardGlass card={card} />
+                              No roles found
                             </div>
-                          ))}
-                        {filteredRoleCards.length === 0 && (
-                          <div
-                            style={{
-                              textAlign: 'center',
-                              padding: '2rem',
-                              color: '#6B6B6B',
-                              fontFamily: 'var(--font-open-sans)',
-                              fontSize: '14px',
-                            }}
-                          >
-                            No roles found
-                          </div>
-                        )}
+                          )}
+                        </div>
+
+                        {/* Detail panel - expands in from right */}
+                        <div
+                          style={{
+                            width: hasRolePanel ? '80%' : '0%',
+                            opacity: hasRolePanel ? 1 : 0,
+                            overflow: 'hidden',
+                            borderRadius: '1.5rem',
+                            transition: 'width 0.3s ease, opacity 0.3s ease',
+                          }}
+                        >
+                          {rolePanelCard && (
+                            <RoleDashboardContent
+                                role={rolePanelCard}
+                                availableDates={availableDates}
+                                selectedDates={timeSelectedDates}
+                                onSelectionChange={setTimeSelectedDates}
+                                roleBoxPlotLabel={roleBoxPlotLabel}
+                                setRoleBoxPlotLabel={setRoleBoxPlotLabel}
+                                computedRoleBoxPlot={computedRoleBoxPlot}
+                                computedRoleHeatmap={computedRoleHeatmap}
+                                computedCrewFairnessTable={computedCrewFairnessTable}
+                                formatMinutesToReadable={formatMinutesToReadable}
+                                sparklineData={dashboardSnapshot?.selection.logbooks.map(lb => {
+                                  const roleStats = lb.roleStats.find((r: any) => r.roleId === rolePanelCard.id);
+                                  if (!roleStats || roleStats.giniCoefficient === null) return 0;
+                                  return Math.round((1 - roleStats.giniCoefficient) * 10000) / 100;
+                                }) || [0]}
+                              />
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
