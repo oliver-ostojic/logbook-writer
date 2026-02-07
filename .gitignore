@@ -17,3 +17,4 @@ __pycache__/
 solver_training_data.jsonl
 apps/solver-python/solver_training_data.jsonl
 apps/api/solver_training_data.jsonl
+.DS_Store
