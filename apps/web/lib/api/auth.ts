@@ -43,6 +43,7 @@ export interface ChangePasswordRequest {
 }
 
 export interface AuthResponse {
+  token?: string;
   user: AuthUser;
 }
 

@@ -9,7 +9,7 @@ import { login } from '@/lib/api/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, setUser } = useAuthStore();
+  const { user, isAuthenticated, isLoading, setUser, setToken } = useAuthStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -53,6 +53,9 @@ export default function LoginPage() {
     try {
       const response = await login({ username, password });
       setUser(response.user);
+      if (response.token) {
+        setToken(response.token);
+      }
 
       // Redirect based on role
       const { user: loggedInUser } = response;

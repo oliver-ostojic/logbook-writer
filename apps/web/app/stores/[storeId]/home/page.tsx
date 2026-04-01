@@ -482,8 +482,8 @@ export default function Home() {
     async function loadActivity() {
       setActivityLoading(true);
       try {
-        const { logs } = await fetchActivityLogs(Number(storeId), activityFilter);
-        setActivityLogs(logs);
+        const response = await fetchActivityLogs(Number(storeId), activityFilter);
+        setActivityLogs(response.logs);
       } catch (err) {
         console.error('Failed to load activity:', err);
         setActivityLogs([]);

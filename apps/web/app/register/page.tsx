@@ -12,7 +12,7 @@ type RegistrationMode = 'crew' | 'invite';
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, isLoading, setUser } = useAuthStore();
+  const { user, isAuthenticated, isLoading, setUser, setToken } = useAuthStore();
 
   // Check if there's an invite code in URL
   const urlInviteCode = searchParams.get('code') || '';
@@ -89,6 +89,9 @@ export default function RegisterPage() {
           : { inviteCode, username, password, name }
       );
       setUser(response.user);
+      if (response.token) {
+        setToken(response.token);
+      }
 
       // Redirect based on role
       const { user: registeredUser } = response;

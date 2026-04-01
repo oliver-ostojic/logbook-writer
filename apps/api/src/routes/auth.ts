@@ -108,6 +108,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
     setAuthCookie(reply, token);
 
     return {
+      token,
       user: {
         id: user.id,
         username: user.username,
@@ -218,6 +219,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
       setAuthCookie(reply, token);
 
       return reply.code(201).send({
+        token,
         user: {
           id: user.id,
           username: user.username,
@@ -290,6 +292,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
       setAuthCookie(reply, token);
 
       return reply.code(201).send({
+        token,
         user: {
           id: user.id,
           username: user.username,

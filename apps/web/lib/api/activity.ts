@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/lib/authStore';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export type ActivityFilter = 'recent' | 'today' | 'last2days' | 'oneweek' | 'onemonth';
@@ -22,6 +24,12 @@ export interface ActivityLogsResponse {
   total: number;
 }
 
+function authHeaders(): HeadersInit {
+  const token = useAuthStore.getState().token;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
 export async function fetchActivityLogs(
   storeId: number,
   filter: ActivityFilter = 'oneweek',
@@ -30,7 +38,7 @@ export async function fetchActivityLogs(
 ): Promise<ActivityLogsResponse> {
   const res = await fetch(
     `${API_URL}/api/stores/${storeId}/activity?filter=${filter}&limit=${limit}&offset=${offset}`,
-    { credentials: 'include' }
+    { headers: authHeaders(), credentials: 'include' }
   );
   if (!res.ok) {
     throw new Error('Failed to fetch activity logs');
@@ -44,7 +52,7 @@ export async function postComment(
 ): Promise<ActivityLogItem> {
   const res = await fetch(`${API_URL}/api/stores/${storeId}/activity/comment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     credentials: 'include',
     body: JSON.stringify({ comment }),
   });
@@ -61,6 +69,7 @@ export async function deleteComment(
 ): Promise<ActivityLogItem> {
   const res = await fetch(`${API_URL}/api/stores/${storeId}/activity/${logId}`, {
     method: 'DELETE',
+    headers: authHeaders(),
     credentials: 'include',
   });
   if (!res.ok) {
@@ -78,7 +87,7 @@ export async function fetchActivityLogsByDate(
 ): Promise<ActivityLogsResponse> {
   const res = await fetch(
     `${API_URL}/api/stores/${storeId}/activity?date=${date}&limit=${limit}&offset=${offset}`,
-    { credentials: 'include' }
+    { headers: authHeaders(), credentials: 'include' }
   );
   if (!res.ok) {
     throw new Error('Failed to fetch activity logs');

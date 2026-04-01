@@ -32,8 +32,11 @@ declare module 'fastify' {
  */
 export function rbacMiddleware(options: RBACOptions) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    // Extract JWT from cookie
-    const token = request.cookies[AUTH_CONFIG.jwt.cookieName];
+    // Extract JWT from cookie or Authorization header
+    const authHeader = request.headers.authorization;
+    const token =
+      request.cookies[AUTH_CONFIG.jwt.cookieName] ||
+      (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
     if (!token) {
       return reply.code(401).send({
         error: 'Unauthorized',
@@ -95,7 +98,10 @@ export function rbacMiddleware(options: RBACOptions) {
  */
 export function authMiddleware() {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = request.cookies[AUTH_CONFIG.jwt.cookieName];
+    const authHeader = request.headers.authorization;
+    const token =
+      request.cookies[AUTH_CONFIG.jwt.cookieName] ||
+      (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
     if (!token) {
       return reply.code(401).send({
         error: 'Unauthorized',

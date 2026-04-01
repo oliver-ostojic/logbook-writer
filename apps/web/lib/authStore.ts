@@ -15,11 +15,13 @@ export interface AuthUser {
 
 interface AuthState {
   user: AuthUser | null;
+  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 
   // Actions
   setUser: (user: AuthUser | null) => void;
+  setToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
 
@@ -39,6 +41,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  token: null,
   isAuthenticated: false,
   isLoading: true,
 
@@ -49,11 +52,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoading: false,
     }),
 
+  setToken: (token) => set({ token }),
+
   setLoading: (loading) => set({ isLoading: loading }),
 
   logout: () =>
     set({
       user: null,
+      token: null,
       isAuthenticated: false,
       isLoading: false,
     }),
