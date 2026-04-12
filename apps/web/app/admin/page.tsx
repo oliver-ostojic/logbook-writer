@@ -6,6 +6,7 @@ import { CardContainer, GlassPillCard, GlassPillButton, aiGlassAnimations, aiGla
 import { CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, NavStatsCard } from '../stores/[storeId]/home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
+import { authFetch } from '@/lib/api/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -71,7 +72,7 @@ export default function AdminPage() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/companies`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/companies`);
       if (res.ok) {
         const data = await res.json();
         setCompanies(data);
@@ -86,7 +87,7 @@ export default function AdminPage() {
   const fetchCompanyStores = async (companyId: number) => {
     try {
       setStoresLoading(true);
-      const res = await fetch(`${API_URL}/companies/${companyId}`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/companies/${companyId}`);
       if (res.ok) {
         const data = await res.json();
         setCompanyStores(data.stores || []);
@@ -139,9 +140,8 @@ export default function AdminPage() {
   const handleDeleteCompany = async (companyId: number) => {
     if (!confirm('Are you sure you want to delete this company?')) return;
     try {
-      const res = await fetch(`${API_URL}/companies/${companyId}`, {
+      const res = await authFetch(`${API_URL}/companies/${companyId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (res.ok) {
         await fetchCompanies();
@@ -190,9 +190,8 @@ export default function AdminPage() {
   const handleDeleteStore = async (storeId: number) => {
     if (!confirm('Are you sure you want to delete this store?')) return;
     try {
-      const res = await fetch(`${API_URL}/stores/${storeId}`, {
+      const res = await authFetch(`${API_URL}/stores/${storeId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (res.ok) {
         if (selectedCompany) {

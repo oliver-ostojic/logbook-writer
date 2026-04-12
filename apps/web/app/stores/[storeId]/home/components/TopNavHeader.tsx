@@ -72,6 +72,7 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
       {/* Top nav - bento style header */}
       <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
         <div
+          data-tutorial-id="top-nav"
           className="ai-glass-border"
           style={{
             ...aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08),

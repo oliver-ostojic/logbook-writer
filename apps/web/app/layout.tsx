@@ -3,6 +3,7 @@ import { Roboto, Open_Sans, Inter, Instrument_Serif } from 'next/font/google';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { GlassDevPanel } from '@/components/ui/ai-glass';
 import { ScrollRestorationDisabler } from '@/components/ScrollRestorationDisabler';
+import { TutorialProvider } from '@/components/tutorial-flyover';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ backgroundColor: 'transparent' }}>
         <ScrollRestorationDisabler />
         <AuthProvider>{children}</AuthProvider>
+        <TutorialProvider />
         <GlassDevPanel />
       </body>
     </html>

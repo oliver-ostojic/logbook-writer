@@ -12,6 +12,8 @@ import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, Rol
 import { renderRoleRule } from '@/lib/role-rule-templates';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 import { useAuthStore } from '@/lib/authStore';
+import { useTutorialStore } from '@/lib/tutorialStore';
+import { createHomeSteps } from '@/app/tutorial/steps/home-steps';
 import { fetchActivityLogs, postComment, deleteComment, ActivityLogItem, ActivityFilter } from '@/lib/api/activity';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -409,6 +411,17 @@ export default function Home() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
+  // Start tutorial flyover if pending (triggered from /tutorial page)
+  const { pendingFlyover, startFlyover } = useTutorialStore();
+  useEffect(() => {
+    if (!pendingFlyover) return;
+    const steps = createHomeSteps({
+      setActiveView: (view) => setActiveView(view),
+      clearSelection: () => setSelectedItem(null),
+    });
+    startFlyover(steps);
+  }, [pendingFlyover]);
+
   // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -748,7 +761,7 @@ export default function Home() {
     return (
       <div className="flex flex-col h-full">
         {/* Embedded header - matches list view style */}
-        <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+        <div data-tutorial-id="detail-header" style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
           <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
             <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
               {/* Edit button - only in view mode */}
@@ -825,7 +838,7 @@ export default function Home() {
           </GlassPillCard>
         </div>
         {/* Content with gap */}
-        <div className="flex flex-col gap-4" style={{ marginTop: '1rem' }}>
+        <div data-tutorial-id="detail-content" className="flex flex-col gap-4" style={{ marginTop: '1rem' }}>
         {/* Content based on type and mode */}
         {selectedItem.type === 'crew' && (selectedItem.mode === 'add' || selectedItem.mode === 'edit') ? (
           <CrewForm
@@ -1151,10 +1164,10 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col">
           {/* Embedded search header with title, add button, and pagination */}
-          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick)}
+          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick, `${type}-header`)}
 
           {/* Paginated list */}
-          <div className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
+          <div data-tutorial-id={`${type}-list`} className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
             {paginatedData.length > 0 ? (
               paginatedData.map((item) => {
                 const itemName = getItemName(item);
@@ -1721,12 +1734,13 @@ export default function Home() {
     currentPage: number,
     totalPages: number,
     setPage: (page: number | ((p: number) => number)) => void,
-    onAddClick: () => void
+    onAddClick: () => void,
+    tutorialId?: string,
   ) => {
     const showPagination = totalPages > 1;
 
     return (
-      <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+      <div data-tutorial-id={tutorialId} style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
         <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
           {/* Single row: Add button on left, Search bar fills remaining space, Pagination on right */}
           <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
@@ -1852,6 +1866,7 @@ export default function Home() {
     if (filteredRoleFamilies.length === 0) return null;
 
     return (
+      <div data-tutorial-id="role-families">
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col gap-3">
           {/* Section title and Add button */}
@@ -1927,6 +1942,7 @@ export default function Home() {
           </div>
         </div>
       </CardContainer>
+      </div>
     );
   };
 
@@ -1975,6 +1991,7 @@ export default function Home() {
     const handleAddClick = () => setSelectedItem({ id: '', name: 'New Role', type: 'roles', mode: 'add' });
 
     return (
+      <div data-tutorial-id="roles-list">
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col" style={{ minHeight: '400px' }}>
           {/* Embedded search header with title, add button, and pagination */}
@@ -2038,6 +2055,7 @@ export default function Home() {
           </div>
         </div>
       </CardContainer>
+      </div>
     );
   };
 
@@ -2068,6 +2086,7 @@ export default function Home() {
             {/* Secondary nav - Activity/Crew/Logbooks */}
             <div className="sticky top-7 z-50">
             <div
+              data-tutorial-id="view-tabs"
               className="ai-glass-border"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
             >
@@ -2128,6 +2147,7 @@ export default function Home() {
           {activeView === 'home' ? (
             <>
           {/* Activity Log */}
+          <div data-tutorial-id="activity-feed">
           <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
             <div className="flex flex-col gap-3">
               {/* Activity Log header card - bento style: top corners match outer CardContainer */}
@@ -2526,6 +2546,7 @@ export default function Home() {
               </GlassPillCard>
             </div>
           </CardContainer>
+          </div>
 
           {/* Delete comment confirmation dialog */}
           {deleteConfirmLogId && (

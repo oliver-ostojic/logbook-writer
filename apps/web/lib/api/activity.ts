@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/lib/authStore';
+import { authFetch } from './authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -24,21 +24,14 @@ export interface ActivityLogsResponse {
   total: number;
 }
 
-function authHeaders(): HeadersInit {
-  const token = useAuthStore.getState().token;
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
-
 export async function fetchActivityLogs(
   storeId: number,
   filter: ActivityFilter = 'oneweek',
   limit = 50,
   offset = 0
 ): Promise<ActivityLogsResponse> {
-  const res = await fetch(
-    `${API_URL}/api/stores/${storeId}/activity?filter=${filter}&limit=${limit}&offset=${offset}`,
-    { headers: authHeaders(), credentials: 'include' }
+  const res = await authFetch(
+    `${API_URL}/api/stores/${storeId}/activity?filter=${filter}&limit=${limit}&offset=${offset}`
   );
   if (!res.ok) {
     throw new Error('Failed to fetch activity logs');
@@ -50,10 +43,9 @@ export async function postComment(
   storeId: number,
   comment: string
 ): Promise<ActivityLogItem> {
-  const res = await fetch(`${API_URL}/api/stores/${storeId}/activity/comment`, {
+  const res = await authFetch(`${API_URL}/api/stores/${storeId}/activity/comment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ comment }),
   });
   if (!res.ok) {
@@ -67,10 +59,8 @@ export async function deleteComment(
   storeId: number,
   logId: string
 ): Promise<ActivityLogItem> {
-  const res = await fetch(`${API_URL}/api/stores/${storeId}/activity/${logId}`, {
+  const res = await authFetch(`${API_URL}/api/stores/${storeId}/activity/${logId}`, {
     method: 'DELETE',
-    headers: authHeaders(),
-    credentials: 'include',
   });
   if (!res.ok) {
     throw new Error('Failed to delete comment');
@@ -85,9 +75,8 @@ export async function fetchActivityLogsByDate(
   limit = 50,
   offset = 0
 ): Promise<ActivityLogsResponse> {
-  const res = await fetch(
-    `${API_URL}/api/stores/${storeId}/activity?date=${date}&limit=${limit}&offset=${offset}`,
-    { headers: authHeaders(), credentials: 'include' }
+  const res = await authFetch(
+    `${API_URL}/api/stores/${storeId}/activity?date=${date}&limit=${limit}&offset=${offset}`
   );
   if (!res.ok) {
     throw new Error('Failed to fetch activity logs');

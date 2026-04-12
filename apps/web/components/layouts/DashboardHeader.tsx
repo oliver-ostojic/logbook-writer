@@ -6,6 +6,7 @@ import { UserIcon, ArrowRightOnRectangleIcon, BuildingStorefrontIcon } from '@he
 import { aiGlassBorderStyle, aiGlassContentStyle, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '../ui/ai-glass';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
+import { authFetch } from '@/lib/api/authFetch';
 
 export interface NavLink {
   label: string;
@@ -52,7 +53,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   useEffect(() => {
     if (currentStoreId && user?.role === 'ADMIN') {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      fetch(`${API_URL}/stores/${currentStoreId}`, { credentials: 'include' })
+      authFetch(`${API_URL}/stores/${currentStoreId}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data?.companyId) {

@@ -1,4 +1,5 @@
 import { AuthUser } from '../authStore';
+import { authFetch } from './authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -53,12 +54,13 @@ export interface AuthError {
 
 /**
  * Login with username and password
+ * Note: Uses plain fetch since the user has no token yet.
  */
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // Important: include cookies
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -74,9 +76,8 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
  * Logout current user
  */
 export async function logout(): Promise<void> {
-  const response = await fetch(`${API_URL}/auth/logout`, {
+  const response = await authFetch(`${API_URL}/auth/logout`, {
     method: 'POST',
-    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -87,8 +88,7 @@ export async function logout(): Promise<void> {
 
 /**
  * Register a new user
- * CREW: Self-register with crewId
- * Others: Requires authentication
+ * Note: Uses plain fetch since the user has no token yet.
  */
 export async function register(data: RegisterRequest): Promise<AuthResponse> {
   const response = await fetch(`${API_URL}/auth/register`, {
@@ -110,9 +110,8 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
  * Get current authenticated user
  */
 export async function getCurrentUser(): Promise<AuthResponse | null> {
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await authFetch(`${API_URL}/auth/me`, {
     method: 'GET',
-    credentials: 'include',
   });
 
   if (response.status === 401) {
@@ -131,10 +130,9 @@ export async function getCurrentUser(): Promise<AuthResponse | null> {
  * Change password for current user
  */
 export async function changePassword(data: ChangePasswordRequest): Promise<void> {
-  const response = await fetch(`${API_URL}/auth/change-password`, {
+  const response = await authFetch(`${API_URL}/auth/change-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -146,14 +144,11 @@ export async function changePassword(data: ChangePasswordRequest): Promise<void>
 
 /**
  * Create an invite code for CAPTAIN or MATE registration
- * - ADMIN can create codes for CAPTAIN (any store)
- * - CAPTAIN can create codes for MATE (their store only)
  */
 export async function createInviteCode(data: CreateInviteCodeRequest): Promise<{ inviteCode: InviteCode }> {
-  const response = await fetch(`${API_URL}/auth/invite-codes`, {
+  const response = await authFetch(`${API_URL}/auth/invite-codes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -169,9 +164,8 @@ export async function createInviteCode(data: CreateInviteCodeRequest): Promise<{
  * Get list of invite codes (CAPTAIN sees their own, ADMIN sees all)
  */
 export async function getInviteCodes(): Promise<{ inviteCodes: InviteCode[] }> {
-  const response = await fetch(`${API_URL}/auth/invite-codes`, {
+  const response = await authFetch(`${API_URL}/auth/invite-codes`, {
     method: 'GET',
-    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -186,9 +180,8 @@ export async function getInviteCodes(): Promise<{ inviteCodes: InviteCode[] }> {
  * Delete an unused invite code
  */
 export async function deleteInviteCode(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/auth/invite-codes/${id}`, {
+  const response = await authFetch(`${API_URL}/auth/invite-codes/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
   });
 
   if (!response.ok) {
