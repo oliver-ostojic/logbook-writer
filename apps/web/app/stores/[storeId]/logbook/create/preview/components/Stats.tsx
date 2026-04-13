@@ -245,41 +245,56 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
     return `${firstName} ${lastInitial}.`;
   }
 
-  return (
-    <div className="relative isolate overflow-hidden px-6 py-6">
-      <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const badgeColors = getBadgeColors(stat.badge.color);
-          return (
-            <div
-              key={stat.name}
-              className="ai-glass-border rounded-[1.5rem]"
-              style={aiGlassLightBorderStyle('1.5rem')}
-            >
-              <div
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 rounded-[1.5rem]"
-                style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '16px 20px' }}
-              >
-                <dt className="text-sm/6 font-medium text-gray-500">
-                  {'label' in stat && stat.label && (
-                    <span className="block text-xs text-gray-400 mb-0.5">{stat.label}</span>
-                  )}
-                  {stat.name}
-                </dt>
-                <dd>
-                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', badgeColors.rgb, 0.4), width: 'fit-content' }}>
-                    <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('9999px', 0.6), backgroundColor: badgeColors.bgRgba, padding: '4px 12px' }}>
-                      <span className={`text-sm font-semibold font-sans ${badgeColors.textClass}`}>{stat.badge.label}</span>
-                    </div>
-                  </div>
-                </dd>
-                <dd className="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900 mt-2">
-                  {stat.value}
-                </dd>
+  const renderStatCard = (stat: typeof stats[number]) => {
+    const badgeColors = getBadgeColors(stat.badge.color);
+    return (
+      <div
+        key={stat.name}
+        className="ai-glass-border rounded-[1.5rem]"
+        style={aiGlassLightBorderStyle('1.5rem')}
+      >
+        <div
+          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 rounded-[1.5rem]"
+          style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '16px 20px' }}
+        >
+          <dt className="text-sm/6 font-medium text-gray-500">
+            {'label' in stat && stat.label && (
+              <span className="block text-xs text-gray-400 mb-0.5">{stat.label}</span>
+            )}
+            {stat.name}
+          </dt>
+          <dd>
+            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', badgeColors.rgb, 0.4), width: 'fit-content' }}>
+              <div className="flex items-center justify-center" style={{ ...aiGlassLightContentStyle('9999px', 0.6), backgroundColor: badgeColors.bgRgba, padding: '4px 12px' }}>
+                <span className={`text-sm font-semibold font-sans ${badgeColors.textClass}`}>{stat.badge.label}</span>
               </div>
             </div>
-          );
-        })}
+          </dd>
+          <dd className="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900 mt-2">
+            {stat.value}
+          </dd>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="relative isolate overflow-hidden px-6 py-6">
+      <dl className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {/* Per-Crew Avg + Overall Met grouped for tutorial spotlight */}
+        <div
+          data-tutorial-id="preview-preferences-stats"
+          className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
+          {renderStatCard(stats[0])}
+          {renderStatCard(stats[1])}
+        </div>
+        {/* Runtime */}
+        {renderStatCard(stats[2])}
+        {/* Fairness */}
+        <div data-tutorial-id="preview-fairness-stat">
+          {renderStatCard(stats[3])}
+        </div>
       </dl>
 
       {/* Quota Warnings Section */}

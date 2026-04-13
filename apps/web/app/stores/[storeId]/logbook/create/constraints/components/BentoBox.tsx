@@ -650,6 +650,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
           <div className="grid grid-cols-1 gap-6">
             {/* First row (Step 1) */}
             <div
+              data-tutorial-id="constraints-step-1"
               className="ai-glass-border rounded-[1.5rem]"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
             >
@@ -727,6 +728,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
           {/* Second row (Step 2) */}
           <div
+            data-tutorial-id="constraints-step-2"
             className="ai-glass-border rounded-[1.5rem]"
             style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
           >
@@ -829,6 +831,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
           {/* Third row (Step 3) */}
           <div
+            data-tutorial-id="constraints-step-3"
             className="ai-glass-border rounded-[1.5rem]"
             style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
           >
@@ -959,7 +962,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
               </div>
 
               <div className="mt-5">
-                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
+                <div data-tutorial-id="constraints-finish-btn" className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
                   <div style={{ ...aiGlassLightContentStyle('9999px', 0.6) }}>
                     <button
                       type="button"

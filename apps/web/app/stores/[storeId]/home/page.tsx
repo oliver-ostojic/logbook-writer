@@ -412,15 +412,22 @@ export default function Home() {
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Start tutorial flyover if pending (triggered from /tutorial page)
-  const { pendingFlyover, startFlyover } = useTutorialStore();
+  const { pendingFlyover, startFlyover, isActive: tutorialIsActive, viewHint } = useTutorialStore();
   useEffect(() => {
     if (!pendingFlyover) return;
     const steps = createHomeSteps({
-      setActiveView: (view) => setActiveView(view),
-      clearSelection: () => setSelectedItem(null),
+      storeId,
+      setViewHint: (view) => useTutorialStore.getState().setViewHint(view),
     });
     startFlyover(steps);
   }, [pendingFlyover]);
+
+  // Sync active view with tutorial viewHint (works across page navigations)
+  useEffect(() => {
+    if (!viewHint || !tutorialIsActive) return;
+    setActiveView(viewHint as ViewId);
+    setSelectedItem(null);
+  }, [viewHint, tutorialIsActive]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -1149,7 +1156,8 @@ export default function Home() {
     // Add button click handler
     const handleAddClick = () => {
       if (type === 'logbooks') {
-        router.push(`/stores/${storeId}/logbook/create/shifts`);
+        const dateParam = tutorialIsActive ? '?date=2025-12-15' : '';
+        router.push(`/stores/${storeId}/logbook/create/shifts${dateParam}`);
       } else {
         setSelectedItem({
           id: '',
@@ -1164,7 +1172,7 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col">
           {/* Embedded search header with title, add button, and pagination */}
-          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick, `${type}-header`)}
+          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick, `${type}-header`, type === 'logbooks' ? 'logbooks-add-btn' : undefined)}
 
           {/* Paginated list */}
           <div data-tutorial-id={`${type}-list`} className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
@@ -1736,6 +1744,7 @@ export default function Home() {
     setPage: (page: number | ((p: number) => number)) => void,
     onAddClick: () => void,
     tutorialId?: string,
+    addBtnTutorialId?: string,
   ) => {
     const showPagination = totalPages > 1;
 
@@ -1745,7 +1754,7 @@ export default function Home() {
           {/* Single row: Add button on left, Search bar fills remaining space, Pagination on right */}
           <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
             {/* Add button */}
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+            <div data-tutorial-id={addBtnTutorialId} className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
               <button
                 onClick={onAddClick}
                 style={{
@@ -2112,6 +2121,7 @@ export default function Home() {
                     count={effectiveCrew.length}
                     isActive={activeView === 'crew'}
                     onClick={() => setActiveView('crew')}
+                    tutorialId="view-tab-crew"
                   />
                   <NavStatsCard
                     icon={<DocumentTextIcon />}

@@ -33,6 +33,8 @@ export interface NavStatsCardProps {
   darkMode?: boolean;
   /** Custom active color (defaults to #2C2C2C in light mode, #DBDADB in dark mode) */
   activeColor?: string;
+  /** Tutorial spotlight ID */
+  tutorialId?: string;
 }
 
 /**
@@ -54,6 +56,7 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   textOnly = false,
   darkMode = false,
   activeColor,
+  tutorialId,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -68,6 +71,7 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
   return (
     <div
       className="flex items-center justify-center cursor-pointer"
+      data-tutorial-id={tutorialId}
       style={{ position: 'relative', zIndex: 1, flex: 1, padding: textOnly ? '8px 0' : undefined }}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}

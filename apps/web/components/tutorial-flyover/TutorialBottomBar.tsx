@@ -8,6 +8,7 @@ interface TutorialBottomBarProps {
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
+  onGoTo: (index: number) => void;
   hideNext?: boolean;
 }
 
@@ -17,6 +18,7 @@ export default function TutorialBottomBar({
   onNext,
   onBack,
   onSkip,
+  onGoTo,
   hideNext,
 }: TutorialBottomBarProps) {
   const isFirstStep = currentStep === 0;
@@ -69,14 +71,18 @@ export default function TutorialBottomBar({
           {/* Dot indicators */}
           <div className="flex items-center gap-2">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
+              <button
                 key={i}
+                onClick={() => onGoTo(i)}
                 style={{
                   width: i === currentStep ? 24 : 8,
                   height: 8,
                   borderRadius: 9999,
                   backgroundColor: i === currentStep ? '#2C2C2C' : '#D4D4D4',
                   transition: 'all 0.3s ease',
+                  border: 'none',
+                  padding: 0,
+                  cursor: i === currentStep ? 'default' : 'pointer',
                 }}
               />
             ))}
@@ -96,8 +102,7 @@ export default function TutorialBottomBar({
               borderRadius: '9999px',
               cursor: 'pointer',
               transition: 'background-color 0.2s ease, opacity 0.2s ease',
-              opacity: hideNext ? 0 : 1,
-              pointerEvents: hideNext ? 'none' : 'auto',
+              visibility: hideNext ? 'hidden' : 'visible',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)';

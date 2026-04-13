@@ -510,7 +510,7 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
               </Menu>
 
               {/* Publish button as glass pill with red theme */}
-              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.4), width: 'fit-content' }}>
+              <div data-tutorial-id="preview-publish-btn" className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.4), width: 'fit-content' }}>
                 <button
                   type="button"
                   onClick={handlePublish}

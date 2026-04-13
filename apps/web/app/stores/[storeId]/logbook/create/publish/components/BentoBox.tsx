@@ -75,6 +75,7 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
 
   return (
     <div
+      data-tutorial-id="preview-published-card"
       className="ai-glass-border rounded-[1.5rem]"
       style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
     >

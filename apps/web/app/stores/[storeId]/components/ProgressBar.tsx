@@ -148,7 +148,7 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
   );
 
   return (
-    <div className="sticky top-4 z-50">
+    <div data-tutorial-id="logbook-progress-bar" className="sticky top-4 z-50">
       <div
         className="ai-glass-border"
         style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}

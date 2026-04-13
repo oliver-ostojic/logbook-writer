@@ -146,7 +146,7 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
   return (
     <fieldset>
   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {roles.map((role) => {
+        {roles.map((role, roleIndex) => {
           const isSelected = selected.has(role.roleId)
           const cfg = config[role.roleId] || { time: '', duration: '' }
           const hasTime = !!cfg.time
@@ -154,10 +154,11 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
           const hasCrewPerHour = typeof cfg.crewPerHour === 'number' && !Number.isNaN(cfg.crewPerHour)
           const isComplete = isSelected && hasTime && hasDuration && hasCrewPerHour
           const isLocked = lockedRoleIds.has(role.roleId) && needsMutualExclusion(role);
-          
+
           return (
           <div
             key={role.roleId}
+            data-tutorial-id={roleIndex === 0 ? 'constraints-role-card' : undefined}
             className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1.5rem] ${
               isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             }`}

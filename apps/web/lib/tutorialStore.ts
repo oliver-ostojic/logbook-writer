@@ -6,6 +6,7 @@ interface TutorialState {
   pendingFlyover: boolean; // set by tutorial page, consumed by home page
   currentStepIndex: number;
   steps: TutorialStep[];
+  viewHint: string | null; // tells the home page which tab to show (survives unmount/remount)
 
   requestFlyover: () => void;
   startFlyover: (steps: TutorialStep[]) => void;
@@ -13,6 +14,8 @@ interface TutorialState {
   next: () => void;
   back: () => void;
   skip: () => void;
+  goTo: (index: number) => void;
+  setViewHint: (view: string | null) => void;
 }
 
 export const useTutorialStore = create<TutorialState>((set, get) => ({
@@ -20,6 +23,7 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
   pendingFlyover: false,
   currentStepIndex: 0,
   steps: [],
+  viewHint: null,
 
   requestFlyover: () => set({ pendingFlyover: true }),
 
@@ -31,6 +35,7 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
       pendingFlyover: false,
       currentStepIndex: 0,
       steps,
+      viewHint: null,
     }),
 
   next: () => {
@@ -38,7 +43,7 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
     if (currentStepIndex < steps.length - 1) {
       set({ currentStepIndex: currentStepIndex + 1 });
     } else {
-      set({ isActive: false, currentStepIndex: 0, steps: [] });
+      set({ isActive: false, currentStepIndex: 0, steps: [], viewHint: null });
     }
   },
 
@@ -55,5 +60,15 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
       pendingFlyover: false,
       currentStepIndex: 0,
       steps: [],
+      viewHint: null,
     }),
+
+  goTo: (index: number) => {
+    const { steps } = get();
+    if (index >= 0 && index < steps.length) {
+      set({ currentStepIndex: index });
+    }
+  },
+
+  setViewHint: (view) => set({ viewHint: view }),
 }));

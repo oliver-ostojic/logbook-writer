@@ -665,6 +665,8 @@ export default function LogbookSchedule({
       return next;
     });
     setEditingCell(null);
+    // Notify tutorial system that an edit was made
+    window.dispatchEvent(new CustomEvent('tutorial-advance'));
   };
 
   const renderSchedule = () => (
@@ -736,10 +738,12 @@ export default function LogbookSchedule({
             return (
               <div
                 key={c.id}
+                data-tutorial-id={isFirst ? 'preview-first-row' : undefined}
                 className="grid grid-cols-[10rem_auto] border-b border-gray-100"
               >
                 {/* Crew name cell (Y-axis labels) - double-click to toggle edit mode */}
                 <div
+                  data-tutorial-id={isFirst ? 'preview-crew-name' : undefined}
                   className={`ai-glass-border sticky left-4 z-20 w-[8rem] cursor-pointer select-none outline-none ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''}`}
                   style={{
                     ...aiGlassLightBorderStyle(
@@ -846,7 +850,7 @@ export default function LogbookSchedule({
                           {isSlotEditing && (
                             <div
                               ref={dropdownRef}
-                              className={`absolute inset-x-1 z-50 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 ${
+                              className={`absolute inset-x-1 z-[10000] overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 ${
                                 index >= displayedCrewRows.length - 2 
                                   ? 'bottom-full mb-1' 
                                   : 'top-full mt-1'

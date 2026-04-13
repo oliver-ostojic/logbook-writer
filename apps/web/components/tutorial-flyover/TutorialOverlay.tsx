@@ -9,6 +9,7 @@ interface TutorialOverlayProps {
   targetRect: TargetRect | null;
   blockClicks?: boolean;
   noDim?: boolean;
+  spotlightPadding?: number;
 }
 
 /**
@@ -18,7 +19,7 @@ interface TutorialOverlayProps {
  * no scroll-listener recalculation needed. The click-blocking layer uses
  * position: fixed to cover the viewport.
  */
-export default function TutorialOverlay({ targetRect, blockClicks, noDim }: TutorialOverlayProps) {
+export default function TutorialOverlay({ targetRect, blockClicks, noDim, spotlightPadding }: TutorialOverlayProps) {
   // No spotlight target
   if (!targetRect) {
     return (
@@ -29,10 +30,11 @@ export default function TutorialOverlay({ targetRect, blockClicks, noDim }: Tuto
     );
   }
 
-  const spotlightTop = targetRect.top - SPOTLIGHT_PADDING;
-  const spotlightLeft = targetRect.left - SPOTLIGHT_PADDING;
-  const spotlightWidth = targetRect.width + SPOTLIGHT_PADDING * 2;
-  const spotlightHeight = targetRect.height + SPOTLIGHT_PADDING * 2;
+  const pad = spotlightPadding ?? SPOTLIGHT_PADDING;
+  const spotlightTop = targetRect.top - pad;
+  const spotlightLeft = targetRect.left - pad;
+  const spotlightWidth = targetRect.width + pad * 2;
+  const spotlightHeight = targetRect.height + pad * 2;
 
   return (
     <>

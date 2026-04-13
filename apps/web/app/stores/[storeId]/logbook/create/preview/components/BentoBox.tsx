@@ -50,6 +50,7 @@ export default function BentoBox() {
         {/* Stats bento box */}
         <div
           ref={statsBentoRef}
+          data-tutorial-id="preview-stats-bar"
           className="ai-glass-border rounded-[1.5rem]"
           style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
         >
@@ -67,6 +68,7 @@ export default function BentoBox() {
         {/* Table bento box */}
         <div
           ref={tableRef}
+          data-tutorial-id="preview-logbook-table"
           className="ai-glass-border rounded-[1.5rem]"
           style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
         >

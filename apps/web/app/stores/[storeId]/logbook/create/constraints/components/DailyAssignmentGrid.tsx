@@ -110,7 +110,7 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
   return (
     <fieldset>
       <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => {
+        {items.map((item, itemIndex) => {
           const currentHours = hours[item.id] ?? 0;
           const isSelected = currentHours > 0;
           const displayHours = isSelected ? currentHours : 1;
@@ -120,6 +120,7 @@ export default function DailyAssignmentGrid({ items, selectAll, initialAssignmen
           return (
             <div
               key={item.id}
+              data-tutorial-id={itemIndex === 0 ? 'constraints-crew-card' : undefined}
               className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1.5rem] cursor-pointer`}
               style={isSelected
                 ? { borderRadius: '1.5rem', position: 'relative' as const, overflow: 'hidden', boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' }

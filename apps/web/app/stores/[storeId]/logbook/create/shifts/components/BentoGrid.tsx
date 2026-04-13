@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CrewCombobox from "./CrewSearchBar";
@@ -60,10 +60,12 @@ function StepTitle({ number, title }: { number: number; title: string }) {
 export default function BentoGrid() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const storeId = params.storeId as string;
 
+  const initialDate = searchParams.get('date') ?? dayjs().format('YYYY-MM-DD');
   const [allPeople, setAllPeople] = useState<CrewMember[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [loadingPeople, setLoadingPeople] = useState(false);
   const [initialShiftTimes, setInitialShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
   const [shiftTimes, setShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
@@ -299,6 +301,7 @@ export default function BentoGrid() {
             <div className="flex flex-col gap-6 lg:col-span-1">
               {/* Step 1 - Date selection */}
               <div
+                data-tutorial-id="logbook-step-1"
                 className="ai-glass-border rounded-[1.5rem]"
                 style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
               >
@@ -339,6 +342,7 @@ export default function BentoGrid() {
 
             {/* Right column - Step 2 Crew selection */}
             <div
+              data-tutorial-id="logbook-step-2"
               className="ai-glass-border lg:col-span-2 rounded-[1.5rem]"
               style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
             >
@@ -430,6 +434,7 @@ function SaveAndNext({
         <p className="text-sm text-red-600 mb-2">{error}</p>
       )}
       <div
+        data-tutorial-id="logbook-continue-btn"
         className="ai-glass-border w-full"
         style={aiGlassLightBorderStyle('9999px', '220, 38, 38', 0.25)}
       >
