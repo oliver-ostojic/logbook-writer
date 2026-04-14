@@ -794,6 +794,11 @@ export function registerScheduleRoutes(app: FastifyInstance) {
         await tx.assignment.deleteMany({ where: { logbookId } });
         await tx.logPreferenceMetadata.deleteMany({ where: { logbookId } });
         await tx.run.deleteMany({ where: { logbookId } });
+        // Clear supersede references from logbooks that point to this one
+        await tx.logbook.updateMany({
+          where: { supersededById: logbookId },
+          data: { supersededById: null },
+        });
         await tx.logbook.delete({ where: { id: logbookId } });
       });
 

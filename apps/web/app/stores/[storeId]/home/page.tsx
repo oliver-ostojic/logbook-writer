@@ -411,16 +411,8 @@ export default function Home() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Start tutorial flyover if pending (triggered from /tutorial page)
+  // Tutorial store — flyover effect is below apiCrew declaration
   const { pendingFlyover, startFlyover, isActive: tutorialIsActive, viewHint } = useTutorialStore();
-  useEffect(() => {
-    if (!pendingFlyover) return;
-    const steps = createHomeSteps({
-      storeId,
-      setViewHint: (view) => useTutorialStore.getState().setViewHint(view),
-    });
-    startFlyover(steps);
-  }, [pendingFlyover]);
 
   // Sync active view with tutorial viewHint (works across page navigations)
   useEffect(() => {
@@ -496,6 +488,19 @@ export default function Home() {
     }
     fetchData();
   }, [storeId]);
+
+  // Start tutorial flyover if pending (triggered from /tutorial page)
+  // Waits for apiCrew to load so we can pass a crewId for the crew preferences tour
+  useEffect(() => {
+    if (!pendingFlyover || apiCrew.length === 0) return;
+    const demoCrew = apiCrew.find((c: any) => c.name === 'Oliver Ostojic') ?? apiCrew[0];
+    const steps = createHomeSteps({
+      storeId,
+      crewId: demoCrew.id,
+      setViewHint: (view) => useTutorialStore.getState().setViewHint(view),
+    });
+    startFlyover(steps);
+  }, [pendingFlyover, apiCrew]);
 
   // Fetch activity logs when filter changes
   useEffect(() => {
@@ -727,6 +732,7 @@ export default function Home() {
               fromLogbookName: selectedItem.name,
             });
           }}
+          onDelete={() => refreshData()}
           onClose={() => {
             setActiveView('logbooks');
             setSelectedItem(null);
@@ -2668,6 +2674,7 @@ export default function Home() {
                   fromLogbookName: selectedItem.name,
                 });
               }}
+              onDelete={() => refreshData()}
               onClose={() => {
                 setActiveView('logbooks');
                 setSelectedItem(null);

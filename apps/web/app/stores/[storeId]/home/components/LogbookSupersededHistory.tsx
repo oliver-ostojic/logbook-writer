@@ -58,6 +58,7 @@ interface LogbookSupersededHistoryProps {
   logbookId: string;
   onViewPdf: (logbookId: string, date: string) => void;
   onViewRunInfo?: (runId: string) => void;
+  onDelete?: (logbookId: string) => void;
   onClose: () => void;
 }
 
@@ -183,7 +184,7 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
   );
 }
 
-export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onClose }: LogbookSupersededHistoryProps) {
+export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onDelete, onClose }: LogbookSupersededHistoryProps) {
   const params = useParams();
   const storeId = params?.storeId as string;
   const [current, setCurrent] = useState<LogbookVersion | null>(null);
@@ -193,10 +194,27 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
+  const loadHistory = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/logbooks/${logbookId}/history`);
+      if (!res.ok) throw new Error('Failed to load logbook history');
+      const data = await res.json();
+      setCurrent(data.current);
+      setSupersededVersions(data.supersededVersions || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
-    async function loadHistory() {
+    async function fetchHistory() {
       setLoading(true);
       setError(null);
 
@@ -215,9 +233,31 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
       }
     }
 
-    loadHistory();
+    fetchHistory();
     return () => { cancelled = true; };
   }, [logbookId]);
+
+  const handleDeleteVersion = async (versionId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/schedule/logbook/${versionId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete logbook');
+
+      // If we deleted the current version and it was the only one, close the panel
+      const isCurrentVersion = current?.id === versionId;
+      const hasOtherVersions = supersededVersions.length > 0;
+
+      if (isCurrentVersion && !hasOtherVersions) {
+        onDelete?.(versionId);
+        onClose();
+      } else {
+        // Refresh the history to show remaining versions
+        onDelete?.(versionId);
+        await loadHistory();
+      }
+    } catch (err) {
+      console.error('Failed to delete logbook:', err);
+    }
+  };
 
   // Fetch activity logs once we have the current logbook's date
   useEffect(() => {
@@ -471,6 +511,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
             formatDateTime={formatDateTime}
             onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
             onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
+            onDelete={() => handleDeleteVersion(current.id)}
           />
         )}
 
@@ -494,6 +535,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
                 formatDateTime={formatDateTime}
                 onViewPdf={() => onViewPdf(version.id, formatDate(version.date))}
                 onViewRunInfo={version.runId && onViewRunInfo ? () => onViewRunInfo(version.runId!) : undefined}
+                onDelete={() => handleDeleteVersion(version.id)}
               />
             ))}
           </>
@@ -588,9 +630,11 @@ interface VersionCardProps {
   formatDateTime: (date: string) => string;
   onViewPdf: () => void;
   onViewRunInfo?: () => void;
+  onDelete?: () => void;
 }
 
-function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf, onViewRunInfo }: VersionCardProps) {
+function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf, onViewRunInfo, onDelete }: VersionCardProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
     <div
       className="ai-glass-border"
@@ -697,6 +741,79 @@ function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf
             >
               View PDF
             </button>
+          )}
+          {onDelete && (
+            confirmingDelete ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="transition-all duration-150"
+                  style={{
+                    background: 'rgba(220, 38, 38, 0.15)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '6px 12px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#b91c1c',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.25)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)')}
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmingDelete(false);
+                  }}
+                  className="transition-all duration-150"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.06)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '6px 12px',
+                    fontFamily: 'var(--font-open-sans)',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)')}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmingDelete(true);
+                }}
+                className="transition-all duration-150"
+                style={{
+                  background: 'rgba(220, 38, 38, 0.1)',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '6px 12px',
+                  fontFamily: 'var(--font-open-sans)',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#b91c1c',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.18)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)')}
+              >
+                Delete
+              </button>
+            )
           )}
         </div>
       </div>
