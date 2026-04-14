@@ -73,6 +73,7 @@ export function RoleDashboardContent({
         >
           {/* 2 Mini cards in a row - Fairness Index and Time Share */}
           <div className="grid grid-cols-2 gap-4">
+            <div data-tutorial-id="role-detail-mini-fairness-index">
             <StatGraphCard
               data={{
                 type: 'sparkline',
@@ -90,6 +91,8 @@ export function RoleDashboardContent({
                 ),
               }}
             />
+            </div>
+            <div data-tutorial-id="role-detail-mini-time-share">
             <StatGraphCard
               data={{
                 type: 'pie',
@@ -109,10 +112,12 @@ export function RoleDashboardContent({
                 ),
               }}
             />
+            </div>
           </div>
         </CardSmall>
 
         {/* Crew mins distribution box plot */}
+        <div data-tutorial-id="role-detail-boxplot">
         {computedRoleBoxPlot.hasDistribution && (
           <LargeGraphCard
             title="Crew Mins/Shift Spread"
@@ -143,8 +148,10 @@ export function RoleDashboardContent({
             />
           </LargeGraphCard>
         )}
+        </div>
 
         {/* Role assignment heatmap */}
+        <div data-tutorial-id="role-detail-heatmap">
         <LargeGraphCard
           title={`Avg hours each crew worked on ${role.name?.toLowerCase() || 'role'}`}
           className="mt-4"
@@ -154,9 +161,10 @@ export function RoleDashboardContent({
             data={computedRoleHeatmap.data}
           />
         </LargeGraphCard>
+        </div>
 
         {/* Crew fairness details table */}
-        <div className="mt-4">
+        <div data-tutorial-id="role-detail-table" className="mt-4">
           <CrewFairnessTable
             data={computedCrewFairnessTable}
           />

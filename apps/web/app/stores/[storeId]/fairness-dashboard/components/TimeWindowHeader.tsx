@@ -285,6 +285,13 @@ export function TimeWindowHeader({
     setCalendarMonthIndex(0);
   }, [selectedYear]);
 
+  // Close calendar when tutorial advances past the calendar step
+  useEffect(() => {
+    const handleClose = () => setIsCalendarOpen(false);
+    window.addEventListener('tutorial-close-calendar', handleClose);
+    return () => window.removeEventListener('tutorial-close-calendar', handleClose);
+  }, []);
+
   // Update calendar position on window resize
   useEffect(() => {
     if (!isCalendarOpen) return;
@@ -357,11 +364,11 @@ export function TimeWindowHeader({
   return (
     <>
       {/* Header */}
-      <div style={{ margin: '0', width: '100%' }}>
+      <div data-tutorial-id="dashboard-time-header" style={{ margin: '0', width: '100%' }}>
         <GlassPillCard padding="1rem" borderRadius={borderRadius} contentStyle={{ width: '100%' }}>
           <div className="flex items-center justify-between" style={{ width: '100%' }}>
             {/* Left: Month Pagination */}
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+            <div data-tutorial-id="dashboard-month-pagination" className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
               <div
                 className="flex items-center gap-1"
                 style={{
@@ -468,7 +475,7 @@ export function TimeWindowHeader({
             <div className="flex items-center gap-3">
               {/* Year Dropdown */}
               <Menu as="div" style={{ position: 'relative', zIndex: 100 }}>
-                <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                <div data-tutorial-id="dashboard-year-dropdown" className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                   <MenuButton
                     className="inline-flex items-center focus:outline-none focus:ring-0 transition-all"
                     style={{
@@ -553,7 +560,7 @@ export function TimeWindowHeader({
               </Menu>
 
               {/* All Dates Button */}
-              <div ref={calendarButtonRef} style={{ flexShrink: 0 }}>
+              <div data-tutorial-id="dashboard-calendar-btn" ref={calendarButtonRef} style={{ flexShrink: 0 }}>
                 <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
                   <button
                     onClick={() => setIsCalendarOpen(!isCalendarOpen)}
@@ -589,6 +596,7 @@ export function TimeWindowHeader({
       {isCalendarOpen && calendarButtonRef.current && currentCalendarMonth !== undefined && typeof document !== 'undefined' &&
         createPortal(
           <div
+            data-tutorial-id="dashboard-calendar-popup"
             ref={(el) => {
               calendarRef.current = el;
               if (el && calendarButtonRef.current) {

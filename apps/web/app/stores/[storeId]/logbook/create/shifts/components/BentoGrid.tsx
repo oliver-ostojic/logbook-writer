@@ -66,6 +66,7 @@ export default function BentoGrid() {
   const initialDate = searchParams.get('date') ?? dayjs().format('YYYY-MM-DD');
   const [allPeople, setAllPeople] = useState<CrewMember[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
+  const [datesWithData, setDatesWithData] = useState<string[]>([]);
   const [loadingPeople, setLoadingPeople] = useState(false);
   const [initialShiftTimes, setInitialShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
   const [shiftTimes, setShiftTimes] = useState<Record<string, { start: string; end: string }>>({});
@@ -119,6 +120,18 @@ export default function BentoGrid() {
     }
     load();
     return () => { cancelled = true; };
+  }, [API_URL, storeId]);
+
+  // Fetch all dates that already have logbook data
+  useEffect(() => {
+    if (!API_URL || !storeId) return;
+    fetch(`${API_URL}/logbooks?storeId=${storeId}`)
+      .then(r => r.ok ? r.json() : { logbooks: [] })
+      .then(data => {
+        const dates: string[] = (data?.logbooks ?? data ?? []).map((lb: any) => lb.date?.slice(0, 10)).filter(Boolean);
+        setDatesWithData(Array.from(new Set(dates)));
+      })
+      .catch(() => {});
   }, [API_URL, storeId]);
 
   const availablePeople = useMemo(() => {
@@ -310,7 +323,7 @@ export default function BentoGrid() {
                   style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '24px' }}
                 >
                   <StepTitle number={1} title="Choose the date" />
-                  <Calendar selectedDate={selectedDate} onChange={setSelectedDate} />
+                  <Calendar selectedDate={selectedDate} onChange={setSelectedDate} datesWithData={datesWithData} />
                 </div>
               </div>
 

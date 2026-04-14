@@ -7,6 +7,7 @@ import { NavStatsCard } from '@/app/stores/[storeId]/home/components/NavStatsCar
 import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard, RoleDistributionCard, AccountInfoCard } from './components';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
+import { useTutorialStore } from '@/lib/tutorialStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -46,6 +47,15 @@ export default function CrewPage() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync active view with tutorial viewHint (works across page navigations)
+  const { isActive: tutorialIsActive, viewHint } = useTutorialStore();
+  useEffect(() => {
+    if (!viewHint || !tutorialIsActive) return;
+    if (viewHint === 'preferences' || viewHint === 'accountInfo') {
+      setActiveView(viewHint as CrewView);
+    }
+  }, [viewHint, tutorialIsActive]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -314,11 +324,17 @@ export default function CrewPage() {
                             )}
                             {activeView === 'preferences' && (
                               <>
-                                <RoleDistributionCard crewId={crewId} onRefresh={fetchCrewData} />
-                                <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                                <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                                <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
-                                <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                <div data-tutorial-id="crew-prefs-distribution-consecutive" className="flex flex-col gap-4">
+                                  <RoleDistributionCard crewId={crewId} onRefresh={fetchCrewData} />
+                                  <ConsecutiveMinutesCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                </div>
+                                <div data-tutorial-id="crew-prefs-hour-timing" className="flex flex-col gap-4">
+                                  <RolePreferenceByHourCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                  <TimingPreferenceCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                </div>
+                                <div data-tutorial-id="crew-prefs-cannot-be-assigned-after">
+                                  <CannotBeAssignedAfterCard crewId={crewId} storeId={storeId} onRefresh={fetchCrewData} />
+                                </div>
                               </>
                             )}
                           </div>

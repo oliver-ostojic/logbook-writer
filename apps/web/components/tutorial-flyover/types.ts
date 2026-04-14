@@ -11,6 +11,7 @@ export interface TutorialStep {
   interactive?: boolean; // allow clicks inside the target without auto-advancing (shows Next button)
   spotlightPadding?: number; // override default 8px spotlight padding for this step
   noDim?: boolean; // skip the dim overlay (show bubble over unhighlighted page)
+  hideBack?: boolean; // hide the Back button (use at section boundaries to prevent cross-context back navigation)
   route?: string; // absolute path to navigate to when this step activates (TutorialProvider handles)
   bubble: {
     title: string;

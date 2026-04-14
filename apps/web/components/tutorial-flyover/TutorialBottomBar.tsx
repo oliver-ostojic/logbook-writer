@@ -8,8 +8,8 @@ interface TutorialBottomBarProps {
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
-  onGoTo: (index: number) => void;
   hideNext?: boolean;
+  hideBack?: boolean;
 }
 
 export default function TutorialBottomBar({
@@ -18,8 +18,8 @@ export default function TutorialBottomBar({
   onNext,
   onBack,
   onSkip,
-  onGoTo,
   hideNext,
+  hideBack,
 }: TutorialBottomBarProps) {
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
@@ -50,19 +50,19 @@ export default function TutorialBottomBar({
           {/* Back button */}
           <button
             onClick={onBack}
-            disabled={isFirstStep}
+            disabled={isFirstStep || hideBack}
             style={{
               padding: '8px 20px',
               fontFamily: 'var(--font-open-sans)',
               fontSize: '13px',
               fontWeight: 600,
-              color: isFirstStep ? '#9A999E' : '#6B6B6B',
+              color: '#6B6B6B',
               backgroundColor: 'transparent',
               border: 'none',
               borderRadius: '9999px',
-              cursor: isFirstStep ? 'default' : 'pointer',
+              cursor: 'pointer',
               transition: 'color 0.2s ease',
-              opacity: isFirstStep ? 0 : 1,
+              visibility: isFirstStep || hideBack ? 'hidden' : 'visible',
             }}
           >
             Back
@@ -71,9 +71,8 @@ export default function TutorialBottomBar({
           {/* Dot indicators */}
           <div className="flex items-center gap-2">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <button
+              <div
                 key={i}
-                onClick={() => onGoTo(i)}
                 style={{
                   width: i === currentStep ? 24 : 8,
                   height: 8,
@@ -82,7 +81,6 @@ export default function TutorialBottomBar({
                   transition: 'all 0.3s ease',
                   border: 'none',
                   padding: 0,
-                  cursor: i === currentStep ? 'default' : 'pointer',
                 }}
               />
             ))}

@@ -1,14 +1,17 @@
 import type { TutorialStep } from '@/components/tutorial-flyover/types';
+import { createCrewSteps } from './crew-steps';
+import { createDashboardSteps } from './dashboard-steps';
 
 interface HomeStepCallbacks {
   storeId: string;
+  crewId: string;
   setViewHint: (view: string | null) => void;
 }
 
 export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
   const homeRoute = `/stores/${callbacks.storeId}/home`;
-  const shiftsRoute = `/stores/${callbacks.storeId}/logbook/create/shifts?date=2024-12-15`;
-  const constraintsRoute = `/stores/${callbacks.storeId}/logbook/create/constraints?date=2024-12-15`;
+  const shiftsRoute = `/stores/${callbacks.storeId}/logbook/create/shifts?date=2025-12-15`;
+  const constraintsRoute = `/stores/${callbacks.storeId}/logbook/create/constraints?date=2025-12-15`;
 
   return [
     {
@@ -124,6 +127,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       target: 'logbooks-add-btn',
       scroll: 0,
       route: homeRoute,
+      hideBack: true,
       onEnter: () => callbacks.setViewHint('logbooks'),
       advanceOnInteraction: true,
       bubble: {
@@ -362,5 +366,20 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
         position: 'above',
       },
     },
+
+    // ── Crew preferences ────────────────────────────────────────────────────
+
+    ...createCrewSteps({
+      storeId: callbacks.storeId,
+      crewId: callbacks.crewId,
+      setViewHint: callbacks.setViewHint,
+    }),
+
+    // ── Fairness Dashboard ───────────────────────────────────────────────────
+
+    ...createDashboardSteps({
+      storeId: callbacks.storeId,
+      setViewHint: callbacks.setViewHint,
+    }),
   ];
 }

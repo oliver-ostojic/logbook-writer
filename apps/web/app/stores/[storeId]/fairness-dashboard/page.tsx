@@ -12,6 +12,7 @@ import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, G
 import { NavStatsCard, TopNavHeader } from '../home/components';
 import { useAuthStore } from '@/lib/authStore';
 import { logout } from '@/lib/api/auth';
+import { useTutorialStore } from '@/lib/tutorialStore';
 
 // =============================================================================
 // Dashboard API Response Types
@@ -1635,6 +1636,42 @@ export default function FairnessDashboardPage() {
     fetchDashboardData();
   }, [storeId, timeSelectedDates, availableDates]);
 
+  // Sync dashboard view with tutorial viewHint
+  const { isActive: tutorialIsActive, viewHint } = useTutorialStore();
+  useEffect(() => {
+    if (!viewHint || !tutorialIsActive) return;
+    if (viewHint === 'dashboard-overview') {
+      setActiveView('overview');
+      setCrewPanelCard(null);
+      setRolePanelCard(null);
+    } else if (viewHint === 'dashboard-crew') {
+      setActiveView('crew');
+      setCrewPanelCard(null);
+      setRolePanelCard(null);
+    } else if (viewHint === 'dashboard-roles') {
+      setActiveView('roles');
+      setCrewPanelCard(null);
+      setRolePanelCard(null);
+    } else if (viewHint.startsWith('dashboard-role:')) {
+      const roleName = viewHint.replace('dashboard-role:', '').toLowerCase();
+      setActiveView('roles');
+      const match = computedRoleCards.find(r => r.name?.toLowerCase().includes(roleName));
+      if (match) setRolePanelCard(match);
+    }
+  }, [viewHint, tutorialIsActive, computedRoleCards]);
+
+  // When tutorial is active, filter to 2025 dates as soon as data loads (run once)
+  const hasSetTutorialDates = useRef(false);
+  useEffect(() => {
+    if (!tutorialIsActive || hasSetTutorialDates.current) return;
+    if (availableDates.length === 0) return;
+    const dates2025 = availableDates.filter(d => d.startsWith('2025'));
+    if (dates2025.length > 0) {
+      setTimeSelectedDates(dates2025);
+      hasSetTutorialDates.current = true;
+    }
+  }, [availableDates, tutorialIsActive]);
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: aiGlassAnimations }} />
@@ -1657,6 +1694,7 @@ export default function FairnessDashboardPage() {
                 {/* Secondary nav - Overview/Crew/Roles */}
                 <div className="sticky top-7 z-40" style={{ marginTop: '24px' }}>
                   <div
+                    data-tutorial-id="dashboard-secondary-nav"
                     className="ai-glass-border"
                     style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
                   >
@@ -1689,6 +1727,7 @@ export default function FairnessDashboardPage() {
                           icon={<UserGroupIcon />}
                           label="Crew"
                           count={computedCrewCards.length}
+                          tutorialId="dashboard-nav-crew"
                           isActive={activeView === 'crew' && !selectedCrew && !crewPanelCard}
                           onClick={() => {
                             setActiveView('crew');
@@ -1705,6 +1744,7 @@ export default function FairnessDashboardPage() {
                           icon={<ShieldCheckIcon />}
                           label="Roles"
                           count={computedRoleCards.length}
+                          tutorialId="dashboard-nav-roles"
                           isActive={activeView === 'roles' && !selectedRole && !rolePanelCard}
                           onClick={() => {
                             setActiveView('roles');
@@ -1798,6 +1838,7 @@ export default function FairnessDashboardPage() {
 
                   return (
                     <div
+                      data-tutorial-id="dashboard-crew-list-view"
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
@@ -1904,6 +1945,7 @@ export default function FairnessDashboardPage() {
                       <div className="flex" style={{ padding: '16px', gap: '16px' }}>
                         {/* List column - shrinks when panel open */}
                         <div
+                          data-tutorial-id="dashboard-crew-list-cards"
                           className="flex flex-col gap-3"
                           style={{
                             width: hasCrewPanel ? '20%' : '100%',
@@ -1965,6 +2007,7 @@ export default function FairnessDashboardPage() {
                           }}
                         >
                           {crewPanelCard && (
+                            <div data-tutorial-id="dashboard-crew-detail-panel">
                             <CrewDashboardContent
                               crew={crewPanelCard}
                               availableDates={availableDates}
@@ -1982,6 +2025,7 @@ export default function FairnessDashboardPage() {
                               roleRules={roleRules}
                               formatRuleTypeLabel={formatRuleTypeLabel}
                             />
+                            </div>
                           )}
                         </div>
                       </div>
@@ -2122,6 +2166,7 @@ export default function FairnessDashboardPage() {
                               return (
                                 <div
                                   key={card.id}
+                                  data-tutorial-id={card.name?.toLowerCase() === 'product' ? 'dashboard-role-product-card' : undefined}
                                   className="ai-glass-border cursor-pointer transition-all"
                                   style={{
                                     ...aiGlassLightBorderStyle('1rem', '0, 0, 0', isSelected || isHovered ? 0 : 0.08),
@@ -2219,14 +2264,15 @@ export default function FairnessDashboardPage() {
                   >
                     {/* Mini cards - 2x2 grid */}
                     <div className="grid grid-cols-2 gap-4">
-                      <StatGraphCard key={0} data={currentDashboard.miniCards[0]} />
-                      <StatGraphCard key={2} data={currentDashboard.miniCards[2]} />
-                      <StatGraphCard key={3} data={currentDashboard.miniCards[3]} />
-                      <StatGraphCard key={1} data={currentDashboard.miniCards[1]} />
+                      <div data-tutorial-id="dashboard-mini-fairness-index"><StatGraphCard key={0} data={currentDashboard.miniCards[0]} /></div>
+                      <div data-tutorial-id="dashboard-mini-fairness-status"><StatGraphCard key={2} data={currentDashboard.miniCards[2]} /></div>
+                      <div data-tutorial-id="dashboard-mini-preferences"><StatGraphCard key={3} data={currentDashboard.miniCards[3]} /></div>
+                      <div data-tutorial-id="dashboard-mini-time"><StatGraphCard key={1} data={currentDashboard.miniCards[1]} /></div>
                     </div>
                   </CardSmall>
 
                   {/* Crew preferences met by date line graph */}
+                  <div data-tutorial-id="overview-graph-line">
                   <LargeGraphCard
                     title="Preferences met"
                     highlightLabel={overviewLineGraphLabel ?? undefined}
@@ -2258,8 +2304,10 @@ export default function FairnessDashboardPage() {
                       data={computedSatisfactionByDate}
                     />
                   </LargeGraphCard>
+                  </div>
 
                   {/* Satisfaction distribution box plot */}
+                  <div data-tutorial-id="overview-graph-boxplot">
                   <LargeGraphCard
                     title="Crew Preference Distribution"
                     highlightLabel={overviewBoxPlotLabel ?? undefined}
@@ -2285,8 +2333,10 @@ export default function FairnessDashboardPage() {
                       onActiveLabelChange={setOverviewBoxPlotLabel}
                     />
                   </LargeGraphCard>
+                  </div>
 
                   {/* Crew preferences met graph */}
+                  <div data-tutorial-id="overview-graph-stacked">
                   <LargeGraphCard
                     title="Crew preferences met"
                     highlightLabel={overviewPreferencesLabel ?? undefined}
@@ -2298,6 +2348,7 @@ export default function FairnessDashboardPage() {
                       onActiveLabelChange={setOverviewPreferencesLabel}
                     />
                   </LargeGraphCard>
+                  </div>
                     </div>{/* End dashboard content */}
                   </div>{/* End outer glass card */}
                 </>

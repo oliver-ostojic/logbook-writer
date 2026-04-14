@@ -11,16 +11,18 @@ dayjs.extend(isoWeek);
 type CalendarProps = {
   selectedDate: string; // YYYY-MM-DD
   onChange: (date: string) => void;
+  datesWithData?: string[]; // YYYY-MM-DD dates that already have logbook data
 };
 
-export default function Calendar({ selectedDate, onChange }: CalendarProps) {
+export default function Calendar({ selectedDate, onChange, datesWithData = [] }: CalendarProps) {
+  const datesWithDataSet = useMemo(() => new Set(datesWithData), [datesWithData]);
   const selected = dayjs(selectedDate);
   const [visibleMonth, setVisibleMonth] = useState(dayjs(selectedDate).startOf('month'));
 
   const days = useMemo(() => {
     const start = visibleMonth.startOf('month').startOf('isoWeek');
     const end = visibleMonth.endOf('month').endOf('isoWeek');
-    const list: Array<{ date: string; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean }> = [];
+    const list: Array<{ date: string; isCurrentMonth: boolean; isToday: boolean; isSelected: boolean; hasData: boolean }> = [];
     let cur = start;
     while (cur.isBefore(end) || cur.isSame(end, 'day')) {
       const iso = cur.format('YYYY-MM-DD');
@@ -29,16 +31,19 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
         isCurrentMonth: cur.month() === visibleMonth.month(),
         isToday: cur.isSame(dayjs(), 'day'),
         isSelected: cur.isSame(selected, 'day'),
+        hasData: datesWithDataSet.has(iso),
       });
       cur = cur.add(1, 'day');
     }
     return list;
-  }, [visibleMonth, selectedDate]);
+  }, [visibleMonth, selectedDate, datesWithDataSet]);
 
   const monthLabel = visibleMonth.format('MMMM');
+  const yearLabel = visibleMonth.format('YYYY');
 
   return (
     <div className="text-center mt-6">
+      <div className="text-xs text-gray-400 mb-1">{yearLabel}</div>
       <div className="flex items-center text-gray-900">
         <button
           type="button"
@@ -95,6 +100,7 @@ export default function Calendar({ selectedDate, onChange }: CalendarProps) {
             <time
               dateTime={day.date}
               className="mx-auto flex size-7 items-center justify-center rounded-full [[data-is-selected]_&]:bg-gray-900 [[data-is-selected]_&]:text-white"
+              style={day.hasData && !day.isSelected ? { background: '#dc2626', color: '#fff' } : undefined}
             >
               {day.date.split('-').pop()?.replace(/^0/, '') || ''}
             </time>
