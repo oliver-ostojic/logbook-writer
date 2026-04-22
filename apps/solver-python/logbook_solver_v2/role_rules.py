@@ -7,6 +7,7 @@ Implemented:
 - FORBID_ROLE: prevent crew from being assigned a role
 - MIN_CONSECUTIVE_MINUTES: minimum consecutive minutes on a role
 - MAX_CONSECUTIVE_MINUTES: maximum consecutive minutes on a role
+- MAX_TOTAL_MINUTES: maximum total minutes on a role per day (valueInt = cap in minutes)
 - CANNOT_BE_ASSIGNED_BEFORE: role X cannot be assigned before target role Y
 - CANNOT_BE_ASSIGNED_AFTER: role X cannot be assigned after target role Y
 - TIMING: prefer early (-1), indifferent (0), or late (1) assignments
@@ -50,6 +51,8 @@ def apply_role_rules(solver: "SolverV2") -> None:
             _apply_min_consecutive_minutes(solver, rules)
         elif rule_type == 'MAX_CONSECUTIVE_MINUTES':
             _apply_max_consecutive_minutes(solver, rules)
+        elif rule_type == 'MAX_TOTAL_MINUTES':
+            _apply_max_total_minutes(solver, rules)
         elif rule_type == 'CANNOT_BE_ASSIGNED_BEFORE':
             _apply_ordering_constraint(solver, rules, before=True)
         elif rule_type == 'CANNOT_BE_ASSIGNED_AFTER':
@@ -434,6 +437,49 @@ def _apply_max_consecutive_minutes(solver: "SolverV2", rules: List[dict]) -> Non
         if DEBUG: print(f"      MAX_CONSECUTIVE_MINUTES ({constraint_type}) {role_code} <= {max_minutes}min ({max_slots} slots) for {scope}", file=sys.stderr)
     
     if DEBUG: print(f"      Added {hard_constraints_added} HARD constraints + {soft_rewards_added} SOFT reward terms", file=sys.stderr)
+
+
+def _apply_max_total_minutes(solver: "SolverV2", rules: List[dict]) -> None:
+    """MAX_TOTAL_MINUTES: Cap the total minutes a crew member spends on a role per day.
+
+    valueInt is the maximum total minutes allowed (e.g., 30 for PARKING_HELMS).
+    Applies to all crew when crewId is null, or a specific crew when set.
+
+    Always enforced as a HARD constraint — the solver cannot exceed this cap.
+    """
+    m = solver.model
+    slot_minutes = solver.time_grid.slot_minutes
+
+    for rule in rules:
+        role_id = rule['roleId']
+        role_code = rule.get('roleCode', f'role_{role_id}')
+        max_minutes = rule.get('valueInt', 0)
+
+        if not max_minutes or max_minutes <= 0:
+            if DEBUG: print(f"      ⚠️  MAX_TOTAL_MINUTES for {role_code} has no valueInt, skipping", file=sys.stderr)
+            continue
+
+        for crew in _get_crew_for_rule(solver, rule):
+            crew_id = crew['id']
+
+            # Sum task_slots for every assignment variable this crew has on this role.
+            # Each BoolVar * task_slots gives the number of slots assigned if that var is 1.
+            total_slot_terms = [
+                var * task_slots
+                for (var_crew, _slot, var_role, task_slots), var in solver.assignment_vars.items()
+                if var_crew == crew_id and var_role == role_id
+            ]
+
+            if not total_slot_terms:
+                continue
+
+            # total_slot_terms * slot_minutes <= max_minutes
+            # Rearranged to avoid floats: sum(terms) <= max_minutes // slot_minutes
+            max_slots = max_minutes // slot_minutes
+            m.Add(sum(total_slot_terms) <= max_slots)
+
+        scope = f"crew {rule.get('crewId')}" if rule.get('crewId') else "all crew"
+        if DEBUG: print(f"      MAX_TOTAL_MINUTES {role_code} <= {max_minutes}min for {scope}", file=sys.stderr)
 
 
 def _apply_ordering_constraint(solver: "SolverV2", rules: List[dict], before: bool) -> None:

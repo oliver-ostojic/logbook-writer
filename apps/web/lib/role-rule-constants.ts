@@ -8,6 +8,7 @@ export const ROLE_RULE_TYPE_LABELS: Record<string, string> = {
   'CANNOT_BE_ASSIGNED_AFTER': 'Role y must come before role X',
   'MIN_CONSECUTIVE_MINUTES': 'Minimum time on role consecutively',
   'MAX_CONSECUTIVE_MINUTES': 'Maximum time on role consecutively',
+  'MAX_TOTAL_MINUTES': 'Maximum total time on role per day',
   'FORBID_ROLE': 'Block crew from role',
   'TIMING': 'Role only during time window',
   'LIKE_ROLE_FOR_HOUR_X': 'Crew prefers role at a certain hour',
