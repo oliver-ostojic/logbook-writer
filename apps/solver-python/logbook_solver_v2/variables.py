@@ -72,7 +72,7 @@ class VariableBuilder:
         if DEBUG: print(f"Daily quota pairs count: {len(daily_quota_pairs)}", file=sys.stderr)
         if DEBUG: print(f"Roles: {[(r['id'], r['code'], r.get('taskLength', 30), r.get('allowOutsideStoreHours', False)) for r in role_records]}", file=sys.stderr)
         if DEBUG: print(f"Time grid: slot_minutes={self.time_grid.slot_minutes}, open={self.time_grid.open_minutes}, close={self.time_grid.close_minutes}", file=sys.stderr)
-        
+
         # Track variables by crew and by slot for debugging
         vars_by_crew: Dict[str, Dict[int, List[str]]] = defaultdict(lambda: defaultdict(list))
         

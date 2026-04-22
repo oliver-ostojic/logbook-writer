@@ -93,6 +93,16 @@ const formatViolationMessage = (violation: ConstraintViolation): string => {
   return `${icon} [${violation.category}] ${violation.message}`;
 };
 
+const resolveSolverStatus = (result: PythonSolverResult): SolverStatus => {
+  const raw =
+    (typeof result.status === 'string' && result.status) ||
+    (typeof result.metadata?.status === 'string' && (result.metadata.status as string)) ||
+    '';
+  const mapped = SolverStatus[raw as keyof typeof SolverStatus];
+  if (mapped) return mapped;
+  return result.success ? SolverStatus.FEASIBLE : SolverStatus.ERROR;
+};
+
 export async function registerSolverV2Routes(app: FastifyInstance) {
   app.get('/solver/v2/input', async (request, reply) => {
     const query = request.query as Record<string, string | undefined>;
@@ -183,7 +193,9 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
       const timeLimitSeconds = body.timeLimitSeconds ?? SOLVER_CONFIG.timeLimitSeconds;
       const numWorkers = body.numWorkers ?? SOLVER_CONFIG.numWorkers;
       const solutionHint = body.solutionHint;  // Optional warmstart hint
+      const solveStartedAt = Date.now();
       const pythonResult = await runPythonSolverV2(solverInput, timeLimitSeconds, numWorkers, solutionHint);
+      const wallClockMs = Date.now() - solveStartedAt;
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
       const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(
@@ -221,12 +233,13 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
 
       // Convert to SolverOutputV2 format (used for both logbook and run record)
       const normalizedDate = startOfDay(body.date);
+      const resolvedStatus = resolveSolverStatus(pythonResult);
       const solverOutput: SolverOutputV2 = {
         success: pythonResult.success,
         metadata: {
-          status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+          status: resolvedStatus,
           objectiveScore: pythonResult.metadata?.objectiveScore,
-          runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+          runtimeMs: wallClockMs,
           mipGap: pythonResult.metadata?.mipGap as number | undefined,
           numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
           numHours: (pythonResult.metadata?.numHours as number) ?? 0,
@@ -292,11 +305,13 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
 
       const response: Record<string, unknown> = {
         success: pythonResult.success,
-        status: pythonResult.status,
+        status: resolvedStatus,
         objectiveValue: pythonResult.objectiveValue,
         logbookId,  // Include logbook ID if saved
         metadata: {
           ...pythonResult.metadata,
+          status: resolvedStatus,
+          runtimeMs: wallClockMs,
           constraintAnalysis,
           violations: formattedViolations,
         },
@@ -376,7 +391,9 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         ...PRODUCTION_TUNING_CONFIG,
         ...body.tuningConfig,
       };
+      const tuneStartedAt = Date.now();
       const pythonResult = await runPythonTuningEngine(solverInput, tuningConfig);
+      const wallClockMs = Date.now() - tuneStartedAt;
       const assignments = enrichAssignments(pythonResult.assignments ?? [], solverInput.roles);
 
       const assignmentRecords: AssignmentRecord[] = (pythonResult.assignments ?? []).map(
@@ -414,12 +431,13 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
 
       // Convert to SolverOutputV2 format (used for both logbook and run record)
       const normalizedDate = startOfDay(body.date);
+      const resolvedStatus = resolveSolverStatus(pythonResult);
       const solverOutput: SolverOutputV2 = {
         success: pythonResult.success,
         metadata: {
-          status: SolverStatus[pythonResult.status as keyof typeof SolverStatus] ?? SolverStatus.ERROR,
+          status: resolvedStatus,
           objectiveScore: pythonResult.metadata?.objectiveScore,
-          runtimeMs: (pythonResult.metadata?.runtimeMs as number) ?? 0,
+          runtimeMs: wallClockMs,
           mipGap: pythonResult.metadata?.mipGap as number | undefined,
           numCrew: (pythonResult.metadata?.numCrew as number) ?? 0,
           numHours: (pythonResult.metadata?.numHours as number) ?? 0,
@@ -482,11 +500,13 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
 
       const response: Record<string, unknown> = {
         success: pythonResult.success,
-        status: pythonResult.status,
+        status: resolvedStatus,
         objectiveValue: pythonResult.objectiveValue,
         logbookId,
         metadata: {
           ...pythonResult.metadata,
+          status: resolvedStatus,
+          runtimeMs: wallClockMs,
           constraintAnalysis,
           violations: formattedViolations,
           tuningEngine: true,

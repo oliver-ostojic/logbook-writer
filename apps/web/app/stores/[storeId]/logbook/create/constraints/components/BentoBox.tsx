@@ -562,56 +562,36 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
       // shiftsData already fetched above for crewQuotas
 
-      // Use tuning engine with parallel region search for optimal schedules
-      // Config: 10 parallel regions, 3 ladder shots each, 15s per shot, fairness weight 0.5
-      const solverResponse = await fetch(`${API_URL}/solve-logbook`, {
+      const solverResponse = await fetch(`${API_URL}/solver/v2/tune`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          storeId: numericStoreId,
           date,
-          store_id: numericStoreId,
-          shifts: shiftsData.map((shift) => ({
-            crewId: shift.crewId,
-            start: shift.start,
-            end: shift.end,
-          })),
-          useTuningEngine: true,
-          tuningConfig: {
-            numRegions: 10,       // Use all CPU cores (capped at 10)
-            shotsPerRegion: 3,    // 3 ladder iterations per region
-            timeLimitPerShot: 10, // 10s per shot for ~30s total
-            workersPerRegion: 1,  // Deterministic within each region
-            fairnessWeight: 0.5,  // Balance satisfaction + fairness
-          },
+          saveLogbook: true,
         }),
       });
 
       const solverPayload = await solverResponse.json().catch(() => ({}));
 
-      if (!solverResponse.ok || !solverPayload.ok) {
-        const message =
-          (typeof solverPayload?.error === 'string' && solverPayload.error) ||
-          'Solver failed to generate a logbook.';
-        setErrors([message]);
-        setSaving(false);
-        return;
-      }
-
-      if (!solverPayload.solver?.success) {
-        // Get all feasibility violations from metadata, or fall back to single error message
-        const violations: string[] = solverPayload.solver?.metadata?.feasibilityViolations;
+      if (!solverResponse.ok || !solverPayload.success) {
+        const violations: unknown =
+          solverPayload?.violations ??
+          solverPayload?.metadata?.violations ??
+          solverPayload?.metadata?.feasibilityViolations;
         if (Array.isArray(violations) && violations.length > 0) {
-          setErrors(violations);
+          setErrors(violations.map(String));
         } else {
-          const message = solverPayload.solver?.error ?? 'Solver returned without success.';
+          const message =
+            (typeof solverPayload?.error === 'string' && solverPayload.error) ||
+            'Solver failed to generate a logbook.';
           setErrors([message]);
         }
         setSaving(false);
         return;
       }
-      
-      // Get the logbook ID from the solver response
+
       logbookId = solverPayload.logbookId;
 
       // Navigate with logbookId - required for preview page

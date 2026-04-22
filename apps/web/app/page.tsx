@@ -6,9 +6,6 @@ export default function RootPage() {
       <p>
         <a href="/stores/1/home">Go to Store 1 Home</a>
       </p>
-      <p>
-        <a href="/wizard/init">Start Wizard ▶</a>
-      </p>
     </main>
   );
 }

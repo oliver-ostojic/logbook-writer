@@ -11,7 +11,6 @@ import { registerCompanyRoutes } from './routes/companies';
 import { registerStoreRoutes } from './routes/stores';
 import { registerRunRoutes } from './routes/runs';
 import { registerScheduleRoutes, registerLogbookRoutes } from './routes/schedule';
-import { registerSolverRoutes } from './routes/solver';
 import { registerSolverV2Routes } from './routes/solver2';
 import { registerTuningRoutes } from './routes/tuning';
 import { solverInputRoutes } from './routes/solver-input';
@@ -46,7 +45,6 @@ export async function buildServer() {
   registerRunRoutes(app);
   registerScheduleRoutes(app);
   registerLogbookRoutes(app);
-  registerSolverRoutes(app);
   registerSolverV2Routes(app);
   registerTuningRoutes(app);
   await app.register(solverInputRoutes);

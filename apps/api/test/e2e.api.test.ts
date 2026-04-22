@@ -68,63 +68,6 @@ describe('API e2e', () => {
     expect(body).toHaveProperty('id');
   });
 
-  it('POST /wizard/init', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/wizard/init',
-      payload: {
-        date: TODAY.toISOString(),
-        store_id: STORE_ID,
-        shifts: [
-          { crewId: CREW_DEMO.id, start: '09:00', end: '12:00' },
-          { crewId: CREW_OTHER.id, start: '10:00', end: '12:00' },
-        ],
-      },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(Array.isArray(body.normalizedShifts)).toBe(true);
-    expect(Array.isArray(body.eligibilities)).toBe(true);
-    // Because suggestDemoWindow looks for role name 'DEMO', there will be no segments with current seed 'Demo'
-    expect(body.demoFeasible.segments.length).toBeGreaterThanOrEqual(0);
-  });
-
-  it('POST /wizard/requirements', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/wizard/requirements',
-      payload: {
-        date: TODAY.toISOString(),
-        store_id: STORE_ID,
-        requirements: [
-          { crewId: CREW_DEMO.id, roleId: demoRoleId, requiredHours: 2 },
-        ],
-      },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.ok).toBe(true);
-    expect(body.upserted).toBe(1);
-  });
-
-  it('POST /wizard/coverage', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/wizard/coverage',
-      payload: {
-        date: TODAY.toISOString(),
-        store_id: STORE_ID,
-        role_id: demoRoleId,
-        windowStart: '09:00',
-        windowEnd: '11:00',
-        requiredPerHour: 1,
-      },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.ok).toBe(true);
-  });
-
   it('POST /schedule/run and GET /schedule/logbook', async () => {
     const runRes = await app.inject({
       method: 'POST',
