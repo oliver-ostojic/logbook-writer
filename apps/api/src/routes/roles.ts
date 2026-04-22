@@ -130,8 +130,8 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // Read all roles or a specific one by id
-  app.get<{ Querystring: { id?: string } }>('/roles', async (req, reply) => {
-    const { id } = req.query as any;
+  app.get<{ Querystring: { id?: string; storeId?: string } }>('/roles', async (req, reply) => {
+    const { id, storeId } = req.query as any;
     if (id) {
       const roleId = Number(id);
       if (Number.isNaN(roleId)) {
@@ -144,17 +144,18 @@ export function registerRoleRoutes(app: FastifyInstance) {
       if (!role) return reply.code(404).send({ error: 'Role not found' });
       return formatRole(role as RoleWithCrew);
     }
-    const allRoles = await prisma.role.findMany({ include: roleInclude });
+    const where = storeId ? { storeId: Number(storeId) } : {};
+    const allRoles = await prisma.role.findMany({ where, include: roleInclude });
     return allRoles.map((r) => formatRole(r as RoleWithCrew));
   });
 
-  // List crew (id, name) for a role by its name
+  // List crew (id, name) for a role by its id
   app.get<{ Params: { name: string } }>('/roles/:name/crew', async (req, reply) => {
     const { name } = req.params;
-    const role = await prisma.role.findUnique({
-      where: { code: name },
-      include: roleInclude,
-    });
+    const roleId = Number(name);
+    const role = Number.isNaN(roleId)
+      ? await prisma.role.findFirst({ where: { code: name }, include: roleInclude })
+      : await prisma.role.findUnique({ where: { id: roleId }, include: roleInclude });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
     const crew = (role as any).CrewRole.map((cr: any) => cr.Crew);
     return crew;

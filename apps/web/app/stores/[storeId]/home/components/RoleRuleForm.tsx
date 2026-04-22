@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
+import { authFetch } from '@/lib/api/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -197,7 +198,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
       console.log('Request method:', method);
       console.log('Request payload:', JSON.stringify(payload, null, 2));
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

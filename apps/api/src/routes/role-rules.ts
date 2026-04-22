@@ -6,6 +6,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { getUserRole, canManageCrewPreferences } from "../middleware/rbac";
+import { AUTH_CONFIG } from "../config/auth.config";
 
 const prisma = new PrismaClient();
 
@@ -105,9 +106,23 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
 
     const { roleId, type, targetRoleId, constraintType, valueInt, displayName, description } = req.body;
 
-    // RBAC: Crew can create SOFT constraints, admin can create any
+    // Try to extract user role from JWT (optional — no 401 if missing)
+    try {
+      const authHeader = req.headers.authorization;
+      const token =
+        req.cookies?.[AUTH_CONFIG.jwt.cookieName] ||
+        (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
+      if (token) {
+        const payload = req.server.jwt.verify(token) as { role?: string };
+        req.authUser = payload as any;
+      }
+    } catch {
+      // Token invalid or expired — proceed without auth
+    }
+
+    // RBAC: Only block HARD constraints if authenticated as non-admin
     const userRole = getUserRole(req);
-    if (constraintType === 'HARD' && userRole !== 'admin') {
+    if (constraintType === 'HARD' && userRole && userRole !== 'ADMIN') {
       return reply.code(403).send({
         error: 'Forbidden',
         message: 'Only admin can create HARD constraints',

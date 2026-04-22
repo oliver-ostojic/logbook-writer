@@ -199,7 +199,7 @@ model Logbook {
 model Role {
   id                          Int                       @id @default(autoincrement())
   storeId                     Int
-  code                        String                    @unique
+  code                        String             
   displayName                 String
   allowOutsideStoreHours      Boolean                   @default(false)
   consecutivePolicy           ConsecutivePolicy?        @default(NONE)
@@ -223,6 +223,8 @@ model Role {
   RoleRules                   RoleRule[]                @relation("RoleToRoleRules")
   TargetedByRules             RoleRule[]                @relation("TargetRoleToRoleRules")
   StoreDefaultRole            StoreDefaultRole[]
+
+  @@unique([storeId, code])
 }
 
 model RoleRule {

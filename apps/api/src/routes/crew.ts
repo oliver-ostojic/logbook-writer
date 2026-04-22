@@ -389,7 +389,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
     const crew = await prisma.crew.findUnique({ where: { id: crewId } });
     if (!crew) return reply.code(404).send({ error: 'Crew member not found' });
 
-    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    const role = await prisma.role.findFirst({ where: { code: roleCode, storeId: crew.storeId } });
     if (!role) return reply.code(404).send({ error: 'Role not found' });
 
     const existingLink = await prisma.crewRole.findUnique({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { renderRoleRule, TemplateContext } from '@/lib/role-rule-templates';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -115,6 +115,94 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
   return (
     <CardContainer lightMode={true} borderRadius="1.5rem" padding="1.5rem">
       <div className="flex flex-col gap-6">
+        {/* Embedded Header */}
+        {(onBack || onEdit || onDelete) && (
+          <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
+            <GlassPillCard padding="6px" borderRadius="1.5rem 1.5rem 0 0" borderOpacity={0.08} contentStyle={{ width: '100%' }}>
+              <div className="flex items-center justify-between" style={{ width: '100%', padding: '8px 10px' }}>
+                {/* Left side: Back button + title */}
+                <div className="flex items-center gap-2">
+                  {onBack && (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <button
+                        onClick={onBack}
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.4),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Back
+                      </button>
+                    </div>
+                  )}
+                  <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                    <div
+                      style={{
+                        ...aiGlassLightContentStyle('9999px', 0.6),
+                        padding: '6px 14px',
+                        fontFamily: 'var(--font-open-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#2C2C2C',
+                      }}
+                    >
+                      Rule Details
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side: Edit + Delete buttons */}
+                <div className="flex items-center gap-2">
+                  {onEdit && (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <button
+                        onClick={onEdit}
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.4),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: '#6B6B6B',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                  {onDelete && (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px')}>
+                      <button
+                        onClick={onDelete}
+                        style={{
+                          ...aiGlassLightContentStyle('9999px', 0.4),
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: 'hsl(0, 84%, 60%)',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </GlassPillCard>
+          </div>
+        )}
+
         {/* Basic Info Section */}
         <div>
           <div style={sectionHeaderStyle}>Basic Information</div>

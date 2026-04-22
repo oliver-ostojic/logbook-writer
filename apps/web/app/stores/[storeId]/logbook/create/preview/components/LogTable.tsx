@@ -144,15 +144,15 @@ const ROLE_THEME_SLATE_DARK =
 const ROLE_THEME_ROSE_MEDIUM =
   'bg-rose-300/80 text-rose-900 group-hover:bg-rose-300/90 group-hover:text-rose-950';
 
-const ROLE_ASSIGNMENT_THEMES: Record<number, string> = {
-  30: ROLE_THEME_RED_BOLD,    // Bold red with white text
-  35: ROLE_THEME_ROSE_MEDIUM, // SL - darker rose to differentiate from product red
-  33: ROLE_THEME_RED_SOFT,    // PROD - red
-  37: ROLE_THEME_GREEN_MEDIUM, // Slightly darker green
-  38: ROLE_THEME_GREEN_SOFT,
-  29: ROLE_THEME_BLUE_SOFT,   // P_HELM - blue
-  34: ROLE_THEME_INDIGO_SOFT,
-  36: ROLE_THEME_SLATE_DARK,
+const ROLE_ASSIGNMENT_THEMES: Record<string, string> = {
+  REG:    ROLE_THEME_RED_BOLD,
+  SL:     ROLE_THEME_ROSE_MEDIUM,
+  PROD:   ROLE_THEME_RED_SOFT,
+  W_DMO:  ROLE_THEME_GREEN_MEDIUM,
+  DEMO:   ROLE_THEME_GREEN_SOFT,
+  P_HELM: ROLE_THEME_BLUE_SOFT,
+  ART:    ROLE_THEME_INDIGO_SOFT,
+  BRK:    ROLE_THEME_SLATE_DARK,
 };
 
 // little helper for minutes - uses UTC to match server-side times
@@ -795,7 +795,7 @@ export default function LogbookSchedule({
                       // Check if this slot has a pending edit
                       const pendingEdit = isCrewEditing ? pendingEdits.get(c.id)?.get(a.startMinutes) : null;
                       const displayRoleCode = pendingEdit?.roleCode ?? a.roleCode;
-                      const displayRoleId = pendingEdit?.roleId ?? a.roleId;
+                      const displayRoleId = pendingEdit?.roleId ?? a.roleId; // used for edit payload
 
                       const isSlotEditing = editingCell?.assignmentId === a.id;
                       // In edit mode, show ALL roles (blockCount=1 since we're editing individual slots)
@@ -817,7 +817,7 @@ export default function LogbookSchedule({
                         >
                           <div
                             className={`${ASSIGNMENT_PILL_BASE_CLASSES} ${
-                              ROLE_ASSIGNMENT_THEMES[displayRoleId ?? -1] ?? DEFAULT_ASSIGNMENT_THEME
+                              ROLE_ASSIGNMENT_THEMES[displayRoleCode ?? ''] ?? DEFAULT_ASSIGNMENT_THEME
                             } ${isCrewEditing || onAssignmentEdit ? 'cursor-pointer' : ''} ${pendingEdit ? 'ring-2 ring-blue-400' : ''} ${isCrewEditing ? 'segment-pop-in' : ''}`}
                             style={{
                               // Stagger the pop-in animation, then start wiggling after
