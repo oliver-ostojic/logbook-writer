@@ -185,7 +185,6 @@ export function calculateCrewRuleSatisfaction(
       'CANNOT_ASSIGN_DURING_STORE_HOUR_X',
       'DISTRIBUTION_BETWEEN_ROLE_X',  // Need to evaluate even if only target role was assigned
       'MAX_CONSECUTIVE_MINUTES',       // Need to evaluate even if role wasn't assigned (satisfaction = 0)
-      'TIMING',                        // Need to evaluate: no role = preference not met
       'CANNOT_BE_ASSIGNED_AFTER',      // Need to evaluate: no role = preference trivially met
     ].includes(rule.roleRule.type);
 
@@ -289,10 +288,8 @@ function calculateSingleRuleSatisfaction(
         return null;  // Can't evaluate without shift info
       }
       if (roleAssignments.length === 0) {
-        // Role wasn't assigned - they didn't get what they wanted
-        satisfaction = 0.0;
-        details = 'Role was not assigned (timing preference not applicable)';
-        break;
+        // Role wasn't assigned - timing preference doesn't apply, skip entirely
+        return null;
       }
       const timingPref = valueInt ?? 0;
       const result = calculateTimingSatisfaction(roleAssignments, crewShift, timingPref);
@@ -799,19 +796,19 @@ function calculateDistribution(
   targetRoleId: number,
   crewAssignments: AssignmentRecord[],
   crewShift: CrewShiftWindow | undefined,
-  distributionPref: number  // -1 = less, 0 = balanced, +1 = more
+  distributionPref: number  // -1 = prefer more roleId, 0 = balanced, +1 = prefer more targetRoleId
 ): { satisfaction: number; details: string } {
   // Calculate total minutes for each role
   const roleMinutes = crewAssignments
     .filter(a => a.roleId === roleId)
     .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
-  
+
   const targetRoleMinutes = crewAssignments
     .filter(a => a.roleId === targetRoleId)
     .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
 
   const totalMinutes = roleMinutes + targetRoleMinutes;
-  
+
   if (totalMinutes === 0) {
     return { satisfaction: 1.0, details: 'Neither role assigned' };
   }
@@ -820,22 +817,22 @@ function calculateDistribution(
   let details: string;
 
   if (distributionPref === -1) {
-    // Want roleId to have LESS time than targetRoleId
-    if (roleMinutes < targetRoleMinutes) {
-      satisfaction = 1.0;
-      details = `Role ${roleId} (${roleMinutes}min) < target ${targetRoleId} (${targetRoleMinutes}min)`;
-    } else {
-      satisfaction = 0.0;
-      details = `Role ${roleId} (${roleMinutes}min) >= target ${targetRoleId} (${targetRoleMinutes}min)`;
-    }
-  } else if (distributionPref === 1) {
-    // Want roleId to have MORE time than targetRoleId
+    // -1 = prefer more time on primary role (roleId)
     if (roleMinutes > targetRoleMinutes) {
       satisfaction = 1.0;
       details = `Role ${roleId} (${roleMinutes}min) > target ${targetRoleId} (${targetRoleMinutes}min)`;
     } else {
       satisfaction = 0.0;
       details = `Role ${roleId} (${roleMinutes}min) <= target ${targetRoleId} (${targetRoleMinutes}min)`;
+    }
+  } else if (distributionPref === 1) {
+    // +1 = prefer more time on target role (targetRoleId)
+    if (targetRoleMinutes > roleMinutes) {
+      satisfaction = 1.0;
+      details = `Target ${targetRoleId} (${targetRoleMinutes}min) > role ${roleId} (${roleMinutes}min)`;
+    } else {
+      satisfaction = 0.0;
+      details = `Target ${targetRoleId} (${targetRoleMinutes}min) <= role ${roleId} (${roleMinutes}min)`;
     }
   } else {
     // Want balanced (0)
