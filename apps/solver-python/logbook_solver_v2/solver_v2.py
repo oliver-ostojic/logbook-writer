@@ -106,6 +106,7 @@ class SolverV2:
             crew_records=self.crew,
             role_records=self.roles,
             crew_quotas=self.crew_quotas,
+            coverage_windows=self.coverage_windows,
         )
         self.assignment_index = AssignmentIndex(self.assignment_vars)
         # Keep lookups deterministic (roles list order may not be stable across payloads)

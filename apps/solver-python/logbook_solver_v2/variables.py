@@ -36,6 +36,7 @@ class VariableBuilder:
         crew_records: List[dict],
         role_records: List[dict],
         crew_quotas: List[dict] | None = None,
+        coverage_windows: List[dict] | None = None,
     ) -> Dict[AssignmentKey, cp_model.IntVar]:
         DEBUG = False
         role_by_id = {role['id']: role for role in role_records}
@@ -62,6 +63,23 @@ class VariableBuilder:
             is_daily = 'DAILY' in assignment_models or assignment_model == 'DAILY'
             if is_daily:
                 daily_role_ids.add(role['id'])
+
+        # Identify WINDOW roles and build their coverage bands.
+        # WINDOW roles only get variables for slots within defined coverage windows.
+        # No coverage window for a WINDOW role → zero variables → zero assignments.
+        window_role_ids: set[int] = set()
+        for role in role_records:
+            assignment_models = role.get('assignmentModels') or []
+            assignment_model = role.get('assignmentModel')
+            if 'WINDOW' in assignment_models or assignment_model == 'WINDOW':
+                window_role_ids.add(role['id'])
+
+        # Build role_id → list of (startMin, endMin) from coverage_windows
+        window_bands_by_role: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
+        for cw in (coverage_windows or []):
+            role_id = cw.get('roleId')
+            if role_id in window_role_ids:
+                window_bands_by_role[role_id].append((cw['startMin'], cw['endMin']))
 
         if DEBUG: print(f"\n{'='*70}", file=sys.stderr)
         if DEBUG: print("VARIABLE BUILDING DEBUG", file=sys.stderr)
@@ -108,11 +126,18 @@ class VariableBuilder:
                         if DEBUG: print(f"    Skipping DAILY role {role_code_by_id.get(role_id)} for {crew_name}: no quota", file=sys.stderr)
                         continue
 
+                # For WINDOW roles, only create variables if coverage windows are defined.
+                # No windows → no assignments. Windows exist → restrict to those bands only.
+                is_window_role = role_id in window_role_ids
+                if is_window_role and role_id not in window_bands_by_role:
+                    if DEBUG: print(f"    Skipping WINDOW role {role_code_by_id.get(role_id)} for {crew_name}: no coverage windows", file=sys.stderr)
+                    continue
+
                 # Get task length in minutes (default to grid slot size)
                 task_length = role.get('taskLength') or self.time_grid.slot_minutes
                 task_slots = self.time_grid.task_length_to_slots(task_length)
                 can_split = role.get('canSplitForGaps', False)
-                
+
                 # Determine which task sizes to create variables for
                 task_sizes = [task_slots]
                 if can_split and task_slots > 1:
@@ -122,13 +147,23 @@ class VariableBuilder:
                         task_sizes.append(half_slots)
 
                 for current_task_slots in task_sizes:
-                    allowed_slots = self._role_slot_window(
-                        role,
-                        shift_start_slot=shift_start_slot,
-                        shift_end_slot=shift_end_slot,
-                        shift_start_min=shift_start_min,
-                        task_slots=current_task_slots,
-                    )
+                    if is_window_role:
+                        # Only create variables for slots within coverage window bands,
+                        # intersected with this crew's shift.
+                        allowed_slots = self._window_role_slots(
+                            window_bands_by_role[role_id],
+                            shift_start_min=shift_start_min,
+                            shift_end_min=shift_end_min,
+                            task_slots=current_task_slots,
+                        )
+                    else:
+                        allowed_slots = self._role_slot_window(
+                            role,
+                            shift_start_slot=shift_start_slot,
+                            shift_end_slot=shift_end_slot,
+                            shift_start_min=shift_start_min,
+                            task_slots=current_task_slots,
+                        )
                     if not allowed_slots:
                         continue
 
@@ -266,6 +301,36 @@ class VariableBuilder:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    def _window_role_slots(
+        self,
+        bands: List[Tuple[int, int]],
+        *,
+        shift_start_min: int,
+        shift_end_min: int,
+        task_slots: int,
+    ) -> list[int]:
+        """Return valid start slots for a WINDOW role, restricted to coverage bands.
+
+        Each band (startMin, endMin) is intersected with the crew's shift. A slot
+        is valid if the full task [slot, slot+task_slots) fits within the intersection.
+        """
+        slot_minutes = self.time_grid.slot_minutes
+        task_minutes = task_slots * slot_minutes
+        allowed: list[int] = []
+
+        for band_start_min, band_end_min in bands:
+            effective_start_min = max(shift_start_min, band_start_min)
+            effective_end_min = min(shift_end_min, band_end_min)
+            if effective_end_min - effective_start_min < task_minutes:
+                continue
+            start_slot = self.time_grid.minutes_to_slot_floor(effective_start_min)
+            end_slot = self.time_grid.minutes_to_slot_floor(effective_end_min) - task_slots + 1
+            for slot in range(start_slot, end_slot):
+                if slot not in allowed:
+                    allowed.append(slot)
+
+        return sorted(allowed)
+
     def _role_slot_window(
         self,
         role: dict,
