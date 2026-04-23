@@ -13,6 +13,21 @@ interface TutorialInfoBubbleProps {
   targetRect: TargetRect | null;
 }
 
+// Split body on **bold** markers and wrap those segments in <strong>.
+function renderBody(body: string): React.ReactNode {
+  const segments = body.split(/(\*\*[^*]+\*\*)/g);
+  return segments.map((segment, i) => {
+    if (segment.startsWith('**') && segment.endsWith('**')) {
+      return (
+        <strong key={i} style={{ fontWeight: 700, color: '#2C2C2C' }}>
+          {segment.slice(2, -2)}
+        </strong>
+      );
+    }
+    return segment;
+  });
+}
+
 function computeBubbleStyle(
   position: BubblePosition,
   rect: TargetRect | null,
@@ -113,7 +128,7 @@ export default function TutorialInfoBubble({
               lineHeight: 1.5,
             }}
           >
-            {body}
+            {renderBody(body)}
           </p>
         </div>
       </div>

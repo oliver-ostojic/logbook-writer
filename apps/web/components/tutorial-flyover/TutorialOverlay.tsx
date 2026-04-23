@@ -36,6 +36,12 @@ export default function TutorialOverlay({ targetRect, blockClicks, noDim, spotli
   const spotlightWidth = targetRect.width + pad * 2;
   const spotlightHeight = targetRect.height + pad * 2;
 
+  const frameStyle: React.CSSProperties = {
+    position: 'absolute',
+    zIndex: 9999,
+    transition: 'top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease',
+  };
+
   return (
     <>
       {/* Visual spotlight — absolute so it scrolls with the page */}
@@ -54,8 +60,19 @@ export default function TutorialOverlay({ targetRect, blockClicks, noDim, spotli
         }}
       />
 
-      {/* Click-blocking layer (viewport-fixed) — only for non-interactive steps */}
-      {blockClicks && <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }} />}
+      {/* Click-blocking layer(s) */}
+      {blockClicks ? (
+        /* Full-screen blocker for purely informational steps */
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }} />
+      ) : (
+        /* Four frame divs around the spotlight — clicks only pass through the cutout */
+        <>
+          <div style={{ ...frameStyle, top: 0, left: 0, right: 0, height: Math.max(0, spotlightTop) }} />
+          <div style={{ ...frameStyle, top: spotlightTop + spotlightHeight, left: 0, right: 0, bottom: 0 }} />
+          <div style={{ ...frameStyle, top: spotlightTop, left: 0, width: Math.max(0, spotlightLeft), height: spotlightHeight }} />
+          <div style={{ ...frameStyle, top: spotlightTop, left: spotlightLeft + spotlightWidth, right: 0, height: spotlightHeight }} />
+        </>
+      )}
     </>
   );
 }

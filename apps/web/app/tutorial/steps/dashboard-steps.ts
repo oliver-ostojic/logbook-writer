@@ -15,7 +15,6 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       id: 'dashboard-welcome',
       route: dashRoute,
       onEnter: () => callbacks.setViewHint('dashboard-overview'),
-      hideBack: true,
       bubble: {
         title: 'Fairness Dashboard',
         body: 'Welcome to the Fairness Dashboard! This gives you a store-level view of how crew preferences and role fairness are trending over time.',
@@ -62,7 +61,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       interactive: true,
       bubble: {
         title: 'Month Filter',
-        body: 'Click any month to toggle all its dates on or off. Bold text means the whole month is selected; a dot below the name means it\'s partially selected. Use the arrows to navigate to earlier months.',
+        body: '**Click any month** to toggle all its dates on or off. Bold text means the whole month is selected; a dot below the name means it\'s partially selected. Use the arrows to navigate to earlier months.',
         position: 'below',
       },
     },
@@ -76,7 +75,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       interactive: true,
       bubble: {
         title: 'Year Filter',
-        body: 'Click the year dropdown to select or deselect an entire year of data at once. A red dot next to a year means it\'s only partially selected.',
+        body: '**Click the year dropdown** to select or deselect an entire year of data at once. A red dot next to a year means it\'s only partially selected.',
         position: 'below',
       },
     },
@@ -94,7 +93,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       advanceOnInteraction: true,
       bubble: {
         title: 'All Dates',
-        body: 'For day-level precision, click here to open the date picker and select specific dates.',
+        body: 'For day-level precision, **click here** to open the date picker and select specific dates.',
         position: 'below',
       },
     },
@@ -184,7 +183,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       interactive: true,
       bubble: {
         title: 'Preferences Met Over Time',
-        body: 'Shows the overall preference satisfaction percentage for each logbook date. Click any dot to highlight that date\'s data. Use this to spot dips after schedule changes or high-demand periods.',
+        body: 'Shows the overall preference satisfaction percentage for each logbook date. **Click any dot** to highlight that date\'s data. Use this to spot dips after schedule changes or high-demand periods.',
         position: 'above',
       },
     },
@@ -228,7 +227,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       advanceOnInteraction: true,
       bubble: {
         title: 'Crew View',
-        body: 'Click Crew to see preference statistics for each individual crew member.',
+        body: '**Click Crew** to see preference statistics for each individual crew member.',
         position: 'below',
       },
     },
@@ -255,7 +254,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       advanceOnInteraction: true,
       bubble: {
         title: 'Select a Crew Member',
-        body: 'Click any crew member to open their individual statistics panel on the right.',
+        body: '**Click any crew member** to open their individual statistics panel on the right.',
         position: 'right',
       },
     },
@@ -284,7 +283,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       advanceOnInteraction: true,
       bubble: {
         title: 'Roles View',
-        body: 'Click Roles to see fairness statistics broken down by each role in your store.',
+        body: '**Click Roles** to see fairness statistics broken down by each role in your store.',
         position: 'below',
       },
     },
@@ -298,7 +297,7 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       advanceOnInteraction: true,
       bubble: {
         title: 'Role List',
-        body: 'Each card shows a role\'s fairness index and trend. Click Product to dive into its detailed statistics.',
+        body: 'Each card shows a role\'s fairness index and trend. **Click Product** to dive into its detailed statistics.',
         position: 'right',
       },
     },
@@ -311,7 +310,6 @@ export function createDashboardSteps(callbacks: DashboardStepCallbacks): Tutoria
       route: dashRoute,
       scroll: 0,
       onEnter: () => callbacks.setViewHint('dashboard-role:Product'),
-      hideBack: true,
       interactive: true,
       bubble: {
         title: 'Fairness Index — Product',

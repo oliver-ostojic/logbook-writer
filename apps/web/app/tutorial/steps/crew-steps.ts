@@ -14,7 +14,6 @@ export function createCrewSteps(callbacks: CrewStepCallbacks): TutorialStep[] {
       id: 'crew-prefs-welcome',
       route: crewRoute,
       onEnter: () => callbacks.setViewHint('preferences'),
-      hideBack: true,
       bubble: {
         title: 'Crew Preferences',
         body: 'Welcome to the crew member UI! Each crew member can configure their own role preferences freely — they can create as many as they like, although some preferences are granted by management.',

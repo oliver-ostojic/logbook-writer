@@ -19,7 +19,7 @@ const ELEMENT_START_TOP_MARGIN = 240; // Room above element for bubble + padding
  * bounding rects, and elevates target z-index for click-through.
  */
 export default function TutorialProvider() {
-  const { isActive, currentStepIndex, steps, next, back, skip } =
+  const { isActive, currentStepIndex, steps, next, skip } =
     useTutorialStore();
   const router = useRouter();
 
@@ -219,10 +219,14 @@ export default function TutorialProvider() {
         currentStep={currentStepIndex}
         totalSteps={steps.length}
         onNext={next}
-        onBack={back}
         onSkip={skip}
+        onExit={() => {
+          skip();
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'CLOSE_LOGBOOK_OVERLAY' }, '*');
+          }
+        }}
         hideNext={!!currentStep.advanceOnInteraction || !!currentStep.advanceOnCustomEvent}
-        hideBack={!!currentStep.hideBack}
       />
     </>,
     document.body,

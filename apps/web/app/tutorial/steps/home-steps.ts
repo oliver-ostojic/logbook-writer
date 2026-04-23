@@ -66,7 +66,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: true,
       bubble: {
         title: 'Crew Tab',
-        body: 'Click Crew to open the crew management interface — one of several CRUD views available from this navigation bar.',
+        body: '**Click Crew** to open the crew management interface — one of several CRUD views available from this navigation bar.',
         position: 'below',
       },
     },
@@ -91,7 +91,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       onEnter: () => callbacks.setViewHint('crew'),
       bubble: {
         title: 'Crew List',
-        body: 'All crew members for this store. Click a name to view their details.',
+        body: 'All crew members for this store. **Click a name** to view their details.',
         position: 'right',
       },
     },
@@ -127,12 +127,11 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       target: 'logbooks-add-btn',
       scroll: 0,
       route: homeRoute,
-      hideBack: true,
       onEnter: () => callbacks.setViewHint('logbooks'),
       advanceOnInteraction: true,
       bubble: {
         title: 'Create a Logbook',
-        body: 'The Logbooks tab lists every logbook generated for this store. Click Add to open the logbook creator and build today\'s schedule.',
+        body: 'The Logbooks tab lists every logbook generated for this store. **Click Add** to open the logbook creator and build today\'s schedule.',
         position: 'right',
       },
     },
@@ -176,7 +175,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: true,
       bubble: {
         title: 'Continue to Constraints',
-        body: 'When your crew shifts look right, click here to save them and move on to defining role rules and coverage windows.',
+        body: 'When your crew shifts look right, **click here** to save them and move on to defining role rules and coverage windows.',
         position: 'above',
       },
     },
@@ -225,7 +224,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       interactive: true,
       bubble: {
         title: 'Crew Assignment Card',
-        body: 'Click a card to select that crew member for the role. Once selected, use the + and − buttons to increase or decrease the number of hours assigned for the specific role listed.',
+        body: '**Click a card** to select that crew member for the role. Once selected, use the + and − buttons to increase or decrease the number of hours assigned for the specific role listed.',
         position: 'right',
       },
     },
@@ -237,7 +236,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       interactive: true,
       bubble: {
         title: 'Step 3 — Hourly Staffing',
-        body: 'Click on different hours to see staffing data for each time slot. This view shows how many crew are available per hour for each role. If a role was configured as a coverage window in Step 1, it will show a "Configured in Step 1" note instead of hourly inputs.',
+        body: '**Click on different hours** to see staffing data for each time slot. This view shows how many crew are available per hour for each role. If a role was configured as a coverage window in Step 1, it will show a "Configured in Step 1" note instead of hourly inputs.',
         position: 'right',
       },
     },
@@ -249,7 +248,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: true,
       bubble: {
         title: 'Generate Logbook',
-        body: 'Once all constraints are set, click here to save your configuration and generate the logbook.',
+        body: 'Once all constraints are set, **click here** to save your configuration and generate the logbook.',
         position: 'above',
       },
     },
@@ -314,7 +313,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: 'dblclick',
       bubble: {
         title: 'Enter Edit Mode',
-        body: 'Now double-click the crew member\'s name to enter edit mode for that row. The name will turn bold to indicate you\'re in edit mode.',
+        body: 'Now **double-click the crew member\'s name** to enter edit mode for that row. The name will turn bold to indicate you\'re in edit mode.',
         position: 'right',
       },
     },
@@ -326,7 +325,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnCustomEvent: true,
       bubble: {
         title: 'Make an Edit',
-        body: 'In edit mode, each 30-minute slot becomes individually clickable. Click any role bubble to open a dropdown and reassign it to a different role.',
+        body: 'In edit mode, each 30-minute slot becomes individually clickable. **Click any role bubble** to open a dropdown and reassign it to a different role.',
         position: 'above',
       },
     },
@@ -337,7 +336,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: 'dblclick',
       bubble: {
         title: 'Exit Edit Mode',
-        body: 'Double-click the name again to exit edit mode and commit your changes. The Publish button will show a count of how many edits are pending.',
+        body: '**Double-click the name again** to exit edit mode and commit your changes. The Publish button will show a count of how many edits are pending.',
         position: 'right',
       },
     },
@@ -348,7 +347,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       advanceOnInteraction: true,
       bubble: {
         title: 'Publish',
-        body: 'When the schedule looks right, click Publish to save all edits and make the logbook live for your team.',
+        body: 'When the schedule looks right, **click Publish** to save all edits and make the logbook live for your team.',
         position: 'below',
       },
     },

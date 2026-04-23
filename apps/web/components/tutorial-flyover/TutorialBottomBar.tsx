@@ -6,22 +6,19 @@ interface TutorialBottomBarProps {
   currentStep: number;
   totalSteps: number;
   onNext: () => void;
-  onBack: () => void;
   onSkip: () => void;
+  onExit: () => void;
   hideNext?: boolean;
-  hideBack?: boolean;
 }
 
 export default function TutorialBottomBar({
   currentStep,
   totalSteps,
   onNext,
-  onBack,
   onSkip,
+  onExit,
   hideNext,
-  hideBack,
 }: TutorialBottomBarProps) {
-  const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 
   return (
@@ -47,25 +44,29 @@ export default function TutorialBottomBar({
             gap: 12,
           }}
         >
-          {/* Back button */}
+          {/* Exit button */}
           <button
-            onClick={onBack}
-            disabled={isFirstStep || hideBack}
+            onClick={onExit}
             style={{
               padding: '8px 20px',
               fontFamily: 'var(--font-open-sans)',
               fontSize: '13px',
               fontWeight: 600,
-              color: '#6B6B6B',
-              backgroundColor: 'transparent',
+              color: 'white',
+              backgroundColor: '#2C2C2C',
               border: 'none',
               borderRadius: '9999px',
               cursor: 'pointer',
-              transition: 'color 0.2s ease',
-              visibility: isFirstStep || hideBack ? 'hidden' : 'visible',
+              transition: 'background-color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#000000';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#2C2C2C';
             }}
           >
-            Back
+            Exit
           </button>
 
           {/* Dot indicators */}
