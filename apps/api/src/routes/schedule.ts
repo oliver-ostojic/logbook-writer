@@ -1147,6 +1147,10 @@ export function registerLogbookRoutes(app: FastifyInstance) {
             supersedes: {
               select: { id: true },
             },
+            Assignment: {
+              select: { crewId: true },
+              distinct: ['crewId'],
+            },
           },
           orderBy: { date: 'desc' },
           take: limitNum,
@@ -1165,6 +1169,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
           publishedAt: lb.publishedAt?.toISOString() ?? null,
           createdAt: lb.createdAt.toISOString(),
           hasSupersededVersions: lb.supersedes.length > 0,
+          crewCount: lb.Assignment.length,
           metadata: lb.LogPreferenceMetadata ? {
             avgSatisfaction: lb.LogPreferenceMetadata.avgSatisfaction,
             fairnessGrade: lb.LogPreferenceMetadata.fairnessGrade,

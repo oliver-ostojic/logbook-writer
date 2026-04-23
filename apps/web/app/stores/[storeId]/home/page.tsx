@@ -609,8 +609,10 @@ export default function Home() {
         status: l.status,
         hasSuperseded: l.hasSupersededVersions || false,
         versionCount: l.versionCount,
+        crewCount: l.crewCount ?? null,
+        prefsMet: l.metadata?.percentMet ?? null,
       }))
-    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false, versionCount: 1 }));
+    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false, versionCount: 1, crewCount: null, prefsMet: null }));
 
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'recent', label: 'Recent' },
@@ -1203,7 +1205,7 @@ export default function Home() {
                     padding="12px 16px"
                     contentStyle={{ justifyContent: 'flex-start' }}
                   >
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-2 w-full">
                       <span
                         style={{
                           fontFamily: 'var(--font-open-sans)',
@@ -1214,15 +1216,51 @@ export default function Home() {
                       >
                         {itemName}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '12px',
-                          color: '#6B6B6B',
-                        }}
-                      >
-                        {subtitle}
-                      </span>
+                      {type === 'logbooks' ? (() => {
+                        const lb = item as any;
+                        const condensed = selectedItem !== null && selectedItem.type === 'logbooks';
+                        const getPrefColor = (pct: number) => {
+                          if (pct < 60) return '#dc2626';
+                          if (pct < 70) return '#d97706';
+                          if (pct < 80) return '#16a34a';
+                          return '#2563eb';
+                        };
+                        const divider = <div style={{ width: 1, height: 28, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)' }} />;
+                        return (
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-between gap-2 flex-1">
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Versions</span>
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 400 }}>
+                                {lb.versionCount ?? '—'}
+                              </span>
+                            </div>
+                            {divider}
+                            <div className="flex items-center justify-between gap-2 flex-1">
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{condensed ? 'Crew' : 'Crew count'}</span>
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 400 }}>
+                                {lb.crewCount != null ? lb.crewCount : '—'}
+                              </span>
+                            </div>
+                            {divider}
+                            <div className="flex items-center justify-between gap-2 flex-1">
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{condensed ? 'Prefs met' : 'Preferences met'}</span>
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 400 }}>
+                                {lb.prefsMet != null ? `${Math.round(lb.prefsMet)}%` : '—'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-open-sans)',
+                            fontSize: '12px',
+                            color: '#6B6B6B',
+                          }}
+                        >
+                          {subtitle}
+                        </span>
+                      )}
                     </div>
                   </GlassPillButton>
                 );
