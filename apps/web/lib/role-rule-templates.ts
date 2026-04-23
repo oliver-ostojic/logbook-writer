@@ -193,6 +193,11 @@ export const ROLE_RULE_TEMPLATES: RoleRuleTemplateRegistry = {
     description: 'Maximum uninterrupted time allowed on this role',
   },
 
+  MAX_TOTAL_MINUTES: {
+    template: 'A crew member cannot work more than {@bubble crewRoleRule.valueInt} minutes per day on {@bubble role.displayName}',
+    description: 'Maximum total time on this role per day',
+  },
+
   // === Access restrictions ===
   FORBID_ROLE: {
     template: 'Cannot be assigned {@bubble role.displayName}',

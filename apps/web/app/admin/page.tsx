@@ -263,6 +263,12 @@ export default function AdminPage() {
                       isActive={true}
                       onClick={() => {}}
                     />
+                    <NavStatsCard
+                      label="Test Gen"
+                      textOnly
+                      isActive={false}
+                      onClick={() => router.push('/admin/test-generator')}
+                    />
                     <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
                       <NavStatsCard
                         label="Account"

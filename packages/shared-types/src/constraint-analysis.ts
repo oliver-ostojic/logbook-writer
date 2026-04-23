@@ -12,6 +12,7 @@ export type ConstraintViolationCategory =
   | 'consecutive'
   | 'preference'
   | 'consistency'
+  | 'gap'
   | 'other';
 
 export interface ConstraintViolation {

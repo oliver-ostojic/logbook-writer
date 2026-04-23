@@ -37,6 +37,7 @@ type CreateStoreRoleRuleBody = {
   roleRuleId: number;
   isPriority?: boolean;
   description?: string;
+  valueInt?: number;
 };
 
 type RoleRuleParams = { id: string };
@@ -434,7 +435,7 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
   app.post<{ Body: CreateStoreRoleRuleBody }>(
     "/store-role-rules",
     async (req, reply) => {
-      const { storeId, roleRuleId, isPriority, description } = req.body;
+      const { storeId, roleRuleId, isPriority, valueInt } = req.body;
 
       if (!storeId || !roleRuleId) {
         return reply
@@ -464,6 +465,7 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
             storeId,
             roleRuleId,
             isPriority: isPriority ?? false,
+            ...(valueInt !== undefined && valueInt !== null && { valueInt }),
           },
           include: {
             Store: { select: { id: true, name: true } },

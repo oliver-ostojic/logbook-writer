@@ -85,6 +85,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingRule, setLoadingRule] = useState(mode === 'edit');
+  const [storeRoleRuleId, setStoreRoleRuleId] = useState<number | null>(null);
 
   // Load roles for the store
   useEffect(() => {
@@ -98,19 +99,25 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
   useEffect(() => {
     if (mode === 'edit' && ruleId) {
       setLoadingRule(true);
-      fetch(`${API_URL}/role-rules/${ruleId}`)
-        .then(res => {
+      Promise.all([
+        fetch(`${API_URL}/role-rules/${ruleId}`).then(res => {
           if (!res.ok) throw new Error('Failed to load rule data');
           return res.json();
-        })
-        .then(data => {
+        }),
+        fetch(`${API_URL}/store-role-rules?storeId=${storeId}&roleRuleId=${ruleId}`)
+          .then(res => (res.ok ? res.json() : []))
+          .catch(() => []),
+      ])
+        .then(([rule, storeRules]) => {
+          const srr = Array.isArray(storeRules) ? storeRules[0] : null;
+          setStoreRoleRuleId(srr?.id ?? null);
           setFormData({
-            roleId: data.roleId,
-            type: data.type,
-            targetRoleId: data.targetRoleId || null,
-            valueInt: data.valueInt || null,
-            displayName: data.displayName || '',
-            description: data.description || '',
+            roleId: rule.roleId,
+            type: rule.type,
+            targetRoleId: rule.targetRoleId || null,
+            valueInt: srr?.valueInt ?? rule.valueInt ?? null,
+            displayName: rule.displayName || '',
+            description: rule.description || '',
           });
         })
         .catch(err => {
@@ -120,7 +127,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
           setLoadingRule(false);
         });
     }
-  }, [mode, ruleId]);
+  }, [mode, ruleId, storeId]);
 
   const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let value: string | number | null = e.target.value;
@@ -235,6 +242,27 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
       console.log('=== ROLE RULE CREATED ===');
       console.log('Created rule:', createdRule);
 
+      // On edit: if this rule type has a valueInt and we know its StoreRoleRule,
+      // PATCH the StoreRoleRule to persist valueInt changes (RoleRule itself doesn't hold it)
+      if (
+        mode === 'edit' &&
+        constraintType === 'HARD' &&
+        storeRoleRuleId &&
+        needsValueInt &&
+        formData.valueInt !== null &&
+        formData.valueInt !== undefined
+      ) {
+        try {
+          await fetch(`${API_URL}/store-role-rules/${storeRoleRuleId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ valueInt: formData.valueInt }),
+          });
+        } catch (storeRuleErr: any) {
+          console.error('Error updating StoreRoleRule valueInt:', storeRuleErr);
+        }
+      }
+
       // If this is a HARD constraint (store rule) and we're adding a new rule,
       // also create a StoreRoleRule to assign it to the store
       if (mode === 'add' && constraintType === 'HARD' && createdRule?.id) {
@@ -243,7 +271,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
         const storeRulePayload: any = {
           storeId: Number(storeId),
           roleRuleId: createdRule.id,
-          isPriority: false,
+          isPriority: true,
         };
 
         // Include valueInt if this rule type needs it

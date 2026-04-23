@@ -1107,22 +1107,31 @@ export default function FairnessDashboardPage() {
   const computedPreferenceData = React.useMemo(() => {
     if (!dashboardSnapshot) return [];
 
-    const firstLogbook = dashboardSnapshot.selection.logbooks[0];
-    if (!firstLogbook) return [];
+    const logbooks = dashboardSnapshot.selection.logbooks;
+    if (logbooks.length === 0) return [];
 
-    // Transform breakdownByRuleType into GraphCardSimple format
-    return firstLogbook.dayAggregate.breakdownByRuleType.map(breakdown => {
-      // Find the corresponding role rule and use its description
-      const rule = roleRules.find(r => r.roleRuleId === breakdown.roleRuleId);
-      // Use formatRuleTypeLabel for human-readable label
-      const label = rule?.type ? formatRuleTypeLabel(rule.type) : `Rule ${breakdown.roleRuleId}`;
+    // Aggregate eligible/met counts across all selected dates per rule type
+    const aggregated = new Map<number, { eligible: number; met: number }>();
+    for (const lb of logbooks) {
+      for (const breakdown of lb.dayAggregate.breakdownByRuleType) {
+        const existing = aggregated.get(breakdown.roleRuleId) ?? { eligible: 0, met: 0 };
+        aggregated.set(breakdown.roleRuleId, {
+          eligible: existing.eligible + breakdown.eligible,
+          met: existing.met + breakdown.met,
+        });
+      }
+    }
+
+    return Array.from(aggregated.entries()).map(([roleRuleId, totals]) => {
+      const rule = roleRules.find(r => r.roleRuleId === roleRuleId);
+      const label = rule?.type ? formatRuleTypeLabel(rule.type) : `Rule ${roleRuleId}`;
       const description = rule?.description || undefined;
 
       return {
         label,
         description,
-        totalCount: breakdown.eligible,
-        satisfiedCount: breakdown.met,
+        totalCount: totals.eligible,
+        satisfiedCount: totals.met,
       };
     });
   }, [dashboardSnapshot, roleRules]);

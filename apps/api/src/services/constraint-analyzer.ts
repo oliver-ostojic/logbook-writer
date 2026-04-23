@@ -105,7 +105,8 @@ export function analyzeSolverResult({
     ...checkCrewQuotas(context),
     ...checkRoleBlocks(context),
     ...checkConsecutivePolicies(context),
-    ...checkRoleAccessGuards(context)
+    ...checkRoleAccessGuards(context),
+    ...checkCrewGaps(context)
   );
 
   let preferenceSummary: PreferenceSatisfactionSummary | undefined;
@@ -432,6 +433,64 @@ function checkRoleAccessGuards(context: AnalyzerContext): ConstraintViolation[] 
           details: { crewId, roleId, shiftLength },
         });
       }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Detect unassigned gaps in each crew member's shift.
+ * A gap is any contiguous interval inside [shiftStartMin, shiftEndMin] with no role assigned.
+ */
+function checkCrewGaps(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, crewAssignmentsByRole } = context;
+  const violations: ConstraintViolation[] = [];
+
+  for (const crew of solverInput.crew) {
+    const shiftStart = crew.shiftStartMin;
+    const shiftEnd = crew.shiftEndMin;
+    if (shiftEnd <= shiftStart) continue;
+
+    const intervals: Array<{ start: number; end: number }> = [];
+    const roleMap = crewAssignmentsByRole.get(crew.id);
+    if (roleMap) {
+      for (const assignments of roleMap.values()) {
+        for (const a of assignments) {
+          const start = Math.max(a.startMinute, shiftStart);
+          const end = Math.min(a.endMinute, shiftEnd);
+          if (end > start) intervals.push({ start, end });
+        }
+      }
+    }
+
+    intervals.sort((a, b) => a.start - b.start);
+
+    const merged: Array<{ start: number; end: number }> = [];
+    for (const iv of intervals) {
+      const last = merged[merged.length - 1];
+      if (last && iv.start <= last.end) {
+        merged[merged.length - 1] = { start: last.start, end: Math.max(last.end, iv.end) };
+      } else {
+        merged.push(iv);
+      }
+    }
+
+    const gaps: Array<{ startMin: number; endMin: number }> = [];
+    let cursor = shiftStart;
+    for (const iv of merged) {
+      if (iv.start > cursor) gaps.push({ startMin: cursor, endMin: iv.start });
+      cursor = Math.max(cursor, iv.end);
+    }
+    if (cursor < shiftEnd) gaps.push({ startMin: cursor, endMin: shiftEnd });
+
+    if (gaps.length > 0) {
+      violations.push({
+        severity: 'info',
+        category: 'gap',
+        message: `${crew.name} has ${gaps.length} unassigned gap${gaps.length !== 1 ? 's' : ''}.`,
+        details: { crewId: crew.id, gapCount: gaps.length, gaps },
+      });
     }
   }
 
