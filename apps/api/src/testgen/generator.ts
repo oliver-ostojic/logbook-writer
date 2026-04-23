@@ -16,9 +16,9 @@ export function generateDayPayload(
     );
   }
 
-  const crew = allCrew.slice(0, crewCount);
+  const crew = rng.shuffle(allCrew).slice(0, crewCount);
   const shifts = buildShifts(config, crew, rng);
-  const crewQuotas = buildQuotas(config, shifts, rng);
+  const crewQuotas = buildQuotas(config, shifts, crew, rng);
   const coverageWindows = [
     ...buildCoverageWindows(config, shifts, rng),
     ...buildWindowCoverage(config, rng),
@@ -50,13 +50,17 @@ function buildShifts(
 function buildQuotas(
   config: DayGeneratorConfig,
   shifts: ShiftSpec[],
+  crew: CrewRecord[],
   rng: ReturnType<typeof makeRng>,
 ): CrewQuotaSpec[] {
   const shiftMap = new Map(shifts.map(s => [s.crewId, s]));
+  const crewRoleMap = new Map(crew.map(c => [c.id, c.roleIds]));
   const quotas: CrewQuotaSpec[] = [];
 
   for (const quotaConfig of config.quotas) {
-    const eligibleCrewIds = shifts.map(s => s.crewId);
+    const eligibleCrewIds = shifts
+      .map(s => s.crewId)
+      .filter(id => crewRoleMap.get(id)?.includes(quotaConfig.roleId) ?? false);
     const picked = quotaConfig.pickEligibleCrew(eligibleCrewIds, rng);
     const lengths = quotaConfig.sampleLength(picked.length, rng);
 

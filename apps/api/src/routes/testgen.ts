@@ -90,6 +90,7 @@ export function registerTestGenRoutes(app: FastifyInstance) {
     );
 
     const startDate = startOfDay(date);
+    const baseSeed = seed ?? Date.now();
     const days: { date: string; summary: object }[] = [];
 
     for (let i = 0; i < dayCount; i++) {
@@ -99,7 +100,7 @@ export function registerTestGenRoutes(app: FastifyInstance) {
 
       let payload;
       try {
-        payload = generateDayPayload(dayConfig, allCrew, seed !== undefined ? seed + i : undefined);
+        payload = generateDayPayload(dayConfig, allCrew, baseSeed + i);
       } catch (err: any) {
         return reply.code(422).send({ error: `Day ${dateStr}: ${err.message}` });
       }

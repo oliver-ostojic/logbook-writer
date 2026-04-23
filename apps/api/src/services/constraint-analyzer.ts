@@ -322,6 +322,12 @@ function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
   const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
   const violations: ConstraintViolation[] = [];
 
+  const halfBlockRoleIds = new Set(
+    (solverInput.roleRules ?? [])
+      .filter((r) => r.type === 'ALLOW_HALF_BLOCKSIZE')
+      .map((r) => r.roleId)
+  );
+
   for (const [crewId, roleAssignments] of crewAssignmentsByRole.entries()) {
     const crew = crewById.get(crewId);
     if (!crew) continue;
@@ -336,15 +342,18 @@ function checkRoleBlocks(context: AnalyzerContext): ConstraintViolation[] {
       // Check task length alignment per contiguous block (only for taskLength > 0)
       for (const block of blocks) {
         const blockMinutes = block.end - block.start;
-        
-        // Check if block is aligned to taskLength
-        if (taskLength > 0 && blockMinutes % taskLength !== 0) {
-          violations.push({
-            severity: 'warning',
-            category: 'slot-block',
-            message: `${role.displayName} tasks must be ${taskLength} minutes but ${crew.name} has a ${blockMinutes}-minute block.`,
-            details: { crewId, roleId, block, taskLength },
-          });
+
+        // Check if block is aligned to taskLength (or half taskLength if ALLOW_HALF_BLOCKSIZE rule exists)
+        if (taskLength > 0) {
+          const effectiveTaskLength = halfBlockRoleIds.has(roleId) ? taskLength / 2 : taskLength;
+          if (blockMinutes % effectiveTaskLength !== 0) {
+            violations.push({
+              severity: 'warning',
+              category: 'slot-block',
+              message: `${role.displayName} tasks must be ${taskLength} minutes but ${crew.name} has a ${blockMinutes}-minute block.`,
+              details: { crewId, roleId, block, taskLength },
+            });
+          }
         }
 
         // Check window offsets constraint

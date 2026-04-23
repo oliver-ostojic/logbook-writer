@@ -3,6 +3,8 @@ export class SeededRng {
 
   constructor(seed: number) {
     this.state = seed >>> 0;
+    // warm up to decorrelate seeds that differ by small amounts
+    this.next(); this.next(); this.next();
   }
 
   next(): number {
