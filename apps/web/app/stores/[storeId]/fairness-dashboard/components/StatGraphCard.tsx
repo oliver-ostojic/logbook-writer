@@ -241,7 +241,8 @@ function MiniBarChart({
       }}
     >
       {data.map((item, i) => {
-        const barHeight = max > 0 ? (item.hours / max) * (height - 4) : 0;
+        const rawBarHeight = max > 0 ? (item.hours / max) * (height - 4) : 0;
+        const barHeight = rawBarHeight > 0 ? Math.max(3, rawBarHeight) : 0;
         const x = i * (barWidth + barGap);
         const y = height - barHeight;
         const isHovered = i === hoveredIndex;
@@ -299,11 +300,11 @@ function MiniStatusBar({
   const barWidth = (width - (barCount - 1) * barGap) / barCount;
 
   const max = Math.max(...data.map(d => d.value));
-  
+
   return (
-    <svg 
-      width={width} 
-      height={height} 
+    <svg
+      width={width}
+      height={height}
       className="flex-shrink-0"
       onMouseEnter={() => onHoverChart(true)}
       onMouseLeave={() => {
@@ -312,7 +313,8 @@ function MiniStatusBar({
       }}
     >
       {data.map((item, i) => {
-        const barHeight = max > 0 ? (item.value / max) * (height - 4) : 0;
+        const rawBarHeight = max > 0 ? (item.value / max) * (height - 4) : 0;
+        const barHeight = rawBarHeight > 0 ? Math.max(3, rawBarHeight) : 0;
         const x = i * (barWidth + barGap);
         const y = height - barHeight;
         const isHovered = i === hoveredIndex;

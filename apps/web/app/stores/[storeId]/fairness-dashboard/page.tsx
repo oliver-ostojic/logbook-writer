@@ -651,7 +651,7 @@ export default function FairnessDashboardPage() {
         sparklineData: snapshot.selection.logbooks.map(lb => {
           const enforcedRoles = lb.roleStats.filter(r => r.isEnforced && r.fairnessScore !== null);
           if (enforcedRoles.length === 0) return 0;
-          const avgFairness = enforcedRoles.reduce((sum, r) => sum + (r.giniCoefficient ? (1 - r.giniCoefficient) * 100 : 0), 0) / enforcedRoles.length;
+          const avgFairness = enforcedRoles.reduce((sum, r) => sum + (r.giniCoefficient != null ? (1 - r.giniCoefficient) * 100 : 0), 0) / enforcedRoles.length;
           return Math.round(avgFairness * 100) / 100;
         }),
         icon: (
@@ -702,7 +702,7 @@ export default function FairnessDashboardPage() {
           .filter(r => r.isEnforced)
           .map(r => ({
             role: r.roleName,
-            value: r.giniCoefficient ? (1 - r.giniCoefficient) * 100 : 0,
+            value: r.giniCoefficient != null ? (1 - r.giniCoefficient) * 100 : 0,
             status: (r.fairnessStatus || 'ok').charAt(0).toUpperCase() + (r.fairnessStatus || 'ok').slice(1),
           })) : [],
         icon: (

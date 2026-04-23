@@ -121,7 +121,8 @@ function StackedPillBarChart({
 
   // Get bar height from value
   const getBarHeight = (value: number) => {
-    return (value / yMax) * graphHeight;
+    const h = (value / yMax) * graphHeight;
+    return h > 0 ? Math.max(3, h) : 0;
   };
 
   // Padding for inner (met) bar
