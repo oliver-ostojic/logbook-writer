@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { fetchActivityLogsByDate, ActivityLogItem } from '@/lib/api/activity';
@@ -186,6 +186,7 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
 
 export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onDelete, onClose }: LogbookSupersededHistoryProps) {
   const params = useParams();
+  const router = useRouter();
   const storeId = params?.storeId as string;
   const [current, setCurrent] = useState<LogbookVersion | null>(null);
   const [supersededVersions, setSupersededVersions] = useState<LogbookVersion[]>([]);
@@ -512,6 +513,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
             onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
             onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
             onDelete={() => handleDeleteVersion(current.id)}
+            onEdit={() => router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${current.id}`)}
           />
         )}
 
@@ -631,9 +633,10 @@ interface VersionCardProps {
   onViewPdf: () => void;
   onViewRunInfo?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf, onViewRunInfo, onDelete }: VersionCardProps) {
+function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf, onViewRunInfo, onDelete, onEdit }: VersionCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
     <div
@@ -742,6 +745,33 @@ function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf
               View PDF
             </button>
           )}
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="transition-all duration-150"
+              title="Edit logbook"
+              style={{
+                background: 'rgba(59, 130, 246, 0.15)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '6px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#2563eb',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(59, 130, 246, 0.28)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+              </svg>
+            </button>
+          )}
           {onDelete && (
             confirmingDelete ? (
               <div className="flex items-center gap-1">
@@ -797,21 +827,24 @@ function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf
                   setConfirmingDelete(true);
                 }}
                 className="transition-all duration-150"
+                title="Delete logbook"
                 style={{
                   background: 'rgba(220, 38, 38, 0.1)',
                   border: 'none',
                   borderRadius: '0.5rem',
-                  padding: '6px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '12px',
-                  fontWeight: 500,
+                  padding: '6px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   color: '#b91c1c',
                   cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.18)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)')}
               >
-                Delete
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
               </button>
             )
           )}
