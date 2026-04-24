@@ -7,6 +7,7 @@ import type {
 } from '@logbook-writer/shared-types/src/constraint-analysis';
 import type { PreferenceType } from '@logbook-writer/shared-types/src/solver';
 import type {
+  AssignmentModelValue,
   CrewDescriptor,
   PreferenceDescriptor,
   RoleDescriptor,
@@ -106,7 +107,8 @@ export function analyzeSolverResult({
     ...checkRoleBlocks(context),
     ...checkConsecutivePolicies(context),
     ...checkRoleAccessGuards(context),
-    ...checkCrewGaps(context)
+    ...checkCrewGaps(context),
+    ...checkAssignmentModelGovernance(context),
   );
 
   let preferenceSummary: PreferenceSatisfactionSummary | undefined;
@@ -305,6 +307,69 @@ function checkCrewQuotas(context: AnalyzerContext): ConstraintViolation[] {
           requiredMinutes: quota.requiredMin, 
           actualMinutes: minutesInWindow 
         },
+      });
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Verify assignments only exist when a governing record is present.
+ * HOURLY/WINDOW/HOURLY_OR_WINDOW: role must have >=1 RoleCoverageWindow for the date.
+ * DAILY: each (crew, role) must have a CrewRoleQuota for the date.
+ * SOLVER / HOURLY_AND_SOLVER are exempt — solver-driven assignments need no governing record.
+ */
+function checkAssignmentModelGovernance(context: AnalyzerContext): ConstraintViolation[] {
+  const { solverInput, roleAssignments, crewAssignmentsByRole, roleById } = context;
+  const crewById = new Map(solverInput.crew.map((crew) => [crew.id, crew] as const));
+  const violations: ConstraintViolation[] = [];
+
+  const rolesWithCoverageWindow = new Set<number>(
+    solverInput.coverageWindows.map((w) => w.roleId),
+  );
+
+  const buildQuotaKey = (crewId: string, roleId: number) => `${crewId}::${roleId}`;
+  const quotaKeys = new Set<string>(
+    solverInput.crewQuotas.map((q) => buildQuotaKey(q.crewId, q.roleId)),
+  );
+
+  const windowModels = new Set<AssignmentModelValue>(['HOURLY', 'WINDOW', 'HOURLY_OR_WINDOW']);
+
+  for (const [roleId, assignments] of roleAssignments.entries()) {
+    if (assignments.length === 0) continue;
+    const role = roleById.get(roleId);
+    if (!role) continue;
+    if (!windowModels.has(role.assignmentModel)) continue;
+    if (rolesWithCoverageWindow.has(roleId)) continue;
+
+    violations.push({
+      severity: 'warning',
+      category: 'assignment-model',
+      message:
+        `${role.displayName} (${role.assignmentModel}) has ${assignments.length} ` +
+        `assignment${assignments.length === 1 ? '' : 's'} but no coverage window exists for this date.`,
+      details: { roleId, assignmentModel: role.assignmentModel, assignmentCount: assignments.length },
+    });
+  }
+
+  for (const [crewId, roleMap] of crewAssignmentsByRole.entries()) {
+    const crew = crewById.get(crewId);
+    if (!crew) continue;
+    for (const [roleId, assignments] of roleMap.entries()) {
+      if (assignments.length === 0) continue;
+      const role = roleById.get(roleId);
+      if (!role) continue;
+      if (role.assignmentModel !== 'DAILY') continue;
+      if (quotaKeys.has(buildQuotaKey(crewId, roleId))) continue;
+
+      violations.push({
+        severity: 'warning',
+        category: 'assignment-model',
+        message:
+          `${crew.name} has ${assignments.length} ${role.displayName} ` +
+          `assignment${assignments.length === 1 ? '' : 's'} (DAILY) but no quota exists for this crew on this date.`,
+        details: { crewId, roleId, assignmentModel: role.assignmentModel, assignmentCount: assignments.length },
       });
     }
   }

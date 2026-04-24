@@ -13,6 +13,7 @@ export type ConstraintViolationCategory =
   | 'preference'
   | 'consistency'
   | 'gap'
+  | 'assignment-model'
   | 'other';
 
 export interface ConstraintViolation {
