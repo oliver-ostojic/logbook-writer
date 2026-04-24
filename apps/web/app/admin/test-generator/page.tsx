@@ -736,12 +736,12 @@ function formatShortDate(iso: string): string {
 
 function PublishStrip({ days }: { days: PublishDay[] }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 12, padding: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 12, padding: 10 }}>
       {days.map(d => {
         const c = STATUS_COLORS[d.status];
         const pulsing = d.status === 'solving' || d.status === 'publishing';
         return (
-          <div key={d.date} title={d.error ? `${d.date}: ${d.error}` : `${d.date} — ${STATUS_LABEL[d.status]}`} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10, padding: '8px 10px', minWidth: 96, display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'var(--font-open-sans)' }}>
+          <div key={d.date} title={d.error ? `${d.date}: ${d.error}` : `${d.date} — ${STATUS_LABEL[d.status]}`} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'var(--font-open-sans)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className={pulsing ? 'animate-pulse' : undefined} style={{ width: 8, height: 8, borderRadius: '50%', background: c.dot }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: '#2C2C2C' }}>{formatShortDate(d.date)}</span>

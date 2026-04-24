@@ -397,6 +397,9 @@ export default function Home() {
   const [preferencesPage, setPreferencesPage] = useState(1);
   const [runsPage, setRunsPage] = useState(1);
   const [logbooksPage, setLogbooksPage] = useState(1);
+  const [logbooksDeleteMode, setLogbooksDeleteMode] = useState(false);
+  const [logbooksSelectedIds, setLogbooksSelectedIds] = useState<Set<string>>(new Set());
+  const logbooksDragRef = useRef<{ active: boolean; adding: boolean } | null>(null);
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('recent');
   const [activityUserFilter, setActivityUserFilter] = useState<'everyone' | 'mine'>('everyone');
   const [activityPage, setActivityPage] = useState(1);
@@ -1181,20 +1184,92 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col">
           {/* Embedded search header with title, add button, and pagination */}
-          {hasData && renderEmbeddedSearchHeader(searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick, `${type}-header`, type === 'logbooks' ? 'logbooks-add-btn' : undefined)}
+          {hasData && renderEmbeddedSearchHeader(
+            searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick,
+            `${type}-header`,
+            type === 'logbooks' ? 'logbooks-add-btn' : undefined,
+            type === 'logbooks' ? (
+              logbooksDeleteMode ? (
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                    <button
+                      onClick={async () => {
+                        await Promise.all(
+                          Array.from(logbooksSelectedIds).map(id =>
+                            fetch(`${API_URL}/schedule/logbook/${id}`, { method: 'DELETE' }).catch(() => {})
+                          )
+                        );
+                        setApiLogbooks((prev: any[]) => prev.filter((l: any) => !logbooksSelectedIds.has(l.id)));
+                        setLogbooksSelectedIds(new Set());
+                        setLogbooksDeleteMode(false);
+                        if (selectedItem && logbooksSelectedIds.has(selectedItem.id)) setSelectedItem(null);
+                      }}
+                      style={{ ...aiGlassLightContentStyle('9999px', 0.4), padding: '0 14px', height: '36px', fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: logbooksSelectedIds.size > 0 ? '#dc2626' : '#6B6B6B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      Confirm{logbooksSelectedIds.size > 0 ? ` (${logbooksSelectedIds.size})` : ''}
+                    </button>
+                  </div>
+                  <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                    <button
+                      onClick={() => { setLogbooksSelectedIds(new Set()); setLogbooksDeleteMode(false); }}
+                      style={{ ...aiGlassLightContentStyle('9999px', 0.4), padding: '0 14px', height: '36px', fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#6B6B6B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
+                  <button
+                    onClick={() => setLogbooksDeleteMode(true)}
+                    style={{ ...aiGlassLightContentStyle('9999px', 0.4), padding: '0 14px', height: '36px', fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#6B6B6B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )
+            ) : undefined,
+          )}
 
           {/* Paginated list */}
           <div data-tutorial-id={`${type}-list`} className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
             {paginatedData.length > 0 ? (
-              paginatedData.map((item) => {
+              paginatedData.map((item, itemIndex) => {
                 const itemName = getItemName(item);
                 const subtitle = getSubtitle(item);
                 const isSelected = selectedItem?.id === item.id && selectedItem?.type === type;
+                const isMarkedForDelete = type === 'logbooks' && logbooksDeleteMode && logbooksSelectedIds.has(item.id);
+                const inDeleteMode = type === 'logbooks' && logbooksDeleteMode;
                 return (
-                  <GlassPillButton
+                  <div
                     key={`${type}-${item.id}`}
-                    isSelected={isSelected}
-                    onClick={() => {
+                    style={{ touchAction: inDeleteMode ? 'none' : undefined, userSelect: 'none' }}
+                    onPointerDown={inDeleteMode ? (e) => {
+                      e.preventDefault();
+                      const adding = !logbooksSelectedIds.has(item.id);
+                      logbooksDragRef.current = { active: true, adding };
+                      setLogbooksSelectedIds(prev => {
+                        const next = new Set(prev);
+                        if (adding) next.add(item.id); else next.delete(item.id);
+                        return next;
+                      });
+                    } : undefined}
+                    onPointerEnter={inDeleteMode ? () => {
+                      if (!logbooksDragRef.current?.active) return;
+                      const { adding } = logbooksDragRef.current;
+                      setLogbooksSelectedIds(prev => {
+                        const next = new Set(prev);
+                        if (adding) next.add(item.id); else next.delete(item.id);
+                        return next;
+                      });
+                    } : undefined}
+                    onPointerUp={inDeleteMode ? () => { logbooksDragRef.current = null; } : undefined}
+                  >
+                  <GlassPillButton
+                    isSelected={isMarkedForDelete ? false : isSelected}
+                    className={inDeleteMode ? 'ios-wiggle' : ''}
+                    style={isMarkedForDelete ? { background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', animationDelay: `${(itemIndex * 0.04) % 0.32}s` } : inDeleteMode ? { animationDelay: `${(itemIndex * 0.04) % 0.32}s` } : undefined}
+                    onClick={inDeleteMode ? () => {} : () => {
                       if (isSelected) {
                         setSelectedItem(null);
                       } else if (type === 'logbooks') {
@@ -1264,6 +1339,7 @@ export default function Home() {
                       )}
                     </div>
                   </GlassPillButton>
+                  </div>
                 );
               })
             ) : (
@@ -1790,6 +1866,7 @@ export default function Home() {
     onAddClick: () => void,
     tutorialId?: string,
     addBtnTutorialId?: string,
+    extraControls?: React.ReactNode,
   ) => {
     const showPagination = totalPages > 1;
 
@@ -1908,6 +1985,7 @@ export default function Home() {
                 </div>
               </div>
             )}
+            {extraControls}
           </div>
         </GlassPillCard>
       </div>
@@ -2115,6 +2193,7 @@ export default function Home() {
 
   return (
     <>
+    <style dangerouslySetInnerHTML={{ __html: `@keyframes iosWiggle{0%{transform:rotate(-0.08deg)}25%{transform:rotate(0.08deg)}50%{transform:rotate(-0.08deg)}75%{transform:rotate(0.08deg)}100%{transform:rotate(-0.08deg)}}.ios-wiggle{animation:iosWiggle 0.3s ease-in-out infinite}` }} />
     <DashboardLayout
       rightPanelVisible={activeView === 'home' && !!selectedItem}
       leftPanelWidth={isPdfView ? '40%' : undefined}
