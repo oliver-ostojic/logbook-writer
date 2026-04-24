@@ -215,13 +215,30 @@ function checkCrewShiftBounds(context: AnalyzerContext): ConstraintViolation[] {
 }
 
 /**
- * Check coverage windows - ensure each window has required crew coverage.
- * CoverageWindowDescriptor: {roleId, startMin, endMin, crewPerMinute}
- * For each task-length-sized chunk within the window, check we have enough crew assigned.
+ * Check coverage windows against each window's constraintRule (MIN/MAX/EXACTLY).
+ * Scans task-length slots, merges contiguous violated slots into ranges,
+ * and emits at most one "under" and one "over" violation per role.
  */
 function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, roleAssignments, roleById } = context;
-  const violations: ConstraintViolation[] = [];
+
+  type Range = { start: number; end: number };
+  const underByRole = new Map<number, Range[]>();
+  const overByRole = new Map<number, Range[]>();
+
+  const pushRange = (target: Map<number, Range[]>, roleId: number, slotStart: number, slotEnd: number) => {
+    const ranges = target.get(roleId);
+    if (!ranges) {
+      target.set(roleId, [{ start: slotStart, end: slotEnd }]);
+      return;
+    }
+    const last = ranges[ranges.length - 1];
+    if (last.end === slotStart) {
+      last.end = slotEnd;
+    } else {
+      ranges.push({ start: slotStart, end: slotEnd });
+    }
+  };
 
   for (const window of solverInput.coverageWindows) {
     const role = roleById.get(window.roleId);
@@ -230,38 +247,51 @@ function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
     const taskLength = role.taskLength;
     if (taskLength <= 0) continue;
 
-    // Check each task-length-sized slot within the window
     for (let slotStart = window.startMin; slotStart < window.endMin; slotStart += taskLength) {
       const slotEnd = Math.min(slotStart + taskLength, window.endMin);
-      
-      // Count unique crew covering this slot
+
       const crewInSlot = new Set<string>();
       for (const assignment of roleAssignments.get(window.roleId) ?? []) {
-        // Assignment overlaps slot if it starts before slot ends and ends after slot starts
         if (assignment.startMinute < slotEnd && assignment.endMinute > slotStart) {
           crewInSlot.add(assignment.crewId);
         }
       }
 
-      if (crewInSlot.size < window.crewPerMinute) {
-        violations.push({
-          severity: 'error',
-          category: 'coverage',
-          message: `${role.displayName} coverage window (${formatTime(window.startMin)}–${formatTime(window.endMin)}) requires ${window.crewPerMinute} crew but only ${crewInSlot.size} at ${formatTime(slotStart)}.`,
-          details: { 
-            roleId: role.id, 
-            windowStart: window.startMin,
-            windowEnd: window.endMin,
-            slotStart,
-            required: window.crewPerMinute, 
-            actual: crewInSlot.size 
-          },
-        });
-        // Only report first violation per window to avoid spam
-        break;
-      }
+      const count = crewInSlot.size;
+      const required = window.crewPerMinute;
+      const rule = window.constraintRule;
+
+      const isUnder = (rule === 'MIN' || rule === 'EXACTLY') && count < required;
+      const isOver = (rule === 'MAX' || rule === 'EXACTLY') && count > required;
+
+      if (isUnder) pushRange(underByRole, role.id, slotStart, slotEnd);
+      if (isOver) pushRange(overByRole, role.id, slotStart, slotEnd);
     }
   }
+
+  const violations: ConstraintViolation[] = [];
+
+  const emit = (byRole: Map<number, Range[]>, kind: 'under' | 'over') => {
+    for (const [roleId, ranges] of byRole) {
+      const role = roleById.get(roleId);
+      if (!role) continue;
+      const rangeText = ranges.map((r) => formatTimeRange(r.start, r.end)).join(' and ');
+      const label = kind === 'under' ? 'Insufficient crew' : 'Excess crew';
+      violations.push({
+        severity: 'warning',
+        category: 'window',
+        message: `${role.displayName}: ${label} during ${rangeText}.`,
+        details: {
+          roleId,
+          kind,
+          ranges: ranges.map((r) => ({ startMin: r.start, endMin: r.end })),
+        },
+      });
+    }
+  };
+
+  emit(underByRole, 'under');
+  emit(overByRole, 'over');
 
   return violations;
 }
