@@ -233,8 +233,9 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
     },
   ];
 
-  // Extract quota warnings
+  // Extract quota warnings and violations
   const quotaWarnings = metadata?.quotaWarnings ?? [];
+  const violations = metadata?.violations ?? [];
 
   // Helper to abbreviate crew name (First Last -> First L.)
   function abbreviateName(fullName: string): string {
@@ -319,6 +320,32 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
                       {' '}could only get {(warning.actualMinutes / 60).toFixed(1)}h of {warning.roleCode}{' '}
                       <span className="text-gray-400">(needed {(warning.requiredMinutes / 60).toFixed(1)}h)</span>
                     </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Violations Section (if any) */}
+      {violations.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900">
+                {violations.length} constraint violation{violations.length === 1 ? '' : 's'} detected
+              </p>
+              <ul className="mt-2 text-sm text-gray-600 space-y-1">
+                {violations.map((violation, idx) => (
+                  <li key={idx} className="flex items-center gap-1.5">
+                    <span className="text-red-400">•</span>
+                    <span>{violation}</span>
                   </li>
                 ))}
               </ul>

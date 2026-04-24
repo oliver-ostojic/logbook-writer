@@ -92,6 +92,7 @@ export interface LogbookMetadata {
     averageSatisfaction: number;
   };
   quotaWarnings?: QuotaWarning[];
+  violations?: string[];
   generatedAt: string;
   inputHash?: string; // Hash of shifts + constraints for change detection
 }
@@ -290,6 +291,7 @@ export async function saveLogbookWithMetadata(
       averageSatisfaction: Math.round((fullCrewRuleStats.avgSatisfaction / 100) * 1000) / 1000,
     },
     quotaWarnings: solverOutput.metadata.quotaWarnings,
+    violations: solverOutput.metadata.violations,
     generatedAt: new Date().toISOString(),
     inputHash, // Hash of shifts + constraints for change detection
   };

@@ -76,6 +76,7 @@ export type LogbookMetadata = {
     averageSatisfaction: number;
   };
   quotaWarnings?: QuotaWarning[];
+  violations?: string[];
   generatedAt: string;
 };
 
