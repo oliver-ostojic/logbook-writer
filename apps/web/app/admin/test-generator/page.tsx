@@ -16,6 +16,7 @@ import { logout } from '@/lib/api/auth';
 import { authFetch } from '@/lib/api/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const STORAGE_KEY = 'test-generator-last-inputs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -383,10 +384,44 @@ export default function TestGeneratorPage() {
   const [publishing, setPublishing] = useState(false);
   const [publishState, setPublishState] = useState<PublishDay[] | null>(null);
 
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (typeof saved.storeId === 'number') setStoreId(saved.storeId);
+        if (typeof saved.dayCount === 'number') setDayCount(saved.dayCount);
+        if (typeof saved.crewCountMin === 'number') setCrewCountMin(saved.crewCountMin);
+        if (typeof saved.crewCountMax === 'number') setCrewCountMax(saved.crewCountMax);
+        if (typeof saved.pctVariance === 'number') setPctVariance(saved.pctVariance);
+        if (Array.isArray(saved.startTimes)) setStartTimes(saved.startTimes);
+        if (Array.isArray(saved.shiftLengths)) setShiftLengths(saved.shiftLengths);
+        if (Array.isArray(saved.quotas)) setQuotas(saved.quotas);
+        if (Array.isArray(saved.coverage)) setCoverage(saved.coverage);
+        if (Array.isArray(saved.windowCoverage)) setWindowCoverage(saved.windowCoverage);
+      }
+    } catch { /* ignore corrupt state */ }
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        storeId, dayCount, crewCountMin, crewCountMax, pctVariance,
+        startTimes, shiftLengths, quotas, coverage, windowCoverage,
+      }));
+    } catch { /* quota exceeded or unavailable */ }
+  }, [hasHydrated, storeId, dayCount, crewCountMin, crewCountMax, pctVariance,
+      startTimes, shiftLengths, quotas, coverage, windowCoverage]);
+
   useEffect(() => {
     authFetch(`${API_URL}/stores`).then(r => r.json()).then((data: Store[]) => {
       setStores(data);
-      if (data.length > 0) setStoreId(data[0].id);
+      // Only default to first store if no hydrated storeId was loaded.
+      if (data.length > 0) setStoreId(prev => prev || data[0].id);
     }).catch(() => {});
   }, []);
 
