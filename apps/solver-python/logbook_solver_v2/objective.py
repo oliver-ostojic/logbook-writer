@@ -16,6 +16,7 @@ DEBUG = False
 DEFAULT_ASSIGNMENT_REWARD = 100  # Reward for each assignment (fills slots) - HIGH to prioritize coverage
 DEFAULT_HALF_SIZE_PENALTY = 70   # Half-segment = 30 net reward (still positive, but 2 halves = 60 < 1 full = 100)
 DEFAULT_CONSECUTIVE_BONUS = 10  # Bonus for adjacent same-role assignments (PREFERRED policy)
+DEFAULT_CONSECUTIVE_GAP_PENALTY = 200  # Penalty per asymmetric adjacent pair for PREFERRED policy (discourages splits)
 DEFAULT_HOUR_ALIGNED_BONUS = 15  # Bonus for starting 60min tasks at :00 (not :30)
 
 # Fairness objective parameters (tuned via weight testing - 300/300 gives best balance)
@@ -114,6 +115,9 @@ def apply(solver: "SolverV2") -> None:
 
     # Add consecutive bonus for PREFERRED policy roles
     consecutive_bonus_terms = _consecutive_role_bonus(solver)
+
+    # Add gap penalty for PREFERRED policy roles (costs the solver when it splits a PREFERRED role)
+    consecutive_gap_penalty_terms = _consecutive_role_gap_penalty(solver)
     
     # Add TIMING preference bonuses (gradient-based early/late preference)
     timing_bonus_terms = _timing_preference_bonus(solver)
@@ -155,6 +159,7 @@ def apply(solver: "SolverV2") -> None:
     rewards = sum(assignment_rewards) if assignment_rewards else 0
     preferences = sum(weighted_terms) if weighted_terms else 0
     consecutive_bonus = sum(consecutive_bonus_terms) if consecutive_bonus_terms else 0
+    consecutive_gap_penalty = sum(consecutive_gap_penalty_terms) if consecutive_gap_penalty_terms else 0
     aligned_bonus = sum(hour_aligned_bonuses) if hour_aligned_bonuses else 0
     timing_bonus = sum(timing_bonus_terms) if timing_bonus_terms else 0
     hour_pref_bonus = sum(hour_pref_terms) if hour_pref_terms else 0
@@ -164,8 +169,8 @@ def apply(solver: "SolverV2") -> None:
     gap_penalties = sum(gap_filler_penalties) if gap_filler_penalties else 0
     soft_constraint_penalties = sum(soft_penalties) if soft_penalties else 0
     quota_penalties = sum(quota_shortfall_penalties) if quota_shortfall_penalties else 0
-    
-    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus + fairness_bonus + fairness_rotation - gap_penalties - soft_constraint_penalties - quota_penalties)
+
+    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus + fairness_bonus + fairness_rotation - gap_penalties - soft_constraint_penalties - quota_penalties - consecutive_gap_penalty)
 
 
 def _consecutive_role_bonus(solver: "SolverV2") -> List:
@@ -232,8 +237,74 @@ def _consecutive_role_bonus(solver: "SolverV2") -> List:
                         # (the maximization will push it to be 1)
                         
                         bonus_terms.append(consecutive_bonus * adj_var)
-    
+
     return bonus_terms
+
+
+def _consecutive_role_gap_penalty(solver: "SolverV2") -> List:
+    """
+    Create penalty terms for splits of roles with consecutivePolicy = PREFERRED.
+
+    For each crew+role with PREFERRED policy, iterate adjacent slot pairs (S, S+1) that
+    both have assignment variables. If exactly ONE of the two slots is assigned (i.e. the
+    crew does this role at S but not S+1, or vice versa), a gap variable fires and adds
+    a penalty.
+
+    Why: the consecutive bonus alone only REWARDS consecutive assignments. It's too weak
+    to stop the solver from interleaving a NONE-policy role (like Product) between two
+    PREFERRED-policy assignments, because not splitting simply means "no bonus" rather
+    than "penalty". This function makes splits actively costly when a consecutive
+    placement was feasible.
+    """
+    model = solver.model
+    gap_penalty = solver.settings.get('consecutiveGapPenalty', DEFAULT_CONSECUTIVE_GAP_PENALTY)
+
+    penalty_terms = []
+
+    preferred_role_ids = set()
+    for role in solver.roles:
+        if role.get('consecutivePolicy') == 'PREFERRED':
+            preferred_role_ids.add(role['id'])
+
+    if not preferred_role_ids:
+        return penalty_terms
+
+    vars_by_crew_role: Dict[Tuple[int, int], Dict[int, list]] = defaultdict(dict)
+
+    for key, var in solver.assignment_vars.items():
+        crew_id, slot, role_id, task_slots = key
+        if role_id in preferred_role_ids:
+            if slot not in vars_by_crew_role[(crew_id, role_id)]:
+                vars_by_crew_role[(crew_id, role_id)][slot] = []
+            vars_by_crew_role[(crew_id, role_id)][slot].append(var)
+
+    for (crew_id, role_id), slot_vars in vars_by_crew_role.items():
+        sorted_slots = sorted(slot_vars.keys())
+
+        for i in range(len(sorted_slots) - 1):
+            slot = sorted_slots[i]
+            next_slot = sorted_slots[i + 1]
+
+            if next_slot != slot + 1:
+                continue
+
+            current_vars = slot_vars[slot]
+            next_vars = slot_vars[next_slot]
+
+            # Mutual-exclusion elsewhere guarantees each sum is 0 or 1.
+            current_sum = sum(current_vars)
+            next_sum = sum(next_vars)
+
+            gap_var = model.NewBoolVar(
+                f'gap_pen_c{crew_id}_r{role_id}_s{slot}_s{next_slot}'
+            )
+            # gap_var == 1 iff exactly one side is assigned (XOR).
+            model.Add(gap_var >= current_sum - next_sum)
+            model.Add(gap_var >= next_sum - current_sum)
+
+            penalty_terms.append(gap_penalty * gap_var)
+
+    return penalty_terms
 
 
 # Default weight for timing preference bonuses
