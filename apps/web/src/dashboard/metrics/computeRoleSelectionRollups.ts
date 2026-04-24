@@ -12,8 +12,8 @@ import type {
   RoleInput,
 } from '../types';
 import type { RoleRuleInput } from '../buildDashboardSnapshot';
-import { mean, percentage } from './statUtils';
-import { buildLorenzCurve } from './lorenzCurve';
+import { percentage } from './statUtils';
+import { buildLorenzCurve, calculateGiniFromLorenzCurve } from './lorenzCurve';
 import { buildBucketDistribution } from './bucketDistribution';
 
 /**
@@ -76,34 +76,23 @@ export function computeRoleSelectionRollups(
       .filter(([crewId, minutes]) => minutes > 0 && !forbiddenCrew.has(crewId))
       .length;
 
-    // Fairness metrics - collect from roleStats (which now includes calculated gini for ALL roles)
-    let avgFairnessIndexPct: number | null = null;
-    let avgGiniCoefficient: number | null = null;
-
-    const giniCoefficients: number[] = [];
-
-    // Collect gini coefficients from roleStats (computed per-day from assignments)
-    logbooks.forEach(lb => {
-      const roleStats = lb.roleStats.find(rs => rs.roleId === roleId);
-      if (roleStats && roleStats.giniCoefficient !== null && roleStats.giniCoefficient !== undefined) {
-        giniCoefficients.push(roleStats.giniCoefficient);
-      }
-    });
-
-    // Calculate averages
-    if (giniCoefficients.length > 0) {
-      avgGiniCoefficient = mean(giniCoefficients);
-      // Convert gini to fairness index: (1 - gini) * 100
-      avgFairnessIndexPct = (1 - avgGiniCoefficient) * 100;
-    }
-
-    // Lorenz curve data - use minutes PER DAY WORKED to match fairness calculation
+    // Lorenz curve data - use minutes PER DAY WORKED across the selection
     // This normalizes for crew who work different numbers of days
     const minutesPerDayByCrew = computeMinutesPerDayWorkedByCrewOnRole(
       roleId,
       parsedLogbooks
     );
     const lorenzCurveData = buildLorenzCurve(minutesPerDayByCrew);
+
+    // Fairness metrics - derive gini from the Lorenz curve so the number matches
+    // the curve shape and correctly credits rotation across days
+    let avgFairnessIndexPct: number | null = null;
+    let avgGiniCoefficient: number | null = null;
+
+    if (lorenzCurveData.length > 2) {
+      avgGiniCoefficient = calculateGiniFromLorenzCurve(lorenzCurveData);
+      avgFairnessIndexPct = (1 - avgGiniCoefficient) * 100;
+    }
 
     // Bucket distribution - also use normalized data for consistency
     const bucketDistribution = buildBucketDistribution(minutesPerDayByCrew);
