@@ -264,7 +264,7 @@ export default function AdminPage() {
                       onClick={() => {}}
                     />
                     <NavStatsCard
-                      label="Test Gen"
+                      label="Test Generator"
                       textOnly
                       isActive={false}
                       onClick={() => router.push('/admin/test-generator')}

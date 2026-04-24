@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CardContainer,
   GlassPillCard,
@@ -9,6 +10,9 @@ import {
   aiGlassLightBorderStyle,
   aiGlassLightContentStyle,
 } from '@/components/ui/ai-glass';
+import { NavStatsCard } from '@/app/stores/[storeId]/home/components';
+import { useAuthStore } from '@/lib/authStore';
+import { logout } from '@/lib/api/auth';
 import { authFetch } from '@/lib/api/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -329,6 +333,30 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function TestGeneratorPage() {
+  const router = useRouter();
+  const { user, logout: logoutStore } = useAuthStore();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
+      if (isOutsideButton && isOutsideDropdown) setIsUserMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    try { await logout(); } catch { /* ignore */ }
+    logoutStore();
+    router.push('/login');
+  };
+
   const [stores, setStores] = useState<Store[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [storeId, setStoreId] = useState<number>(0);
@@ -499,9 +527,28 @@ export default function TestGeneratorPage() {
               {/* Header */}
               <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
                 <GlassPillCard padding="8px" borderRadius="1.5rem 1.5rem 0 0" borderOpacity={0.08} contentStyle={{ width: '100%' }}>
-                  <div style={{ padding: '8px 10px' }}>
-                    <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: 15, fontWeight: 600, color: '#2C2C2C' }}>Test Generator</span>
-                  </div>
+                  <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
+                    <NavStatsCard
+                      label="Admin"
+                      textOnly
+                      isActive={false}
+                      onClick={() => router.push('/admin')}
+                    />
+                    <NavStatsCard
+                      label="Test Generator"
+                      textOnly
+                      isActive={true}
+                      onClick={() => {}}
+                    />
+                    <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
+                      <NavStatsCard
+                        label="Account"
+                        textOnly
+                        isActive={isUserMenuOpen}
+                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      />
+                    </div>
+                  </nav>
                 </GlassPillCard>
               </div>
 
@@ -592,6 +639,42 @@ export default function TestGeneratorPage() {
           </div>
         </div>
       </div>
+
+      {/* Account dropdown */}
+      {isUserMenuOpen && userMenuRef.current && (
+        <div
+          ref={(el) => {
+            userDropdownRef.current = el;
+            if (el && userMenuRef.current) {
+              const rect = userMenuRef.current.getBoundingClientRect();
+              el.style.top = `${rect.bottom + 16}px`;
+              el.style.left = `${rect.left}px`;
+              el.style.width = `${rect.width}px`;
+            }
+          }}
+          className="ai-glass-border"
+          style={{ ...aiGlassLightBorderStyle('1rem'), position: 'fixed', zIndex: 99999 }}
+        >
+          <div style={{ ...aiGlassLightContentStyle('1rem', 0.95), padding: '8px', position: 'relative', zIndex: 5 }}>
+            {user && (
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(0, 0, 0, 0.08)', marginBottom: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 600, color: '#2C2C2C' }}>{user.name}</div>
+                <div style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#6B6B6B', marginTop: '2px' }}>{user.username}</div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full transition-all"
+              style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#2C2C2C', textAlign: 'left' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

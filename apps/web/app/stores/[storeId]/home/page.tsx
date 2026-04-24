@@ -611,6 +611,7 @@ export default function Home() {
         versionCount: l.versionCount,
         crewCount: l.crewCount ?? null,
         prefsMet: l.metadata?.percentMet ?? null,
+        violationCount: l.violationCount ?? null,
       }))
     : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false, versionCount: 1, crewCount: null, prefsMet: null }));
 
@@ -1229,9 +1230,9 @@ export default function Home() {
                         return (
                           <div className="flex items-center gap-3">
                             <div className="flex items-center justify-between gap-2 flex-1">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Versions</span>
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Violations</span>
                               <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 400 }}>
-                                {lb.versionCount ?? '—'}
+                                {lb.violationCount ?? '—'}
                               </span>
                             </div>
                             {divider}

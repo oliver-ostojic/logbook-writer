@@ -1151,6 +1151,11 @@ export function registerLogbookRoutes(app: FastifyInstance) {
               select: { crewId: true },
               distinct: ['crewId'],
             },
+            Run: {
+              select: { violations: true, createdAt: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
           },
           orderBy: { date: 'desc' },
           take: limitNum,
@@ -1170,6 +1175,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
           createdAt: lb.createdAt.toISOString(),
           hasSupersededVersions: lb.supersedes.length > 0,
           crewCount: lb.Assignment.length,
+          violationCount: lb.Run[0]?.violations != null ? (Array.isArray(lb.Run[0].violations) ? lb.Run[0].violations.length : 0) : null,
           metadata: lb.LogPreferenceMetadata ? {
             avgSatisfaction: lb.LogPreferenceMetadata.avgSatisfaction,
             fairnessGrade: lb.LogPreferenceMetadata.fairnessGrade,
