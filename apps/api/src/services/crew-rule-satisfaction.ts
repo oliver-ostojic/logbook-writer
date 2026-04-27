@@ -185,7 +185,6 @@ export function calculateCrewRuleSatisfaction(
       'MIN_SHIFT_LENGTH_FOR_ACCESS',
       'CANNOT_ASSIGN_DURING_STORE_HOUR_X',
       'DISTRIBUTION_BETWEEN_ROLE_X',  // Need to evaluate even if only target role was assigned
-      'MAX_CONSECUTIVE_MINUTES',       // Need to evaluate even if role wasn't assigned (satisfaction = 0)
       'CANNOT_BE_ASSIGNED_AFTER',      // Need to evaluate: no role = preference trivially met
     ].includes(rule.roleRule.type);
 
@@ -270,9 +269,9 @@ function calculateSingleRuleSatisfaction(
     }
 
     case 'MAX_CONSECUTIVE_MINUTES': {
-      // True if all consecutive blocks of this role are <= valueInt minutes
       const maxMinutes = valueInt ?? Infinity;
       const result = calculateMaxConsecutiveMinutes(roleId, crewAssignments, maxMinutes);
+      if (result === null) return null;  // role not assigned → ineligible
       satisfaction = result.satisfaction;
       details = result.details;
       break;
@@ -617,11 +616,11 @@ function calculateMaxConsecutiveMinutes(
   roleId: number,
   crewAssignments: AssignmentRecord[],
   maxMinutes: number
-): { satisfaction: number; details: string } {
+): { satisfaction: number; details: string } | null {
   const blocks = getConsecutiveBlocks(roleId, crewAssignments);
-  
+
   if (blocks.length === 0) {
-    return { satisfaction: 1.0, details: 'No blocks of this role' };
+    return null;  // role not assigned → ineligible
   }
 
   const allBlocksUnderMax = blocks.every(b => b.duration <= maxMinutes);
