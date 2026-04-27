@@ -72,8 +72,6 @@ def normalize_payload(raw_payload: Dict[str, Any]) -> Dict[str, Any]:
     hourly_requirements = _build_hourly_requirements(payload.get('hourlyRequirements', []), role_id_map)
     window_requirements = _build_window_requirements(payload.get('coverageWindows', []), role_id_map)
     daily_requirements = _build_daily_requirements(payload.get('crewRoleRequirements', []), role_id_map)
-    preferences = _build_preferences(payload.get('preferences', []), role_id_map)
-
     normalized = {
         'store': store,
         'roles': roles,
@@ -81,7 +79,6 @@ def normalize_payload(raw_payload: Dict[str, Any]) -> Dict[str, Any]:
         'hourlyRequirements': hourly_requirements,
         'windowRequirements': window_requirements,
         'dailyRequirements': daily_requirements,
-        'preferences': preferences,
     }
 
     for passthrough_key in ('date', 'timeLimitSeconds', 'settings', 'fairnessTrackers', 'fairnessHistory', 'shiftHistory'):
@@ -217,9 +214,6 @@ def _collect_role_codes(payload: Dict[str, Any]) -> Iterable[str]:
         for role in crew.get('eligibleRoles') or []:
             add(role)
 
-    for pref in payload.get('preferences', []):
-        add(pref.get('roleCode') or pref.get('role'))
-
     for req in payload.get('crewRoleRequirements', []):
         add(req.get('role'))
 
@@ -319,24 +313,6 @@ def _build_daily_requirements(requirements: List[Dict[str, Any]], role_id_map: D
                 'crewId': req.get('crewId'),
                 'roleId': role_id,
                 'requiredMinutes': required_minutes,
-            }
-        )
-    return result
-
-
-def _build_preferences(preferences: List[Dict[str, Any]], role_id_map: Dict[str, int]) -> List[Dict[str, Any]]:
-    result = []
-    for pref in preferences:
-        role_id = _role_id_for_code(pref.get('roleCode') or pref.get('role'), role_id_map)
-        result.append(
-            {
-                'crewId': pref.get('crewId'),
-                'roleId': role_id,
-                'preferenceType': pref.get('preferenceType'),
-                'baseWeight': pref.get('baseWeight', 0),
-                'crewWeight': pref.get('crewWeight', 0),
-                'adaptiveBoost': pref.get('adaptiveBoost', 1.0),
-                'intValue': pref.get('intValue'),
             }
         )
     return result

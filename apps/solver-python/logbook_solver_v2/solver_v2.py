@@ -74,6 +74,10 @@ class SolverV2:
         
         # Fairness rotation terms - populated by fairness constraint, used by objective
         self.fairness_rotation_terms: List = []
+
+        # Intra-day distribution penalties - subtracted from objective when one crew
+        # exceeds fair share of a tracked role's total minutes within a single day.
+        self.intra_day_dist_penalties: List = []
         
         # Quota shortfall vars - populated by quota constraints, used by objective and result reporting
         self.quota_shortfall_vars: List = []
@@ -82,8 +86,6 @@ class SolverV2:
         self.hourly_requirements = self.payload.get('hourlyRequirements', [])
         self.window_requirements = self.payload.get('windowRequirements', [])
         self.crew_quotas = self.payload.get('crewQuotas', [])
-        
-        self.preferences = self.payload.get('preferences', [])
         
         # Solver settings (tunable parameters)
         self.settings = self.payload.get('settings', {})
@@ -113,8 +115,6 @@ class SolverV2:
         roles_sorted = sorted(self.roles, key=lambda r: int(r.get('id', 0)))
         self.role_code_by_id = {role['id']: role['code'] for role in roles_sorted}
         self.role_by_id = {role['id']: role for role in roles_sorted}
-        self.preference_map = self._build_preference_lookup()
-
         constraints.add_all(self)
         objective.apply(self)
 
@@ -283,10 +283,6 @@ class SolverV2:
 
         return result
 
-    def preference_weight(self, key: AssignmentKey) -> float:
-        crew_id, _slot, role_id, _task_slots = key
-        return self.preference_map.get((crew_id, role_id), 0.0)
-
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -307,19 +303,6 @@ class SolverV2:
             if role['id'] in half_block_role_ids:
                 role['canSplitForGaps'] = True
     
-    def _build_preference_lookup(self) -> Dict[Tuple[str, int], float]:
-        weights: Dict[Tuple[str, int], float] = defaultdict(float)
-        for pref in self.preferences:
-            crew_id = pref.get('crewId')
-            role_id = pref.get('roleId')
-            if not crew_id or role_id is None:
-                continue
-            base_weight = float(pref.get('baseWeight', 0))
-            crew_weight = float(pref.get('crewWeight', 0))
-            adaptive = float(pref.get('adaptiveBoost', 1.0) or 1.0)
-            weights[(crew_id, role_id)] += base_weight * crew_weight * adaptive
-        return weights
-
     @staticmethod
     def _status(status_code: int) -> str:
         mapping = {

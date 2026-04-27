@@ -41,6 +41,8 @@ export function computeCrewLogbookStats(
     const preferencesTotal = crew.preferences.total;
     const preferencesMet = crew.preferences.met;
     const satisfactionPct = percentage(preferencesMet, preferencesTotal);
+    // crew.preferences.satisfaction stores avgSatisfaction (0-100) from breakdownByCrew
+    const avgSatisfactionPct = preferencesTotal > 0 ? crew.preferences.satisfaction : 0;
 
     // Satisfaction rank
     const satisfactionRank = satisfactionRanks.get(crew.crewId) || 0;
@@ -70,6 +72,7 @@ export function computeCrewLogbookStats(
       preferencesTotal,
       preferencesMet,
       satisfactionPct,
+      avgSatisfactionPct,
       satisfactionRank,
       vsCrewAvgDelta,
       avgMinutesPerAssignmentByRole,

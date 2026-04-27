@@ -161,6 +161,7 @@ export interface CrewLogbookStats {
   preferencesTotal: number;    // Total preferences for this crew
   preferencesMet: number;      // Preferences met
   satisfactionPct: number;     // (preferencesMet / preferencesTotal) * 100
+  avgSatisfactionPct: number;  // Average of raw satisfaction scores * 100 (continuous, shows gradient quality)
 
   // Satisfaction rank
   satisfactionRank: number;    // Rank by satisfactionPct desc, ties broken by crewId asc
@@ -241,7 +242,8 @@ export interface CrewSelectionStats {
 
 export interface SatisfactionByDate {
   date: string;            // ISO date
-  satisfactionPct: number; // Satisfaction for this crew on this date
+  satisfactionPct: number; // Satisfaction for this crew on this date (binary met/total)
+  avgSatisfactionPct: number; // Continuous avg satisfaction (0-100) for box plot spread
 }
 
 // Role rollup across selected dates

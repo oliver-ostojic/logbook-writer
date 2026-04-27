@@ -41,7 +41,6 @@ export async function solverInputRoutes(fastify: FastifyInstance) {
           date: request.params.date,
           crewCount: solverInput.crew.length,
           roleCount: solverInput.roles.length,
-          preferenceCount: solverInput.preferences.length,
           constraintCounts: {
             coverageWindows: solverInput.coverageWindows.length,
             crewQuotas: solverInput.crewQuotas.length,

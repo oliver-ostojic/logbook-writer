@@ -47,8 +47,10 @@ interface StatGraphCardProps {
   children?: React.ReactNode;
 }
 
+const MAX_SPARKLINE_DOTS = 7;
+
 // Mini sparkline component - interactive line chart with dots
-function MiniSparkline({ 
+function MiniSparkline({
   data,
   selectedIndex,
   hoveredIndex,
@@ -57,8 +59,8 @@ function MiniSparkline({
   onSelectPoint,
   onHoverPoint,
   onHoverChart,
-}: { 
-  data: number[]; 
+}: {
+  data: number[];
   selectedIndex: number;
   hoveredIndex: number | null;
   lastHoveredIndex: number | null;
@@ -69,19 +71,19 @@ function MiniSparkline({
 }) {
   const width = 100;
   const height = 43;
-  const padding = 6; // Increased padding to prevent dot clipping at edges
-  
+  const padding = 6;
+
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  
+
   const dotRadius = 3;
   const dotStrokeWidth = 3;
-  const dotOuterRadius = dotRadius + dotStrokeWidth / 2; // Outer edge of the ring
+  const dotOuterRadius = dotRadius + dotStrokeWidth / 2;
 
-  // Calculate points
+  const isHighDensity = data.length > MAX_SPARKLINE_DOTS;
+
   const points = data.map((value, index) => {
-    // For single point, position at right edge; otherwise distribute across width
     const x = data.length === 1
       ? width - padding
       : padding + (index / (data.length - 1)) * (width - padding * 2);
@@ -89,7 +91,23 @@ function MiniSparkline({
     return { x, y };
   });
 
-  // Calculate line segments that stop at circle outer edges
+  // High density: just a line, no interaction
+  if (isHighDensity) {
+    return (
+      <svg width={width} height={height} className="flex-shrink-0">
+        <polyline
+          points={points.map(p => `${p.x},${p.y}`).join(' ')}
+          fill="none"
+          stroke="#464548"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  // Normal density: trimmed segments between dots
   const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i];
@@ -120,7 +138,6 @@ function MiniSparkline({
         onHoverPoint(null);
       }}
     >
-      {/* Line segments between dots */}
       {segments.map((seg, i) => (
         <line
           key={i}
@@ -133,14 +150,11 @@ function MiniSparkline({
           strokeLinecap="round"
         />
       ))}
-      {/* Dots */}
       {points.map((p, i) => {
         const isHovered = i === hoveredIndex;
         const isLastHovered = isHoveringChart && hoveredIndex === null && i === lastHoveredIndex;
-        const isSelected = i === selectedIndex;
-        // Show as selected only when not hovering anywhere in the chart
-        const showAsSelected = !isHoveringChart && isSelected;
-        
+        const showAsSelected = !isHoveringChart && i === selectedIndex;
+
         return (
           <circle
             key={i}
@@ -150,10 +164,7 @@ function MiniSparkline({
             fill="none"
             stroke={isHovered || isLastHovered || showAsSelected ? '#ef4444' : '#464548'}
             strokeWidth={dotStrokeWidth}
-            style={{
-              cursor: 'pointer',
-              transition: 'stroke 0.15s ease',
-            }}
+            style={{ cursor: 'pointer', transition: 'stroke 0.15s ease' }}
             onClick={() => onSelectPoint(i)}
             onMouseEnter={() => onHoverPoint(i)}
           />

@@ -208,6 +208,7 @@ export const PRODUCTION_SOLVER_SETTINGS = {
   fairnessBaseBoost: FAIRNESS_CONFIG.fairnessBaseBoost,
   fairnessBoost: FAIRNESS_CONFIG.fairnessBoost,
   fairnessPenalty: FAIRNESS_CONFIG.fairnessPenalty,
+  intraDayBlockSpreadPenalty: 2000,
 } as const;
 
 /**

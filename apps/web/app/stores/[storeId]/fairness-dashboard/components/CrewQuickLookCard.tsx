@@ -6,6 +6,7 @@ import { aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 interface SatisfactionByDate {
   date: string;
   satisfactionPct: number;
+  avgSatisfactionPct: number;
 }
 
 interface RoleMinutes {

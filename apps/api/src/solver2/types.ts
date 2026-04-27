@@ -1,5 +1,4 @@
-import { AssignmentModel, BankingStatus, ConsecutivePolicy, RoleRuleType, ConstraintType } from '@prisma/client';
-import { PreferenceType } from '@logbook-writer/shared-types';
+import { AssignmentModel, ConsecutivePolicy, RoleRuleType, ConstraintType } from '@prisma/client';
 
 export type AssignmentModelValue = AssignmentModel | 'SOLVER';
 
@@ -66,44 +65,6 @@ export interface CrewQuotaDescriptor {
   requiredMin: number; // minutes required
 }
 
-export interface PreferenceDescriptor {
-  crewId: string;
-  roleId: number | null;
-  preferenceType: PreferenceType;
-  baseWeight: number;
-  crewWeight: number;
-  adaptiveBoost: number;
-  intValue?: number;
-  rolePreferenceId: number;
-  assignmentModel: AssignmentModelValue; // changed from assignmentModels[]
-  bankedWeightBoost?: number;
-  bankingMetadata?: PreferenceBankingMetadata;
-}
-
-export interface PreferenceBankingMetadata {
-  bankedPreferenceId: number;
-  weight: number;
-  ageDays: number;
-  expiresAt: Date;
-  boostMultiplier: number;
-  status: BankingStatus;
-}
-
-export interface BankedPreferenceDescriptor {
-  id: number;
-  crewId: string;
-  rolePreferenceId: number;
-  status: BankingStatus;
-  weight: number;
-  originalDate: Date;
-  expiresAt: Date;
-  ageDays: number;
-  boostMultiplier: number;
-  preferenceType: PreferenceType;
-  preferenceValue: string;
-  storeId: number;
-}
-
 export interface RoleFairnessTrackerDescriptor {
   roleId: number;
   storeId: number;
@@ -150,6 +111,9 @@ export interface SolverSettings {
   fairnessMinStd?: number;   // Min std dev to apply fairness (default: 60)
   enableHardFairness?: boolean;  // If true, only allow crew at/near minimum min/hr
   fairnessAllowanceMph?: number; // How much above minimum min/hr is allowed (default: 1.0 min/hr)
+  fairnessBaseBoost?: number;   // Magnitude of fairness boost in objective (default: 10000)
+  fairnessDebug?: boolean;      // If true, prints audit table to stderr for tracked roles
+  intraDayBlockSpreadPenalty?: number;  // Penalty per extra block (>1) of a tracked role assigned to the same crew today (default: 2000, set 0 to disable)
   assignmentReward?: number;
   halfSizePenalty?: number;
   consecutiveBonus?: number;
@@ -163,8 +127,6 @@ export interface SolverInputV2 {
   crew: CrewDescriptor[];
   coverageWindows: CoverageWindowDescriptor[];
   crewQuotas: CrewQuotaDescriptor[];
-  preferences: PreferenceDescriptor[];
-  bankedPreferences: BankedPreferenceDescriptor[];
   fairnessTrackers: RoleFairnessTrackerDescriptor[];
   fairnessHistory: CrewRoleFairnessHistoryDescriptor[];
   shiftHistory: CrewShiftHistoryDescriptor[];  // NEW: for minutes per hour worked calculation

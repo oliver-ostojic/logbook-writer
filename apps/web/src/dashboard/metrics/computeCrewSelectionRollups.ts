@@ -71,6 +71,7 @@ export function computeCrewSelectionRollups(
       satisfactionByDate.push({
         date: lb.logbook.date,
         satisfactionPct: crewStat.satisfactionPct,
+        avgSatisfactionPct: crewStat.avgSatisfactionPct,
       });
     });
 

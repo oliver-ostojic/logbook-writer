@@ -36,6 +36,7 @@ def add_all(solver: "SolverV2") -> None:
     _role_family_constraints(solver)
     _consecutive_required_constraints(solver)
     _intra_schedule_fairness_constraints(solver)
+    _intra_day_distribution_penalty(solver)
     apply_role_rules(solver)
     
     if DEBUG:
@@ -797,46 +798,51 @@ def _intra_schedule_fairness_constraints(solver: "SolverV2") -> None:
     
     This ensures the most under-assigned crew always get priority.
     """
-    if DEBUG: print("\n[FAIRNESS] Intra-schedule fairness constraints:", file=sys.stderr)
-    
+    audit = solver.settings.get('fairnessDebug', False) or DEBUG
+    def _aprint(msg: str) -> None:
+        if audit:
+            print(msg, file=sys.stderr)
+
+    _aprint("\n[FAIRNESS AUDIT] Intra-schedule fairness constraints:")
+
     fairness_trackers = solver.payload.get('fairnessTrackers', [])
+    _aprint(f"   Trackers received: {len(fairness_trackers)}")
     if not fairness_trackers:
-        if DEBUG: print("   No fairness trackers configured, skipping", file=sys.stderr)
+        _aprint("   ABORT: no fairness trackers configured")
         return
-    
-    # Only consider enabled trackers
+
     enabled_trackers = [t for t in fairness_trackers if t.get('enabled', True)]
+    _aprint(f"   Enabled trackers: {len(enabled_trackers)}")
     if not enabled_trackers:
-        if DEBUG: print("   No enabled fairness trackers, skipping", file=sys.stderr)
+        _aprint("   ABORT: no enabled fairness trackers")
         return
-    
-    # Check if hard fairness is enabled (default: False for now, opt-in)
+
     if not solver.settings.get('enableHardFairness', False):
-        if DEBUG: print("   Hard fairness not enabled (set enableHardFairness=true)", file=sys.stderr)
+        _aprint("   ABORT: enableHardFairness is False — fairness boost disabled")
         return
-    
-    # Get configurable BASE_BOOST
+
     base_boost_value = solver.settings.get('fairnessBaseBoost', 10000)
-    if DEBUG: print(f"   BASE_BOOST = {base_boost_value}", file=sys.stderr)
-    
+    _aprint(f"   BASE_BOOST = {base_boost_value}")
+
     m = solver.model
     slot_minutes = solver.time_grid.slot_minutes
-    
-    # Get historical data
+
     fairness_history = solver.payload.get('fairnessHistory', [])
     shift_history = solver.payload.get('shiftHistory', [])
-    
+    _aprint(f"   fairnessHistory records: {len(fairness_history)}")
+    _aprint(f"   shiftHistory records: {len(shift_history)}")
+
     if not fairness_history and not shift_history:
-        if DEBUG: print("   No history data, skipping hard constraint", file=sys.stderr)
+        _aprint("   ABORT: no history data — boost cannot differentiate crew")
         return
     
     # Build shift hours map: crewId -> total shift minutes in lookback period
+    # TypeScript builder sends 'shiftMinutes' (pre-computed); fall back to startMin/endMin for compatibility
     crew_shift_minutes: Dict[str, float] = defaultdict(float)
     for shift in shift_history:
         crew_id = shift.get('crewId')
-        start_min = shift.get('startMin', 0)
-        end_min = shift.get('endMin', 0)
-        crew_shift_minutes[crew_id] += max(0, end_min - start_min)
+        shift_mins = shift.get('shiftMinutes') or max(0, shift.get('endMin', 0) - shift.get('startMin', 0))
+        crew_shift_minutes[crew_id] += shift_mins
     
     # Build history map: (roleId, crewId) -> total minutes assigned
     history_map: Dict[Tuple[int, str], float] = defaultdict(float)
@@ -858,90 +864,155 @@ def _intra_schedule_fairness_constraints(solver: "SolverV2") -> None:
     
     total_terms = 0
     
+    BASE_BOOST = solver.settings.get('fairnessBaseBoost', 10000)
+
     for tracker in enabled_trackers:
         role_id = tracker['roleId']
         role_name = next((r.get('displayName', r.get('code', f"Role {role_id}")) for r in solver.roles if r['id'] == role_id), f"Role {role_id}")
-        
-        if DEBUG: print(f"\n   Role: {role_name} (id={role_id})", file=sys.stderr)
-        
-        # Get eligible crew for this role (must be in this schedule)
+
+        _aprint(f"\n   --- Role: {role_name} (id={role_id}) ---")
+
         eligible_crew = [c['id'] for c in solver.crew if role_id in crew_roles.get(c['id'], set())]
-        
+        _aprint(f"     Eligible crew today: {len(eligible_crew)}")
+
         if len(eligible_crew) < 2:
-            if DEBUG: print(f"     Only {len(eligible_crew)} eligible crew, skipping", file=sys.stderr)
+            _aprint(f"     SKIP: only {len(eligible_crew)} eligible crew")
             continue
-        
-        # Calculate min/hr for each eligible crew
+
         mph_values: Dict[str, float] = {}
+        crew_role_minutes: Dict[str, float] = {}
         for crew_id in eligible_crew:
             role_minutes = history_map.get((role_id, crew_id), 0)
             shift_minutes = crew_shift_minutes.get(crew_id, 0)
-            
-            # For crew in today's schedule but not in history, use their current shift length
+
             if shift_minutes == 0:
                 crew_data = next((c for c in solver.crew if c['id'] == crew_id), None)
                 if crew_data:
                     shift_minutes = crew_data.get('shiftEndMin', 0) - crew_data.get('shiftStartMin', 0)
-            
+
+            crew_role_minutes[crew_id] = role_minutes
             if shift_minutes > 0:
                 mph_values[crew_id] = (role_minutes / shift_minutes) * 60
             else:
-                mph_values[crew_id] = 0  # No history = 0 min/hr = highest priority
-        
+                mph_values[crew_id] = 0
+
         if not mph_values:
             continue
-        
-        # Sort crew by min/hr ascending (lowest first = most preferred)
+
         sorted_crew = sorted(mph_values.items(), key=lambda x: x[1])
         min_mph = sorted_crew[0][1] if sorted_crew else 0
         max_mph = sorted_crew[-1][1] if sorted_crew else 0
-        
-        if DEBUG: 
-            print(f"     min/hr range: {min_mph:.2f} - {max_mph:.2f}", file=sys.stderr)
-            print(f"     Lowest 5: {[(next((c.get('name', cid) for c in solver.crew if c['id'] == cid), cid), f'{mph:.2f}') for cid, mph in sorted_crew[:5]]}", file=sys.stderr)
-        
-        # TIERED SOFT PENALTY APPROACH:
-        # Instead of blocking high-tier crew (causes infeasibility),
-        # we give a massive BOOST to low min/hr crew.
-        # 
-        # Crew with 0 min/hr get +BASE_BOOST boost
-        # Crew with higher min/hr get progressively less boost
-        # This creates a strong preference without blocking
-        
-        # Get BASE_BOOST from settings (configurable) or use default
-        BASE_BOOST = solver.settings.get('fairnessBaseBoost', 10000)
-        
+        zero_count = sum(1 for _, v in sorted_crew if v == 0)
+
+        _aprint(f"     min/hr range: {min_mph:.2f} → {max_mph:.2f}")
+        _aprint(f"     Crew with 0 history: {zero_count} / {len(sorted_crew)}")
+
+        if max_mph == min_mph:
+            _aprint(f"     ⚠️  ALL crew have identical mph={min_mph:.2f} — boost is uniform, fairness is a NO-OP for this role today")
+
         for crew_id, mph in mph_values.items():
-            # Calculate boost: lower min/hr = higher boost
-            # Linear decay from BASE_BOOST at min_mph to 0 at max_mph
             if max_mph > min_mph:
-                # Normalize: 0 = at max, 1 = at min
                 normalized = 1 - ((mph - min_mph) / (max_mph - min_mph))
             else:
-                normalized = 1  # Everyone is equal
-            
+                normalized = 1
+
             boost = int(BASE_BOOST * normalized)
-            
-            # Add boost for each assignment var for this crew+role
+
             for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
                 if var_crew == crew_id and var_role == role_id:
                     solver.fairness_rotation_terms.append((var, boost))
                     total_terms += 1
-        
-        if DEBUG:
-            # Show boost distribution
-            boost_examples = []
-            for cid, mph in sorted_crew[:3]:
+
+        if audit:
+            _aprint(f"     Boost table (sorted by mph asc):")
+            _aprint(f"       {'crew':<10} {'mph':>8} {'roleMin':>10} {'boost':>8}")
+            for cid, mph in sorted_crew[:8]:
                 if max_mph > min_mph:
                     norm = 1 - ((mph - min_mph) / (max_mph - min_mph))
                 else:
                     norm = 1
-                boost = int(BASE_BOOST * norm)
-                name = next((c.get('name', cid) for c in solver.crew if c['id'] == cid), cid)
-                boost_examples.append(f"{name}: +{boost}")
-            print(f"     Boost examples (top 3): {boost_examples}", file=sys.stderr)
-    
-    if DEBUG: print(f"\n   Total: {total_terms} objective terms added for fairness rotation", file=sys.stderr)
+                b = int(BASE_BOOST * norm)
+                rmin = crew_role_minutes.get(cid, 0)
+                _aprint(f"       {cid:<10} {mph:>8.2f} {rmin:>10.0f} {b:>8}")
+            if len(sorted_crew) > 8:
+                _aprint(f"       ... ({len(sorted_crew) - 8} more)")
+
+    _aprint(f"\n   Total fairness boost terms added to objective: {total_terms}")
+    _aprint("[FAIRNESS AUDIT] end\n")
+
+
+def _intra_day_distribution_penalty(solver: "SolverV2") -> None:
+    """Soft penalty when one crew gets more than one block of a tracked role today.
+
+    Why: cross-day fairness via mph history can't differentiate crew on day 1 (all
+    history = 0) and can't react to assignments made within the same solve. This
+    penalty creates an *intra-day* spreading signal so the solver doesn't dump
+    multiple blocks of a tracked role onto a single crew member.
+
+    Per-block, not per-minute, so it scales the same regardless of task_length:
+      block_count[crew, role] = sum of assignment vars for that pair
+      extra_blocks = max(0, block_count - 1)
+      penalty = SPREAD_PENALTY * extra_blocks
+
+    When demand exceeds eligible_crew (forces some crew to do >1 block), the linear
+    penalty naturally spreads the extras evenly — minimizing total penalty equals
+    maximizing spread.
+    """
+    audit = solver.settings.get('fairnessDebug', False) or DEBUG
+    def _aprint(msg: str) -> None:
+        if audit:
+            print(msg, file=sys.stderr)
+
+    fairness_trackers = solver.payload.get('fairnessTrackers', [])
+    enabled_trackers = [t for t in fairness_trackers if t.get('enabled', True)]
+    if not enabled_trackers:
+        return
+
+    spread_penalty = int(solver.settings.get('intraDayBlockSpreadPenalty', 2000))
+    if spread_penalty <= 0:
+        _aprint("\n[INTRA-DAY DIST] disabled (penalty<=0)")
+        return
+
+    _aprint(f"\n[INTRA-DAY DIST] spread_penalty_per_extra_block={spread_penalty}")
+
+    crew_roles: Dict[str, set] = defaultdict(set)
+    for crew in solver.crew:
+        for rid in (crew.get('roleIds') or crew.get('eligibleRoleIds') or []):
+            crew_roles[crew.get('id')].add(rid)
+
+    role_lookup = {r['id']: r for r in solver.roles}
+
+    vars_by_crew_role: Dict[Tuple[str, int], List] = defaultdict(list)
+    for (var_crew, var_slot, var_role, task_slots), var in solver.assignment_vars.items():
+        vars_by_crew_role[(var_crew, var_role)].append(var)
+
+    total_penalty_terms = 0
+
+    for tracker in enabled_trackers:
+        role_id = tracker['roleId']
+        role_info = role_lookup.get(role_id, {})
+        role_name = role_info.get('displayName', role_info.get('code', f"Role {role_id}"))
+
+        eligible = [c['id'] for c in solver.crew if role_id in crew_roles.get(c['id'], set())]
+        if len(eligible) < 2:
+            continue
+
+        _aprint(f"   {role_name}: eligible_crew={len(eligible)} → cap=1 block per crew")
+
+        for crew_id in eligible:
+            crew_vars = vars_by_crew_role.get((crew_id, role_id), [])
+            if not crew_vars:
+                continue
+            max_blocks = len(crew_vars)
+            if max_blocks <= 1:
+                continue
+
+            extra_var = solver.model.NewIntVar(0, max_blocks - 1, f'extra_blocks_{crew_id}_{role_id}')
+            solver.model.Add(extra_var >= sum(crew_vars) - 1)
+            solver.intra_day_dist_penalties.append(extra_var * spread_penalty)
+            total_penalty_terms += 1
+
+    _aprint(f"   Total extra-block penalty terms: {total_penalty_terms}\n")
 
 
 __all__ = ["add_all"]

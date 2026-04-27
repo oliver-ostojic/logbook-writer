@@ -3,13 +3,10 @@ import type {
   ConstraintViolation,
   ConstraintViolationCategory,
   ConstraintViolationSeverity,
-  PreferenceSatisfactionSummary,
 } from '@logbook-writer/shared-types/src/constraint-analysis';
-import type { PreferenceType } from '@logbook-writer/shared-types/src/solver';
 import type {
   AssignmentModelValue,
   CrewDescriptor,
-  PreferenceDescriptor,
   RoleDescriptor,
   SolverInputV2,
 } from '../solver2/types';
@@ -111,21 +108,11 @@ export function analyzeSolverResult({
     ...checkAssignmentModelGovernance(context),
   );
 
-  let preferenceSummary: PreferenceSatisfactionSummary | undefined;
-  const preferenceAnalysis = analyzePreferences(context);
-  if (preferenceAnalysis) {
-    preferenceSummary = preferenceAnalysis.summary;
-    if (preferenceAnalysis.violations.length) {
-      violations.push(...preferenceAnalysis.violations);
-    }
-  }
-
-  const summaryLines = buildSummary(violations, preferenceSummary);
+  const summaryLines = buildSummary(violations);
 
   return {
     violations,
     summaryLines,
-    preferenceSummary,
   };
 }
 
@@ -653,116 +640,7 @@ function buildBlocks(
   return blocks;
 }
 
-interface PreferenceAnalysisResult {
-  summary: PreferenceSatisfactionSummary;
-  violations: ConstraintViolation[];
-}
-
-function analyzePreferences(context: AnalyzerContext): PreferenceAnalysisResult | undefined {
-  const preferences = context.solverInput.preferences ?? [];
-  if (!preferences.length) {
-    return undefined;
-  }
-
-  const crewAssignments = context.crewAssignmentsByRole;
-  const roleById = context.roleById;
-  const crewById = new Map(context.solverInput.crew.map((crew) => [crew.id, crew] as const));
-  const store = context.solverInput.store;
-
-  let totalPreferences = 0;
-  let satisfied = 0;
-  let weightedScore = 0;
-  const violations: ConstraintViolation[] = [];
-
-  for (const preference of preferences) {
-    if (!preference.roleId) {
-      continue;
-    }
-
-    const crew = crewById.get(preference.crewId);
-    const role = roleById.get(preference.roleId);
-    if (!crew || !role) {
-      continue;
-    }
-
-    const assignments = crewAssignments.get(crew.id)?.get(role.id) ?? [];
-    const blocks = buildBlocks(assignments, role.taskLength, crew.id, role.id);
-
-    const weight =
-      preference.baseWeight *
-      preference.crewWeight *
-      preference.adaptiveBoost *
-      (preference.bankedWeightBoost ?? 1);
-
-    totalPreferences += 1;
-    const isSatisfied = evaluatePreference(preference, crew, role, assignments, blocks);
-
-    if (isSatisfied) {
-      satisfied += 1;
-      weightedScore += weight;
-    } else {
-      violations.push({
-        severity: 'info',
-        category: 'preference',
-        message: `${crew.name}'s ${formatPreferenceName(preference.preferenceType)} preference for ${role.displayName} wasn't satisfied.`,
-        details: { crewId: crew.id, roleId: role.id, preferenceType: preference.preferenceType },
-      });
-    }
-  }
-
-  if (totalPreferences === 0) {
-    return undefined;
-  }
-
-  return {
-    summary: {
-      totalPreferences,
-      satisfiedPreferences: satisfied,
-      weightedScore,
-    },
-    violations,
-  };
-}
-
-function evaluatePreference(
-  preference: PreferenceDescriptor,
-  crew: CrewDescriptor,
-  role: RoleDescriptor,
-  assignments: AssignmentRecord[],
-  blocks: CrewRoleBlock[]
-): boolean {
-  if (!assignments.length) {
-    return false;
-  }
-
-  switch (preference.preferenceType as PreferenceType) {
-    case 'FAVORITE':
-      return assignments.length > 0;
-    case 'FIRST_HOUR': {
-      const earliestAssignment = assignments.slice().sort((a, b) => a.startMinute - b.startMinute)[0];
-      return earliestAssignment?.roleId === role.id && earliestAssignment.startMinute <= crew.shiftStartMin + 60;
-    }
-    case 'CONSECUTIVE':
-      return blocks.length <= 1;
-    case 'TIMING': {
-      const intValue = preference.intValue ?? 0;
-      const earliestBlock = blocks[0];
-      if (!earliestBlock) return false;
-      const offset = earliestBlock.start - crew.shiftStartMin;
-      if (intValue <= 0) {
-        return offset <= 60; // prefers early
-      }
-      return offset >= 180; // prefers later
-    }
-    default:
-      return false;
-  }
-}
-
-function buildSummary(
-  violations: ConstraintViolation[],
-  preferenceSummary?: PreferenceSatisfactionSummary
-): string[] {
+function buildSummary(violations: ConstraintViolation[]): string[] {
   const totalErrors = violations.filter((v) => v.severity === 'error').length;
   const totalWarnings = violations.filter((v) => v.severity === 'warning').length;
   const totalInfo = violations.filter((v) => v.severity === 'info').length;
@@ -782,13 +660,6 @@ function buildSummary(
 
   if (totalInfo > 0) {
     lines.push(`ℹ️ ${totalInfo} informational note${totalInfo === 1 ? '' : 's'}`);
-  }
-
-  if (preferenceSummary) {
-    const percent = preferenceSummary.totalPreferences
-      ? ((preferenceSummary.satisfiedPreferences / preferenceSummary.totalPreferences) * 100).toFixed(1)
-      : '0.0';
-    lines.push(`Preferences satisfied: ${preferenceSummary.satisfiedPreferences}/${preferenceSummary.totalPreferences} (${percent}%)`);
   }
 
   return lines;
@@ -812,17 +683,3 @@ function formatHour(hour: number): string {
   return `${displayHour}:00 ${suffix}`;
 }
 
-function formatPreferenceName(type: PreferenceType): string {
-  switch (type) {
-    case 'FAVORITE':
-      return 'favorite role';
-    case 'FIRST_HOUR':
-      return 'first-hour';
-    case 'CONSECUTIVE':
-      return 'consecutive';
-    case 'TIMING':
-      return 'timing';
-    default:
-      return type.toLowerCase();
-  }
-}

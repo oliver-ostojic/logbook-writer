@@ -7,9 +7,7 @@ import type {
   CrewDescriptor,
   CoverageWindowDescriptor,
   CrewQuotaDescriptor,
-  PreferenceDescriptor,
   AssignmentModelValue,
-  BankedPreferenceDescriptor,
   RoleFairnessTrackerDescriptor,
   CrewRoleFairnessHistoryDescriptor,
   CrewShiftHistoryDescriptor,
@@ -234,24 +232,40 @@ export async function buildSolverInputV2(
     fairnessTrackerLookup.set(tracker.roleId, tracker);
   }
 
-  const fairnessHistory: CrewRoleFairnessHistoryDescriptor[] = fairnessHistoryRecords.map((record: FairnessHistoryRecord) => {
-    const tracker = fairnessTrackerLookup.get(record.roleId);
-    return {
-      roleId: record.roleId,
-      crewId: record.crewId,
-      storeId: record.storeId,
-      minutesAssigned: record.minutesAssigned,
-      date: record.date,
-      lookbackDays: tracker?.lookbackDays ?? 14,  // Default to 14 days if no tracker
-    } satisfies CrewRoleFairnessHistoryDescriptor;
-  });
+  const maxLookbackDays = fairnessTrackers.length > 0
+    ? Math.max(...fairnessTrackers.map(t => t.lookbackDays))
+    : 14;
+  const lookbackCutoff = new Date(targetDate);
+  lookbackCutoff.setDate(lookbackCutoff.getDate() - maxLookbackDays);
+
+  const fairnessHistory: CrewRoleFairnessHistoryDescriptor[] = fairnessHistoryRecords
+    .filter((record: FairnessHistoryRecord) => {
+      const tracker = fairnessTrackerLookup.get(record.roleId);
+      const roleLookbackDays = tracker?.lookbackDays ?? 14;
+      const roleCutoff = new Date(targetDate);
+      roleCutoff.setDate(roleCutoff.getDate() - roleLookbackDays);
+      return new Date(record.date) >= roleCutoff;
+    })
+    .map((record: FairnessHistoryRecord) => {
+      const tracker = fairnessTrackerLookup.get(record.roleId);
+      return {
+        roleId: record.roleId,
+        crewId: record.crewId,
+        storeId: record.storeId,
+        minutesAssigned: record.minutesAssigned,
+        date: record.date,
+        lookbackDays: tracker?.lookbackDays ?? 14,
+      } satisfies CrewRoleFairnessHistoryDescriptor;
+    });
 
   // Build shift history for fairness normalization (minutes per hour worked)
-  const shiftHistory: CrewShiftHistoryDescriptor[] = shiftHistoryRecords.map((record: ShiftHistoryRecord) => ({
-    crewId: record.crewId,
-    date: record.date,
-    shiftMinutes: record.endMin - record.startMin,
-  }));
+  const shiftHistory: CrewShiftHistoryDescriptor[] = shiftHistoryRecords
+    .filter((record: ShiftHistoryRecord) => new Date(record.date) >= lookbackCutoff)
+    .map((record: ShiftHistoryRecord) => ({
+      crewId: record.crewId,
+      date: record.date,
+      shiftMinutes: record.endMin - record.startMin,
+    }));
 
   // Build role rules with priority resolution
   // Priority order:
@@ -473,10 +487,6 @@ export async function buildSolverInputV2(
     requiredMin: record.requiredMin,
   }));
 
-  // Legacy preference system removed - now using CrewRoleRule for preferences
-  const preferences: PreferenceDescriptor[] = [];
-  const bankedPreferences: BankedPreferenceDescriptor[] = [];
-
   return {
     store,
     roleFamilies,
@@ -484,13 +494,9 @@ export async function buildSolverInputV2(
     crew,
     coverageWindows,
     crewQuotas,
-    preferences,
-    bankedPreferences,
     fairnessTrackers,
     fairnessHistory,
     shiftHistory,
     roleRules,
   } satisfies SolverInputV2;
 }
-
-// Legacy preference boost functions removed

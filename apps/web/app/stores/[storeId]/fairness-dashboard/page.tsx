@@ -1054,8 +1054,8 @@ export default function FairnessDashboardPage() {
       lb.crewStats
         .filter(cs => cs.preferencesTotal > 0) // Only crew with preferences
         .map(cs => {
-          console.log(`Crew ${cs.crewName}: ${cs.preferencesMet}/${cs.preferencesTotal} = ${cs.satisfactionPct}%`);
-          return cs.satisfactionPct;
+          console.log(`Crew ${cs.crewName}: avg=${cs.avgSatisfactionPct.toFixed(1)}% met=${cs.preferencesMet}/${cs.preferencesTotal}`);
+          return cs.avgSatisfactionPct;
         })
     );
 

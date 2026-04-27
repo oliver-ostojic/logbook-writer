@@ -180,8 +180,9 @@ export function CrewDashboardContent({
         {/* Satisfaction distribution box plot - only show if there's variance */}
         {(() => {
           // Check if there's variance before rendering the entire section
+          // Use avgSatisfactionPct (continuous) for meaningful spread, not satisfactionPct (binary met/total)
           const values = (crew.satisfactionByDate || [])
-            .map(d => d.satisfactionPct)
+            .map(d => d.avgSatisfactionPct)
             .sort((a, b) => a - b);
 
           // Don't show box plot if no data or no variance

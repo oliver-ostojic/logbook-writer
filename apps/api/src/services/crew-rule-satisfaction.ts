@@ -142,7 +142,8 @@ export function calculateCrewRuleSatisfaction(
   crewRoleRules: CrewRoleRuleRecord[],
   assignments: AssignmentRecord[],
   crewShifts: Map<string, CrewShiftWindow>,
-  roleBlockSizes: Map<number, number>
+  roleBlockSizes: Map<number, number>,
+  roleFamilies: Map<number, number> = new Map()  // roleId → familyId
 ): SatisfactionResult[] {
   const results: SatisfactionResult[] = [];
 
@@ -199,8 +200,10 @@ export function calculateCrewRuleSatisfaction(
       roleAssignments,
       crewShift,
       roleBlockSizes,
-      assignments,  // All assignments for MAX_CREW_ON_AT_A_TIME
-      rulesByCrewAndType
+      assignments,
+      rulesByCrewAndType,
+      crewRoleRules,
+      roleFamilies
     );
 
     if (result) {
@@ -222,7 +225,9 @@ function calculateSingleRuleSatisfaction(
   crewShift: CrewShiftWindow | undefined,
   roleBlockSizes: Map<number, number>,
   allAssignments: AssignmentRecord[],
-  rulesByCrewAndType: Map<string, CrewRoleRuleRecord[]>
+  rulesByCrewAndType: Map<string, CrewRoleRuleRecord[]>,
+  allCrewRoleRules: CrewRoleRuleRecord[],
+  roleFamilies: Map<number, number>
 ): SatisfactionResult | null {
   const { type, roleId, targetRoleId } = rule.roleRule;
   const valueInt = rule.valueInt;
@@ -282,17 +287,12 @@ function calculateSingleRuleSatisfaction(
     }
 
     case 'TIMING': {
-      // Gradient based on position in shift
-      // -1 = prefer early, 0 = prefer middle, +1 = prefer late
-      if (!crewShift) {
-        return null;  // Can't evaluate without shift info
-      }
-      if (roleAssignments.length === 0) {
-        // Role wasn't assigned - timing preference doesn't apply, skip entirely
-        return null;
-      }
+      if (!crewShift) return null;
+      if (roleAssignments.length === 0) return null;
       const timingPref = valueInt ?? 0;
-      const result = calculateTimingSatisfaction(roleAssignments, crewShift, timingPref);
+      const result = calculateTimingSatisfaction(
+        roleAssignments, crewShift, timingPref, rule.crewId, roleId, allCrewRoleRules
+      );
       satisfaction = result.satisfaction;
       details = result.details;
       break;
@@ -445,15 +445,10 @@ function calculateSingleRuleSatisfaction(
     }
 
     case 'DISTRIBUTION_BETWEEN_ROLE_X': {
-      // Compare time on roleId vs targetRoleId
-      // -1 = roleId should have LESS time than targetRoleId
-      //  0 = should be balanced
-      // +1 = roleId should have MORE time than targetRoleId
-      if (targetRoleId === null) {
-        return null;  // Need target role for comparison
-      }
+      if (targetRoleId === null) return null;
       const distributionPref = valueInt ?? 0;
-      const result = calculateDistribution(roleId, targetRoleId, crewAssignments, crewShift, distributionPref);
+      const result = calculateDistribution(roleId, targetRoleId, crewAssignments, distributionPref, roleFamilies);
+      if (result === null) return null;  // ineligible
       satisfaction = result.satisfaction;
       details = result.details;
       break;
@@ -695,58 +690,49 @@ function getConsecutiveBlocks(
 function calculateTimingSatisfaction(
   roleAssignments: AssignmentRecord[],
   crewShift: CrewShiftWindow,
-  timingPref: number  // -1 = early, 0 = middle, +1 = late
+  timingPref: number,  // -1 = early, 0 = middle, +1 = late
+  crewId: string,
+  roleId: number,
+  allCrewRoleRules: CrewRoleRuleRecord[]
 ): { satisfaction: number; details: string } {
-  if (roleAssignments.length === 0) {
-    return { satisfaction: 0.0, details: 'Role not assigned' };
-  }
-
   const shiftStart = crewShift.shiftStartMin;
   const shiftEnd = crewShift.shiftEndMin;
-  const shiftDuration = shiftEnd - shiftStart;
-  
-  if (shiftDuration <= 0) {
-    return { satisfaction: 0.0, details: 'Invalid shift duration' };
+
+  // Narrow valid range using ASSIGN_BEFORE/AFTER constraints for this crew+role
+  let validStart = shiftStart;
+  let validEnd = shiftEnd;
+
+  for (const r of allCrewRoleRules) {
+    if (r.crewId !== crewId || r.roleRule.roleId !== roleId || r.valueInt === null) continue;
+    if (r.roleRule.type === 'ASSIGN_BEFORE_SHIFT_MIN_X') {
+      validEnd = Math.min(validEnd, shiftStart + r.valueInt);
+    } else if (r.roleRule.type === 'ASSIGN_AFTER_SHIFT_MIN_X') {
+      validStart = Math.max(validStart, shiftStart + r.valueInt);
+    }
   }
 
-  // Calculate the center of all role assignments (weighted by duration)
-  let totalMinutes = 0;
-  let weightedCenter = 0;
-  
-  for (const a of roleAssignments) {
-    const duration = a.endMinutes - a.startMinutes;
-    const center = (a.startMinutes + a.endMinutes) / 2;
-    weightedCenter += center * duration;
-    totalMinutes += duration;
-  }
-  
-  const roleCenter = weightedCenter / totalMinutes;
-  
-  // Normalize position to 0-1 within shift
-  const normalizedPosition = (roleCenter - shiftStart) / shiftDuration;
-  const clampedPosition = Math.max(0, Math.min(1, normalizedPosition));
-
-  let satisfaction: number;
-  let positionDesc: string;
-
-  if (timingPref === -1) {
-    // Prefer early: 1.0 at start (0.0), 0.0 at end (1.0)
-    satisfaction = 1 - clampedPosition;
-    positionDesc = 'early';
-  } else if (timingPref === 1) {
-    // Prefer late: 0.0 at start, 1.0 at end
-    satisfaction = clampedPosition;
-    positionDesc = 'late';
-  } else {
-    // Prefer middle (0): 1.0 at 0.5, 0.0 at 0.0 or 1.0
-    const distanceFromMiddle = Math.abs(clampedPosition - 0.5);
-    satisfaction = 1 - (distanceFromMiddle * 2);  // Scale: 0.5 distance = 0 satisfaction
-    positionDesc = 'middle';
+  // Fall back to full shift if constraints produce degenerate range
+  if (validStart >= validEnd) {
+    validStart = shiftStart;
+    validEnd = shiftEnd;
   }
 
-  return { 
-    satisfaction, 
-    details: `Role center at ${(clampedPosition * 100).toFixed(1)}% of shift (prefers ${positionDesc}), satisfaction: ${(satisfaction * 100).toFixed(1)}%` 
+  const rangeLength = validEnd - validStart;
+  const thirdLength = rangeLength / 3;
+  const earlyEnd = validStart + thirdLength;
+  const middleEnd = validStart + 2 * thirdLength;
+
+  const prefName = timingPref < 0 ? 'early' : timingPref > 0 ? 'late' : 'middle';
+
+  const satisfied = roleAssignments.some(a => {
+    if (timingPref < 0) return a.startMinutes < earlyEnd;
+    if (timingPref > 0) return a.startMinutes >= middleEnd;
+    return a.startMinutes >= earlyEnd && a.startMinutes < middleEnd;
+  });
+
+  return {
+    satisfaction: satisfied ? 1.0 : 0.0,
+    details: `Prefers ${prefName}, valid range [${validStart}-${validEnd}], thirds at ${Math.round(earlyEnd)}/${Math.round(middleEnd)}, ${satisfied ? 'satisfied' : 'not satisfied'}`,
   };
 }
 
@@ -795,73 +781,65 @@ function calculateDistribution(
   roleId: number,
   targetRoleId: number,
   crewAssignments: AssignmentRecord[],
-  crewShift: CrewShiftWindow | undefined,
-  distributionPref: number  // -1 = prefer more roleId, 0 = balanced, +1 = prefer more targetRoleId
-): { satisfaction: number; details: string } {
-  // Calculate total minutes for each role
-  const roleMinutes = crewAssignments
-    .filter(a => a.roleId === roleId)
-    .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+  distributionPref: number,  // -1 = prefer less target, 0 = balanced, +1 = prefer more target
+  roleFamilies: Map<number, number>  // roleId → familyId
+): { satisfaction: number; details: string } | null {
+  const primaryFamilyId = roleFamilies.get(roleId);
+  const targetFamilyId = roleFamilies.get(targetRoleId);
 
-  const targetRoleMinutes = crewAssignments
-    .filter(a => a.roleId === targetRoleId)
-    .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+  let primaryMinutes: number;
+  let targetMinutes: number;
+  let mode: string;
 
-  const totalMinutes = roleMinutes + targetRoleMinutes;
-
-  if (totalMinutes === 0) {
-    return { satisfaction: 1.0, details: 'Neither role assigned' };
-  }
-
-  let satisfaction: number;
-  let details: string;
-
-  if (distributionPref === -1) {
-    // -1 = prefer more time on primary role (roleId)
-    if (roleMinutes > targetRoleMinutes) {
-      satisfaction = 1.0;
-      details = `Role ${roleId} (${roleMinutes}min) > target ${targetRoleId} (${targetRoleMinutes}min)`;
-    } else {
-      satisfaction = 0.0;
-      details = `Role ${roleId} (${roleMinutes}min) <= target ${targetRoleId} (${targetRoleMinutes}min)`;
-    }
-  } else if (distributionPref === 1) {
-    // +1 = prefer more time on target role (targetRoleId)
-    if (targetRoleMinutes > roleMinutes) {
-      satisfaction = 1.0;
-      details = `Target ${targetRoleId} (${targetRoleMinutes}min) > role ${roleId} (${roleMinutes}min)`;
-    } else {
-      satisfaction = 0.0;
-      details = `Target ${targetRoleId} (${targetRoleMinutes}min) <= role ${roleId} (${roleMinutes}min)`;
-    }
+  if (primaryFamilyId !== undefined && targetFamilyId !== undefined) {
+    // Family-level: sum all roles in each family
+    primaryMinutes = crewAssignments
+      .filter(a => roleFamilies.get(a.roleId) === primaryFamilyId)
+      .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+    targetMinutes = crewAssignments
+      .filter(a => roleFamilies.get(a.roleId) === targetFamilyId)
+      .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+    mode = `families ${primaryFamilyId}/${targetFamilyId}`;
   } else {
-    // Want balanced (0)
-    // Calculate maximum possible balance given shift constraints
-    // Perfect balance would be 50-50, but we allow for unavoidable imbalance
-    
-    // Shift total working time (excluding breaks which might be a role too)
-    const shiftDuration = crewShift 
-      ? crewShift.shiftEndMin - crewShift.shiftStartMin 
-      : totalMinutes;
-    
-    // The best possible balance is when the difference is minimized
-    // Given blockSize constraints, perfect 50-50 may not be possible
-    // We consider "balanced" if the difference is <= 30 minutes (half an hour)
-    const difference = Math.abs(roleMinutes - targetRoleMinutes);
-    const balanceThreshold = 30;  // Allow 30 min imbalance as "balanced"
-    
-    if (difference <= balanceThreshold) {
-      satisfaction = 1.0;
-      details = `Balanced: ${roleMinutes}min vs ${targetRoleMinutes}min (diff: ${difference}min)`;
-    } else {
-      // Gradient: the closer to balanced, the higher the score
-      const maxPossibleDiff = shiftDuration;
-      satisfaction = Math.max(0, 1 - (difference - balanceThreshold) / (maxPossibleDiff - balanceThreshold));
-      details = `Imbalanced: ${roleMinutes}min vs ${targetRoleMinutes}min (diff: ${difference}min, satisfaction: ${(satisfaction * 100).toFixed(1)}%)`;
-    }
+    // Fallback: individual role comparison
+    primaryMinutes = crewAssignments
+      .filter(a => a.roleId === roleId)
+      .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+    targetMinutes = crewAssignments
+      .filter(a => a.roleId === targetRoleId)
+      .reduce((sum, a) => sum + (a.endMinutes - a.startMinutes), 0);
+    mode = `roles ${roleId}/${targetRoleId}`;
   }
 
-  return { satisfaction, details };
+  const total = primaryMinutes + targetMinutes;
+  if (total === 0) {
+    return null;  // neither family has assigned time → ineligible (dropped from denominator)
+  }
+
+  const diff = primaryMinutes - targetMinutes;  // positive = primary has more
+  const EQUAL_TOLERANCE_MIN = 30;
+
+  let satisfied: boolean;
+  let preferredDesc: string;
+
+  if (distributionPref < 0) {
+    // prefer primary > target
+    satisfied = primaryMinutes > targetMinutes;
+    preferredDesc = 'primary > target';
+  } else if (distributionPref > 0) {
+    // prefer target > primary
+    satisfied = targetMinutes > primaryMinutes;
+    preferredDesc = 'target > primary';
+  } else {
+    // prefer equal — satisfied if difference within one block's tolerance
+    satisfied = Math.abs(diff) <= EQUAL_TOLERANCE_MIN;
+    preferredDesc = 'equal';
+  }
+
+  return {
+    satisfaction: satisfied ? 1.0 : 0.0,
+    details: `${mode}: primary=${primaryMinutes}min target=${targetMinutes}min diff=${diff}min preferred=${preferredDesc}`,
+  };
 }
 
 // ============================================================================

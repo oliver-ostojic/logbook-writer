@@ -796,28 +796,19 @@ def _eval_distribution(
             details={"reason": "no_assignments_in_families", "mode": mode},
         )
     
-    # Calculate target ratio (what portion of total is target family)
-    target_ratio = target_minutes / total
-    
-    # Determine which zone the target_ratio falls into
-    # Less target: < 40%, Equal: 40-60%, More target: > 60%
-    if target_ratio < 0.4:
-        actual_zone = "less_target"  # Less than 40% target
-    elif target_ratio <= 0.6:
-        actual_zone = "equal"  # 40-60% target
+    EQUAL_TOLERANCE_MIN = 30
+    diff = primary_minutes - target_minutes  # positive = primary has more
+
+    if preference == -1:
+        satisfied = primary_minutes > target_minutes
+        preferred_desc = "primary > target"
+    elif preference == 1:
+        satisfied = target_minutes > primary_minutes
+        preferred_desc = "target > primary"
     else:
-        actual_zone = "more_target"  # More than 60% target
-    
-    # Map preference to expected zone
-    pref_zone_map = {
-        -1: "less_target",  # -1 = prefer less of target (more primary)
-        0: "equal",         # 0 = prefer equal split
-        1: "more_target",   # 1 = prefer more of target
-    }
-    expected_zone = pref_zone_map.get(preference, "equal")
-    
-    satisfied = actual_zone == expected_zone
-    
+        satisfied = abs(diff) <= EQUAL_TOLERANCE_MIN
+        preferred_desc = "equal"
+
     return RuleSatisfaction(
         rule_id=rule.get("id", 0),
         crew_id=crew_id,
@@ -829,10 +820,9 @@ def _eval_distribution(
             "targetFamilyId": target_family_id,
             "primaryMinutes": primary_minutes,
             "targetMinutes": target_minutes,
-            "targetRatio": round(target_ratio, 3),
+            "diff": diff,
             "preference": preference,
-            "expectedZone": expected_zone,
-            "actualZone": actual_zone,
+            "preferredDesc": preferred_desc,
             "satisfied": satisfied,
         },
     )

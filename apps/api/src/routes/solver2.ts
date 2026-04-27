@@ -47,6 +47,8 @@ type SolveRequestBody = {
     fairnessBoost?: number;
     fairnessPenalty?: number;
     enableHardFairness?: boolean;  // If true, uses tiered rotation boost for tracked roles (default: true)
+    fairnessBaseBoost?: number;  // Magnitude of fairness boost (default: 740 from PRODUCTION_SOLVER_SETTINGS)
+    fairnessDebug?: boolean;  // If true, prints fairness audit table to stderr
   };
 };
 
@@ -189,6 +191,16 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         ...PRODUCTION_SOLVER_SETTINGS,
         ...body.settings,
       };
+
+      if (solverInput.settings?.fairnessDebug) {
+        process.stderr.write(
+          `\n[FAIRNESS PRE-SOLVE] enableHardFairness=${solverInput.settings.enableHardFairness} ` +
+          `baseBoost=${solverInput.settings.fairnessBaseBoost} ` +
+          `trackers=${solverInput.fairnessTrackers.length} ` +
+          `historyRecords=${solverInput.fairnessHistory.length} ` +
+          `shiftHistoryRecords=${solverInput.shiftHistory.length}\n`
+        );
+      }
 
       const timeLimitSeconds = body.timeLimitSeconds ?? SOLVER_CONFIG.timeLimitSeconds;
       const numWorkers = body.numWorkers ?? SOLVER_CONFIG.numWorkers;

@@ -183,7 +183,10 @@ function StackedPillBarChart({
 
         const barX = graphLeftEdge + barSpacing + i * (pillWidth + barSpacing);
         const totalHeight = getBarHeight(item.totalCount);
-        const metHeight = getBarHeight(item.satisfiedCount);
+        const rawMetHeight = item.satisfiedCount > 0 ? (item.satisfiedCount / yMax) * graphHeight : 0;
+        const metHeight = item.satisfiedCount > 0
+          ? Math.min(totalHeight, Math.max(innerPadding * 2 + 6, rawMetHeight))
+          : 0;
 
         const backPillY = getY(item.totalCount);
         const frontPillY = getY(item.satisfiedCount);

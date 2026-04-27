@@ -2193,7 +2193,7 @@ export default function Home() {
 
   return (
     <>
-    <style dangerouslySetInnerHTML={{ __html: `@keyframes iosWiggle{0%{transform:rotate(-0.08deg)}25%{transform:rotate(0.08deg)}50%{transform:rotate(-0.08deg)}75%{transform:rotate(0.08deg)}100%{transform:rotate(-0.08deg)}}.ios-wiggle{animation:iosWiggle 0.3s ease-in-out infinite}` }} />
+    <style dangerouslySetInnerHTML={{ __html: `@keyframes iosWiggle{0%{transform:rotate(-0.04deg)}25%{transform:rotate(0.04deg)}50%{transform:rotate(-0.08deg)}75%{transform:rotate(0.08deg)}100%{transform:rotate(-0.08deg)}}.ios-wiggle{animation:iosWiggle 0.3s ease-in-out infinite}` }} />
     <DashboardLayout
       rightPanelVisible={activeView === 'home' && !!selectedItem}
       leftPanelWidth={isPdfView ? '40%' : undefined}

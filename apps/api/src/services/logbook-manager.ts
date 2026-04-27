@@ -56,13 +56,10 @@ export interface SolverOutputV2 {
   error?: string;
 }
 import {
-  type AssignmentRecord,
-} from './preference-satisfaction';
-
-import {
   calculateCrewRuleSatisfaction,
   aggregateSatisfactionStats,
   saveLogPreferenceMetadata as saveCrewRuleLogPreferenceMetadata,
+  type AssignmentRecord,
   type CrewRoleRuleRecord,
   type CrewShiftWindow as CrewRuleShiftWindow,
   type SatisfactionResult as CrewRuleSatisfactionResult,
@@ -126,9 +123,10 @@ export async function saveLogbookWithMetadata(
 ): Promise<string> {
   const { storeId, date, solverOutput, solverInput, status } = options;
 
-  const crewShiftMap: Map<string, CrewShiftWindow> = new Map();
+  const crewShiftMap: Map<string, CrewRuleShiftWindow> = new Map();
   for (const crew of solverInput.crew) {
     crewShiftMap.set(crew.id, {
+      crewId: crew.id,
       shiftStartMin: crew.shiftStartMin,
       shiftEndMin: crew.shiftEndMin,
     });
@@ -188,6 +186,12 @@ export async function saveLogbookWithMetadata(
     roleBlockSizes.set(role.id, role.taskLength);
   }
 
+  // Build roleId → familyId map for family-level DISTRIBUTION evaluation
+  const roleFamilies = new Map<number, number>();
+  for (const role of solverInput.roles) {
+    if (role.familyId) roleFamilies.set(role.id, role.familyId);
+  }
+
   // Transform Prisma records to our interface
   const crewRoleRuleRecords: CrewRoleRuleRecord[] = crewRoleRules.map(crr => ({
     id: crr.id,
@@ -208,7 +212,8 @@ export async function saveLogbookWithMetadata(
     crewRoleRuleRecords,
     assignmentRecords,
     crewRuleShiftMap,
-    roleBlockSizes
+    roleBlockSizes,
+    roleFamilies
   );
 
   // Calculate full aggregate stats for saving to LogPreferenceMetadata
@@ -461,16 +466,6 @@ export async function getLogbookWithDetails(
       Assignment: {
         include: {
           Role: true,
-          Crew: true,
-        }
-      },
-      PreferenceSatisfaction: {
-        include: {
-          RolePreference: {
-            include: {
-              Role: true,
-            }
-          },
           Crew: true,
         }
       },

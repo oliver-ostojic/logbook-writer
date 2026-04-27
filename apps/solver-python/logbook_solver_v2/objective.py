@@ -75,7 +75,6 @@ def apply(solver: "SolverV2") -> None:
     half_size_penalty = solver.settings.get('halfSizePenalty', DEFAULT_HALF_SIZE_PENALTY)
     hour_aligned_bonus = solver.settings.get('hourAlignedBonus', DEFAULT_HOUR_ALIGNED_BONUS)
     
-    weighted_terms = []
     assignment_rewards = []
     gap_filler_penalties = []
     hour_aligned_bonuses = []
@@ -92,11 +91,6 @@ def apply(solver: "SolverV2") -> None:
         
         # MOTIVATOR: Reward every assignment to encourage filling all slots
         assignment_rewards.append(assignment_reward * var)
-        
-        # Standard preference weight
-        weight = solver.preference_weight(key)
-        if weight > 0:
-            weighted_terms.append(weight * var)
         
         # Check if this is a half-size assignment (gap filler)
         full_slots = role_full_task_slots.get(role_id, task_slots)
@@ -157,7 +151,6 @@ def apply(solver: "SolverV2") -> None:
     # Maximize: assignment rewards + preferences + bonuses - penalties
     # This motivates solver to fill all slots while respecting preferences
     rewards = sum(assignment_rewards) if assignment_rewards else 0
-    preferences = sum(weighted_terms) if weighted_terms else 0
     consecutive_bonus = sum(consecutive_bonus_terms) if consecutive_bonus_terms else 0
     consecutive_gap_penalty = sum(consecutive_gap_penalty_terms) if consecutive_gap_penalty_terms else 0
     aligned_bonus = sum(hour_aligned_bonuses) if hour_aligned_bonuses else 0
@@ -169,8 +162,13 @@ def apply(solver: "SolverV2") -> None:
     gap_penalties = sum(gap_filler_penalties) if gap_filler_penalties else 0
     soft_constraint_penalties = sum(soft_penalties) if soft_penalties else 0
     quota_penalties = sum(quota_shortfall_penalties) if quota_shortfall_penalties else 0
+    intra_day_dist_penalty = (
+        sum(solver.intra_day_dist_penalties)
+        if hasattr(solver, 'intra_day_dist_penalties') and solver.intra_day_dist_penalties
+        else 0
+    )
 
-    model.Maximize(rewards + preferences + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus + fairness_bonus + fairness_rotation - gap_penalties - soft_constraint_penalties - quota_penalties - consecutive_gap_penalty)
+    model.Maximize(rewards + consecutive_bonus + aligned_bonus + timing_bonus + hour_pref_bonus + distribution_bonus + fairness_bonus + fairness_rotation - gap_penalties - soft_constraint_penalties - quota_penalties - consecutive_gap_penalty - intra_day_dist_penalty)
 
 
 def _consecutive_role_bonus(solver: "SolverV2") -> List:
@@ -688,12 +686,12 @@ def _fairness_objective_terms(solver: "SolverV2") -> List:
     slot_minutes = solver.time_grid.slot_minutes
     
     # Build shift hours map: crewId -> total shift minutes in lookback period
+    # TypeScript builder sends 'shiftMinutes' (pre-computed); fall back to startMin/endMin for compatibility
     crew_shift_minutes: Dict[str, float] = defaultdict(float)
     for shift in shift_history:
         crew_id = shift.get('crewId')
-        start_min = shift.get('startMin', 0)
-        end_min = shift.get('endMin', 0)
-        crew_shift_minutes[crew_id] += max(0, end_min - start_min)
+        shift_mins = shift.get('shiftMinutes') or max(0, shift.get('endMin', 0) - shift.get('startMin', 0))
+        crew_shift_minutes[crew_id] += shift_mins
     
     # Build history map: (roleId, crewId) -> total minutes assigned
     history_map: Dict[Tuple[int, str], float] = defaultdict(float)
