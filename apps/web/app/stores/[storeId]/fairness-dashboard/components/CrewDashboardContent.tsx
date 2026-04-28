@@ -48,11 +48,12 @@ export function CrewDashboardContent({
   return (
     <div
       className="ai-glass-border"
-      style={{
-        ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-        ...aiGlassLightContentStyle('1.5rem', 0.6),
-      }}
+      style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
     >
+      <div
+        className="ai-glass-content"
+        style={aiGlassLightContentStyle('1.5rem', 0.6)}
+      >
       {/* Time Window Header */}
       <TimeWindowHeader
         availableDates={availableDates}
@@ -269,6 +270,7 @@ export function CrewDashboardContent({
           />
         </LargeGraphCard>
       </div>{/* End dashboard content */}
+      </div>{/* End ai-glass-content */}
     </div>
   );
 }

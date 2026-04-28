@@ -100,6 +100,7 @@ function SatisfactionLineChart({
   onSelectIndex,
   isHoveringChart,
   onYAxisConfig,
+  viewBoxWidth = 1000,
 }: {
   data: ShiftSatisfactionData[];
   hoveredIndex: number | null;
@@ -108,9 +109,9 @@ function SatisfactionLineChart({
   onSelectIndex?: (index: number) => void;
   isHoveringChart: boolean;
   onYAxisConfig?: (config: YAxisConfig) => void;
+  viewBoxWidth?: number;
 }) {
   const chartHeight = 220; // Match GraphCardSimple height
-  const viewBoxWidth = 1000;
   const pointCount = data.length;
 
   // Margins INSIDE the SVG
@@ -434,6 +435,8 @@ export function SatisfactionLineGraph({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isHoveringChart, setIsHoveringChart] = useState(false);
   const [yAxisConfig, setYAxisConfig] = useState<YAxisConfig | null>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Get active data point (hovered or selected)
   const activeIndex = hoveredIndex !== null ? hoveredIndex : selectedIndex;
@@ -457,11 +460,15 @@ export function SatisfactionLineGraph({
   const chartHeight = 220;
   const barScaleFactor = 0.95;
 
+  const SCROLL_THRESHOLD = 20;
+  const shouldScroll = data.length >= SCROLL_THRESHOLD;
+  const chartViewBoxWidth = shouldScroll
+    ? Math.round((data.length / SCROLL_THRESHOLD) * 1000)
+    : 1000;
+
   // Calculate percentage position for bubble (matches SVG point calculation)
-  // SVG viewBox is 1000 wide, graphLeftEdge=28, graphRightEdge=972
-  // So graph area is from 2.8% to 97.2% of width
-  const graphLeftPercent = 2.8;
-  const graphRightPercent = 97.2;
+  const graphLeftPercent = (28 / chartViewBoxWidth) * 100;
+  const graphRightPercent = ((chartViewBoxWidth - 1) / chartViewBoxWidth) * 100;
   const graphWidthPercent = graphRightPercent - graphLeftPercent;
 
   // Calculate X and Y percentages for bubble positioning
@@ -487,7 +494,6 @@ export function SatisfactionLineGraph({
 
     // Offset above point: dot outer radius (7.5) + gap (~20) = ~27.5 SVG units
     // Convert to percentage of chart height (220): 27.5 / 220 ≈ 12.5%
-    // This ensures consistent spacing regardless of chart render size
     const offsetPercent = 12.5;
     const yPercent = pointYPercent - offsetPercent;
 
@@ -495,6 +501,12 @@ export function SatisfactionLineGraph({
   };
 
   const bubblePosition = getBubblePosition();
+
+  // Adjust bubble x to be relative to the visible scroll container, not the inner wide div
+  const scrollFactor = shouldScroll ? data.length / SCROLL_THRESHOLD : 1;
+  const adjustedBubbleXPercent = bubblePosition
+    ? bubblePosition.xPercent * scrollFactor - (scrollLeft / (scrollContainerRef.current?.clientWidth ?? 1)) * 100
+    : null;
 
   // Y-axis labels from dynamic ticks (only first and last get labels)
   const yLabels = yAxisConfig?.ticks.map((tickValue, index) => {
@@ -539,84 +551,127 @@ export function SatisfactionLineGraph({
               display: 'flex',
             }}
           >
-            {/* Chart area */}
-            <div style={{ flex: 1, position: 'relative' }}>
-              <SatisfactionLineChart
-                data={data}
-                hoveredIndex={hoveredIndex}
-                onHover={setHoveredIndex}
-                selectedIndex={selectedIndex}
-                onSelectIndex={onSelectIndex}
-                isHoveringChart={isHoveringChart}
-                onYAxisConfig={setYAxisConfig}
-              />
+            {/* Chart area - scrollable when >= 20 points, flex row for sticky y-axis */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={() => setScrollLeft(scrollContainerRef.current?.scrollLeft ?? 0)}
+              style={{
+                flex: 1,
+                overflowX: shouldScroll ? 'auto' : 'visible',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'stretch',
+              }}
+            >
+              {/* Wide inner chart div */}
+              <div
+                style={{
+                  width: shouldScroll ? `${(data.length / SCROLL_THRESHOLD) * 100}%` : '100%',
+                  minWidth: '100%',
+                  flexShrink: 0,
+                  height: '100%',
+                  position: 'relative',
+                }}
+              >
+                <SatisfactionLineChart
+                  data={data}
+                  hoveredIndex={hoveredIndex}
+                  onHover={setHoveredIndex}
+                  selectedIndex={selectedIndex}
+                  onSelectIndex={onSelectIndex}
+                  isHoveringChart={isHoveringChart}
+                  onYAxisConfig={setYAxisConfig}
+                  viewBoxWidth={chartViewBoxWidth}
+                />
+              </div>
 
-              {/* Percentage bubble - positioned relative to chart */}
-              {bubblePosition && activeData && (
+              {/* Y-axis bar - sticky, uses standard ai-glass pattern so dev panel knobs apply */}
+              <div
+                style={{
+                  position: 'sticky',
+                  right: 0,
+                  width: '56px',
+                  flexShrink: 0,
+                  marginLeft: '-56px',
+                  zIndex: 5,
+                  pointerEvents: 'none',
+                }}
+              >
                 <div
+                  className="ai-glass-border"
                   style={{
+                    ...aiGlassLightBorderStyle('0.75rem', '0, 0, 0', 0.08),
                     position: 'absolute',
-                    left: `${bubblePosition.xPercent}%`,
-                    top: `${bubblePosition.yPercent}%`,
-                    transform: 'translate(-50%, -100%)',
-                    pointerEvents: 'none',
-                    zIndex: 10,
+                    top: '15px',
+                    bottom: '15px',
+                    left: 0,
+                    right: 0,
                   }}
                 >
                   <div
-                    className="ai-glass-border"
+                    className="ai-glass-content"
                     style={{
-                      ...aiGlassLightBorderStyle('1.5rem'),
+                      ...aiGlassLightContentStyle('0.75rem', 0.6),
+                      position: 'relative',
                     }}
                   >
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('1.5rem', 0.5),
-                        padding: '10px 12px',
-                        fontFamily: 'var(--font-open-sans)',
-                        fontSize: '20px',
-                        fontWeight: 500,
-                        color: '#2C2C2C',
-                        lineHeight: 1,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {activeData.satisfaction.toFixed(2)}{' '}
-                      <span style={{ fontSize: '14px', color: '#7C7F82' }}>%</span>
-                    </div>
+                    {yLabels.filter(label => label.showLabel).map((label) => (
+                      <div
+                        key={`y-label-${label.value}`}
+                        style={{
+                          position: 'absolute',
+                          top: `${(label.y / chartHeight) * 100}%`,
+                          transform: 'translateY(-50%)',
+                          left: 0,
+                          right: 0,
+                          textAlign: 'center',
+                          fontFamily: 'var(--font-open-sans)',
+                          fontSize: '16px',
+                          fontWeight: 350,
+                          color: '#7C7F82',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {label.value}%
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Y-axis labels - inside aspect-ratio wrapper for alignment */}
-            <div
-              style={{
-                position: 'relative',
-                width: '56px',
-                flexShrink: 0,
-                paddingLeft: '0px', // No padding for tight spacing
-              }}
-            >
-              {yLabels.filter(label => label.showLabel).map((label) => (
-                <div
-                  key={`y-label-${label.value}`}
-                  style={{
-                    position: 'absolute',
-                    top: `${(label.y / chartHeight) * 100}%`,
-                    transform: 'translateY(-50%)',
-                    right: '0',
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '16px',
-                    fontWeight: 350,
-                    color: '#7C7F82',
-                    textAlign: 'right',
-                  }}
-                >
-                  {label.value}%
+            {/* Bubble lives here — sibling of scroll container, same level as BoxPlotGraph.
+                This escapes the overflowX:auto clipping that would trap it inside. */}
+            {bubblePosition && activeData && adjustedBubbleXPercent !== null && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${adjustedBubbleXPercent}%`,
+                  top: `${bubblePosition.yPercent}%`,
+                  transform: 'translate(-50%, -100%)',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                }}
+              >
+                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem') }}>
+                  <div
+                    style={{
+                      ...aiGlassLightContentStyle('1.5rem', 0.5),
+                      padding: '10px 12px',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontSize: '20px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {activeData.satisfaction.toFixed(2)}{' '}
+                    <span style={{ fontSize: '14px', color: '#7C7F82' }}>%</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

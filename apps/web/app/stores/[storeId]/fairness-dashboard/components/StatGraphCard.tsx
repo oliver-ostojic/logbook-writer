@@ -312,6 +312,15 @@ function MiniStatusBar({
 
   const max = Math.max(...data.map(d => d.value));
 
+  function getStatusColor(status: string): string {
+    const s = status.toLowerCase();
+    if (s.includes('excellent')) return '#60a5fa';
+    if (s.includes('good')) return '#4ade80';
+    if (s.includes('ok')) return '#fbbf24';
+    if (s.includes('bad')) return '#f87171';
+    return '#6b7280';
+  }
+
   return (
     <svg
       width={width}
@@ -332,7 +341,8 @@ function MiniStatusBar({
         const isLastHovered = isHoveringChart && hoveredIndex === null && i === lastHoveredIndex;
         const isSelected = i === selectedIndex;
         const showAsSelected = !isHoveringChart && isSelected;
-        
+        const activeColor = getStatusColor(item.status);
+
         return (
           <rect
             key={i}
@@ -341,7 +351,7 @@ function MiniStatusBar({
             width={barWidth}
             height={isHovered ? barHeight + 2 : barHeight}
             rx={barWidth / 2}
-            fill={isHovered || isLastHovered || showAsSelected ? '#ef4444' : '#464548'}
+            fill={isHovered || isLastHovered || showAsSelected ? activeColor : '#464548'}
             style={{
               cursor: 'pointer',
               transition: 'y 0.15s ease, height 0.15s ease, fill 0.15s ease',
@@ -533,8 +543,8 @@ export function StatGraphCard({ data, children }: StatGraphCardProps) {
         {data.type === 'statusBar' ? (
           <span className="text-3xl" style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 500, lineHeight: 1, color: (() => {
             const status = selectedStatusBarData?.status.toLowerCase() || '';
-            if (status.includes('excellent')) return '#4ade80'; // green
-            if (status.includes('good')) return '#60a5fa'; // blue
+            if (status.includes('excellent')) return '#60a5fa'; // blue
+            if (status.includes('good')) return '#4ade80'; // green
             if (status.includes('ok')) return '#fbbf24'; // yellow
             if (status.includes('bad')) return '#f87171'; // red
             return '#DBDADB'; // default

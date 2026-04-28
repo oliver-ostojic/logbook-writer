@@ -704,7 +704,8 @@ export default function FairnessDashboardPage() {
             const gini = r.avgGiniCoefficient;
             const status = gini == null ? 'N/A'
               : gini <= 0.1 ? 'Excellent'
-              : gini <= 0.15 ? 'Ok'
+              : gini <= 0.15 ? 'Good'
+              : gini <= 0.2 ? 'Ok'
               : 'Bad';
             return {
               role: r.roleName,
@@ -1867,7 +1868,7 @@ export default function FairnessDashboardPage() {
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        background: 'rgba(255, 255, 255, 0.6)',
                         minHeight: '400px',
                       }}
                     >
@@ -2028,7 +2029,6 @@ export default function FairnessDashboardPage() {
                             overflow: 'hidden',
                             borderRadius: '1.5rem',
                             transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            willChange: 'width',
                           }}
                         >
                           {crewPanelCard && (
@@ -2073,7 +2073,7 @@ export default function FairnessDashboardPage() {
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                        ...aiGlassLightContentStyle('1.5rem', 0.6),
+                        background: 'rgba(255, 255, 255, 0.6)',
                         minHeight: '400px',
                       }}
                     >
@@ -2234,7 +2234,6 @@ export default function FairnessDashboardPage() {
                             overflow: 'hidden',
                             borderRadius: '1.5rem',
                             transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            willChange: 'width',
                           }}
                         >
                           {rolePanelCard && (
@@ -2268,7 +2267,7 @@ export default function FairnessDashboardPage() {
                     className="ai-glass-border"
                     style={{
                       ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      ...aiGlassLightContentStyle('1.5rem', 0.6),
+                      background: 'rgba(255, 255, 255, 0.6)',
                     }}
                   >
                     {/* Time Window Header */}
