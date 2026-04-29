@@ -50,12 +50,13 @@ export const aiGlassLightBorderStyle = (
 };
 
 // Light mode inner content styles (white/light background)
-// opacity parameter: lower = more transparent, higher = more opaque (default 0.1)
+// opacity parameter scales relative to --glass-bg-opacity CSS variable (default 0.6 base)
+// so opacity=0.4 → 0.4/0.6=0.667 multiplier, preserving visual hierarchy while responding to the DevPanel
 export const aiGlassLightContentStyle = (borderRadius: string | number = '1rem', opacity: number = 0.1): React.CSSProperties => ({
   width: '100%',
   height: '100%',
-  background: `rgba(255, 255, 255, ${opacity})`,
-  backdropFilter: 'blur(7px)',
-  WebkitBackdropFilter: 'blur(7px)',
+  background: `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * ${(opacity / 0.6).toFixed(4)}))`,
+  backdropFilter: 'blur(var(--glass-blur, 7px))',
+  WebkitBackdropFilter: 'blur(var(--glass-blur, 7px))',
   borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
 });

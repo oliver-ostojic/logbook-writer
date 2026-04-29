@@ -52,6 +52,10 @@ body {
   --brand-h: 0;    /* hue */
   --brand-s: 84%;  /* saturation */
   --brand-l: 60%;  /* lightness */
+
+  /* Glass effect defaults - controlled by GlassDevPanel */
+  --glass-bg-opacity: 0.6;
+  --glass-blur: 7px;
   /* Corner radius used by bento grid (matches ~2rem) */
   --radius-lg: 2rem;
 
@@ -133,7 +137,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 0.1667));
   pointer-events: none;
   z-index: 2;
 }

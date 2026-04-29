@@ -49,31 +49,17 @@ export function GlassDevPanel() {
     }
   }, [config, mounted]);
 
-  // Apply styles directly to ALL glass elements on the page
+  // Apply styles via CSS variables on root + per-element border variables
   useEffect(() => {
     if (!mounted) return;
 
     const applyStyles = () => {
-      // Apply content styles to all .ai-glass-content elements
-      document.querySelectorAll('.ai-glass-content').forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.background = `rgba(255, 255, 255, ${config.backgroundOpacity})`;
-        htmlEl.style.backdropFilter = `blur(${config.blur}px)`;
-        htmlEl.style.setProperty('-webkit-backdrop-filter', `blur(${config.blur}px)`);
-      });
+      // Set CSS variables on root - all glass content using var(--glass-bg-opacity) updates automatically
+      // This is React-render-proof: CSS variables survive component re-renders
+      document.documentElement.style.setProperty('--glass-bg-opacity', String(config.backgroundOpacity));
+      document.documentElement.style.setProperty('--glass-blur', `${config.blur}px`);
 
-      // Also find elements that have backdrop-filter in their inline style
-      // This catches elements that use aiGlassLightContentStyle directly
-      document.querySelectorAll('*').forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.backdropFilter && htmlEl.style.backdropFilter.includes('blur')) {
-          htmlEl.style.background = `rgba(255, 255, 255, ${config.backgroundOpacity})`;
-          htmlEl.style.backdropFilter = `blur(${config.blur}px)`;
-          htmlEl.style.setProperty('-webkit-backdrop-filter', `blur(${config.blur}px)`);
-        }
-      });
-
-      // Apply border styles to all .ai-glass-border elements
+      // Border variables still need per-element application since they override element-level defaults
       document.querySelectorAll('.ai-glass-border').forEach((el) => {
         const htmlEl = el as HTMLElement;
         htmlEl.style.setProperty('--border-opacity', String(config.borderOpacity));

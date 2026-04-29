@@ -104,7 +104,9 @@ export const NavStatsCard: React.FC<NavStatsCardProps> = ({
               WebkitBackdropFilter: 'none',
               background: darkMode
                 ? (isHovered && !isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.25)')
-                : (isHovered && !isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.85)'),
+                : (isHovered && !isActive
+                    ? `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 0.8333))`
+                    : `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 1.4167))`),
             }}
           />
         </div>

@@ -1868,7 +1868,7 @@ export default function FairnessDashboardPage() {
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                        background: 'rgba(255, 255, 255, 0.6)',
+                        background: `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 1.0000))`,
                         minHeight: '400px',
                       }}
                     >
@@ -2073,7 +2073,7 @@ export default function FairnessDashboardPage() {
                       className="ai-glass-border"
                       style={{
                         ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                        background: 'rgba(255, 255, 255, 0.6)',
+                        background: `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 1.0000))`,
                         minHeight: '400px',
                       }}
                     >
@@ -2267,7 +2267,7 @@ export default function FairnessDashboardPage() {
                     className="ai-glass-border"
                     style={{
                       ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08),
-                      background: 'rgba(255, 255, 255, 0.6)',
+                      background: `rgba(255, 255, 255, calc(var(--glass-bg-opacity, 0.6) * 1.0000))`,
                     }}
                   >
                     {/* Time Window Header */}
