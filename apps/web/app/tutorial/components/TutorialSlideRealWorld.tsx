@@ -254,7 +254,7 @@ export default function TutorialSlideRealWorld() {
                     lineHeight: 1,
                   }}
                 >
-                  30
+                  3
                 </span>
                 <span
                   style={{

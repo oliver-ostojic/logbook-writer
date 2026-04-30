@@ -20,7 +20,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       onEnter: () => callbacks.setViewHint('home'),
       bubble: {
         title: 'Welcome!',
-        body: 'Welcome to the Logbook Writer manager interface. This guided tour will walk you through the key features. Hit Next to get started.',
+        body: 'This guided tour will walk you through the key features of the Logbook Writer. Most of the site will be disabled throughout the walkthrough, although you may be prompted to interact with the site at times. Hit next to start!',
         position: 'center',
       },
     },

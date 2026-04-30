@@ -507,6 +507,7 @@ export function SatisfactionLineGraph({
   const adjustedBubbleXPercent = bubblePosition
     ? bubblePosition.xPercent * scrollFactor - (scrollLeft / (scrollContainerRef.current?.clientWidth ?? 1)) * 100
     : null;
+  const isBubbleVisible = adjustedBubbleXPercent !== null && adjustedBubbleXPercent >= 0 && adjustedBubbleXPercent <= 100;
 
   // Y-axis labels from dynamic ticks (only first and last get labels)
   const yLabels = yAxisConfig?.ticks.map((tickValue, index) => {
@@ -642,7 +643,7 @@ export function SatisfactionLineGraph({
 
             {/* Bubble lives here — sibling of scroll container, same level as BoxPlotGraph.
                 This escapes the overflowX:auto clipping that would trap it inside. */}
-            {bubblePosition && activeData && adjustedBubbleXPercent !== null && (
+            {isBubbleVisible && bubblePosition && activeData && (
               <div
                 style={{
                   position: 'absolute',

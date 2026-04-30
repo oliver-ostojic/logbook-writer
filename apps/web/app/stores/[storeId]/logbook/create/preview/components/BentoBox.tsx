@@ -65,19 +65,9 @@ export default function BentoBox() {
             />
           </div>
         </div>
-        {/* Table bento box */}
-        <div
-          ref={tableRef}
-          data-tutorial-id="preview-logbook-table"
-          className="ai-glass-border rounded-[1.5rem]"
-          style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-        >
-          <div
-            className="w-full overflow-hidden rounded-[1.5rem]"
-            style={aiGlassLightContentStyle('1.5rem', 0.6)}
-          >
-            <LogbookView preview={preview} loading={loading} error={error} />
-          </div>
+        {/* Table bento (no outer glass card — header+table card handled inside LogbookView) */}
+        <div ref={tableRef} data-tutorial-id="preview-logbook-table">
+          <LogbookView preview={preview} loading={loading} error={error} />
         </div>
       </div>
 

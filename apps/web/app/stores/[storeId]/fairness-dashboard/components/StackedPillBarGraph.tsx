@@ -302,6 +302,7 @@ export function StackedPillBarGraph({
   const adjustedBubbleXPercent = bubblePosition
     ? bubblePosition.xPercent * scrollFactor - (scrollLeft / (scrollContainerRef.current?.clientWidth ?? 1)) * 100
     : null;
+  const isBubbleVisible = adjustedBubbleXPercent !== null && adjustedBubbleXPercent >= 0 && adjustedBubbleXPercent <= 100;
 
   // Y-axis labels for the sticky bar
   const yLabels = yAxisConfig?.ticks.map(tickValue => {
@@ -428,7 +429,7 @@ export function StackedPillBarGraph({
 
             {/* Bubble lives here — sibling of scroll container, same level as BoxPlotGraph.
                 This escapes the overflowX:auto clipping that would trap it inside. */}
-            {bubblePosition && activeIndex !== null && displayValue && adjustedBubbleXPercent !== null && (
+            {isBubbleVisible && bubblePosition && activeIndex !== null && displayValue && (
               <div
                 style={{
                   position: 'absolute',

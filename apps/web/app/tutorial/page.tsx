@@ -110,6 +110,12 @@ export default function TutorialPage() {
                         isActive={false}
                         onClick={handleSkip}
                       />
+                      <NavStatsCard
+                        label="Exit"
+                        textOnly
+                        isActive={false}
+                        onClick={() => window.parent.postMessage({ type: 'CLOSE_LOGBOOK_OVERLAY' }, '*')}
+                      />
                     </nav>
                   </div>
                 </div>

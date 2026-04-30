@@ -670,21 +670,21 @@ export default function LogbookSchedule({
   };
 
   const renderSchedule = () => (
-    <div className="isolate flex h-full flex-col bg-white">
+    <div className="isolate flex h-full flex-col">
       {/* Scrollable container - horizontal only, vertical scrolling handled by page */}
       <div className="overflow-x-auto overflow-y-visible">
         <div className="flex flex-col" style={{ minWidth: `${slots.length * columnWidth + 160}px` }}>
           {/* Sticky top header with time labels */}
-          <div className="sticky top-0 z-30 flex-none bg-white">
+          <div className="sticky top-0 z-30 flex-none">
             <div className="grid grid-cols-[10rem_auto] text-xs/5 text-gray-500">
               {/* Left spacer keeps the timeline aligned but stays visually empty */}
               <div
                 aria-hidden
-                className="border-b border-gray-100 bg-white px-3 py-3"
+                className="border-b border-gray-100 px-3 py-3"
               />
 
               {/* Time axis */}
-              <div className="border-b border-gray-100 bg-white">
+              <div className="border-b border-gray-100">
                 <div
                   className="grid"
                   style={{
