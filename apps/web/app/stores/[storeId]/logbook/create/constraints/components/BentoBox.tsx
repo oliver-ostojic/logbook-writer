@@ -562,7 +562,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
       // shiftsData already fetched above for crewQuotas
 
-      const solverResponse = await fetch(`${API_URL}/solver/v2/tune`, {
+      const solverResponse = await fetch(`${API_URL}/solver/v2/solve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -1471,6 +1471,15 @@ export default function FairnessDashboardPage() {
     }
   }, [computedRoleCards, dashboardSnapshot]);
 
+  // Update split-panel crew card with fresh data when computedCrewCards changes
+  useEffect(() => {
+    if (!crewPanelCard || !dashboardSnapshot) return;
+    const updatedCrew = computedCrewCards.find(c => c.id === crewPanelCard.id);
+    if (updatedCrew) {
+      setCrewPanelCard(updatedCrew);
+    }
+  }, [computedCrewCards, dashboardSnapshot]);
+
   // Update split-panel role card with fresh data when computedRoleCards changes
   useEffect(() => {
     if (!rolePanelCard || !dashboardSnapshot) return;

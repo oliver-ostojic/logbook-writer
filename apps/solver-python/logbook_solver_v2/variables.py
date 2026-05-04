@@ -67,11 +67,13 @@ class VariableBuilder:
         # Identify WINDOW roles and build their coverage bands.
         # WINDOW roles only get variables for slots within defined coverage windows.
         # No coverage window for a WINDOW role → zero variables → zero assignments.
+        # HOURLY_OR_WINDOW behaves the same: requires a coverage window to be assigned.
+        WINDOW_LIKE_MODELS = {'WINDOW', 'HOURLY_OR_WINDOW'}
         window_role_ids: set[int] = set()
         for role in role_records:
             assignment_models = role.get('assignmentModels') or []
-            assignment_model = role.get('assignmentModel')
-            if 'WINDOW' in assignment_models or assignment_model == 'WINDOW':
+            assignment_model = role.get('assignmentModel') or ''
+            if WINDOW_LIKE_MODELS & set(assignment_models) or assignment_model in WINDOW_LIKE_MODELS:
                 window_role_ids.add(role['id'])
 
         # Build role_id → list of (startMin, endMin) from coverage_windows

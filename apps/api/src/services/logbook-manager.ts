@@ -170,6 +170,43 @@ export async function saveLogbookWithMetadata(
     }
   });
 
+  // Fetch store-level ASSIGN_BEFORE/AFTER rules so the TIMING evaluator can
+  // narrow the valid timing range to the actual constraint window.
+  // These are hard constraints (not preferences) so they are not iterated as
+  // standalone satisfaction cases — they're passed separately as context.
+  const TIMING_CONSTRAINT_TYPES = ['ASSIGN_BEFORE_SHIFT_MIN_X', 'ASSIGN_AFTER_SHIFT_MIN_X'] as const;
+  const storeTimingConstraints = await prisma.storeRoleRule.findMany({
+    where: {
+      storeId: solverInput.store.id,
+      RoleRule: { type: { in: [...TIMING_CONSTRAINT_TYPES] } },
+    },
+    include: {
+      RoleRule: {
+        select: { id: true, roleId: true, type: true, targetRoleId: true, constraintType: true },
+      },
+    },
+  });
+
+  // Expand each store rule into one synthetic per-crew record so the timing
+  // evaluator can look them up by crewId (negative IDs mark them as synthetic).
+  const crewIds = Array.from(crewIdsWithAssignments);
+  const storeTimingConstraintRecords: CrewRoleRuleRecord[] = storeTimingConstraints.flatMap(
+    (srr, idx) =>
+      crewIds.map((crewId, crewIdx) => ({
+        id: -(idx * crewIds.length + crewIdx + 1),
+        crewId,
+        roleRuleId: srr.roleRuleId,
+        valueInt: srr.valueInt,
+        roleRule: {
+          id: srr.RoleRule.id,
+          roleId: srr.RoleRule.roleId,
+          type: srr.RoleRule.type,
+          targetRoleId: srr.RoleRule.targetRoleId,
+          constraintType: srr.RoleRule.constraintType,
+        },
+      }))
+  );
+
   // Build crew shift map for new system
   const crewRuleShiftMap = new Map<string, CrewRuleShiftWindow>();
   for (const crew of solverInput.crew) {
@@ -213,7 +250,8 @@ export async function saveLogbookWithMetadata(
     assignmentRecords,
     crewRuleShiftMap,
     roleBlockSizes,
-    roleFamilies
+    roleFamilies,
+    storeTimingConstraintRecords
   );
 
   // Calculate full aggregate stats for saving to LogPreferenceMetadata

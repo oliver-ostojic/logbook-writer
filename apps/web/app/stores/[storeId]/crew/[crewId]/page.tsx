@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
-import { NavStatsCard } from '@/app/stores/[storeId]/home/components/NavStatsCard';
+import { TopNavHeader } from '@/app/stores/[storeId]/home/components';
 import { TimingPreferenceCard, CannotBeAssignedAfterCard, RolePreferenceByHourCard, ConsecutiveMinutesCard, RoleDistributionCard, AccountInfoCard } from './components';
-import { useAuthStore } from '@/lib/authStore';
-import { logout } from '@/lib/api/auth';
 import { useTutorialStore } from '@/lib/tutorialStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -38,15 +36,10 @@ export default function CrewPage() {
   const router = useRouter();
   const storeId = params.storeId as string;
   const crewId = params.crewId as string;
-  const { user, logout: logoutStore } = useAuthStore();
-
   const [crew, setCrew] = useState<Crew | null>(null);
   const [preferences, setPreferences] = useState<CrewPreference[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<CrewView>('none');
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Sync active view with tutorial viewHint (works across page navigations)
   const { isActive: tutorialIsActive, viewHint } = useTutorialStore();
@@ -56,31 +49,6 @@ export default function CrewPage() {
       setActiveView(viewHint as CrewView);
     }
   }, [viewHint, tutorialIsActive]);
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
-      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
-      if (isOutsideButton && isOutsideDropdown) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleLogout = async () => {
-    setIsUserMenuOpen(false);
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    }
-    logoutStore();
-    router.push('/login');
-  };
 
   const fetchCrewData = async () => {
     setLoading(true);
@@ -144,39 +112,7 @@ export default function CrewPage() {
               }}
             >
               <div className="flex flex-col gap-6">
-                {/* Top nav - same as home/settings */}
-                <div style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
-                  <div
-                    className="ai-glass-border"
-                    style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}
-                  >
-                    <div
-                      style={{
-                        ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6),
-                        padding: '8px',
-                      }}
-                    >
-                      <nav className="flex items-center" style={{ width: '100%', gap: '8px' }}>
-                        <NavStatsCard
-                          label="Home"
-                          textOnly
-                          isActive={true}
-                          onClick={() => router.push(`/stores/${storeId}/home`)}
-                          isFirst
-                        />
-                        <div ref={userMenuRef} style={{ flex: 1, display: 'flex' }}>
-                          <NavStatsCard
-                            label="Account"
-                            textOnly
-                            isActive={isUserMenuOpen}
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            isLast
-                          />
-                        </div>
-                      </nav>
-                    </div>
-                  </div>
-                </div>
+                <TopNavHeader storeId={storeId} activeNav="dashboard" />
 
                 {/* Content - Side panel layout */}
                 <div
@@ -349,112 +285,6 @@ export default function CrewPage() {
         </div>
       </div>
 
-      {/* User dropdown menu - rendered at root level with fixed positioning */}
-      {isUserMenuOpen && userMenuRef.current && (
-        <div
-          ref={(el) => {
-            userDropdownRef.current = el;
-            if (el && userMenuRef.current) {
-              const rect = userMenuRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 16}px`;
-              el.style.left = `${rect.left}px`;
-              el.style.width = `${rect.width}px`;
-            }
-          }}
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('1rem'),
-            position: 'fixed',
-            zIndex: 99999,
-          }}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1rem', 0.95),
-              padding: '8px',
-              position: 'relative',
-              zIndex: 5,
-            }}
-          >
-            {user && (
-              <div
-                style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
-                  marginBottom: '8px',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#2C2C2C',
-                  }}
-                >
-                  {user.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '12px',
-                    color: '#6B6B6B',
-                    marginTop: '2px',
-                  }}
-                >
-                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
-                </div>
-              </div>
-            )}
-            {/* Back to stores - only for ADMIN */}
-            {user?.role === 'ADMIN' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  router.push('/admin');
-                }}
-                className="w-full transition-all"
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  color: '#2C2C2C',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                Back to stores
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full transition-all"
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                color: '#2C2C2C',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

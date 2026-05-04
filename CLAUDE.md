@@ -12,7 +12,7 @@ Logbook Writer is a crew scheduling system that generates daily logbooks for ret
 - **API**: Fastify + Prisma ORM (PostgreSQL)
 - **Web**: Next.js 13 (app router), React Query, Zustand
 - **Testing**: Vitest
-- **Solver**: Python-based MILP solver (apps/solver-python)
+- **Solver**: Python-based CP-SAT solver (apps/solver-python)
 
 ## Common Commands
 
@@ -141,7 +141,7 @@ borderFade: 50
 
 - **apps/api** – Fastify REST API with Prisma, route handlers, solver integration
 - **apps/web** – Next.js frontend (WIP)
-- **apps/solver-python** – Python MILP solver using OR-Tools
+- **apps/solver-python** – Python CP-SAT solver using OR-Tools
 - **packages/domain** – Core domain logic (normalize, validate, solve utilities)
 - **packages/shared-types** – Shared TypeScript types
 
@@ -172,7 +172,7 @@ The system uses a two-layer solver architecture:
    - Applies preference banking and fairness adjustments
    - Supports shift overrides
 
-2. **Python Solver** (`apps/solver-python/logbook_solver_v2/cli.py`): MILP solver using OR-Tools
+2. **Python Solver** (`apps/solver-python/logbook_solver_v2/cli.py`): CP-SAT solver using OR-Tools
    - Reads `SolverInputV2` JSON from stdin
    - Builds constraint programming model with slot variables
    - Applies hard constraints (role rules, coverage, breaks, quotas)

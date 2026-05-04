@@ -143,9 +143,14 @@ export function calculateCrewRuleSatisfaction(
   assignments: AssignmentRecord[],
   crewShifts: Map<string, CrewShiftWindow>,
   roleBlockSizes: Map<number, number>,
-  roleFamilies: Map<number, number> = new Map()  // roleId → familyId
+  roleFamilies: Map<number, number> = new Map(),  // roleId → familyId
+  timingConstraintRules: CrewRoleRuleRecord[] = []  // store-level ASSIGN_BEFORE/AFTER for timing range narrowing only
 ): SatisfactionResult[] {
   const results: SatisfactionResult[] = [];
+
+  // Merged rule list used only as reference (e.g. TIMING range narrowing).
+  // Store-level constraint rules are appended here but NOT iterated as preferences.
+  const allRulesForContext = [...crewRoleRules, ...timingConstraintRules];
 
   // Group assignments by crew for efficient lookup
   const assignmentsByCrewId = new Map<string, AssignmentRecord[]>();
@@ -168,7 +173,7 @@ export function calculateCrewRuleSatisfaction(
   for (const rule of crewRoleRules) {
     const crewAssignments = assignmentsByCrewId.get(rule.crewId) ?? [];
     const crewShift = crewShifts.get(rule.crewId);
-    
+
     // Skip if crew has no assignments (they didn't work)
     if (crewAssignments.length === 0) {
       continue;
@@ -176,7 +181,7 @@ export function calculateCrewRuleSatisfaction(
 
     // Check if crew was assigned to the rule's role at all
     const roleAssignments = crewAssignments.filter(a => a.roleId === rule.roleRule.roleId);
-    
+
     // For certain rule types, we need to evaluate even if the primary role wasn't assigned
     const evaluateWithoutRoleAssignment = [
       'FORBID_ROLE',
@@ -201,7 +206,7 @@ export function calculateCrewRuleSatisfaction(
       roleBlockSizes,
       assignments,
       rulesByCrewAndType,
-      crewRoleRules,
+      allRulesForContext,
       roleFamilies
     );
 
