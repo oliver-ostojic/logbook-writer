@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { useParams } from 'next/navigation';
 import { MagnifyingGlassIcon, ChartBarIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/20/solid';
 import { StatGraphCard, GraphCardWithStatsTransparent, GraphCardSimple, SatisfactionLineGraph, RoleHeatmap, CrewFairnessTable, CrewCardData, RoleCardData, CrewQuickLookCardStatic, RoleQuickLookCardStatic, CrewQuickLookCardGlass, RoleQuickLookCardGlass, TimeWindowHeader, LargeGraphCard, PreferenceLegend, BoxPlotGraph, StackedPillBarGraph, CrewDashboardContent, RoleDashboardContent } from './components';
 import type { DashboardPanel, SidePanel, TimeInterval, DashboardDate } from '@logbook-writer/shared-types';
@@ -10,8 +9,6 @@ import { buildDashboardSnapshot } from '../../../../src/dashboard/buildDashboard
 import type { DashboardSnapshot } from '../../../../src/dashboard/types';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard, CardSmall } from '@/components/ui/ai-glass';
 import { NavStatsCard, TopNavHeader } from '../home/components';
-import { useAuthStore } from '@/lib/authStore';
-import { logout } from '@/lib/api/auth';
 import { useTutorialStore } from '@/lib/tutorialStore';
 
 // =============================================================================
@@ -205,12 +202,6 @@ const dashboardData: DashboardData = {
 export default function FairnessDashboardPage() {
   const params = useParams();
   const storeId = params.storeId as string;
-  const router = useRouter();
-  const { user, logout: logoutStore } = useAuthStore();
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const userDropdownRef = useRef<HTMLDivElement | null>(null);
-
   // Placeholder state for embedded header controls (visual only for now)
   const [headerPage, setHeaderPage] = useState(1);
   const [headerFilter1, setHeaderFilter1] = useState<'everyone' | 'mine'>('everyone');
@@ -226,31 +217,6 @@ export default function FairnessDashboardPage() {
     { id: 'oneweek' as const, label: 'One week' },
     { id: 'onemonth' as const, label: 'One month' },
   ];
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const isOutsideButton = userMenuRef.current && !userMenuRef.current.contains(target);
-      const isOutsideDropdown = userDropdownRef.current && !userDropdownRef.current.contains(target);
-      if (isOutsideButton && isOutsideDropdown) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleLogout = async () => {
-    setIsUserMenuOpen(false);
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    }
-    logoutStore();
-    router.push('/login');
-  };
 
   // Helper to get localStorage key scoped to store
   const getStorageKey = (key: string) => `fairness-dashboard-${storeId}-${key}`;
@@ -751,14 +717,7 @@ export default function FairnessDashboardPage() {
 
   // Compute crew cards from snapshot - uses selectionCrewRollups for multi-day data
   const computedCrewCards: CrewCardData[] = React.useMemo(() => {
-    console.log('🔄 computedCrewCards useMemo triggered', {
-      hasSnapshot: !!dashboardSnapshot,
-      hasCrewRollups: !!dashboardSnapshot?.selection?.selectionCrewRollups?.length,
-      crewRollupCount: dashboardSnapshot?.selection?.selectionCrewRollups?.length,
-    });
-
     if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionCrewRollups?.length) {
-      console.log('📊 No crew rollup data available');
       return [];
     }
 
@@ -772,11 +731,6 @@ export default function FairnessDashboardPage() {
       });
     }
     
-    console.log('📊 Computing crew cards from selectionCrewRollups:', {
-      crewCount: crewRollups.length,
-      firstCrew: crewRollups[0]?.crewName,
-    });
-
     // Separate crew with preferences from those without
     const crewWithPrefs = crewRollups.filter(c => c.preferencesTotalSelection > 0);
     const crewWithoutPrefs = crewRollups.filter(c => c.preferencesTotalSelection === 0);
@@ -925,17 +879,11 @@ export default function FairnessDashboardPage() {
   // Compute role cards from snapshot selection rollups
   const computedRoleCards: RoleCardData[] = React.useMemo(() => {
     if (!dashboardSnapshot || !dashboardSnapshot.selection.selectionRoleRollups) {
-      console.log('📊 No role rollup data available');
       return [];
     }
 
     const roleRollups = dashboardSnapshot.selection.selectionRoleRollups;
     const logbooks = dashboardSnapshot.selection.logbooks;
-
-    console.log('📊 Computing role cards from selection rollups:', {
-      roleCount: roleRollups.length,
-      firstRole: roleRollups[0]?.roleName,
-    });
 
     // Calculate average fairness across all roles for vsRoleAvgPct
     const fairnessValues = roleRollups
@@ -1055,13 +1003,9 @@ export default function FairnessDashboardPage() {
       lb.crewStats
         .filter(cs => cs.preferencesTotal > 0) // Only crew with preferences
         .map(cs => {
-          console.log(`Crew ${cs.crewName}: avg=${cs.avgSatisfactionPct.toFixed(1)}% met=${cs.preferencesMet}/${cs.preferencesTotal}`);
           return cs.avgSatisfactionPct;
         })
     );
-
-    console.log('📊 Total crew with preferences:', allSatisfactionScores.length);
-    console.log('📊 Raw satisfaction scores:', allSatisfactionScores);
 
     if (allSatisfactionScores.length === 0) {
       return { min: 0, q1: 0, median: 0, q3: 0, max: 0, outliers: [] };
@@ -1101,9 +1045,6 @@ export default function FairnessDashboardPage() {
       max: Math.round(whiskerMax * 100) / 100,
       outliers: outliers.map(o => Math.round(o * 100) / 100),
     };
-
-    console.log('📊 Box plot data:', result);
-    console.log('📊 All satisfaction scores:', sorted);
 
     return result;
   }, [dashboardSnapshot]);
@@ -1457,37 +1398,37 @@ export default function FairnessDashboardPage() {
   useEffect(() => {
     if (!selectedCrew || !dashboardSnapshot) return;
     const updatedCrew = computedCrewCards.find(c => c.id === selectedCrew.id);
-    if (updatedCrew) {
+    if (updatedCrew && updatedCrew !== selectedCrew) {
       setSelectedCrew(updatedCrew);
     }
-  }, [computedCrewCards, dashboardSnapshot]);
+  }, [computedCrewCards, dashboardSnapshot, selectedCrew]);
 
   // Update selected role with fresh data when computedRoleCards changes (e.g., dates selected)
   useEffect(() => {
     if (!selectedRole || !dashboardSnapshot) return;
     const updatedRole = computedRoleCards.find(r => r.id === selectedRole.id);
-    if (updatedRole) {
+    if (updatedRole && updatedRole !== selectedRole) {
       setSelectedRole(updatedRole);
     }
-  }, [computedRoleCards, dashboardSnapshot]);
+  }, [computedRoleCards, dashboardSnapshot, selectedRole]);
 
   // Update split-panel crew card with fresh data when computedCrewCards changes
   useEffect(() => {
     if (!crewPanelCard || !dashboardSnapshot) return;
     const updatedCrew = computedCrewCards.find(c => c.id === crewPanelCard.id);
-    if (updatedCrew) {
+    if (updatedCrew && updatedCrew !== crewPanelCard) {
       setCrewPanelCard(updatedCrew);
     }
-  }, [computedCrewCards, dashboardSnapshot]);
+  }, [computedCrewCards, dashboardSnapshot, crewPanelCard]);
 
   // Update split-panel role card with fresh data when computedRoleCards changes
   useEffect(() => {
     if (!rolePanelCard || !dashboardSnapshot) return;
     const updatedRole = computedRoleCards.find(r => r.id === rolePanelCard.id);
-    if (updatedRole) {
+    if (updatedRole && updatedRole !== rolePanelCard) {
       setRolePanelCard(updatedRole);
     }
-  }, [computedRoleCards, dashboardSnapshot]);
+  }, [computedRoleCards, dashboardSnapshot, rolePanelCard]);
 
   // Fetch store info
   useEffect(() => {
@@ -1548,23 +1489,15 @@ export default function FairnessDashboardPage() {
 
   // Fetch dashboard data from API
   useEffect(() => {
-    console.log('🔄 Dashboard fetch effect triggered', {
-      storeId,
-      availableDatesCount: availableDates.length,
-      selectedDaysKeys: Object.keys(selectedDays).length,
-      timestamp: new Date().toISOString(),
-    });
 
     async function fetchDashboardData() {
       if (!API_URL || !storeId) return;
 
       // Wait for available dates to load first
       if (availableDates.length === 0 && Object.keys(selectedDays).length === 0) {
-        console.log('📊 Waiting for available dates to load...');
         return;
       }
 
-      console.log('📊 Starting dashboard fetch...');
       setDashboardLoading(true);
       setDashboardError(null);
 
@@ -1572,33 +1505,19 @@ export default function FairnessDashboardPage() {
         // Use timeSelectedDates from TimeWindowHeader, or fallback to all available dates
         const datesToFetch = timeSelectedDates.length > 0 ? timeSelectedDates : availableDates;
 
-        console.log('📊 Fetching data for dates:', {
-          selectedCount: timeSelectedDates.length,
-          availableCount: availableDates.length,
-          usingDates: datesToFetch.length,
-          sampleDates: datesToFetch.slice(0, 3),
-        });
 
         // Skip if no dates to fetch
         if (datesToFetch.length === 0) {
-          console.log('📊 No dates to fetch, skipping');
           setDashboardLoading(false);
           return;
         }
 
         // Fetch logbook data from NEW endpoint
         const datesParam = datesToFetch.join(',');
-        console.log('📊 Fetching from URL:', `${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`);
         const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`);
         if (!res.ok) throw new Error(await res.text());
 
         const { logbooks, roleRules } = await res.json();
-
-        console.log('📊 Logbook data fetched:', {
-          logbookCount: logbooks.length,
-          datesRequested: datesToFetch.length,
-          roleRulesCount: roleRules?.length || 0,
-        });
 
         // Store role rules for preference sentence generation
         if (roleRules) {
@@ -1635,15 +1554,7 @@ export default function FairnessDashboardPage() {
           roleRules: flattenedRoleRules,
         });
 
-        console.log('✅ Setting dashboard snapshot with data:', {
-          logbookCount: snapshot.selection.logbooks.length,
-          crewCount: snapshot.selection.selectionCrewRollups.length,
-          roleCount: snapshot.selection.selectionRoleRollups.length,
-        });
-
         setDashboardSnapshot(snapshot);
-
-        console.log('📊 Dashboard snapshot state updated');
 
         // Also fetch legacy dashboard API for compatibility (for now)
         if (datesToFetch.length > 0) {
@@ -2395,111 +2306,6 @@ export default function FairnessDashboardPage() {
         </div>
       </main>
 
-      {/* User dropdown menu - rendered at root level with fixed positioning */}
-      {isUserMenuOpen && userMenuRef.current && (
-        <div
-          ref={(el) => {
-            userDropdownRef.current = el;
-            if (el && userMenuRef.current) {
-              const rect = userMenuRef.current.getBoundingClientRect();
-              el.style.top = `${rect.bottom + 16}px`;
-              el.style.left = `${rect.left}px`;
-              el.style.width = `${rect.width}px`;
-            }
-          }}
-          className="ai-glass-border"
-          style={{
-            ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08),
-            position: 'fixed',
-            zIndex: 99999,
-          }}
-        >
-          <div
-            style={{
-              ...aiGlassLightContentStyle('1rem', 0.6),
-              padding: '8px',
-              position: 'relative',
-              zIndex: 5,
-            }}
-          >
-            {user && (
-              <div
-                style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                  marginBottom: '8px',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#DBDADB',
-                  }}
-                >
-                  {user.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-open-sans)',
-                    fontSize: '12px',
-                    color: '#7C7F82',
-                    marginTop: '2px',
-                  }}
-                >
-                  {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
-                </div>
-              </div>
-            )}
-            {user?.role === 'ADMIN' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  router.push('/admin');
-                }}
-                className="w-full transition-all"
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  color: '#DBDADB',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                Back to stores
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full transition-all"
-              style={{
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-open-sans)',
-                fontSize: '14px',
-                color: '#DBDADB',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      )}
       </div>
     </>
   );

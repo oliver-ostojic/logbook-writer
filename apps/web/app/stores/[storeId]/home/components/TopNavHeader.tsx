@@ -90,20 +90,20 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                 label="Home"
                 textOnly
                 isActive={activeNav === 'home'}
-                onClick={() => router.push(`/stores/${storeId}/home`, { scroll: false })}
+                onClick={() => router.push(`/stores/${storeId}/home`)}
                 isFirst
               />
               <NavStatsCard
                 label="System Health"
                 textOnly
                 isActive={activeNav === 'dashboard'}
-                onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`, { scroll: false })}
+                onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
               />
               <NavStatsCard
                 label="Settings"
                 textOnly
                 isActive={activeNav === 'settings'}
-                onClick={() => router.push(`/stores/${storeId}/settings`, { scroll: false })}
+                onClick={() => router.push(`/stores/${storeId}/settings`)}
               />
               <div ref={userMenuRef} style={{ display: 'flex' }}>
                 <NavStatsCard
