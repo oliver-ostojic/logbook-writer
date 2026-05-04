@@ -1281,46 +1281,42 @@ export default function Home() {
                     padding="12px 16px"
                     contentStyle={{ justifyContent: 'flex-start' }}
                   >
-                    <div className="flex flex-col gap-2 w-full">
+                    <div className="flex items-center justify-between w-full gap-3">
                       <span
                         style={{
                           fontFamily: 'var(--font-open-sans)',
                           fontSize: '14px',
                           fontWeight: 500,
                           color: '#2C2C2C',
+                          flexShrink: 0,
                         }}
                       >
                         {itemName}
                       </span>
                       {type === 'logbooks' ? (() => {
                         const lb = item as any;
-                        const condensed = selectedItem !== null && selectedItem.type === 'logbooks';
                         const getPrefColor = (pct: number) => {
                           if (pct < 60) return '#dc2626';
                           if (pct < 70) return '#d97706';
                           if (pct < 80) return '#16a34a';
                           return '#2563eb';
                         };
-                        const divider = <div style={{ width: 1, height: 28, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, transparent 100%)' }} />;
+                        const divider = <div style={{ width: 1, height: 16, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.12) 30%, rgba(0,0,0,0.12) 70%, transparent 100%)' }} />;
+                        const stat = (label: string, value: React.ReactNode) => (
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{label}</span>
+                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: typeof value === 'string' && value !== '—' ? 'inherit' : '#2C2C2C', fontWeight: 500 }}>{value}</span>
+                          </div>
+                        );
                         return (
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-between gap-2 flex-1">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Violations</span>
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 400 }}>
-                                {lb.violationCount ?? '—'}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-2.5">
+                            {stat('Violations', lb.violationCount ?? '—')}
                             {divider}
-                            <div className="flex items-center justify-between gap-2 flex-1">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{condensed ? 'Crew' : 'Crew count'}</span>
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 400 }}>
-                                {lb.crewCount != null ? lb.crewCount : '—'}
-                              </span>
-                            </div>
+                            {stat('Crew', lb.crewCount != null ? lb.crewCount : '—')}
                             {divider}
-                            <div className="flex items-center justify-between gap-2 flex-1">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{condensed ? 'Prefs met' : 'Preferences met'}</span>
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 400 }}>
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Prefs</span>
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 500 }}>
                                 {lb.prefsMet != null ? `${Math.round(lb.prefsMet)}%` : '—'}
                               </span>
                             </div>

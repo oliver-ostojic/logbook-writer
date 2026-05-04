@@ -1119,7 +1119,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: 'storeId must be a number' });
       }
 
-      const limitNum = Number(limit) || 50;
+      const limitNum = limit !== undefined ? Number(limit) : undefined;
       const offsetNum = Number(offset) || 0;
 
       // Build where clause
@@ -1158,7 +1158,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
             },
           },
           orderBy: { date: 'desc' },
-          take: limitNum,
+          ...(limitNum !== undefined ? { take: limitNum } : {}),
           skip: offsetNum,
         }),
         prisma.logbook.count({ where }),
