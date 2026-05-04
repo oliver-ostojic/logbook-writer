@@ -28,49 +28,6 @@ const VIEW_OPTIONS = [
 
 type ViewId = typeof VIEW_OPTIONS[number]['id'];
 
-// Placeholder crew data
-const crewData = [
-  { id: '1', name: 'Sarah Chen' },
-  { id: '2', name: 'Mike Rodriguez' },
-  { id: '3', name: 'Alex Kim' },
-  { id: '4', name: 'Emily Johnson' },
-  { id: '5', name: 'David Park' },
-  { id: '6', name: 'Jessica Lee' },
-  { id: '7', name: 'Chris Martinez' },
-  { id: '8', name: 'Amanda Thompson' },
-  { id: '9', name: 'Ryan Wilson' },
-  { id: '10', name: 'Nicole Brown' },
-  { id: '11', name: 'Kevin Davis' },
-  { id: '12', name: 'Lisa Garcia' },
-];
-
-// Placeholder roles data
-const rolesData = [
-  { id: '1', name: 'Register' },
-  { id: '2', name: 'Product' },
-  { id: '3', name: 'Demo' },
-  { id: '4', name: 'Break' },
-  { id: '5', name: 'Training' },
-  { id: '6', name: 'Inventory' },
-  { id: '7', name: 'Customer Service' },
-  { id: '8', name: 'Stocking' },
-];
-
-// Placeholder logbooks data
-const logbooksData = [
-  { id: '1', date: new Date('2025-01-11') },
-  { id: '2', date: new Date('2025-01-10') },
-  { id: '3', date: new Date('2025-01-09') },
-  { id: '4', date: new Date('2025-01-08') },
-  { id: '5', date: new Date('2025-01-07') },
-  { id: '6', date: new Date('2025-01-06') },
-  { id: '7', date: new Date('2025-01-05') },
-  { id: '8', date: new Date('2025-01-04') },
-  { id: '9', date: new Date('2025-01-03') },
-  { id: '10', date: new Date('2025-01-02') },
-  { id: '11', date: new Date('2025-01-01') },
-  { id: '12', date: new Date('2024-12-31') },
-];
 
 // Parse date string (YYYY-MM-DD) as local date without timezone conversion
 function parseLocalDate(dateStr: string): Date {
@@ -460,6 +417,7 @@ export default function Home() {
   const [apiPreferences, setApiPreferences] = useState<any[]>([]);
   const [apiRuns, setApiRuns] = useState<any[]>([]);
   const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Fetch data from API
   useEffect(() => {
@@ -485,8 +443,10 @@ export default function Home() {
         // Logbooks API returns { logbooks: [...], total, limit, offset }
         const logbooks = logbooksRes?.logbooks || [];
         setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
+        setDataLoaded(true);
       } catch (err) {
         console.error('Failed to fetch data:', err);
+        setDataLoaded(true);
       }
     }
     fetchData();
@@ -566,12 +526,10 @@ export default function Home() {
     setActivityPage(1);
   }, [activityFilter, activityUserFilter]);
 
-  // Use API data if available, otherwise fall back to placeholder
-  const effectiveCrew = apiCrew.length > 0 ? apiCrew.map((c: any) => ({ id: c.id, name: c.name })) : crewData;
-  const effectiveRoles = (apiRoles.length > 0
-    ? apiRoles.map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId ? String(r.familyId) : null }))
-    : rolesData.map(r => ({ ...r, familyId: null }))
-  ).sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
+  const effectiveCrew = apiCrew.map((c: any) => ({ id: c.id, name: c.name }));
+  const effectiveRoles = apiRoles
+    .map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId ? String(r.familyId) : null }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const effectiveRoleFamilies = apiRoleFamilies
     .map((f: any) => ({ id: String(f.id), name: f.displayName || f.name }))
@@ -605,18 +563,16 @@ export default function Home() {
     }));
   };
 
-  const effectiveLogbooks = apiLogbooks.length > 0
-    ? dedupeLogbooks(apiLogbooks).map((l: any) => ({
-        id: l.id,
-        date: parseLocalDate(l.date),
-        status: l.status,
-        hasSuperseded: l.hasSupersededVersions || false,
-        versionCount: l.versionCount,
-        crewCount: l.crewCount ?? null,
-        prefsMet: l.metadata?.percentMet ?? null,
-        violationCount: l.violationCount ?? null,
-      }))
-    : logbooksData.map(l => ({ ...l, status: 'PUBLISHED', hasSuperseded: false, versionCount: 1, crewCount: null, prefsMet: null }));
+  const effectiveLogbooks = dedupeLogbooks(apiLogbooks).map((l: any) => ({
+    id: l.id,
+    date: parseLocalDate(l.date),
+    status: l.status,
+    hasSuperseded: l.hasSupersededVersions || false,
+    versionCount: l.versionCount,
+    crewCount: l.crewCount ?? null,
+    prefsMet: l.metadata?.percentMet ?? null,
+    violationCount: l.violationCount ?? null,
+  }));
 
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'recent', label: 'Recent' },
@@ -1330,7 +1286,7 @@ export default function Home() {
                   </div>
                 );
               })
-            ) : (
+            ) : dataLoaded ? (
               <div
                 className="flex items-center justify-center flex-1"
                 style={{
@@ -1341,7 +1297,7 @@ export default function Home() {
               >
                 No {title.toLowerCase()} found
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </CardContainer>
@@ -1832,7 +1788,7 @@ export default function Home() {
             </CardContainer>
           ))}
 
-          {groupedByType.size === 0 && (
+          {groupedByType.size === 0 && dataLoaded && (
             <div className="flex items-center justify-center flex-1" style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', color: '#6B6B6B', padding: '2rem 0' }}>
               No preferences found
             </div>
@@ -2160,7 +2116,7 @@ export default function Home() {
                   </GlassPillButton>
                 );
               })
-            ) : (
+            ) : dataLoaded ? (
               <div
                 className="flex items-center justify-center flex-1"
                 style={{
@@ -2171,7 +2127,7 @@ export default function Home() {
               >
                 No roles found
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </CardContainer>
