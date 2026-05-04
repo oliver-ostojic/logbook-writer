@@ -10,6 +10,9 @@ import type { DashboardSnapshot } from '../../../../src/dashboard/types';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, aiGlassAnimations, GlassPillCard, CardSmall } from '@/components/ui/ai-glass';
 import { NavStatsCard, TopNavHeader } from '../home/components';
 import { useTutorialStore } from '@/lib/tutorialStore';
+import { useStoreInfo } from '@/lib/hooks/useStoreInfo';
+import { useAvailableDates } from '@/lib/hooks/useAvailableDates';
+import { useDashboardData } from '@/lib/hooks/useDashboardData';
 
 // =============================================================================
 // Dashboard API Response Types
@@ -246,7 +249,8 @@ export default function FairnessDashboardPage() {
   // Track if component is mounted (client-side) to prevent hydration mismatches
   const [mounted, setMounted] = useState(false);
 
-  const [storeName, setStoreName] = useState<string>('');
+  const { data: storeInfoData } = useStoreInfo(storeId);
+  const storeName = storeInfoData?.name ?? '';
   const [activeDashboard, setActiveDashboard] = useState<string>('Overview');
   const [activeView, setActiveView] = useState<string>('overview');
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>('none');
@@ -277,12 +281,6 @@ export default function FairnessDashboardPage() {
   const [crewSearchQuery, setCrewSearchQuery] = useState('');
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   
-  // Dashboard API data state
-  const [dashboardApiData, setDashboardApiData] = useState<DashboardApiResponse | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardSnapshot | null>(null);
-  
   const [timeSelectionIndex, setTimeSelectionIndex] = useState(0);
   const [yearSelectionIndex, setYearSelectionIndex] = useState(0);
   const [selectedDays, setSelectedDays] = useState<Record<string, Set<number>>>({});
@@ -296,10 +294,29 @@ export default function FairnessDashboardPage() {
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select'); // Whether drag is selecting or deselecting
 
   // Available dates from API (logbook dates)
-  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const { data: availableDates = [] } = useAvailableDates(storeId);
 
   // Selected dates for TimeWindowHeader (controlled by the header component)
   const [timeSelectedDates, setTimeSelectedDates] = useState<string[]>([]);
+
+  // Dates to fetch dashboard data for (selected window or fallback to all available)
+  const datesToFetch = React.useMemo(
+    () => (timeSelectedDates.length > 0 ? timeSelectedDates : availableDates),
+    [timeSelectedDates, availableDates]
+  );
+
+  const {
+    data: dashboardQueryData,
+    isLoading: dashboardIsLoading,
+    error: dashboardErrorObj,
+  } = useDashboardData(storeId, datesToFetch);
+
+  const dashboardSnapshot = dashboardQueryData?.snapshot ?? null;
+  const dashboardApiData = dashboardQueryData?.legacy ?? null;
+  const roleRules = dashboardQueryData?.roleRules ?? [];
+  const dashboardLoading = dashboardIsLoading;
+  const dashboardError =
+    dashboardErrorObj instanceof Error ? dashboardErrorObj.message : null;
 
   const CREW_CARDS_PER_PAGE = 7;
   const ROLE_CARDS_PER_PAGE = 6;
@@ -1049,9 +1066,6 @@ export default function FairnessDashboardPage() {
     return result;
   }, [dashboardSnapshot]);
 
-  // Store role rules fetched from API
-  const [roleRules, setRoleRules] = React.useState<any[]>([]);
-
   // Compute preference data for GraphCardSimple
   const computedPreferenceData = React.useMemo(() => {
     if (!dashboardSnapshot) return [];
@@ -1430,40 +1444,6 @@ export default function FairnessDashboardPage() {
     }
   }, [computedRoleCards, dashboardSnapshot, rolePanelCard]);
 
-  // Fetch store info
-  useEffect(() => {
-    // Fetch store details
-    async function fetchStore() {
-      if (!API_URL || !storeId) return;
-      try {
-        const res = await fetch(`${API_URL}/stores`);
-        if (!res.ok) throw new Error(await res.text());
-        const stores = (await res.json()) as Store[];
-        const store = stores.find(s => s.id === parseInt(storeId, 10));
-        if (store) setStoreName(store.name);
-      } catch (e) {
-        console.error('Failed to load store:', e);
-      }
-    }
-    fetchStore();
-  }, [storeId]);
-
-  // Fetch available logbook dates
-  useEffect(() => {
-    async function fetchAvailableDates() {
-      if (!API_URL || !storeId) return;
-      try {
-        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/dates`);
-        if (!res.ok) throw new Error(await res.text());
-        const { dates } = await res.json();
-        setAvailableDates(dates);
-      } catch (e) {
-        console.error('Failed to load available dates:', e);
-      }
-    }
-    fetchAvailableDates();
-  }, [storeId]);
-
   // Auto-navigate to most recent month with shifts when dates load (only if no saved state)
   useEffect(() => {
     if (availableDates.length === 0) return;
@@ -1486,101 +1466,6 @@ export default function FairnessDashboardPage() {
       setTimeSelectionIndex(month);
     }
   }, [availableDates, availableYears]);
-
-  // Fetch dashboard data from API
-  useEffect(() => {
-
-    async function fetchDashboardData() {
-      if (!API_URL || !storeId) return;
-
-      // Wait for available dates to load first
-      if (availableDates.length === 0 && Object.keys(selectedDays).length === 0) {
-        return;
-      }
-
-      setDashboardLoading(true);
-      setDashboardError(null);
-
-      try {
-        // Use timeSelectedDates from TimeWindowHeader, or fallback to all available dates
-        const datesToFetch = timeSelectedDates.length > 0 ? timeSelectedDates : availableDates;
-
-
-        // Skip if no dates to fetch
-        if (datesToFetch.length === 0) {
-          setDashboardLoading(false);
-          return;
-        }
-
-        // Fetch logbook data from NEW endpoint
-        const datesParam = datesToFetch.join(',');
-        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`);
-        if (!res.ok) throw new Error(await res.text());
-
-        const { logbooks, roleRules } = await res.json();
-
-        // Store role rules for preference sentence generation
-        if (roleRules) {
-          setRoleRules(roleRules);
-        }
-
-        // Transform roleRules to match the expected format for builder
-        // The API returns roleRules with crewId as an array, we need to flatten
-        const flattenedRoleRules = (roleRules || []).flatMap((rule: any) => {
-          // If crewId is an array, create one entry per crew
-          if (Array.isArray(rule.crewIds)) {
-            return rule.crewIds.map((crewId: string) => ({
-              crewId,
-              roleId: String(rule.roleId),
-              type: rule.type,
-            }));
-          }
-          // Single crewId
-          return [{
-            crewId: rule.crewId,
-            roleId: String(rule.roleId),
-            type: rule.type,
-          }];
-        });
-
-        // Build dashboard snapshot
-        const snapshot = buildDashboardSnapshot({
-          storeId,
-          timezone: 'America/New_York', // TODO: get from store
-          selectionId: 'dashboard-view',
-          selectionLabel: 'Fairness Dashboard',
-          selectedDates: datesToFetch,
-          logbooks,
-          roleRules: flattenedRoleRules,
-        });
-
-        setDashboardSnapshot(snapshot);
-
-        // Also fetch legacy dashboard API for compatibility (for now)
-        if (datesToFetch.length > 0) {
-          const sortedDates = [...datesToFetch].sort();
-          const legacyParams = new URLSearchParams({
-            startDate: sortedDates[0],
-            endDate: sortedDates[sortedDates.length - 1],
-            title: 'Fairness Dashboard',
-          });
-
-          const legacyRes = await fetch(`${API_URL}/api/stores/${storeId}/dashboard?${legacyParams}`);
-          if (legacyRes.ok) {
-            const legacyData = await legacyRes.json() as DashboardApiResponse;
-            setDashboardApiData(legacyData);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load dashboard data:', e);
-        setDashboardError(e instanceof Error ? e.message : 'Failed to load dashboard');
-      } finally {
-        setDashboardLoading(false);
-      }
-    }
-
-    fetchDashboardData();
-  }, [storeId, timeSelectedDates, availableDates]);
 
   // Sync dashboard view with tutorial viewHint
   const { isActive: tutorialIsActive, viewHint } = useTutorialStore();
