@@ -1588,8 +1588,8 @@ export default function FairnessDashboardPage() {
 
         // Fetch logbook data from NEW endpoint
         const datesParam = datesToFetch.join(',');
-        console.log('📊 Fetching from URL:', `${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}&status=PUBLISHED`);
-        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}&status=PUBLISHED`);
+        console.log('📊 Fetching from URL:', `${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`);
+        const res = await fetch(`${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`);
         if (!res.ok) throw new Error(await res.text());
 
         const { logbooks, roleRules } = await res.json();

@@ -103,7 +103,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
    *
    * Query params:
    *   - dates: Comma-separated ISO dates (e.g., '2025-01-01,2025-01-03,2025-01-07')
-   *   - status: Logbook status filter (default: PUBLISHED)
+   *   - status: Comma-separated statuses to include (default: DRAFT,PUBLISHED — excludes SUPERSEDED)
    */
   app.get<{
     Params: { storeId: string };
@@ -132,10 +132,11 @@ export function registerDashboardRoutes(app: FastifyInstance) {
       }
     }
 
-    const status = request.query.status || 'PUBLISHED';
+    const statusParam = request.query.status || 'DRAFT,PUBLISHED';
+    const statuses = statusParam.split(',').map(s => s.trim()) as any[];
 
     try {
-      const { PrismaClient, LogbookStatus } = await import('@prisma/client');
+      const { PrismaClient } = await import('@prisma/client');
       const prisma = new PrismaClient();
 
       // Convert ISO date strings to Date objects
@@ -149,7 +150,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
         where: {
           storeId,
           date: { in: dateObjects },
-          status: status as any,
+          status: { in: statuses },
         },
         include: {
           Assignment: {
