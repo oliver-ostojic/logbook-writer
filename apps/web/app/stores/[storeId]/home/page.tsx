@@ -1281,19 +1281,7 @@ export default function Home() {
                     padding="12px 16px"
                     contentStyle={{ justifyContent: 'flex-start' }}
                   >
-                    <div className="flex items-center justify-between w-full gap-3">
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-open-sans)',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {itemName}
-                      </span>
-                      {type === 'logbooks' ? (() => {
+                    {type === 'logbooks' ? (() => {
                         const lb = item as any;
                         const getPrefColor = (pct: number) => {
                           if (pct < 60) return '#dc2626';
@@ -1302,38 +1290,42 @@ export default function Home() {
                           return '#2563eb';
                         };
                         const divider = <div style={{ width: 1, height: 16, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.12) 30%, rgba(0,0,0,0.12) 70%, transparent 100%)' }} />;
-                        const stat = (label: string, value: React.ReactNode) => (
-                          <div className="flex items-center gap-1.5">
-                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>{label}</span>
-                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: typeof value === 'string' && value !== '—' ? 'inherit' : '#2C2C2C', fontWeight: 500 }}>{value}</span>
-                          </div>
-                        );
                         return (
-                          <div className="flex items-center gap-2.5">
-                            {stat('Violations', lb.violationCount ?? '—')}
+                          <div className="flex items-center w-full gap-3">
+                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
+                              {itemName}
+                            </span>
                             {divider}
-                            {stat('Crew', lb.crewCount != null ? lb.crewCount : '—')}
-                            {divider}
-                            <div className="flex items-center gap-1.5">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Prefs</span>
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 500 }}>
-                                {lb.prefsMet != null ? `${Math.round(lb.prefsMet)}%` : '—'}
-                              </span>
+                            <div className="flex items-center flex-1 gap-2">
+                              <div className="flex items-center justify-between flex-1">
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Violations</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{lb.violationCount ?? '—'}</span>
+                              </div>
+                              {divider}
+                              <div className="flex items-center justify-between flex-1">
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Crew</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{lb.crewCount != null ? lb.crewCount : '—'}</span>
+                              </div>
+                              {divider}
+                              <div className="flex items-center justify-between flex-1">
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Prefs</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 500 }}>
+                                  {lb.prefsMet != null ? `${Math.round(lb.prefsMet)}%` : '—'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
                       })() : (
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-open-sans)',
-                            fontSize: '12px',
-                            color: '#6B6B6B',
-                          }}
-                        >
+                      <div className="flex flex-col gap-2 w-full">
+                        <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C' }}>
+                          {itemName}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#6B6B6B' }}>
                           {subtitle}
                         </span>
+                      </div>
                       )}
-                    </div>
                   </GlassPillButton>
                   </div>
                 );
