@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm turbo run build --filter=web...",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@logbook-writer/web...",
   "outputDirectory": ".next",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile"
 }
