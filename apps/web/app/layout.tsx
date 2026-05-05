@@ -1,6 +1,7 @@
 import './globals.css';
 import { Roboto, Open_Sans, Inter, Instrument_Serif } from 'next/font/google';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 import { GlassDevPanel } from '@/components/ui/ai-glass';
 import { ScrollRestorationDisabler } from '@/components/ScrollRestorationDisabler';
 import { TutorialProvider } from '@/components/tutorial-flyover';
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ backgroundColor: 'transparent' }}>
         <ScrollRestorationDisabler />
-        <AuthProvider>{children}</AuthProvider>
+        <QueryProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryProvider>
         <TutorialProvider />
         <GlassDevPanel />
       </body>

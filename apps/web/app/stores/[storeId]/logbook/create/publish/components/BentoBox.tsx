@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -19,7 +20,7 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
 
     const fetchLogbook = async () => {
       try {
-        const res = await fetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}`);
+        const res = await authFetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.date) {
@@ -51,7 +52,7 @@ export default function BentoBox({ logbookId }: BentoBoxProps) {
     
     setIsDownloading(true);
     try {
-      const res = await fetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/pdf`);
+      const res = await authFetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/pdf`);
       if (!res.ok) {
         throw new Error('Failed to download PDF');
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -37,7 +38,7 @@ export function AccountInfoCard({ crewId, storeId }: AccountInfoCardProps) {
       setError(null);
 
       try {
-        const res = await fetch(`${API_URL}/crew/${crewId}?include=roles`);
+        const res = await authFetch(`${API_URL}/crew/${crewId}?include=roles`);
         if (!res.ok) throw new Error('Failed to load crew data');
         const data = await res.json();
         if (!cancelled) setCrew(data);

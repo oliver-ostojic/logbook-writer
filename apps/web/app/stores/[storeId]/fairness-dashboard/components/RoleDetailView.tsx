@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle, CardSmall } from '@/components/ui/ai-glass';
+import { CardContainer, CardSmall, GlassPillCard } from '@/components/ui/ai-glass';
 import { StatGraphCard } from './StatGraphCard';
 import { LargeGraphCard } from './LargeGraphCard';
 import { BoxPlotGraph } from './BoxPlotGraph';
@@ -10,7 +10,7 @@ import { CrewFairnessTable, CrewFairnessRow } from './CrewFairnessTable';
 import { TimeWindowHeader } from './TimeWindowHeader';
 import type { RoleCardData } from './RoleQuickLookCard';
 
-interface RoleDashboardContentProps {
+interface RoleDetailViewProps {
   role: RoleCardData;
   availableDates: string[];
   selectedDates: string[];
@@ -34,7 +34,7 @@ interface RoleDashboardContentProps {
   sparklineData: number[];
 }
 
-export function RoleDashboardContent({
+export function RoleDetailView({
   role,
   availableDates,
   selectedDates,
@@ -46,16 +46,9 @@ export function RoleDashboardContent({
   computedCrewFairnessTable,
   formatMinutesToReadable,
   sparklineData,
-}: RoleDashboardContentProps) {
+}: RoleDetailViewProps) {
   return (
-    <div
-      className="ai-glass-border"
-      style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-    >
-      <div
-        className="ai-glass-content"
-        style={aiGlassLightContentStyle('1.5rem', 0.6)}
-      >
+    <CardContainer lightMode borderRadius="1.5rem" padding="0">
       {/* Time Window Header */}
       <TimeWindowHeader
         availableDates={availableDates}
@@ -124,11 +117,9 @@ export function RoleDashboardContent({
             title="Crew Mins/Shift Spread"
             highlightLabel={roleBoxPlotLabel ?? undefined}
             legend={
-              <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                  {role.name}
-                </div>
-              </div>
+              <GlassPillCard borderRadius="9999px" backgroundOpacity={0.5} padding="8px 12px" style={{ width: 'fit-content' }} contentStyle={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                {role.name}
+              </GlassPillCard>
             }
             className="mt-4"
           >
@@ -171,9 +162,8 @@ export function RoleDashboardContent({
           />
         </div>
       </div>{/* End dashboard content */}
-      </div>{/* End ai-glass-content */}
-    </div>
+    </CardContainer>
   );
 }
 
-export default RoleDashboardContent;
+export default RoleDetailView;

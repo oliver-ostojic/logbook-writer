@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -67,7 +68,7 @@ export function RunDetailView({ runId, onBack, onDelete }: RunDetailViewProps) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/runs/${runId}`);
+      const response = await authFetch(`${API_URL}/runs/${runId}`);
       if (!response.ok) throw new Error('Failed to load run data');
       const data = await response.json();
       setRun(data);

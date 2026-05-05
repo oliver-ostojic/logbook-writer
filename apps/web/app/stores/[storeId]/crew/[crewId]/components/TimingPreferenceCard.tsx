@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { createPortal } from 'react-dom';
 import {
   DndContext,
@@ -261,7 +262,7 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
     setLoading(true);
     try {
       // Single call with all necessary data
-      const crewRes = await fetch(`${API_URL}/crew/${crewId}?include=roleRules`);
+      const crewRes = await authFetch(`${API_URL}/crew/${crewId}?include=roleRules`);
       if (!crewRes.ok) {
         console.error('Failed to fetch crew data');
         return;
@@ -300,7 +301,7 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
 
       // Now fetch ALL TIMING role rules for the store to find available roles
       // We need to fetch all TIMING rules to know which roles have timing preferences available
-      const allTimingRulesRes = await fetch(`${API_URL}/role-rules?storeId=${storeId}`);
+      const allTimingRulesRes = await authFetch(`${API_URL}/role-rules?storeId=${storeId}`);
       if (!allTimingRulesRes.ok) {
         console.error('Failed to fetch role rules');
         setAvailableRoles([]);
@@ -403,7 +404,7 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
 
     // Update via API - we need to update the CrewRoleRule's valueInt
     try {
-      const res = await fetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
+      const res = await authFetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ valueInt: newValueInt }),
@@ -432,7 +433,7 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
 
     try {
       // Directly create CrewRoleRule (RoleRule already exists)
-      const createCrewRuleRes = await fetch(`${API_URL}/crew-role-rules`, {
+      const createCrewRuleRes = await authFetch(`${API_URL}/crew-role-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -466,7 +467,7 @@ export function TimingPreferenceCard({ crewId, storeId, onRefresh }: TimingPrefe
     setTimingPreferences((prev) => prev.filter((p) => p.id !== preferenceId));
 
     try {
-      const res = await fetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
+      const res = await authFetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
         method: 'DELETE',
       });
 

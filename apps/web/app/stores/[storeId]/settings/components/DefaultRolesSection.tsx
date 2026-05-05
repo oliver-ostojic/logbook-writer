@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 
@@ -20,7 +21,7 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit 
 
   useEffect(() => {
     // Fetch all roles for the store
-    fetch(`${API_URL}/roles?storeId=${storeId}`)
+    authFetch(`${API_URL}/roles?storeId=${storeId}`)
       .then((r) => r.json())
       .then((roles) => setAllRoles(roles))
       .catch((err) => console.error('Failed to fetch roles:', err));
@@ -45,7 +46,7 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit 
 
   const handleAddRole = async (roleId: number) => {
     try {
-      const res = await fetch(`${API_URL}/stores/${storeId}/default-roles`, {
+      const res = await authFetch(`${API_URL}/stores/${storeId}/default-roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roleId }),
@@ -61,7 +62,7 @@ export function DefaultRolesSection({ storeId, defaultRoles, onRefresh, canEdit 
 
   const handleRemoveRole = async (roleId: number) => {
     try {
-      const res = await fetch(`${API_URL}/stores/${storeId}/default-roles/${roleId}`, {
+      const res = await authFetch(`${API_URL}/stores/${storeId}/default-roles/${roleId}`, {
         method: 'DELETE',
       });
       if (res.ok) {

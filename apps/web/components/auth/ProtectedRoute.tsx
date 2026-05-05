@@ -36,7 +36,10 @@ export function ProtectedRoute({
   unauthorizedRedirectTo,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, canAccessStore } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const canAccessStore = useAuthStore((s) => s.canAccessStore);
 
   useEffect(() => {
     // Wait for auth to load

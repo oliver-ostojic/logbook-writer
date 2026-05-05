@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useRouter, useParams } from 'next/navigation';
 import { DashboardHeader } from '@/components/layouts';
 import { CardContainer, CardHeader, GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
@@ -39,7 +40,7 @@ export default function CompanyStoresPage() {
   const fetchCompany = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/companies/${companyId}`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/companies/${companyId}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setCompany(data);
@@ -82,7 +83,7 @@ export default function CompanyStoresPage() {
   const handleDeleteStore = async (storeId: number) => {
     if (!confirm('Are you sure you want to delete this store?')) return;
     try {
-      const res = await fetch(`${API_URL}/stores/${storeId}`, {
+      const res = await authFetch(`${API_URL}/stores/${storeId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle, CardSmall } from '@/components/ui/ai-glass';
+import { CardContainer, CardSmall, GlassPillCard } from '@/components/ui/ai-glass';
 import { StatGraphCard } from './StatGraphCard';
 import { LargeGraphCard } from './LargeGraphCard';
 import { SatisfactionLineGraph } from './SatisfactionLineGraph';
@@ -10,7 +10,7 @@ import { StackedPillBarGraph } from './StackedPillBarGraph';
 import { TimeWindowHeader } from './TimeWindowHeader';
 import type { CrewCardData } from './CrewQuickLookCard';
 
-interface CrewDashboardContentProps {
+interface CrewDetailViewProps {
   crew: CrewCardData;
   availableDates: string[];
   selectedDates: string[];
@@ -28,7 +28,7 @@ interface CrewDashboardContentProps {
   formatRuleTypeLabel: (ruleType: string) => string;
 }
 
-export function CrewDashboardContent({
+export function CrewDetailView({
   crew,
   availableDates,
   selectedDates,
@@ -44,16 +44,25 @@ export function CrewDashboardContent({
   setCrewPreferencesLabel,
   roleRules,
   formatRuleTypeLabel,
-}: CrewDashboardContentProps) {
+}: CrewDetailViewProps) {
+  const lineGraphData = React.useMemo(() => {
+    const satByDate = crew.satisfactionByDate || [];
+    if (satByDate.length === 0) {
+      return [{ shiftNumber: 1, shiftDate: '—', satisfaction: 70 }];
+    }
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return satByDate.map((d, index) => {
+      const [year, month, day] = d.date.split('-').map(Number);
+      return {
+        shiftNumber: index + 1,
+        shiftDate: `${day} ${monthNames[month - 1]}, ${String(year).slice(-2)}`,
+        satisfaction: Math.round(d.satisfactionPct * 100) / 100,
+      };
+    });
+  }, [crew.satisfactionByDate]);
+
   return (
-    <div
-      className="ai-glass-border"
-      style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}
-    >
-      <div
-        className="ai-glass-content"
-        style={aiGlassLightContentStyle('1.5rem', 0.6)}
-      >
+    <CardContainer lightMode borderRadius="1.5rem" padding="0">
       {/* Time Window Header */}
       <TimeWindowHeader
         availableDates={availableDates}
@@ -129,22 +138,9 @@ export function CrewDashboardContent({
           title="Preferences met"
           highlightLabel={crewLineGraphLabel ?? undefined}
           legend={
-            <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-              <div
-                style={{
-                  ...aiGlassLightContentStyle('9999px', 0.5),
-                  padding: '8px 12px',
-                  fontFamily: 'var(--font-open-sans)',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  color: '#2C2C2C',
-                  lineHeight: 1,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                All crew
-              </div>
-            </div>
+            <GlassPillCard borderRadius="9999px" backgroundOpacity={0.5} padding="8px 12px" style={{ width: 'fit-content' }} contentStyle={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 400, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+              All crew
+            </GlassPillCard>
           }
           className="mt-4"
         >
@@ -153,28 +149,7 @@ export function CrewDashboardContent({
             onActiveLabelChange={setCrewLineGraphLabel}
             selectedIndex={crewLineGraphSelectedIndex}
             onSelectIndex={setCrewLineGraphSelectedIndex}
-            data={(() => {
-              const satByDate = crew.satisfactionByDate || [];
-              if (satByDate.length === 0) {
-                // Fallback to placeholder data
-                return [
-                  { shiftNumber: 1, shiftDate: '—', satisfaction: 70 },
-                ];
-              }
-              return satByDate.map((d, index) => {
-                // Parse date string manually to avoid timezone issues
-                // Date format is "YYYY-MM-DD"
-                const [year, month, day] = d.date.split('-').map(Number);
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const monthName = monthNames[month - 1]; // month is 1-indexed in ISO string
-                const yearShort = String(year).slice(-2);
-                return {
-                  shiftNumber: index + 1,
-                  shiftDate: `${day} ${monthName}, ${yearShort}`,
-                  satisfaction: Math.round(d.satisfactionPct * 100) / 100,
-                };
-              });
-            })()}
+            data={lineGraphData}
           />
         </LargeGraphCard>
 
@@ -224,11 +199,9 @@ export function CrewDashboardContent({
               title="Shift Satisfaction Spread"
               highlightLabel={crewBoxPlotLabel ?? undefined}
               legend={
-                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), width: 'fit-content' }}>
-                  <div style={{ ...aiGlassLightContentStyle('9999px', 0.5), padding: '8px 12px', fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                    {crew.title}
-                  </div>
-                </div>
+                <GlassPillCard borderRadius="9999px" backgroundOpacity={0.5} padding="8px 12px" style={{ width: 'fit-content' }} contentStyle={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                  {crew.title}
+                </GlassPillCard>
               }
               className="mt-4"
             >
@@ -270,9 +243,8 @@ export function CrewDashboardContent({
           />
         </LargeGraphCard>
       </div>{/* End dashboard content */}
-      </div>{/* End ai-glass-content */}
-    </div>
+    </CardContainer>
   );
 }
 
-export default CrewDashboardContent;
+export default CrewDetailView;

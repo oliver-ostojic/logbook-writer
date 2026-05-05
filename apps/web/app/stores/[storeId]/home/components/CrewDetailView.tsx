@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { renderRoleRule } from '@/lib/role-rule-templates';
@@ -66,13 +67,13 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
 
       try {
         // Load crew data
-        const crewRes = await fetch(`${API_URL}/crew/${crewId}?include=roles,roleRules`);
+        const crewRes = await authFetch(`${API_URL}/crew/${crewId}?include=roles,roleRules`);
         if (!crewRes.ok) throw new Error('Failed to load crew data');
         const crewData = await crewRes.json();
 
         // Load all roles for the store
         if (crewData.storeId) {
-          const rolesRes = await fetch(`${API_URL}/stores/${crewData.storeId}/roles`);
+          const rolesRes = await authFetch(`${API_URL}/stores/${crewData.storeId}/roles`);
           if (rolesRes.ok) {
             const rolesData = await rolesRes.json();
             if (!cancelled) setAllRoles(rolesData);
@@ -126,14 +127,14 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
     try {
       // Process deletions
       for (const roleId of Array.from(pendingDeletions)) {
-        await fetch(`${API_URL}/crew/${crewId}/roles/${roleId}`, {
+        await authFetch(`${API_URL}/crew/${crewId}/roles/${roleId}`, {
           method: 'DELETE',
         });
       }
 
       // Process additions
       for (const role of Array.from(pendingAdditions)) {
-        await fetch(`${API_URL}/crew/${crewId}/roles`, {
+        await authFetch(`${API_URL}/crew/${crewId}/roles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roleId: role.id }),
@@ -141,7 +142,7 @@ export function CrewDetailView({ crewId }: CrewDetailViewProps) {
       }
 
       // Reload crew data
-      const res = await fetch(`${API_URL}/crew/${crewId}?include=roles,roleRules`);
+      const res = await authFetch(`${API_URL}/crew/${crewId}?include=roles,roleRules`);
       if (res.ok) {
         const data = await res.json();
         setCrew(data);

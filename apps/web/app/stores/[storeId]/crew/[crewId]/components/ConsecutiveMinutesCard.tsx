@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard, GlassPillButton } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -287,7 +288,7 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
 
     try {
       // Fetch all store consecutive rules (both MIN and MAX)
-      const storeRulesRes = await fetch(`${API_URL}/stores/${storeId}/effective-role-rules`);
+      const storeRulesRes = await authFetch(`${API_URL}/stores/${storeId}/effective-role-rules`);
       if (!storeRulesRes.ok) throw new Error('Failed to fetch store rules');
       const storeRulesResponse = await storeRulesRes.json();
 
@@ -314,7 +315,7 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
       });
 
       // Fetch crew MAX overrides
-      const crewRulesRes = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
+      const crewRulesRes = await authFetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
       if (!crewRulesRes.ok) throw new Error('Failed to fetch crew rules');
       const crewRulesData = await crewRulesRes.json();
 
@@ -375,7 +376,7 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
 
     // If crew already has MAX override, update it
     if (rule.maxCrewRoleRuleId) {
-      const res = await fetch(`${API_URL}/crew-role-rules/${rule.maxCrewRoleRuleId}`, {
+      const res = await authFetch(`${API_URL}/crew-role-rules/${rule.maxCrewRoleRuleId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ valueInt: newMaxMinutes }),
@@ -402,7 +403,7 @@ export function ConsecutiveMinutesCard({ crewId, storeId, onRefresh }: Consecuti
     const maxRoleRuleId = roleRules[0].id;
 
     // Create crew override
-    const createRes = await fetch(`${API_URL}/crew-role-rules`, {
+    const createRes = await authFetch(`${API_URL}/crew-role-rules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

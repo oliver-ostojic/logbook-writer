@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -56,7 +57,7 @@ export function StoreForm({ mode, storeId, companyId, onSuccess, onCancel }: Sto
 
   // Load companies
   useEffect(() => {
-    fetch(`${API_URL}/companies`)
+    authFetch(`${API_URL}/companies`)
       .then(res => res.json())
       .then((data: any[]) => {
         setCompanies(data);
@@ -72,7 +73,7 @@ export function StoreForm({ mode, storeId, companyId, onSuccess, onCancel }: Sto
   useEffect(() => {
     if (mode === 'edit' && storeId) {
       setLoadingData(true);
-      fetch(`${API_URL}/stores/${storeId}`)
+      authFetch(`${API_URL}/stores/${storeId}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to load store data');
           return res.json();

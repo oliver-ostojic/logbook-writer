@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -100,7 +101,7 @@ export default function BentoGrid() {
       try {
         if (!API_URL || !storeId) return;
         setLoadingPeople(true);
-        const res = await fetch(`${API_URL}/crew?storeId=${encodeURIComponent(storeId)}`);
+        const res = await authFetch(`${API_URL}/crew?storeId=${encodeURIComponent(storeId)}`);
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         if (cancelled) return;
@@ -125,7 +126,7 @@ export default function BentoGrid() {
   // Fetch all dates that already have logbook data
   useEffect(() => {
     if (!API_URL || !storeId) return;
-    fetch(`${API_URL}/logbooks?storeId=${storeId}`)
+    authFetch(`${API_URL}/logbooks?storeId=${storeId}`)
       .then(r => r.ok ? r.json() : { logbooks: [] })
       .then(data => {
         const dates: string[] = (data?.logbooks ?? data ?? []).map((lb: any) => lb.date?.slice(0, 10)).filter(Boolean);
@@ -176,7 +177,7 @@ export default function BentoGrid() {
         }
         
         // Load from backend
-        const res = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts?date=${encodeURIComponent(selectedDate)}`);
+        const res = await authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts?date=${encodeURIComponent(selectedDate)}`);
         if (cancelled) return;
         
         if (!res.ok) {
@@ -424,7 +425,7 @@ function SaveAndNext({
           start: shiftTimes[p.crewId]?.start || '09:00',
           end: shiftTimes[p.crewId]?.end || '18:00',
         }));
-      const res = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts`, {
+      const res = await authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/shifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

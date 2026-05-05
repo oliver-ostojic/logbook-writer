@@ -48,8 +48,20 @@ export * from './BoxPlotGraph';
 // StackedPillBarGraph
 export * from './StackedPillBarGraph';
 
-// CrewDashboardContent
-export * from './CrewDashboardContent';
+// CrewDetailView
+export * from './CrewDetailView';
 
-// RoleDashboardContent
-export * from './RoleDashboardContent';
+// RoleDetailView
+export * from './RoleDetailView';
+
+// SecondaryNav
+export * from './SecondaryNav';
+
+// OverviewView
+export * from './OverviewView';
+
+// CrewListView
+export * from './CrewListView';
+
+// RoleListView
+export * from './RoleListView';

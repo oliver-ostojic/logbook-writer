@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, PrismaClient, AssignmentModel, ConsecutivePolicy } from '@prisma/client';
+import { rbacMiddleware } from '../middleware/rbac';
 
 const prisma = new PrismaClient();
 
@@ -59,7 +60,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   };
 
   // Create a new role
-  app.post<{ Body: CreateRoleBody }>('/roles', async (req, reply) => {
+  app.post<{ Body: CreateRoleBody }>('/roles', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     console.log('=== POST /roles ===');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
 
@@ -130,7 +131,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // Read all roles or a specific one by id
-  app.get<{ Querystring: { id?: string; storeId?: string } }>('/roles', async (req, reply) => {
+  app.get<{ Querystring: { id?: string; storeId?: string } }>('/roles', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id, storeId } = req.query as any;
     if (id) {
       const roleId = Number(id);
@@ -150,7 +151,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // List crew (id, name) for a role by its id
-  app.get<{ Params: { name: string } }>('/roles/:name/crew', async (req, reply) => {
+  app.get<{ Params: { name: string } }>('/roles/:name/crew', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { name } = req.params;
     const roleId = Number(name);
     const role = Number.isNaN(roleId)
@@ -162,7 +163,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // Update a role (only remove crew members)
-  app.put<{ Params: { id: string }; Body: UpdateRoleBody }>('/roles/:id', async (req, reply) => {
+  app.put<{ Params: { id: string }; Body: UpdateRoleBody }>('/roles/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const { removeCrewMemberId } = req.body;
     if (!removeCrewMemberId) {
@@ -183,7 +184,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // POST /roles/:roleId/crew - add crew to role
-  app.post<{ Params: { roleId: string }; Body: { crewId: string } }>('/roles/:roleId/crew', async (req, reply) => {
+  app.post<{ Params: { roleId: string }; Body: { crewId: string } }>('/roles/:roleId/crew', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const roleId = parseInt(req.params.roleId, 10);
     const { crewId } = req.body;
 
@@ -227,7 +228,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // DELETE /roles/:roleId/crew/:crewId - remove crew from role
-  app.delete<{ Params: { roleId: string; crewId: string } }>('/roles/:roleId/crew/:crewId', async (req, reply) => {
+  app.delete<{ Params: { roleId: string; crewId: string } }>('/roles/:roleId/crew/:crewId', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const roleId = parseInt(req.params.roleId, 10);
     const crewId = req.params.crewId;
 
@@ -251,7 +252,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // Delete a role
-  app.delete<{ Params: { id: string } }>('/roles/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/roles/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const roleId = Number(id);
     if (Number.isNaN(roleId)) {
@@ -264,7 +265,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // PATCH a role - update specific fields
-  app.patch<{ Params: { id: string }; Body: PatchRoleBody }>('/roles/:id', async (req, reply) => {
+  app.patch<{ Params: { id: string }; Body: PatchRoleBody }>('/roles/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const roleId = Number(id);
     if (Number.isNaN(roleId)) {
@@ -323,7 +324,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   // ============ ROLE FAMILY ENDPOINTS ============
 
   // GET /role-families - List all role families
-  app.get<{ Querystring: { companyId?: string } }>('/role-families', async (req, reply) => {
+  app.get<{ Querystring: { companyId?: string } }>('/role-families', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { companyId } = req.query;
     const where: any = {};
     if (companyId) {
@@ -353,7 +354,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // GET /role-families/:id - Get a specific role family with its roles
-  app.get<{ Params: { id: string } }>('/role-families/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/role-families/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const familyId = Number(id);
     if (Number.isNaN(familyId)) {
@@ -386,7 +387,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // GET /role-families/:id/roles - Get roles in a family
-  app.get<{ Params: { id: string } }>('/role-families/:id/roles', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/role-families/:id/roles', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const familyId = Number(id);
     if (Number.isNaN(familyId)) {
@@ -412,7 +413,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // PUT /role-families/:id/roles - Add a role to a family (update role's familyId)
-  app.put<{ Params: { id: string }; Body: { roleId: number } }>('/role-families/:id/roles', async (req, reply) => {
+  app.put<{ Params: { id: string }; Body: { roleId: number } }>('/role-families/:id/roles', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const { roleId } = req.body;
 
@@ -450,7 +451,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // DELETE /role-families/:id/roles/:roleId - Remove a role from a family (set to default family 1)
-  app.delete<{ Params: { id: string; roleId: string } }>('/role-families/:id/roles/:roleId', async (req, reply) => {
+  app.delete<{ Params: { id: string; roleId: string } }>('/role-families/:id/roles/:roleId', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id, roleId: roleIdStr } = req.params;
 
     const familyId = Number(id);
@@ -482,7 +483,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // POST /role-families - Create a new role family
-  app.post<{ Body: { name: string; displayName?: string; minMinutes: number; maxMinutes: number; companyId: number } }>('/role-families', async (req, reply) => {
+  app.post<{ Body: { name: string; displayName?: string; minMinutes: number; maxMinutes: number; companyId: number } }>('/role-families', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { name, displayName, minMinutes, maxMinutes, companyId } = req.body;
 
     if (!name) {
@@ -523,7 +524,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // PATCH /role-families/:id - Update a role family
-  app.patch<{ Params: { id: string }; Body: { displayName?: string; minMinutes?: number; maxMinutes?: number } }>('/role-families/:id', async (req, reply) => {
+  app.patch<{ Params: { id: string }; Body: { displayName?: string; minMinutes?: number; maxMinutes?: number } }>('/role-families/:id', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const familyId = Number(id);
     if (Number.isNaN(familyId)) {
@@ -575,7 +576,7 @@ export function registerRoleRoutes(app: FastifyInstance) {
   });
 
   // DELETE /role-families/:id - Delete a role family
-  app.delete<{ Params: { id: string } }>('/role-families/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/role-families/:id', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id } = req.params;
     const familyId = Number(id);
     if (Number.isNaN(familyId)) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, GlassPillCard, GlassPillButton, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -50,7 +51,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
     setLoading(true);
     try {
       // Fetch crew with their role rules
-      const crewRes = await fetch(`${API_URL}/crew/${crewId}?include=roleRules`);
+      const crewRes = await authFetch(`${API_URL}/crew/${crewId}?include=roleRules`);
       if (!crewRes.ok) {
         console.error('Failed to fetch crew data');
         return;
@@ -176,7 +177,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
         }
       } else {
         // Step 2: Create new SOFT RoleRule
-        const createRuleRes = await fetch(`${API_URL}/role-rules`, {
+        const createRuleRes = await authFetch(`${API_URL}/role-rules`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -219,7 +220,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
       }
 
       // Step 3: Assign RoleRule to crew via CrewRoleRule with valueInt
-      const assignRes = await fetch(`${API_URL}/crew-role-rules`, {
+      const assignRes = await authFetch(`${API_URL}/crew-role-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -254,7 +255,7 @@ export function RolePreferenceByHourCard({ crewId, storeId, onRefresh }: RolePre
     setPreferences(prev => prev.filter(p => p.id !== preferenceId));
 
     try {
-      const res = await fetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
+      const res = await authFetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
         method: 'DELETE',
       });
 

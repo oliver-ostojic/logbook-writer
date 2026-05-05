@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { rbacMiddleware } from '../middleware/rbac';
 
 const prisma = new PrismaClient();
 
@@ -22,7 +23,7 @@ type UpdateStoreBody = {
 
 export function registerStoreRoutes(app: FastifyInstance) {
   // GET /stores - list all stores
-  app.get('/stores', async (req, reply) => {
+  app.get('/stores', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     try {
       const stores = await prisma.store.findMany({
         orderBy: { name: 'asc' },
@@ -41,7 +42,7 @@ export function registerStoreRoutes(app: FastifyInstance) {
   });
 
   // GET /stores/:id - Get a store by ID
-  app.get<{ Params: { id: string } }>('/stores/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/stores/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     try {
       const storeId = parseInt(req.params.id);
 
@@ -68,7 +69,7 @@ export function registerStoreRoutes(app: FastifyInstance) {
   });
 
   // POST /stores - create a new store
-  app.post<{ Body: CreateStoreBody }>('/stores', async (req, reply) => {
+  app.post<{ Body: CreateStoreBody }>('/stores', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id, name, timezone, openMinutesFromMidnight, closeMinutesFromMidnight, companyId } = req.body;
 
     if (!name || !name.trim()) {
@@ -125,7 +126,7 @@ export function registerStoreRoutes(app: FastifyInstance) {
   });
 
   // PATCH /stores/:id - update a store
-  app.patch<{ Params: { id: string }; Body: UpdateStoreBody }>('/stores/:id', async (req, reply) => {
+  app.patch<{ Params: { id: string }; Body: UpdateStoreBody }>('/stores/:id', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const storeId = parseInt(req.params.id);
     const { name, timezone, openMinutesFromMidnight, closeMinutesFromMidnight, companyId } = req.body;
 
@@ -179,7 +180,7 @@ export function registerStoreRoutes(app: FastifyInstance) {
   });
 
   // DELETE /stores/:id - delete a store
-  app.delete<{ Params: { id: string } }>('/stores/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/stores/:id', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const storeId = parseInt(req.params.id);
 
     if (isNaN(storeId)) {

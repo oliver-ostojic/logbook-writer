@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams } from 'next/navigation';
 import type { LogbookMetadata, PreferenceMetadata, QuotaWarning } from './LogbookView';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
@@ -136,7 +137,7 @@ export default function Stats({ metadata, preferenceMetadata, loading }: StatsPr
 
     const fetchBaselines = async () => {
       try {
-        const res = await fetch(`${API_URL}/schedule/stats/baselines?storeId=${storeId}&days=14`);
+        const res = await authFetch(`${API_URL}/schedule/stats/baselines?storeId=${storeId}&days=14`);
         if (res.ok) {
           const data = await res.json();
           if (!data.useDefaults) {

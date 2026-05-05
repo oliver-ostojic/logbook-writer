@@ -28,6 +28,7 @@
     "@fastify/cookie": "^9.4.0",
     "@fastify/cors": "^8.4.0",
     "@fastify/jwt": "^7.2.1",
+    "@fastify/rate-limit": "^9.1.0",
     "@logbook-writer/domain": "workspace:*",
     "@logbook-writer/shared-types": "workspace:*",
     "@prisma/client": "^5.22.0",

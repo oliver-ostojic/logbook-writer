@@ -3,6 +3,10 @@
 import { ReactNode } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import type { UserRole } from '@/lib/authStore';
+
+const CREW_PAGE_ROLES: UserRole[] = ['CREW', 'MATE', 'CAPTAIN', 'ADMIN'];
+const STORE_PAGE_ROLES: UserRole[] = ['MATE', 'CAPTAIN', 'ADMIN'];
 
 interface StoreLayoutProps {
   children: ReactNode;
@@ -32,13 +36,11 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
 
   // For crew pages, allow all roles but enforce crewId check for CREW users
   // For other pages, only allow MATE, CAPTAIN, ADMIN
-  const allowedRoles = isCrewPage
-    ? ['CREW', 'MATE', 'CAPTAIN', 'ADMIN'] as const
-    : ['MATE', 'CAPTAIN', 'ADMIN'] as const;
+  const allowedRoles = isCrewPage ? CREW_PAGE_ROLES : STORE_PAGE_ROLES;
 
   return (
     <ProtectedRoute
-      allowedRoles={[...allowedRoles]}
+      allowedRoles={allowedRoles}
       storeId={storeId}
       crewId={crewId}
     >

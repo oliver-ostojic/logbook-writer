@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useRouter } from 'next/navigation';
 import { GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { TopNavHeader } from '@/app/stores/[storeId]/home/components';
@@ -53,13 +54,13 @@ export default function CrewPage() {
   const fetchCrewData = async () => {
     setLoading(true);
     try {
-      const crewRes = await fetch(`${API_URL}/crew/${crewId}`);
+      const crewRes = await authFetch(`${API_URL}/crew/${crewId}`);
       if (crewRes.ok) {
         const crewData = await crewRes.json();
         setCrew(crewData);
       }
 
-      const roleRulesRes = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
+      const roleRulesRes = await authFetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
       if (roleRulesRes.ok) {
         const roleRulesData = await roleRulesRes.json();
 

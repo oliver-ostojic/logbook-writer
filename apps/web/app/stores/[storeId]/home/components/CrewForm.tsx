@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -28,7 +29,7 @@ export function CrewForm({ mode, crewId, storeId, onSuccess, onCancel }: CrewFor
   useEffect(() => {
     if (mode === 'edit' && crewId) {
       setLoadingCrew(true);
-      fetch(`${API_URL}/crew/${crewId}`)
+      authFetch(`${API_URL}/crew/${crewId}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to load crew data');
           return res.json();

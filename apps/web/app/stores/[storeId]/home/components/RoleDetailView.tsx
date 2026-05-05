@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { renderRoleRule } from '@/lib/role-rule-templates';
@@ -73,13 +74,13 @@ export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps)
 
       try {
         // Load role data
-        const roleRes = await fetch(`${API_URL}/roles?id=${roleId}`);
+        const roleRes = await authFetch(`${API_URL}/roles?id=${roleId}`);
         if (!roleRes.ok) throw new Error('Failed to load role data');
         const roleData = await roleRes.json();
 
         // Load all crew for the store
         if (roleData.storeId) {
-          const crewRes = await fetch(`${API_URL}/crew?storeId=${roleData.storeId}`);
+          const crewRes = await authFetch(`${API_URL}/crew?storeId=${roleData.storeId}`);
           if (crewRes.ok) {
             const crewData = await crewRes.json();
             if (!cancelled) setAllCrew(crewData);
@@ -87,7 +88,7 @@ export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps)
         }
 
         // Load role rules for this role
-        const roleRulesRes = await fetch(`${API_URL}/role-rules?roleId=${roleId}`);
+        const roleRulesRes = await authFetch(`${API_URL}/role-rules?roleId=${roleId}`);
         if (roleRulesRes.ok) {
           const roleRulesData = await roleRulesRes.json();
           if (!cancelled) setRoleRules(roleRulesData);
@@ -95,7 +96,7 @@ export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps)
 
         // Load store role rules for this role
         if (roleData.storeId) {
-          const storeRoleRulesRes = await fetch(`${API_URL}/store-role-rules?storeId=${roleData.storeId}`);
+          const storeRoleRulesRes = await authFetch(`${API_URL}/store-role-rules?storeId=${roleData.storeId}`);
           if (storeRoleRulesRes.ok) {
             const storeRoleRulesData = await storeRoleRulesRes.json();
             // Filter to only include rules for this role
@@ -155,14 +156,14 @@ export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps)
     try {
       // Process deletions
       for (const crewId of Array.from(pendingDeletions)) {
-        await fetch(`${API_URL}/roles/${roleId}/crew/${crewId}`, {
+        await authFetch(`${API_URL}/roles/${roleId}/crew/${crewId}`, {
           method: 'DELETE',
         });
       }
 
       // Process additions
       for (const crew of Array.from(pendingAdditions)) {
-        await fetch(`${API_URL}/roles/${roleId}/crew`, {
+        await authFetch(`${API_URL}/roles/${roleId}/crew`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ crewId: crew.id }),
@@ -170,7 +171,7 @@ export function RoleDetailView({ roleId, onRoleRuleClick }: RoleDetailViewProps)
       }
 
       // Reload role data
-      const res = await fetch(`${API_URL}/roles?id=${roleId}`);
+      const res = await authFetch(`${API_URL}/roles?id=${roleId}`);
       if (res.ok) {
         const data = await res.json();
         setRole(data);

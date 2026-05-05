@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -46,7 +47,7 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
 
   // Load role families
   useEffect(() => {
-    fetch(`${API_URL}/role-families`)
+    authFetch(`${API_URL}/role-families`)
       .then(res => res.json())
       .then(data => {
         setFamilies(data);
@@ -68,7 +69,7 @@ export function RoleForm({ mode, roleId, storeId, onSuccess, onCancel }: RoleFor
   useEffect(() => {
     if (mode === 'edit' && roleId) {
       setLoadingRole(true);
-      fetch(`${API_URL}/roles?id=${roleId}`)
+      authFetch(`${API_URL}/roles?id=${roleId}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to load role data');
           return res.json();

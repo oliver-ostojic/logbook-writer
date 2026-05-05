@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, GlassPillCard, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { renderRoleRule, TemplateContext } from '@/lib/role-rule-templates';
 
@@ -53,7 +54,7 @@ export function RoleRuleDetailView({ ruleId, constraintType, valueInt, storeRole
       setError(null);
 
       try {
-        const res = await fetch(`${API_URL}/role-rules/${ruleId}`);
+        const res = await authFetch(`${API_URL}/role-rules/${ruleId}`);
         if (!res.ok) throw new Error('Failed to load rule data');
         const data = await res.json();
 
