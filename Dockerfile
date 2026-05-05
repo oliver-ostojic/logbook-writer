@@ -31,6 +31,8 @@ COPY packages/domain/    packages/domain/
 COPY packages/shared-types/ packages/shared-types/
 COPY apps/api/           apps/api/
 
+RUN cd apps/api && npx prisma generate && cd /app
+
 RUN pnpm turbo run build --filter=@logbook-writer/api...
 
 # ── runtime ──────────────────────────────────────────────────────────────────
