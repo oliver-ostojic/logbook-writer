@@ -179,8 +179,6 @@ export function registerRoleRuleRoutes(app: FastifyInstance) {
           type,
           targetRoleId,
           constraintType,
-          valueInt,
-          displayName,
           description,
         },
         include: roleRuleInclude,

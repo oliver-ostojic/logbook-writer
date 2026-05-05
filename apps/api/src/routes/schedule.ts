@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { startOfDay, hourOf, clamp } from '../utils';
 import { type Shift } from '../services/demo-window';
 import { segmentShiftByRegisterWindow, hhmmToMin, minToHHMM } from '../services/segmentation';
@@ -78,6 +78,8 @@ async function recalculateLogbookSatisfaction(logbookId: string): Promise<void> 
       fairnessIndex: 100,
       fairnessGrade: 'A+',
       breakdownByRoleRule: [],
+      breakdownByCrew: [],
+      breakdownByCrewAndRuleType: [],
     });
     return;
   }
@@ -1310,7 +1312,7 @@ export function registerLogbookRoutes(app: FastifyInstance) {
             status: LogbookStatus.DRAFT,
             generatedAt: new Date(),
             createdByName: createdByName || null,
-            metadata: currentLogbook.metadata,
+            metadata: (currentLogbook.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
           },
         });
 

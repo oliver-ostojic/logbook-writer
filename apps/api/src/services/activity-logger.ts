@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -60,7 +60,7 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
         resourceId: resourceId || null,
         storeId: storeId || null,
         date: date || null,
-        metadata: metadata || undefined,
+        metadata: (metadata as Prisma.InputJsonValue) || undefined,
       },
     });
   } catch (error) {
