@@ -14,7 +14,13 @@ interface TopNavHeaderProps {
 
 export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
   const router = useRouter();
-  const { user, logout: logoutStore } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const logoutStore = useAuthStore((s) => s.logout);
+
+  // Defer navigation to a macrotask so it escapes the current render cycle.
+  // Heavy detail views in the parent can starve App Router transitions; deferring
+  // lets the click's state changes flush before the route push runs.
+  const navigate = (path: string) => setTimeout(() => router.push(path), 0);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -90,20 +96,20 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                 label="Home"
                 textOnly
                 isActive={activeNav === 'home'}
-                onClick={() => router.push(`/stores/${storeId}/home`)}
+                onClick={() => navigate(`/stores/${storeId}/home`)}
                 isFirst
               />
               <NavStatsCard
                 label="System Health"
                 textOnly
                 isActive={activeNav === 'dashboard'}
-                onClick={() => router.push(`/stores/${storeId}/fairness-dashboard`)}
+                onClick={() => navigate(`/stores/${storeId}/fairness-dashboard`)}
               />
               <NavStatsCard
                 label="Settings"
                 textOnly
                 isActive={activeNav === 'settings'}
-                onClick={() => router.push(`/stores/${storeId}/settings`)}
+                onClick={() => navigate(`/stores/${storeId}/settings`)}
               />
               <div ref={userMenuRef} style={{ display: 'flex' }}>
                 <NavStatsCard

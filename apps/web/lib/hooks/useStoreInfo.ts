@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { authFetch } from '../api/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -8,7 +9,7 @@ interface Store {
 }
 
 async function fetchStores(): Promise<Store[]> {
-  const res = await fetch(`${API_URL}/stores`);
+  const res = await authFetch(`${API_URL}/stores`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

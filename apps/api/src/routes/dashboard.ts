@@ -6,6 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { generateDashboardData } from '../services/dashboard.service';
+import { rbacMiddleware } from '../middleware/rbac';
 
 export function registerDashboardRoutes(app: FastifyInstance) {
   /**
@@ -20,7 +21,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
   app.get<{
     Params: { storeId: string };
     Querystring: { startDate?: string; endDate?: string; title?: string };
-  }>('/api/stores/:storeId/dashboard', async (request, reply) => {
+  }>('/api/stores/:storeId/dashboard', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (request, reply) => {
     const storeId = parseInt(request.params.storeId, 10);
 
     if (isNaN(storeId)) {
@@ -63,7 +64,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
    */
   app.get<{
     Params: { storeId: string };
-  }>('/api/stores/:storeId/dashboard/dates', async (request, reply) => {
+  }>('/api/stores/:storeId/dashboard/dates', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (request, reply) => {
     const storeId = parseInt(request.params.storeId, 10);
 
     if (isNaN(storeId)) {
@@ -108,7 +109,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
   app.get<{
     Params: { storeId: string };
     Querystring: { dates?: string; status?: string };
-  }>('/api/stores/:storeId/dashboard/logbooks', async (request, reply) => {
+  }>('/api/stores/:storeId/dashboard/logbooks', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (request, reply) => {
     const storeId = parseInt(request.params.storeId, 10);
 
     if (isNaN(storeId)) {
@@ -355,7 +356,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
   });
 
   // Get all role rules for a store (for manual description creation)
-  app.get('/api/stores/:storeId/dashboard/role-rules', async (request, reply) => {
+  app.get('/api/stores/:storeId/dashboard/role-rules', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (request, reply) => {
     try {
       const { PrismaClient } = await import('@prisma/client');
       const prisma = new PrismaClient();

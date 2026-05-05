@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useRouter } from 'next/navigation';
 import { GlassPillButton, aiGlassAnimations, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 import { StoreRulesSection, DefaultRolesSection, InviteCodesSection } from './components';
@@ -28,8 +29,8 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const [rulesRes, defaultRolesRes] = await Promise.all([
-        fetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then((r) => r.json()),
-        fetch(`${API_URL}/stores/${storeId}/default-roles`).then((r) => r.json()),
+        authFetch(`${API_URL}/store-role-rules?storeId=${storeId}`).then((r) => r.json()),
+        authFetch(`${API_URL}/stores/${storeId}/default-roles`).then((r) => r.json()),
       ]);
       setStoreRules(Array.isArray(rulesRes) ? rulesRes : []);
       setDefaultRoles(Array.isArray(defaultRolesRes) ? defaultRolesRes : []);
@@ -54,7 +55,7 @@ export default function SettingsPage() {
     if (!storeRoleRuleIdToDelete) return;
 
     try {
-      const res = await fetch(`${API_URL}/store-role-rules/${storeRoleRuleIdToDelete}`, {
+      const res = await authFetch(`${API_URL}/store-role-rules/${storeRoleRuleIdToDelete}`, {
         method: 'DELETE',
       });
       if (res.ok) {

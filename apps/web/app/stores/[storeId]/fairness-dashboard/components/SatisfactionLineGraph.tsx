@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 interface ShiftSatisfactionData {
@@ -160,13 +160,16 @@ function SatisfactionLineChart({
 
   const barScaleFactor = 0.95;
 
-  // Notify parent of Y-axis config (use display range for positioning)
-  // Using JSON.stringify for stable comparison of ticks array
   const ticksKey = JSON.stringify(ticks);
+  const onYAxisConfigRef = useRef(onYAxisConfig);
+  onYAxisConfigRef.current = onYAxisConfig;
+  const prevYAxisKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    onYAxisConfig?.({ yMin: displayYMin, yMax: displayYMax, yRange: displayYRange, ticks });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayYMin, displayYMax, displayYRange, ticksKey, onYAxisConfig]);
+    const key = `${displayYMin}|${displayYMax}|${displayYRange}|${ticksKey}`;
+    if (prevYAxisKeyRef.current === key) return;
+    prevYAxisKeyRef.current = key;
+    onYAxisConfigRef.current?.({ yMin: displayYMin, yMax: displayYMax, yRange: displayYRange, ticks });
+  }, [displayYMin, displayYMax, displayYRange, ticksKey, ticks]);
 
   // Mini sparkline styling constants - use smaller values for non-scaling strokes
   const dotRadius = 5;
@@ -442,19 +445,25 @@ export function SatisfactionLineGraph({
   const activeIndex = hoveredIndex !== null ? hoveredIndex : selectedIndex;
   const activeData = activeIndex !== undefined && activeIndex !== null ? data[activeIndex] : null;
 
-  // Notify parent of active data changes
-  useEffect(() => {
-    onActiveDataChange?.(activeData);
-  }, [activeData, onActiveDataChange]);
+  const onActiveDataChangeRef = useRef(onActiveDataChange);
+  onActiveDataChangeRef.current = onActiveDataChange;
+  const onActiveLabelChangeRef = useRef(onActiveLabelChange);
+  onActiveLabelChangeRef.current = onActiveLabelChange;
+  const prevActiveDataRef = useRef<typeof activeData | undefined>(undefined);
+  const prevActiveLabelRef = useRef<string | null | undefined>(undefined);
 
-  // Notify parent of active label changes (date string)
   useEffect(() => {
-    if (activeData) {
-      onActiveLabelChange?.(activeData.shiftDate || null);
-    } else {
-      onActiveLabelChange?.(null);
-    }
-  }, [activeData, onActiveLabelChange]);
+    if (prevActiveDataRef.current === activeData) return;
+    prevActiveDataRef.current = activeData;
+    onActiveDataChangeRef.current?.(activeData);
+  }, [activeData]);
+
+  useEffect(() => {
+    const nextLabel = activeData ? activeData.shiftDate || null : null;
+    if (prevActiveLabelRef.current === nextLabel) return;
+    prevActiveLabelRef.current = nextLabel;
+    onActiveLabelChangeRef.current?.(nextLabel);
+  }, [activeData]);
 
   // Chart dimensions for percentage calculations
   const chartHeight = 220;

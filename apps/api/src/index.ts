@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import { registerHealthRoutes } from './routes/health';
@@ -24,7 +25,12 @@ import { AUTH_CONFIG } from './config/auth.config';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
-  await app.register(cors, { origin: true, credentials: true });
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').filter(Boolean);
+  await app.register(cors, {
+    origin: allowedOrigins?.length ? allowedOrigins : true,
+    credentials: true,
+  });
+  await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
 
   // Register JWT plugin
   await app.register(fastifyJwt, {

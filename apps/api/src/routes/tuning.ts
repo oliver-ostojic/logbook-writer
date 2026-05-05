@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { rbacMiddleware } from '../middleware/rbac';
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,7 @@ function computeWeight(proportion: number, min: number, max: number, mode: 'rari
 }
 
 export function registerTuningRoutes(app: FastifyInstance) {
-  app.get<{ Querystring: TuningQuery }>('/tuning/preferences', async (req, reply) => {
+  app.get<{ Querystring: TuningQuery }>('/tuning/preferences', { preHandler: rbacMiddleware({ allowedRoles: ['CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { mode = 'rarity', storeId, min = '0', max = '100', penaltyScale = '10' } = req.query;
     if (mode !== 'rarity' && mode !== 'popularity') {
       return reply.code(400).send({ error: 'mode must be rarity or popularity' });

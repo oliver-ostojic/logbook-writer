@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
@@ -200,7 +201,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/logbooks/${logbookId}/history`);
+      const res = await authFetch(`${API_URL}/logbooks/${logbookId}/history`);
       if (!res.ok) throw new Error('Failed to load logbook history');
       const data = await res.json();
       setCurrent(data.current);
@@ -220,7 +221,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
       setError(null);
 
       try {
-        const res = await fetch(`${API_URL}/logbooks/${logbookId}/history`);
+        const res = await authFetch(`${API_URL}/logbooks/${logbookId}/history`);
         if (!res.ok) throw new Error('Failed to load logbook history');
         const data = await res.json();
         if (!cancelled) {
@@ -240,7 +241,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
 
   const handleDeleteVersion = async (versionId: string) => {
     try {
-      const res = await fetch(`${API_URL}/schedule/logbook/${versionId}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/schedule/logbook/${versionId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete logbook');
 
       // If we deleted the current version and it was the only one, close the panel

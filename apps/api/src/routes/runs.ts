@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { rbacMiddleware } from '../middleware/rbac';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +14,7 @@ export function registerRunRoutes(app: FastifyInstance) {
       limit?: string;
       offset?: string;
     };
-  }>('/runs', async (req, reply) => {
+  }>('/runs', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     try {
       const { storeId, status, engine, limit, offset } = req.query;
 
@@ -56,7 +57,7 @@ export function registerRunRoutes(app: FastifyInstance) {
   });
 
   // GET /runs/:id - get a single run by ID
-  app.get<{ Params: { id: string } }>('/runs/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/runs/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     try {
       const runId = req.params.id;
 
@@ -84,7 +85,7 @@ export function registerRunRoutes(app: FastifyInstance) {
   });
 
   // DELETE /runs/:id - delete a run
-  app.delete<{ Params: { id: string } }>('/runs/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/runs/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     try {
       const runId = req.params.id;
 

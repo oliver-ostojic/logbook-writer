@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
@@ -314,7 +315,7 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
           roleId: edit.newRoleIds[0],
         }));
 
-        const editRes = await fetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/assignments`, {
+        const editRes = await authFetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/assignments`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ updates }),
@@ -329,7 +330,7 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
       }
 
       // Step 2: Publish the logbook (set status to PUBLISHED)
-      const publishRes = await fetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/publish`, {
+      const publishRes = await authFetch(`${API_URL}/schedule/logbook/${encodeURIComponent(logbookId)}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

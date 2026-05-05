@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -28,7 +29,7 @@ export function CompanyForm({ mode, companyId, onSuccess, onCancel }: CompanyFor
   useEffect(() => {
     if (mode === 'edit' && companyId) {
       setLoadingData(true);
-      fetch(`${API_URL}/companies/${companyId}`)
+      authFetch(`${API_URL}/companies/${companyId}`)
         .then(res => {
           if (!res.ok) throw new Error('Failed to load company data');
           return res.json();

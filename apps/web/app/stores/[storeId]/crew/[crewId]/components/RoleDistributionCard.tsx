@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard, GlassPillButton } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -290,7 +291,7 @@ export function RoleDistributionCard({ crewId, onRefresh }: RoleDistributionCard
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
+      const res = await authFetch(`${API_URL}/crew-role-rules?crewId=${crewId}`);
       if (!res.ok) throw new Error('Failed to fetch preferences');
 
       const crewRoleRules = await res.json();
@@ -332,7 +333,7 @@ export function RoleDistributionCard({ crewId, onRefresh }: RoleDistributionCard
 
       if (preference.crewRoleRuleId) {
         // Update existing
-        const res = await fetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
+        const res = await authFetch(`${API_URL}/crew-role-rules/${preference.crewRoleRuleId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ valueInt: newValueInt }),
@@ -341,7 +342,7 @@ export function RoleDistributionCard({ crewId, onRefresh }: RoleDistributionCard
         if (!res.ok) throw new Error('Failed to update preference');
       } else {
         // Create new
-        const res = await fetch(`${API_URL}/crew-role-rules`, {
+        const res = await authFetch(`${API_URL}/crew-role-rules`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

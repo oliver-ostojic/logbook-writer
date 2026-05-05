@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { UserGroupIcon, CheckCircleIcon, MagnifyingGlassIcon, BellIcon, DocumentTextIcon, ShieldCheckIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/solid';
@@ -424,13 +425,13 @@ export default function Home() {
     async function fetchData() {
       try {
         const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, runsRes, logbooksRes] = await Promise.all([
-          fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
-          fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          fetch(`${API_URL}/runs?storeId=${storeId}`).then(r => r.ok ? r.json() : { runs: [] }),
-          fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
+          authFetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
+          authFetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          authFetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          authFetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
+          authFetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+          authFetch(`${API_URL}/runs?storeId=${storeId}`).then(r => r.ok ? r.json() : { runs: [] }),
+          authFetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
         ]);
         setApiStore(storeRes);
         setApiCrew(Array.isArray(crewRes) ? crewRes : []);
@@ -610,12 +611,12 @@ export default function Home() {
   const refreshData = async () => {
     try {
       const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, logbooksRes] = await Promise.all([
-        fetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
-        fetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
+        authFetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
+        authFetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        authFetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        authFetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
+        authFetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
+        authFetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
       ]);
       setApiStore(storeRes);
       setApiCrew(Array.isArray(crewRes) ? crewRes : []);
@@ -637,7 +638,7 @@ export default function Home() {
                        item.type === 'roleFamilies' ? `/role-families/${item.id}` :
                        item.type === 'preferences' ? `/role-rules/${item.id}` :
                        `/logbooks/${item.id}`;
-      const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
       if (res.ok) {
         refreshData();
         setDeleteConfirmItem(null);
@@ -1152,7 +1153,7 @@ export default function Home() {
                       onClick={async () => {
                         await Promise.all(
                           Array.from(logbooksSelectedIds).map(id =>
-                            fetch(`${API_URL}/schedule/logbook/${id}`, { method: 'DELETE' }).catch(() => {})
+                            authFetch(`${API_URL}/schedule/logbook/${id}`, { method: 'DELETE' }).catch(() => {})
                           )
                         );
                         setApiLogbooks((prev: any[]) => prev.filter((l: any) => !logbooksSelectedIds.has(l.id)));

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import RadioGroup from './WindowRoleRadioGroup';
 import DailyAssignmentGrid from './DailyAssignmentGrid';
@@ -157,12 +158,12 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
     async function fetchData() {
       try {
         const [windowRolesRes, dailyRes, availabilityRes, constraintsRes, hourlyRolesRes, storeHoursRes] = await Promise.all([
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/crew-with-shifts?date=${encodeURIComponent(date!)}`),
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/daily-roles?date=${encodeURIComponent(date!)}`),
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/crew-per-hour?date=${encodeURIComponent(date!)}`),
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints?date=${encodeURIComponent(date!)}`),
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/hourly-roles`),
-          fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/hours`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/crew-with-shifts?date=${encodeURIComponent(date!)}`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/daily-roles?date=${encodeURIComponent(date!)}`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/crew-per-hour?date=${encodeURIComponent(date!)}`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints?date=${encodeURIComponent(date!)}`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/hourly-roles`),
+          authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/hours`),
         ]);
 
         if (windowRolesRes.ok) {
@@ -485,7 +486,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         };
       });
 
-      const response = await fetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints`, {
+      const response = await authFetch(`${API_URL}/stores/${encodeURIComponent(storeId)}/constraints`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -562,7 +563,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
 
       // shiftsData already fetched above for crewQuotas
 
-      const solverResponse = await fetch(`${API_URL}/solver/v2/solve`, {
+      const solverResponse = await authFetch(`${API_URL}/solver/v2/solve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

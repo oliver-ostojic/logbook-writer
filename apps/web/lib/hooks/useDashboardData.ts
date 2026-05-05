@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { authFetch } from '../api/authFetch';
 import { buildDashboardSnapshot } from '../../src/dashboard/buildDashboardSnapshot';
 import type { DashboardSnapshot } from '../../src/dashboard/types';
 
@@ -52,7 +53,7 @@ async function fetchDashboardData(
   dates: string[]
 ): Promise<DashboardData> {
   const datesParam = dates.join(',');
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/api/stores/${storeId}/dashboard/logbooks?dates=${datesParam}`
   );
   if (!res.ok) throw new Error(await res.text());
@@ -77,7 +78,7 @@ async function fetchDashboardData(
       endDate: sortedDates[sortedDates.length - 1],
       title: 'Fairness Dashboard',
     });
-    const legacyRes = await fetch(
+    const legacyRes = await authFetch(
       `${API_URL}/api/stores/${storeId}/dashboard?${legacyParams}`
     );
     if (legacyRes.ok) {
@@ -98,5 +99,6 @@ export function useDashboardData(
     queryKey: ['dashboard', 'data', storeId, dates],
     queryFn: () => fetchDashboardData(storeId as string, dates),
     enabled,
+    keepPreviousData: true,
   });
 }

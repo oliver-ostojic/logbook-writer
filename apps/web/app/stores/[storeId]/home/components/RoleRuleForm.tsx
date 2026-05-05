@@ -89,7 +89,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
 
   // Load roles for the store
   useEffect(() => {
-    fetch(`${API_URL}/roles?storeId=${storeId}`)
+    authFetch(`${API_URL}/roles?storeId=${storeId}`)
       .then(res => res.json())
       .then(data => setRoles(data))
       .catch(err => console.error('Failed to load roles:', err));
@@ -100,11 +100,11 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
     if (mode === 'edit' && ruleId) {
       setLoadingRule(true);
       Promise.all([
-        fetch(`${API_URL}/role-rules/${ruleId}`).then(res => {
+        authFetch(`${API_URL}/role-rules/${ruleId}`).then(res => {
           if (!res.ok) throw new Error('Failed to load rule data');
           return res.json();
         }),
-        fetch(`${API_URL}/store-role-rules?storeId=${storeId}&roleRuleId=${ruleId}`)
+        authFetch(`${API_URL}/store-role-rules?storeId=${storeId}&roleRuleId=${ruleId}`)
           .then(res => (res.ok ? res.json() : []))
           .catch(() => []),
       ])
@@ -253,7 +253,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
         formData.valueInt !== undefined
       ) {
         try {
-          await fetch(`${API_URL}/store-role-rules/${storeRoleRuleId}`, {
+          await authFetch(`${API_URL}/store-role-rules/${storeRoleRuleId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ valueInt: formData.valueInt }),
@@ -282,7 +282,7 @@ export function RoleRuleForm({ mode, ruleId, storeId, constraintType, onSuccess,
         console.log('StoreRoleRule payload:', storeRulePayload);
 
         try {
-          const storeRuleResponse = await fetch(`${API_URL}/store-role-rules`, {
+          const storeRuleResponse = await authFetch(`${API_URL}/store-role-rules`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(storeRulePayload),

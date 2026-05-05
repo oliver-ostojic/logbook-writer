@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
@@ -48,8 +49,8 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
 
     try {
       const [familyRes, rolesRes] = await Promise.all([
-        fetch(`${API_URL}/role-families/${familyId}`),
-        fetch(`${API_URL}/roles?storeId=${storeId}`),
+        authFetch(`${API_URL}/role-families/${familyId}`),
+        authFetch(`${API_URL}/roles?storeId=${storeId}`),
       ]);
 
       if (!familyRes.ok) throw new Error('Failed to load role family data');
@@ -76,7 +77,7 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_URL}/role-families/${familyId}/roles/${roleId}`, {
+      const res = await authFetch(`${API_URL}/role-families/${familyId}/roles/${roleId}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -98,7 +99,7 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_URL}/role-families/${familyId}/roles`, {
+      const res = await authFetch(`${API_URL}/role-families/${familyId}/roles`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roleId }),
@@ -132,7 +133,7 @@ export function RoleFamilyDetailView({ familyId, storeId, onDelete }: RoleFamily
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_URL}/role-families/${familyId}`, {
+      const res = await authFetch(`${API_URL}/role-families/${familyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

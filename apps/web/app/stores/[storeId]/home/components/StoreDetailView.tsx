@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -40,7 +41,7 @@ export function StoreDetailView({ storeId, onDelete }: StoreDetailViewProps) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/stores/${storeId}`);
+      const response = await authFetch(`${API_URL}/stores/${storeId}`);
       if (!response.ok) throw new Error('Failed to load store data');
       const data = await response.json();
       setStore(data);

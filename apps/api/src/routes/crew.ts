@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PREFERENCE_CONFIG } from '../config/preferences';
+import { rbacMiddleware } from '../middleware/rbac';
 
 const prisma = new PrismaClient();
 
@@ -93,7 +94,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
     roleIds?.map((id) => (typeof id === 'string' ? Number(id) : id)).filter((id): id is number => Number.isInteger(id));
 
   // GET /stores/:storeId/roles - list all roles for a store
-  app.get<{ Params: { storeId: string } }>('/stores/:storeId/roles', async (req, reply) => {
+  app.get<{ Params: { storeId: string } }>('/stores/:storeId/roles', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const storeId = parseInt(req.params.storeId, 10);
     if (isNaN(storeId)) {
       return reply.code(400).send({ error: 'Invalid store id' });
@@ -109,7 +110,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // POST /crew - create new crew member
-  app.post<{ Body: CreateCrewBody }>('/crew', async (req, reply) => {
+  app.post<{ Body: CreateCrewBody }>('/crew', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { 
       id,
       name, 
@@ -213,7 +214,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
 
   // GET /crew/:id - get a single crew member by ID
   // Query params: include (comma-separated: roles,roleRules)
-  app.get<{ Params: { id: string }; Querystring: { include?: string } }>('/crew/:id', async (req, reply) => {
+  app.get<{ Params: { id: string }; Querystring: { include?: string } }>('/crew/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.id;
     const includeParam = req.query.include?.split(',') || [];
 
@@ -271,7 +272,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // GET /crew - list or search crew
-  app.get<{ Querystring: { id?: string; search?: string; storeId?: string } }>('/crew', async (req, reply) => {
+  app.get<{ Querystring: { id?: string; search?: string; storeId?: string } }>('/crew', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const { id, search, storeId } = req.query as any;
 
     if (id) {
@@ -304,7 +305,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // PUT /crew/:id - update a crew member
-  app.put<{ Params: { id: string }; Body: UpdateCrewBody }>('/crew/:id', async (req, reply) => {
+  app.put<{ Params: { id: string }; Body: UpdateCrewBody }>('/crew/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.id;
 
     const { 
@@ -380,7 +381,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // POST /crew/:id/add-role - add a role to a crew member
-  app.post<{ Params: { id: string }; Body: { roleCode: string } }>('/crew/:id/add-role', async (req, reply) => {
+  app.post<{ Params: { id: string }; Body: { roleCode: string } }>('/crew/:id/add-role', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.id;
 
     const { roleCode } = req.body;
@@ -419,7 +420,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // POST /crew/:crewId/roles - add a role to a crew member by roleId
-  app.post<{ Params: { crewId: string }; Body: { roleId: number } }>('/crew/:crewId/roles', async (req, reply) => {
+  app.post<{ Params: { crewId: string }; Body: { roleId: number } }>('/crew/:crewId/roles', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.crewId;
     const { roleId } = req.body;
 
@@ -459,7 +460,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // DELETE /crew/:crewId/roles/:roleId - remove a role from a crew member
-  app.delete<{ Params: { crewId: string; roleId: string } }>('/crew/:crewId/roles/:roleId', async (req, reply) => {
+  app.delete<{ Params: { crewId: string; roleId: string } }>('/crew/:crewId/roles/:roleId', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.crewId;
     const roleId = parseInt(req.params.roleId, 10);
 
@@ -483,7 +484,7 @@ export function registerCrewRoutes(app: FastifyInstance) {
   });
 
   // DELETE /crew/:id - delete a crew member with full cleanup
-  app.delete<{ Params: { id: string } }>('/crew/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/crew/:id', { preHandler: rbacMiddleware({ allowedRoles: ['MATE', 'CAPTAIN', 'ADMIN'] }) }, async (req, reply) => {
     const crewId = req.params.id;
 
     const existing = await prisma.crew.findUnique({ where: { id: crewId } });

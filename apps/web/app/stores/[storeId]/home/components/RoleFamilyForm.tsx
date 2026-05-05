@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { authFetch } from '@/lib/api/authFetch';
 import { CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -60,7 +61,7 @@ export function RoleFamilyForm({ companyId, onSuccess, onCancel }: RoleFamilyFor
     }
 
     try {
-      const response = await fetch(`${API_URL}/role-families`, {
+      const response = await authFetch(`${API_URL}/role-families`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
