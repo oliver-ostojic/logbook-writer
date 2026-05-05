@@ -21,7 +21,7 @@ COPY apps/solver-python/            apps/solver-python/
 COPY packages/domain/package.json   packages/domain/
 COPY packages/shared-types/package.json packages/shared-types/
 
-RUN pnpm install --frozen-lockfile --filter=api... --filter=@logbook-writer/domain --filter=@logbook-writer/shared-types
+RUN pnpm install --frozen-lockfile --filter=@logbook-writer/api... --filter=@logbook-writer/domain --filter=@logbook-writer/shared-types
 
 # ── python deps ──────────────────────────────────────────────────────────────
 RUN python3 -m pip install --no-cache-dir --break-system-packages ortools>=9.8.3296
@@ -31,7 +31,7 @@ COPY packages/domain/    packages/domain/
 COPY packages/shared-types/ packages/shared-types/
 COPY apps/api/           apps/api/
 
-RUN pnpm turbo run build --filter=api...
+RUN pnpm turbo run build --filter=@logbook-writer/api...
 
 # ── runtime ──────────────────────────────────────────────────────────────────
 EXPOSE 4000
