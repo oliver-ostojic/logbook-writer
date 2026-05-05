@@ -22,7 +22,7 @@ import { logLogbookGenerate, logLogbookRegenerate } from '../services/activity-l
 
 const prisma = new PrismaClient();
 
-const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const CURRENT_DIR = __dirname;
 const API_SRC_DIR = path.resolve(CURRENT_DIR, '..');
 const PROJECT_ROOT = path.resolve(API_SRC_DIR, '../../..');
 // Use the refactored solver in apps/solver-python/

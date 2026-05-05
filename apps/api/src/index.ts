@@ -65,7 +65,7 @@ export async function buildServer() {
 }
 
 // Bootstrap if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   buildServer().then(app => {
     const port = Number(process.env.PORT ?? 4000);
     app.listen({ port, host: '0.0.0.0' }).catch(err => {

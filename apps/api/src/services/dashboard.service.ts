@@ -252,7 +252,6 @@ async function main() {
 }
 
 // Run if executed directly (ESM compatible)
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
-if (isMainModule) {
+if (require.main === module) {
   main();
 }
