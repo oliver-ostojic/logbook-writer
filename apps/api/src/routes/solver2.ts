@@ -8,8 +8,8 @@ import { PrismaClient } from '@prisma/client';
 import { buildSolverInputV2 } from '../solver2/builder';
 import type { RoleDescriptor, SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
-import type { ConstraintViolation } from '@logbook-writer/shared-types/src/constraint-analysis';
-import { SolverStatus } from '@logbook-writer/shared-types/src/solver';
+import type { ConstraintViolation } from '@logbook-writer/shared-types';
+import { SolverStatus } from '@logbook-writer/shared-types';
 import { saveLogbookWithMetadata, createRunRecord, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
 import { startOfDay } from '../utils';
 import {

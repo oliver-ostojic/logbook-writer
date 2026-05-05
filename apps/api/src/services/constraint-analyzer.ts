@@ -3,7 +3,7 @@ import type {
   ConstraintViolation,
   ConstraintViolationCategory,
   ConstraintViolationSeverity,
-} from '@logbook-writer/shared-types/src/constraint-analysis';
+} from '@logbook-writer/shared-types';
 import type {
   AssignmentModelValue,
   CrewDescriptor,
