@@ -10,13 +10,14 @@ import { DashboardLayout } from '@/components/layouts';
 import { CardHeader, CardSmall, CardContainer, aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton, GlassPillCard } from '@/components/ui/ai-glass';
 import { useRouter } from 'next/navigation';
 import { CrewForm, CrewDetailView, RoleForm, RoleDetailView, RoleFamilyForm, RoleFamilyDetailView, RoleRuleForm, RoleRuleDetailView, CompanyForm, CompanyDetailView, StoreForm, StoreDetailView, RunDetailView, LogbookPdfViewer, LogbookSupersededHistory, NavStatsCard, NavDivider, TopNavHeader, ListRowItemLight, RoleRuleCard, SentenceBubbleItem } from './components';
-import { parseLocalDate, formatLogbookDate, formatShortDate, capitalizeStatus, formatRelativeTime, getActivityDisplayType, formatActivityDate, groupRulesByType } from './utils';
+import { formatLogbookDate, formatShortDate, capitalizeStatus, formatRelativeTime, getActivityDisplayType, formatActivityDate, groupRulesByType } from './utils';
+import { useHomeData } from './useHomeData';
 import { renderRoleRule } from '@/lib/role-rule-templates';
 import { ROLE_RULE_TYPE_LABELS } from '@/lib/role-rule-constants';
 import { useAuthStore } from '@/lib/authStore';
 import { useTutorialStore } from '@/lib/tutorialStore';
 import { createHomeSteps } from '@/app/tutorial/steps/home-steps';
-import { fetchActivityLogs, postComment, deleteComment, ActivityLogItem, ActivityFilter } from '@/lib/api/activity';
+import { ActivityFilter } from '@/lib/api/activity';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -68,16 +69,25 @@ export default function Home() {
   const [logbooksDeleteMode, setLogbooksDeleteMode] = useState(false);
   const [logbooksSelectedIds, setLogbooksSelectedIds] = useState<Set<string>>(new Set());
   const logbooksDragRef = useRef<{ active: boolean; adding: boolean } | null>(null);
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('recent');
-  const [activityUserFilter, setActivityUserFilter] = useState<'everyone' | 'mine'>('everyone');
-  const [activityPage, setActivityPage] = useState(1);
-  const ACTIVITY_ITEMS_PER_PAGE = 10;
-  const [commentText, setCommentText] = useState('');
-  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-  const [commentSubmitting, setCommentSubmitting] = useState(false);
-  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
-  const [deleteConfirmLogId, setDeleteConfirmLogId] = useState<string | null>(null);
+  const {
+    apiStore, apiCrew, apiRoles, apiRoleFamilies, apiPreferences, apiRuns, apiLogbooks,
+    dataLoaded,
+    effectiveCrew, effectiveRoles, effectiveRoleFamilies, effectiveLogbooks, effectiveDateEntries,
+    activityFilter, setActivityFilter,
+    activityUserFilter, setActivityUserFilter,
+    activityPage, setActivityPage,
+    activityLogs, activityLoading,
+    filteredActivityLogs, totalActivityPages, paginatedActivityLogs,
+    commentText, setCommentText,
+    commentSubmitting,
+    hoveredCommentId, setHoveredCommentId,
+    deleteConfirmLogId, setDeleteConfirmLogId,
+    ACTIVITY_ITEMS_PER_PAGE,
+    refreshData,
+    handleCommentSubmit,
+    handleDeleteComment,
+  } = useHomeData(storeId);
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -122,48 +132,6 @@ export default function Home() {
 
   const hasLogbookPanel = !!selectedItem && (selectedItem.type === 'logbooks' || selectedItem.type === 'runs');
 
-  // API data states
-  const [apiStore, setApiStore] = useState<any>(null);
-  const [apiCrew, setApiCrew] = useState<any[]>([]);
-  const [apiRoles, setApiRoles] = useState<any[]>([]);
-  const [apiRoleFamilies, setApiRoleFamilies] = useState<any[]>([]);
-  const [apiPreferences, setApiPreferences] = useState<any[]>([]);
-  const [apiRuns, setApiRuns] = useState<any[]>([]);
-  const [apiLogbooks, setApiLogbooks] = useState<any[]>([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  // Fetch data from API
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, runsRes, logbooksRes] = await Promise.all([
-          authFetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
-          authFetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          authFetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          authFetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
-          authFetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-          authFetch(`${API_URL}/runs?storeId=${storeId}`).then(r => r.ok ? r.json() : { runs: [] }),
-          authFetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
-        ]);
-        setApiStore(storeRes);
-        setApiCrew(Array.isArray(crewRes) ? crewRes : []);
-        setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
-        setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
-        setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
-        // Runs API returns { runs: [...], total, limit, offset }
-        const runs = runsRes?.runs || [];
-        setApiRuns(Array.isArray(runs) ? runs : []);
-        // Logbooks API returns { logbooks: [...], total, limit, offset }
-        const logbooks = logbooksRes?.logbooks || [];
-        setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
-        setDataLoaded(true);
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-        setDataLoaded(true);
-      }
-    }
-    fetchData();
-  }, [storeId]);
 
   // Start tutorial flyover if pending (triggered from /tutorial page)
   // Waits for apiCrew to load so we can pass a crewId for the crew preferences tour
@@ -178,159 +146,6 @@ export default function Home() {
     startFlyover(steps);
   }, [pendingFlyover, apiCrew]);
 
-  // Fetch activity logs when filter changes
-  useEffect(() => {
-    async function loadActivity() {
-      setActivityLoading(true);
-      try {
-        const response = await fetchActivityLogs(Number(storeId), activityFilter);
-        setActivityLogs(response.logs);
-      } catch (err) {
-        console.error('Failed to load activity:', err);
-        setActivityLogs([]);
-      } finally {
-        setActivityLoading(false);
-      }
-    }
-    loadActivity();
-  }, [storeId, activityFilter]);
-
-  // Handle comment submit
-  const handleCommentSubmit = async () => {
-    if (!commentText.trim() || commentSubmitting) return;
-    setCommentSubmitting(true);
-    try {
-      const newLog = await postComment(Number(storeId), commentText.trim());
-      setActivityLogs(prev => [...prev, newLog]); // Add to bottom (oldest-to-newest order)
-      setCommentText('');
-    } catch (err) {
-      console.error('Failed to post comment:', err);
-    } finally {
-      setCommentSubmitting(false);
-    }
-  };
-
-  // Handle comment delete
-  const handleDeleteComment = async (logId: string) => {
-    try {
-      const updatedLog = await deleteComment(Number(storeId), logId);
-      setActivityLogs(prev => prev.map(log => log.id === logId ? updatedLog : log));
-      setDeleteConfirmLogId(null);
-    } catch (err) {
-      console.error('Failed to delete comment:', err);
-    }
-  };
-
-  // Filter activity logs by user and reverse to show newest first
-  const filteredActivityLogs = (activityUserFilter === 'mine' && user
-    ? activityLogs.filter(log => log.User.id === user.id)
-    : activityLogs
-  ).slice().reverse();
-
-  // Pagination for activity logs
-  const totalActivityPages = Math.ceil(filteredActivityLogs.length / ACTIVITY_ITEMS_PER_PAGE);
-  const paginatedActivityLogs = filteredActivityLogs.slice(
-    (activityPage - 1) * ACTIVITY_ITEMS_PER_PAGE,
-    activityPage * ACTIVITY_ITEMS_PER_PAGE
-  );
-
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setActivityPage(1);
-  }, [activityFilter, activityUserFilter]);
-
-  const effectiveCrew = apiCrew.map((c: any) => ({ id: c.id, name: c.name }));
-  const effectiveRoles = apiRoles
-    .map((r: any) => ({ id: String(r.id), name: r.displayName, familyId: r.familyId ? String(r.familyId) : null }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const effectiveRoleFamilies = apiRoleFamilies
-    .map((f: any) => ({ id: String(f.id), name: f.displayName || f.name }))
-    .sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z ascending
-
-  // For logbooks, deduplicate by date - show only the "best" status per date
-  // Priority: PUBLISHED > DRAFT > SUPERSEDED
-  const dedupeLogbooks = (logbooks: any[]) => {
-    const statusPriority: Record<string, number> = { PUBLISHED: 3, DRAFT: 2, SUPERSEDED: 1 };
-    const byDate = new Map<string, { logbook: any; versionCount: number }>();
-
-    for (const l of logbooks) {
-      const dateKey = new Date(l.date).toISOString().split('T')[0];
-      const existing = byDate.get(dateKey);
-      const currentPriority = statusPriority[l.status] || 0;
-      const existingPriority = existing ? (statusPriority[existing.logbook.status] || 0) : -1;
-
-      if (existing) {
-        existing.versionCount++;
-        if (currentPriority > existingPriority) {
-          existing.logbook = l;
-        }
-      } else {
-        byDate.set(dateKey, { logbook: l, versionCount: 1 });
-      }
-    }
-
-    return Array.from(byDate.values()).map(({ logbook, versionCount }) => ({
-      ...logbook,
-      versionCount,
-    }));
-  };
-
-  const effectiveLogbooks = dedupeLogbooks(apiLogbooks).map((l: any) => ({
-    id: l.id,
-    date: parseLocalDate(l.date),
-    status: l.status,
-    hasSuperseded: l.hasSupersededVersions || false,
-    versionCount: l.versionCount,
-    crewCount: l.crewCount ?? null,
-    prefsMet: l.metadata?.percentMet ?? null,
-    violationCount: l.violationCount ?? null,
-  }));
-
-  const effectiveDateEntries = (() => {
-    const runsByDate = new Map<string, any[]>();
-    for (const run of apiRuns) {
-      const dk = new Date(run.date).toISOString().split('T')[0];
-      const list = runsByDate.get(dk) || [];
-      runsByDate.set(dk, [...list, run]);
-    }
-
-    const entries = new Map<string, any>();
-    for (const l of dedupeLogbooks(apiLogbooks)) {
-      const dk = new Date(l.date).toISOString().split('T')[0];
-      entries.set(dk, {
-        id: l.id,
-        date: parseLocalDate(l.date),
-        dateKey: dk,
-        hasLogbook: true,
-        status: l.status,
-        versionCount: l.versionCount,
-        crewCount: l.crewCount ?? null,
-        prefsMet: l.metadata?.percentMet ?? null,
-        violationCount: l.violationCount ?? null,
-        runs: (runsByDate.get(dk) || []).sort((a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ),
-      });
-    }
-    for (const [dk, runs] of Array.from(runsByDate.entries())) {
-      if (!entries.has(dk)) {
-        const sorted = [...runs].sort((a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        entries.set(dk, {
-          id: `date:${dk}`,
-          date: parseLocalDate(dk),
-          dateKey: dk,
-          hasLogbook: false,
-          runs: sorted,
-        });
-      }
-    }
-    return Array.from(entries.values()).sort((a: any, b: any) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  })();
 
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'recent', label: 'Recent' },
@@ -366,29 +181,6 @@ export default function Home() {
   const filteredDateEntries = effectiveDateEntries.filter((e: any) =>
     formatLogbookDate(e.date).toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Helper to refresh data after mutations
-  const refreshData = async () => {
-    try {
-      const [storeRes, crewRes, rolesRes, roleFamiliesRes, preferencesRes, logbooksRes] = await Promise.all([
-        authFetch(`${API_URL}/stores/${storeId}`).then(r => r.ok ? r.json() : null),
-        authFetch(`${API_URL}/crew?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        authFetch(`${API_URL}/roles?storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        authFetch(`${API_URL}/role-families`).then(r => r.ok ? r.json() : []),
-        authFetch(`${API_URL}/role-rules?constraintType=SOFT&storeId=${storeId}`).then(r => r.ok ? r.json() : []),
-        authFetch(`${API_URL}/logbooks?storeId=${storeId}`).then(r => r.ok ? r.json() : { logbooks: [] }),
-      ]);
-      setApiStore(storeRes);
-      setApiCrew(Array.isArray(crewRes) ? crewRes : []);
-      setApiRoles(Array.isArray(rolesRes) ? rolesRes : []);
-      setApiRoleFamilies(Array.isArray(roleFamiliesRes) ? roleFamiliesRes : []);
-      setApiPreferences(Array.isArray(preferencesRes) ? preferencesRes : []);
-      const logbooks = logbooksRes?.logbooks || [];
-      setApiLogbooks(Array.isArray(logbooks) ? logbooks : []);
-    } catch (err) {
-      console.error('Failed to refresh data:', err);
-    }
-  };
 
   // Handle delete
   const handleDelete = async (item: EditableItem) => {
@@ -941,7 +733,7 @@ export default function Home() {
                             authFetch(`${API_URL}/schedule/logbook/${id}`, { method: 'DELETE' }).catch(() => {})
                           )
                         );
-                        setApiLogbooks((prev: any[]) => prev.filter((l: any) => !logbooksSelectedIds.has(l.id)));
+                        refreshData();
                         setLogbooksSelectedIds(new Set());
                         setLogbooksDeleteMode(false);
                         if (selectedItem && logbooksSelectedIds.has(selectedItem.id)) setSelectedItem(null);
