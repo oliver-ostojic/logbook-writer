@@ -36,9 +36,9 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(year, month - 1, day);
 }
 
-// Format date as "5 Jan, 2025"
+// Format date as "05 Jan, 2025"
 function formatLogbookDate(date: Date): string {
-  const day = date.getDate();
+  const day = String(date.getDate()).padStart(2, '0');
   const month = date.toLocaleString('en-US', { month: 'short' });
   const year = date.getFullYear();
   return `${day} ${month}, ${year}`;
