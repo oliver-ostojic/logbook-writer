@@ -37,6 +37,7 @@ class VariableBuilder:
         role_records: List[dict],
         crew_quotas: List[dict] | None = None,
         coverage_windows: List[dict] | None = None,
+        hourly_requirements: List[dict] | None = None,
     ) -> Dict[AssignmentKey, cp_model.IntVar]:
         DEBUG = False
         role_by_id = {role['id']: role for role in role_records}
@@ -76,6 +77,28 @@ class VariableBuilder:
             if WINDOW_LIKE_MODELS & set(assignment_models) or assignment_model in WINDOW_LIKE_MODELS:
                 window_role_ids.add(role['id'])
 
+        # Identify pure HOURLY roles and which ones have actual hourly requirements.
+        # Pure HOURLY roles (not WINDOW-like, not DAILY, not SOLVER/HOURLY_AND_SOLVER) only
+        # get variables if at least one hourlyRequirements entry exists for them.
+        UNRESTRICTED_MODELS = {'SOLVER', 'HOURLY_AND_SOLVER'}
+        pure_hourly_role_ids: set[int] = set()
+        for role in role_records:
+            assignment_models = set(role.get('assignmentModels') or [])
+            assignment_model = role.get('assignmentModel') or ''
+            all_models = assignment_models | ({assignment_model} if assignment_model else set())
+            is_hourly = 'HOURLY' in all_models
+            is_unrestricted = bool(UNRESTRICTED_MODELS & all_models)
+            is_window_like = bool(WINDOW_LIKE_MODELS & all_models)
+            is_daily = role['id'] in daily_role_ids
+            if is_hourly and not is_unrestricted and not is_window_like and not is_daily:
+                pure_hourly_role_ids.add(role['id'])
+
+        hourly_required_role_ids: set[int] = set()
+        for req in (hourly_requirements or []):
+            role_id = req.get('roleId')
+            if role_id in pure_hourly_role_ids:
+                hourly_required_role_ids.add(role_id)
+
         # Build role_id → list of (startMin, endMin) from coverage_windows
         window_bands_by_role: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
         for cw in (coverage_windows or []):
@@ -90,6 +113,8 @@ class VariableBuilder:
         if DEBUG: print(f"Role count: {len(role_records)}", file=sys.stderr)
         if DEBUG: print(f"DAILY role IDs: {daily_role_ids}", file=sys.stderr)
         if DEBUG: print(f"Daily quota pairs count: {len(daily_quota_pairs)}", file=sys.stderr)
+        if DEBUG: print(f"Pure HOURLY role IDs: {pure_hourly_role_ids}", file=sys.stderr)
+        if DEBUG: print(f"HOURLY roles with requirements: {hourly_required_role_ids}", file=sys.stderr)
         if DEBUG: print(f"Roles: {[(r['id'], r['code'], r.get('taskLength', 30), r.get('allowOutsideStoreHours', False)) for r in role_records]}", file=sys.stderr)
         if DEBUG: print(f"Time grid: slot_minutes={self.time_grid.slot_minutes}, open={self.time_grid.open_minutes}, close={self.time_grid.close_minutes}", file=sys.stderr)
 
@@ -133,6 +158,11 @@ class VariableBuilder:
                 is_window_role = role_id in window_role_ids
                 if is_window_role and role_id not in window_bands_by_role:
                     if DEBUG: print(f"    Skipping WINDOW role {role_code_by_id.get(role_id)} for {crew_name}: no coverage windows", file=sys.stderr)
+                    continue
+
+                # For pure HOURLY roles, skip if no hourly requirements exist for this role.
+                if role_id in pure_hourly_role_ids and role_id not in hourly_required_role_ids:
+                    if DEBUG: print(f"    Skipping HOURLY role {role_code_by_id.get(role_id)} for {crew_name}: no hourly requirements", file=sys.stderr)
                     continue
 
                 # Get task length in minutes (default to grid slot size)
