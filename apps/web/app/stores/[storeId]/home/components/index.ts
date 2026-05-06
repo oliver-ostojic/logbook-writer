@@ -15,3 +15,6 @@ export { LogbookPdfViewer } from './LogbookPdfViewer';
 export { LogbookSupersededHistory } from './LogbookSupersededHistory';
 export { NavStatsCard, NavDivider } from './NavStatsCard';
 export { TopNavHeader } from './TopNavHeader';
+export { ListRowItemLight } from './ListRowItemLight';
+export { RoleRuleCard } from './RoleRuleCard';
+export { SentenceBubbleItem } from './SentenceBubbleItem';
