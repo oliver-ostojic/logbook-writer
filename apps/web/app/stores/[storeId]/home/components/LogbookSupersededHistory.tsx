@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { authFetch } from '@/lib/api/authFetch';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillButton } from '@/components/ui/ai-glass';
 import { fetchActivityLogsByDate, ActivityLogItem } from '@/lib/api/activity';
+import { RunDetailView } from './RunDetailView';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -55,8 +56,16 @@ interface LogbookVersion {
   runId: string | null;
 }
 
+interface RunRow {
+  id: string;
+  status: string;
+  createdAt: string;
+}
+
 interface LogbookSupersededHistoryProps {
   logbookId: string;
+  runs?: RunRow[];
+  runsOnly?: boolean;
   onViewPdf: (logbookId: string, date: string) => void;
   onViewRunInfo?: (runId: string) => void;
   onDelete?: (logbookId: string) => void;
@@ -185,7 +194,7 @@ function ActivityList({ logs }: { logs: ActivityLogItem[] }) {
   );
 }
 
-export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, onDelete, onClose }: LogbookSupersededHistoryProps) {
+export function LogbookSupersededHistory({ logbookId, runs = [], runsOnly = false, onViewPdf, onViewRunInfo, onDelete, onClose }: LogbookSupersededHistoryProps) {
   const params = useParams();
   const router = useRouter();
   const storeId = params?.storeId as string;
@@ -195,6 +204,9 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
   const [error, setError] = useState<string | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [runsPage, setRunsPage] = useState(1);
+  const RUNS_PER_PAGE = 10;
 
   const loadHistory = async () => {
     setLoading(true);
@@ -214,6 +226,7 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
   };
 
   useEffect(() => {
+    if (runsOnly) { setLoading(false); return; }
     let cancelled = false;
 
     async function fetchHistory() {
@@ -434,6 +447,75 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
     );
   }
 
+  const totalRunsPages = Math.ceil(runs.length / RUNS_PER_PAGE);
+  const formatRunTimestamp = (iso: string) =>
+    new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const runStatusColor = (s: string) =>
+    s === 'OPTIMAL' ? '#10b981' : s === 'FEASIBLE' ? '#3b82f6' : s === 'TIME_LIMIT' ? '#f59e0b' : s === 'INFEASIBLE' ? '#ef4444' : '#9A999E';
+
+  const renderRunsSection = () => (
+    <div className="ai-glass-border" style={aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08)}>
+      <div className="rounded-[1.5rem]" style={{ ...aiGlassLightContentStyle('1.5rem', 0.6), padding: '1rem' }}>
+        <div className="flex flex-col gap-4">
+          {/* Runs header */}
+          <div style={{ margin: '-1rem -1rem 0 -1rem', width: 'calc(100% + 2rem)' }}>
+            <div className="ai-glass-border" style={aiGlassLightBorderStyle('1.5rem 1.5rem 0 0', '0, 0, 0', 0.08)}>
+              <div style={{ ...aiGlassLightContentStyle('1.5rem 1.5rem 0 0', 0.6), padding: '1rem' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                      <div style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '6px 14px', fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 600, color: '#2C2C2C' }}>Runs</div>
+                    </div>
+                  </div>
+                  {selectedRunId ? (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                      <button onClick={() => setSelectedRunId(null)} style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: '6px 14px', fontFamily: 'var(--font-open-sans)', fontSize: '13px', fontWeight: 500, color: '#6B6B6B', background: 'transparent', border: 'none', cursor: 'pointer' }}>Back</button>
+                    </div>
+                  ) : totalRunsPages > 1 && (
+                    <div className="ai-glass-border" style={aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.08)}>
+                      <div className="flex items-center gap-1" style={{ ...aiGlassLightContentStyle('9999px', 0.4), padding: '0 6px', height: '32px' }}>
+                        <button onClick={() => setRunsPage(p => Math.max(1, p - 1))} disabled={runsPage === 1} style={{ background: 'transparent', border: 'none', padding: '0 6px', cursor: runsPage === 1 ? 'default' : 'pointer', color: runsPage === 1 ? '#9A999E' : '#6B6B6B', fontFamily: 'var(--font-open-sans)', fontSize: '13px' }}>◀</button>
+                        <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#6B6B6B', padding: '0 2px' }}>{runsPage} / {totalRunsPages}</span>
+                        <button onClick={() => setRunsPage(p => Math.min(totalRunsPages, p + 1))} disabled={runsPage >= totalRunsPages} style={{ background: 'transparent', border: 'none', padding: '0 6px', cursor: runsPage >= totalRunsPages ? 'default' : 'pointer', color: runsPage >= totalRunsPages ? '#9A999E' : '#6B6B6B', fontFamily: 'var(--font-open-sans)', fontSize: '13px' }}>▶</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Runs content */}
+          {selectedRunId ? (
+            <RunDetailView runId={selectedRunId} />
+          ) : runs.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <span style={{ fontFamily: 'var(--font-open-sans)', color: '#9A999E', fontSize: '13px' }}>No runs for this date</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {runs.slice((runsPage - 1) * RUNS_PER_PAGE, runsPage * RUNS_PER_PAGE).map((run) => (
+                <GlassPillButton key={run.id} isSelected={false} onClick={() => setSelectedRunId(run.id)} padding="12px 16px" contentStyle={{ justifyContent: 'flex-start' }}>
+                  <div className="flex items-center justify-between w-full">
+                    <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '13px', color: '#6B6B6B' }}>{formatRunTimestamp(run.createdAt)}</span>
+                    <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '11px', fontWeight: 600, color: runStatusColor(run.status) }}>{run.status}</span>
+                  </div>
+                </GlassPillButton>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (runsOnly) {
+    return (
+      <div className="flex flex-col gap-6">
+        {renderRunsSection()}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Version History header - embedded in outer card top */}
@@ -545,6 +627,9 @@ export function LogbookSupersededHistory({ logbookId, onViewPdf, onViewRunInfo, 
         )}
 
       </div>
+
+      {/* Runs card */}
+      {renderRunsSection()}
 
       {/* Activity Log - card with embedded header */}
       <div
@@ -719,7 +804,7 @@ function VersionCard({ version, isCurrent, formatDate, formatDateTime, onViewPdf
               onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)')}
             >
-              View Run Info
+              Run Info
             </button>
           )}
           {version.storedFilePath && (

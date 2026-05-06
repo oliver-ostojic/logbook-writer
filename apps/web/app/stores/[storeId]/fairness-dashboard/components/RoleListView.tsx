@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle, GlassPillCard } from '@/components/ui/ai-glass';
 import { RoleQuickLookCardGlass, RoleCardData } from './RoleQuickLookCard';
@@ -63,6 +63,9 @@ export function RoleListView({
   sparklineData,
 }: RoleListViewProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [isCondensed, setIsCondensed] = useState(false);
+  const [isHiding, setIsHiding] = useState(false);
+  const hasToggledRef = useRef(false);
 
   const filteredCards = roleCards.filter(card =>
     card.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -70,6 +73,19 @@ export function RoleListView({
   const totalPages = Math.ceil(filteredCards.length / CARDS_PER_PAGE);
   const showPagination = filteredCards.length > CARDS_PER_PAGE;
   const hasPanel = panelCard !== null;
+
+  useEffect(() => {
+    if (!hasToggledRef.current) {
+      hasToggledRef.current = true;
+      return;
+    }
+    setIsHiding(true);
+    const timer = setTimeout(() => {
+      setIsCondensed(hasPanel);
+      requestAnimationFrame(() => setIsHiding(false));
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [hasPanel]);
 
   return (
     <div
@@ -184,11 +200,13 @@ export function RoleListView({
                 <div
                   key={card.id}
                   data-tutorial-id={card.name?.toLowerCase() === 'product' ? 'dashboard-role-product-card' : undefined}
-                  className="ai-glass-border cursor-pointer transition-all"
+                  className="ai-glass-border cursor-pointer"
                   style={{
                     ...aiGlassLightBorderStyle('1rem', '0, 0, 0', isSelected || isHovered ? 0 : 0.08),
                     filter: isSelected || isHovered ? 'brightness(0.94)' : undefined,
                     transform: isSelected || isHovered ? 'scale(1.01)' : undefined,
+                    overflow: 'hidden',
+                    transition: 'filter 0.2s ease, transform 0.2s ease',
                   }}
                   onMouseEnter={() => setHoveredId(card.id)}
                   onMouseLeave={() => setHoveredId(null)}
@@ -200,7 +218,9 @@ export function RoleListView({
                     }
                   }}
                 >
-                  <RoleQuickLookCardGlass card={card} condensed={hasPanel} />
+                  <div style={{ opacity: isHiding ? 0 : 1, transition: 'opacity 0.12s ease' }}>
+                    <RoleQuickLookCardGlass card={card} condensed={isCondensed} />
+                  </div>
                 </div>
               );
             })}

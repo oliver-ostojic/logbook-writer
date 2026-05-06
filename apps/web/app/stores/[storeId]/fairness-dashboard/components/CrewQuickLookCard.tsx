@@ -805,8 +805,8 @@ export function CrewQuickLookCardGlass({ card, onClick, condensed = false }: { c
       </span>
 
       {/* Stats and graph - responsive flex layout */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Column 1 - min width for wrapping */}
+      <div className="flex items-center gap-3">
+        {/* Column 1 */}
         <div className="flex-1 flex flex-col gap-2" style={{ minWidth: condensed ? undefined : 120 }}>
           <div className="flex items-center justify-between gap-2">
             <span

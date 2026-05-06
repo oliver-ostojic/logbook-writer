@@ -330,10 +330,11 @@ type EditableItem = {
 };
 
 type SelectedItem = EditableItem & {
-  mode: 'view' | 'edit' | 'add' | 'pdf' | 'history' | 'runInfo';
-  // For runInfo mode, store the logbook we came from so we can go back
+  mode: 'view' | 'edit' | 'add' | 'pdf' | 'history' | 'runInfo' | 'runsOnly';
   fromLogbookId?: string;
   fromLogbookName?: string;
+  fromMode?: 'history' | 'runsOnly';
+  dateKey?: string;
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -575,6 +576,51 @@ export default function Home() {
     violationCount: l.violationCount ?? null,
   }));
 
+  const effectiveDateEntries = (() => {
+    const runsByDate = new Map<string, any[]>();
+    for (const run of apiRuns) {
+      const dk = new Date(run.date).toISOString().split('T')[0];
+      const list = runsByDate.get(dk) || [];
+      runsByDate.set(dk, [...list, run]);
+    }
+
+    const entries = new Map<string, any>();
+    for (const l of dedupeLogbooks(apiLogbooks)) {
+      const dk = new Date(l.date).toISOString().split('T')[0];
+      entries.set(dk, {
+        id: l.id,
+        date: parseLocalDate(l.date),
+        dateKey: dk,
+        hasLogbook: true,
+        status: l.status,
+        versionCount: l.versionCount,
+        crewCount: l.crewCount ?? null,
+        prefsMet: l.metadata?.percentMet ?? null,
+        violationCount: l.violationCount ?? null,
+        runs: (runsByDate.get(dk) || []).sort((a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+      });
+    }
+    for (const [dk, runs] of Array.from(runsByDate.entries())) {
+      if (!entries.has(dk)) {
+        const sorted = [...runs].sort((a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        entries.set(dk, {
+          id: `date:${dk}`,
+          date: parseLocalDate(dk),
+          dateKey: dk,
+          hasLogbook: false,
+          runs: sorted,
+        });
+      }
+    }
+    return Array.from(entries.values()).sort((a: any, b: any) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  })();
+
   const ACTIVITY_FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
     { id: 'recent', label: 'Recent' },
     { id: 'today', label: 'Today' },
@@ -605,6 +651,9 @@ export default function Home() {
   );
   const filteredLogbooks = effectiveLogbooks.filter(l =>
     formatLogbookDate(l.date).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredDateEntries = effectiveDateEntries.filter((e: any) =>
+    formatLogbookDate(e.date).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Helper to refresh data after mutations
@@ -679,20 +728,29 @@ export default function Home() {
     }
 
     if (selectedItem.mode === 'history' && selectedItem.type === 'logbooks') {
+      const dateKey = selectedItem.dateKey;
+      const dateRuns = dateKey
+        ? (apiRuns as any[])
+            .filter((r: any) => new Date(r.date).toISOString().split('T')[0] === dateKey)
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        : [];
       return (
         <LogbookSupersededHistory
           logbookId={selectedItem.id}
+          runs={dateRuns}
           onViewPdf={(logbookId, date) => {
-            setSelectedItem({ id: logbookId, name: date, type: 'logbooks', mode: 'pdf' });
+            setSelectedItem({ id: logbookId, name: date, type: 'logbooks', mode: 'pdf', dateKey });
           }}
           onViewRunInfo={(runId) => {
             setSelectedItem({
               id: runId,
-              name: `Run Info`,
+              name: 'Run Info',
               type: 'runs',
               mode: 'runInfo',
               fromLogbookId: selectedItem.id,
               fromLogbookName: selectedItem.name,
+              fromMode: 'history',
+              dateKey,
             });
           }}
           onDelete={() => refreshData()}
@@ -700,6 +758,24 @@ export default function Home() {
             setActiveView('logbooks');
             setSelectedItem(null);
           }}
+        />
+      );
+    }
+
+    if (selectedItem.mode === 'runsOnly' && selectedItem.type === 'logbooks') {
+      const dateKey = selectedItem.dateKey;
+      const dateRuns = dateKey
+        ? (apiRuns as any[])
+            .filter((r: any) => new Date(r.date).toISOString().split('T')[0] === dateKey)
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        : [];
+      return (
+        <LogbookSupersededHistory
+          logbookId=""
+          runs={dateRuns}
+          runsOnly={true}
+          onViewPdf={() => {}}
+          onClose={() => { setActiveView('logbooks'); setSelectedItem(null); }}
         />
       );
     }
@@ -714,7 +790,8 @@ export default function Home() {
                 id: selectedItem.fromLogbookId,
                 name: selectedItem.fromLogbookName || '',
                 type: 'logbooks',
-                mode: 'history',
+                mode: selectedItem.fromMode || 'history',
+                dateKey: selectedItem.dateKey,
               });
             } else {
               setActiveView('logbooks');
@@ -1065,7 +1142,7 @@ export default function Home() {
 
   // Render list view content
   const renderListView = (type: 'crew' | 'logbooks') => {
-    const data = type === 'crew' ? filteredCrew : filteredLogbooks;
+    const data = type === 'crew' ? filteredCrew : filteredDateEntries;
     const currentPage = type === 'crew' ? crewPage : logbooksPage;
     const setPage = type === 'crew' ? setCrewPage : setLogbooksPage;
 
@@ -1119,9 +1196,6 @@ export default function Home() {
       return item.name;
     };
 
-    // Check if there's data to show search
-    const hasData = type === 'crew' ? effectiveCrew.length > 0 : effectiveLogbooks.length > 0;
-
     // Add button click handler
     const handleAddClick = () => {
       if (type === 'logbooks') {
@@ -1141,7 +1215,7 @@ export default function Home() {
       <CardContainer lightMode={true} borderRadius="1.5rem" padding="1rem">
         <div className="flex flex-col">
           {/* Embedded search header with title, add button, and pagination */}
-          {hasData && renderEmbeddedSearchHeader(
+          {renderEmbeddedSearchHeader(
             searchQuery, setSearchQuery, currentPage, totalPages, setPage, handleAddClick,
             `${type}-header`,
             type === 'logbooks' ? 'logbooks-add-btn' : undefined,
@@ -1189,7 +1263,7 @@ export default function Home() {
           )}
 
           {/* Paginated list */}
-          <div data-tutorial-id={`${type}-list`} className="flex flex-col gap-3 flex-1" style={{ marginTop: hasData ? '16px' : 0 }}>
+          <div data-tutorial-id={`${type}-list`} className="flex flex-col gap-3 flex-1" style={{ marginTop: '16px' }}>
             {paginatedData.length > 0 ? (
               paginatedData.map((item, itemIndex) => {
                 const itemName = getItemName(item);
@@ -1230,7 +1304,12 @@ export default function Home() {
                       if (isSelected) {
                         setSelectedItem(null);
                       } else if (type === 'logbooks') {
-                        setSelectedItem({ id: item.id, name: itemName, type, mode: 'history' });
+                        const entry = item as any;
+                        if (entry.hasLogbook) {
+                          setSelectedItem({ id: entry.id, name: itemName, type, mode: 'history', dateKey: entry.dateKey });
+                        } else {
+                          setSelectedItem({ id: entry.id, name: itemName, type, mode: 'runsOnly', dateKey: entry.dateKey });
+                        }
                       } else {
                         setSelectedItem({ id: item.id, name: itemName, type, mode: 'view' });
                       }
@@ -1239,14 +1318,41 @@ export default function Home() {
                     contentStyle={{ justifyContent: 'flex-start' }}
                   >
                     {type === 'logbooks' ? (() => {
-                        const lb = item as any;
+                        const entry = item as any;
+                        const divider = <div style={{ width: 1, height: 16, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.12) 30%, rgba(0,0,0,0.12) 70%, transparent 100%)' }} />;
+                        if (!entry.hasLogbook) {
+                          const latestRun = entry.runs[0];
+                          const runCount = entry.runs.length;
+                          const statusColor = latestRun?.status === 'OPTIMAL' ? '#10b981' :
+                            latestRun?.status === 'FEASIBLE' ? '#3b82f6' :
+                            latestRun?.status === 'TIME_LIMIT' ? '#f59e0b' :
+                            latestRun?.status === 'INFEASIBLE' ? '#ef4444' : '#9A999E';
+                          return (
+                            <div className="flex items-center w-full gap-3">
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
+                                {itemName}
+                              </span>
+                              {divider}
+                              <div className="flex items-center flex-1 gap-2">
+                                <div className="flex items-center justify-between flex-1">
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Runs</span>
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{runCount}</span>
+                                </div>
+                                {latestRun && <>{divider}
+                                <div className="flex items-center justify-between flex-1">
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Latest</span>
+                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '11px', color: statusColor, fontWeight: 600 }}>{latestRun.status}</span>
+                                </div></>}
+                              </div>
+                            </div>
+                          );
+                        }
                         const getPrefColor = (pct: number) => {
                           if (pct < 60) return '#dc2626';
                           if (pct < 70) return '#d97706';
                           if (pct < 80) return '#16a34a';
                           return '#2563eb';
                         };
-                        const divider = <div style={{ width: 1, height: 16, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.12) 30%, rgba(0,0,0,0.12) 70%, transparent 100%)' }} />;
                         return (
                           <div className="flex items-center w-full gap-3">
                             <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
@@ -1256,18 +1362,18 @@ export default function Home() {
                             <div className="flex items-center flex-1 gap-2">
                               <div className="flex items-center justify-between flex-1">
                                 <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Violations</span>
-                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{lb.violationCount ?? '—'}</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{entry.violationCount ?? '—'}</span>
                               </div>
                               {divider}
                               <div className="flex items-center justify-between flex-1">
                                 <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Crew</span>
-                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{lb.crewCount != null ? lb.crewCount : '—'}</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{entry.crewCount != null ? entry.crewCount : '—'}</span>
                               </div>
                               {divider}
                               <div className="flex items-center justify-between flex-1">
                                 <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Prefs</span>
-                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: lb.prefsMet != null ? getPrefColor(lb.prefsMet) : '#2C2C2C', fontWeight: 500 }}>
-                                  {lb.prefsMet != null ? `${Math.round(lb.prefsMet)}%` : '—'}
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: entry.prefsMet != null ? getPrefColor(entry.prefsMet) : '#2C2C2C', fontWeight: 500 }}>
+                                  {entry.prefsMet != null ? `${Math.round(entry.prefsMet)}%` : '—'}
                                 </span>
                               </div>
                             </div>
@@ -2730,11 +2836,13 @@ export default function Home() {
               onViewRunInfo={(runId) => {
                 setSelectedItem({
                   id: runId,
-                  name: `Run Info`,
+                  name: 'Run Info',
                   type: 'runs',
                   mode: 'runInfo',
                   fromLogbookId: selectedItem.id,
                   fromLogbookName: selectedItem.name,
+                  fromMode: 'history',
+                  dateKey: selectedItem.dateKey,
                 });
               }}
               onDelete={() => refreshData()}
@@ -2744,7 +2852,7 @@ export default function Home() {
               }}
             />
           ) : selectedItem.mode === 'runInfo' && selectedItem.type === 'runs' ? (
-            // Run detail view accessed from logbook history
+            // Run detail view accessed from logbook history or runs-only date
             <RunDetailView
               runId={selectedItem.id}
               onBack={() => {
@@ -2753,7 +2861,8 @@ export default function Home() {
                     id: selectedItem.fromLogbookId,
                     name: selectedItem.fromLogbookName || '',
                     type: 'logbooks',
-                    mode: 'history',
+                    mode: selectedItem.fromMode || 'history',
+                    dateKey: selectedItem.dateKey,
                   });
                 } else {
                   setActiveView('logbooks');
