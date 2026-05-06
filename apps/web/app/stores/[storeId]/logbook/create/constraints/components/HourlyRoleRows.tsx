@@ -288,7 +288,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                   key={option.hour}
                   className={`${isSelected ? '' : 'ai-glass-border'} rounded-[1rem]`}
                   style={isSelected
-                    ? { borderRadius: '1rem', position: 'relative' as const, overflow: 'hidden', boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' }
+                    ? { borderRadius: '1rem', position: 'relative' as const }
                     : { ...aiGlassLightBorderStyle('1rem', '0, 0, 0', 0.08), overflow: 'hidden' }}
                 >
                   <button
@@ -300,7 +300,10 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                       ${isSelected ? 'bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}
                       ${!enabled ? 'opacity-40 cursor-not-allowed' : ''}
                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))]`}
-                    style={{ fontFamily: 'var(--font-sans)' }}
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      ...(isSelected ? { boxShadow: '0 0 0 1.6px hsl(var(--brand-h) var(--brand-s) var(--brand-l)), 0 4px 24px rgba(0, 0, 0, 0.06)' } : {}),
+                    }}
                   >
                     {option.label}
                   </button>
