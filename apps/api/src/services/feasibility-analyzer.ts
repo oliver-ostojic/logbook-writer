@@ -18,6 +18,7 @@ import type {
   CrewDescriptor,
   RoleFamilyDescriptor,
   CrewQuotaDescriptor,
+  CoverageWindowDescriptor,
 } from '../solver2/types';
 
 export interface FeasibilityViolation {
@@ -31,12 +32,12 @@ export type FeasibilityCategory =
   | 'daily-requirement'
   | 'hourly-requirement'
   | 'window-requirement'
-  | 'role-min-max'
+  | 'role-family'
   | 'crew-availability'
   | 'shift-length'
   | 'role-qualification'
   | 'conflicting-constraints'
-  | 'insufficient-constraints'
+  | 'other'
   | 'unknown';
 
 export interface FeasibilityAnalysisResult {
@@ -58,6 +59,8 @@ interface FeasibilityContext {
   eligibleCrewByRoleAndHour: Map<number, Map<number, Set<string>>>;
   // Family IDs that each crew is qualified for (crewId -> familyIds)
   crewFamilyIds: Map<string, Set<number>>;
+  // Coverage windows indexed by role
+  coverageWindowsByRole: Map<number, CoverageWindowDescriptor[]>;
 }
 
 /**
@@ -72,12 +75,13 @@ interface FeasibilityContext {
  */
 export function analyzeFeasibility(input: SolverInputV2): FeasibilityAnalysisResult {
   const ctx = buildContext(input);
-  
+
   const violations: FeasibilityViolation[] = [
     ...checkCrewHaveRoles(ctx),
     ...checkCrewQuotasFeasible(ctx),
     ...checkCoverageWindowsFeasible(ctx),
     ...checkRoleFamilyMinMaxFeasible(ctx),
+    ...checkRoleFamilyAggregateSupply(ctx),
     ...checkCrewShiftCanBeFilled(ctx),
   ];
   
@@ -187,6 +191,14 @@ function buildContext(input: SolverInputV2): FeasibilityContext {
     crewFamilyIds.set(crew.id, familyIds);
   }
 
+  const coverageWindowsByRole = new Map<number, CoverageWindowDescriptor[]>();
+  for (const window of input.coverageWindows) {
+    if (!coverageWindowsByRole.has(window.roleId)) {
+      coverageWindowsByRole.set(window.roleId, []);
+    }
+    coverageWindowsByRole.get(window.roleId)!.push(window);
+  }
+
   return {
     input,
     roleById,
@@ -196,7 +208,111 @@ function buildContext(input: SolverInputV2): FeasibilityContext {
     crewByRole,
     eligibleCrewByRoleAndHour,
     crewFamilyIds,
+    coverageWindowsByRole,
   };
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+// Models that can be assigned at any time without a coverage window.
+const UNRESTRICTED_ASSIGNMENT_MODELS = new Set<string>(['SOLVER', 'HOURLY_AND_SOLVER', 'DAILY']);
+
+// Returns the time intervals (in minutes) during which a crew member can work a
+// given role. Unrestricted models get the full shift; windowed models get shift ∩ windows.
+function roleAvailableIntervals(
+  crew: CrewDescriptor,
+  role: RoleDescriptor,
+  windows: CoverageWindowDescriptor[],
+): Array<[number, number]> {
+  if (UNRESTRICTED_ASSIGNMENT_MODELS.has(role.assignmentModel)) {
+    return [[crew.shiftStartMin, crew.shiftEndMin]];
+  }
+  const intervals: Array<[number, number]> = [];
+  for (const w of windows) {
+    const start = Math.max(crew.shiftStartMin, w.startMin);
+    const end = Math.min(crew.shiftEndMin, w.endMin);
+    if (end > start) intervals.push([start, end]);
+  }
+  return intervals;
+}
+
+// Merges overlapping intervals and returns sorted, non-overlapping union.
+function computeUnionIntervals(intervals: Array<[number, number]>): Array<[number, number]> {
+  if (intervals.length === 0) return [];
+  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
+  const result: Array<[number, number]> = [];
+  let [curStart, curEnd] = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    const [s, e] = sorted[i];
+    if (s <= curEnd) {
+      curEnd = Math.max(curEnd, e);
+    } else {
+      result.push([curStart, curEnd]);
+      [curStart, curEnd] = [s, e];
+    }
+  }
+  result.push([curStart, curEnd]);
+  return result;
+}
+
+// Returns total minutes covered by the union of all intervals.
+function computeUnionMinutes(intervals: Array<[number, number]>): number {
+  return computeUnionIntervals(intervals).reduce((sum, [s, e]) => sum + e - s, 0);
+}
+
+// Subtracts `subtract` intervals from `base`, returning the uncovered gaps.
+function subtractIntervals(
+  base: Array<[number, number]>,
+  subtract: Array<[number, number]>,
+): Array<[number, number]> {
+  if (subtract.length === 0) return base;
+  const subUnion = computeUnionIntervals(subtract);
+  const result: Array<[number, number]> = [];
+  for (const [baseStart, baseEnd] of base) {
+    let cursor = baseStart;
+    for (const [subStart, subEnd] of subUnion) {
+      if (subStart >= baseEnd) break;
+      if (subEnd <= cursor) continue;
+      if (subStart > cursor) result.push([cursor, subStart]);
+      cursor = Math.max(cursor, subEnd);
+    }
+    if (cursor < baseEnd) result.push([cursor, baseEnd]);
+  }
+  return result;
+}
+
+function formatMinutesAmPm(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  return mins === 0
+    ? `${displayHour}:00 ${period}`
+    : `${displayHour}:${mins.toString().padStart(2, '0')} ${period}`;
+}
+
+function formatFamilyName(code: string): string {
+  return code
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function formatShortfall(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return hours === 1 ? '1 hour' : `${hours} hours`;
+  }
+  return `${minutes} min`;
+}
+
+// Returns whether a crew member's shift meets a role's minShiftLengthForRoleAccess.
+function crewCanAccessRole(crew: CrewDescriptor, role: RoleDescriptor): boolean {
+  const threshold = role.minShiftLengthForRoleAccess;
+  if (threshold == null) return true;
+  return (crew.shiftEndMin - crew.shiftStartMin) >= threshold;
 }
 
 // =============================================================================
@@ -456,37 +572,160 @@ function checkWindowRequirementsFeasible(_ctx: FeasibilityContext): FeasibilityV
 }
 
 // =============================================================================
-// CHECK 5: Can crew satisfy role family min/max constraints?
-// For each crew, check if they're qualified for a family with minMinutes > 0
-// and whether their shift is long enough to potentially satisfy it.
+// CHECK 5: Can crew satisfy role family min constraints?
+// For each crew, compute the union of time they can spend on family roles
+// (shift ∩ coverage windows for windowed roles, full shift for SOLVER roles)
+// and verify it meets the family minimum.
 // =============================================================================
 function checkRoleFamilyMinMaxFeasible(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
 
   for (const crew of ctx.input.crew) {
-    const shiftMinutes = crew.shiftEndMin - crew.shiftStartMin;
-    const crewFamilyIds = ctx.crewFamilyIds.get(crew.id) ?? new Set();
+    const shiftLength = crew.shiftEndMin - crew.shiftStartMin;
 
-    for (const familyId of crewFamilyIds) {
-      const family = ctx.familyById.get(familyId);
-      if (!family) continue;
+    for (const family of ctx.input.roleFamilies) {
+      if (family.minMinutes <= 0) continue;
 
-      // Check if shift is long enough to satisfy family minimum
-      if (family.minMinutes > 0 && family.minMinutes > shiftMinutes) {
+      // Mirror Python solver: family min is only enforced when crew's shift meets
+      // the minimum minShiftLengthForRoleAccess across all roles in the family.
+      // If no roles have this field, the minimum always applies.
+      const accessThresholds = family.roleIds
+        .map((id) => ctx.roleById.get(id)?.minShiftLengthForRoleAccess ?? null)
+        .filter((v): v is number => v !== null);
+      const minShiftRequired = accessThresholds.length > 0 ? Math.min(...accessThresholds) : null;
+      if (minShiftRequired !== null && shiftLength < minShiftRequired) continue;
+
+      // Roles in this family the crew qualifies for (role-level access threshold applied)
+      const qualifyingRoles = family.roleIds
+        .map((id) => ctx.roleById.get(id))
+        .filter((role): role is RoleDescriptor =>
+          role !== undefined &&
+          crew.roleIds.includes(role.id) &&
+          crewCanAccessRole(crew, role),
+        );
+
+      if (qualifyingRoles.length === 0) continue;
+
+      // Union of all time intervals the crew can spend on qualifying roles
+      const allIntervals: Array<[number, number]> = [];
+      for (const role of qualifyingRoles) {
+        const windows = ctx.coverageWindowsByRole.get(role.id) ?? [];
+        allIntervals.push(...roleAvailableIntervals(crew, role, windows));
+      }
+
+      const availableMinutes = computeUnionMinutes(allIntervals);
+
+      if (availableMinutes < family.minMinutes) {
+        const availableHours = (availableMinutes / 60).toFixed(1);
+        const requiredHours = (family.minMinutes / 60).toFixed(1);
         violations.push({
-          severity: 'warning',
-          category: 'role-min-max',
-          message: `${crew.name}'s ${(shiftMinutes / 60).toFixed(1)}h shift is shorter than the ${family.name} family minimum of ${(family.minMinutes / 60).toFixed(1)}h. They may not be able to satisfy family requirements.`,
-          details: { 
-            crewId: crew.id, 
+          severity: 'error',
+          category: 'role-family',
+          message: `${crew.name} can only work ${availableHours}h on ${family.name} roles (shift overlap with coverage windows), but the family minimum is ${requiredHours}h.`,
+          details: {
+            crewId: crew.id,
             crewName: crew.name,
             familyId: family.id,
             familyName: family.name,
             familyMinMinutes: family.minMinutes,
-            shiftMinutes,
+            availableMinutes,
+            shiftLength,
           },
         });
       }
+    }
+  }
+
+  return violations;
+}
+
+// =============================================================================
+// CHECK 5b: Is there enough total window capacity for all qualifying crew?
+// Per-crew Check 5 only verifies that each crew can individually reach the minimum.
+// This check verifies the total supply (crewPerMinute × duration summed across all
+// coverage windows for family roles) is enough to satisfy every qualifying crew's
+// minimum simultaneously.
+//
+// Example: 2 crew each need 60 min of CUSTOMER_EXPERIENCE, but there is only one
+// 60-min window with crewPerMinute=1 → supply=60, demand=120 → infeasible.
+// =============================================================================
+function checkRoleFamilyAggregateSupply(ctx: FeasibilityContext): FeasibilityViolation[] {
+  const violations: FeasibilityViolation[] = [];
+
+  for (const family of ctx.input.roleFamilies) {
+    if (family.minMinutes <= 0) continue;
+
+    // Only applies to families whose roles are all windowed (unrestricted roles
+    // like SOLVER have unbounded supply so aggregate capping doesn't apply).
+    const allWindowedRoles = family.roleIds
+      .map((id) => ctx.roleById.get(id))
+      .filter((r): r is RoleDescriptor => r !== undefined)
+      .filter((r) => !UNRESTRICTED_ASSIGNMENT_MODELS.has(r.assignmentModel));
+
+    if (allWindowedRoles.length === 0) continue;
+
+    // Total supply: sum of crewPerMinute × duration across all family role windows
+    let totalSupplyMinutes = 0;
+    for (const role of allWindowedRoles) {
+      for (const w of ctx.coverageWindowsByRole.get(role.id) ?? []) {
+        totalSupplyMinutes += w.crewPerMinute * (w.endMin - w.startMin);
+      }
+    }
+
+    // Total demand: qualifying crew count × family minimum
+    const qualifyingCrew = ctx.input.crew.filter((crew) => {
+      const shiftLength = crew.shiftEndMin - crew.shiftStartMin;
+      const accessThresholds = family.roleIds
+        .map((id) => ctx.roleById.get(id)?.minShiftLengthForRoleAccess ?? null)
+        .filter((v): v is number => v !== null);
+      const minShiftRequired = accessThresholds.length > 0 ? Math.min(...accessThresholds) : null;
+      if (minShiftRequired !== null && shiftLength < minShiftRequired) return false;
+      return family.roleIds.some((id) => {
+        const role = ctx.roleById.get(id);
+        return role && crew.roleIds.includes(role.id) && crewCanAccessRole(crew, role);
+      });
+    });
+
+    const totalDemandMinutes = qualifyingCrew.length * family.minMinutes;
+
+    if (totalDemandMinutes > totalSupplyMinutes) {
+      const shortfallMinutes = totalDemandMinutes - totalSupplyMinutes;
+      const familyDisplayName = formatFamilyName(family.name);
+      const shortfallStr = formatShortfall(shortfallMinutes);
+
+      // Find where coverage could be added: crew availability minus existing windows
+      const crewIntervals: Array<[number, number]> = qualifyingCrew.map(
+        (c) => [c.shiftStartMin, c.shiftEndMin],
+      );
+      const windowIntervals: Array<[number, number]> = allWindowedRoles.flatMap(
+        (role) => (ctx.coverageWindowsByRole.get(role.id) ?? []).map(
+          (w): [number, number] => [w.startMin, w.endMin],
+        ),
+      );
+      const crewUnion = computeUnionIntervals(crewIntervals);
+      const gaps = subtractIntervals(crewUnion, windowIntervals);
+
+      // Find the first gap large enough to hold the shortfall
+      const suggestion = gaps.find(([s, e]) => e - s >= shortfallMinutes);
+      const withinStr = suggestion
+        ? ` within ${formatMinutesAmPm(suggestion[0])} – ${formatMinutesAmPm(suggestion[1])}`
+        : '';
+
+      violations.push({
+        severity: 'error',
+        category: 'role-family',
+        message: `**${familyDisplayName}** hours are insufficient to meet crew role minimums. Add **${shortfallStr}** of additional **${familyDisplayName}** time${withinStr} to satisfy requirements.`,
+        details: {
+          familyId: family.id,
+          familyName: family.name,
+          familyMinMinutes: family.minMinutes,
+          totalSupplyMinutes,
+          totalDemandMinutes,
+          shortfallMinutes,
+          qualifyingCrewIds: qualifyingCrew.map((c) => c.id),
+          qualifyingCrewNames: qualifyingCrew.map((c) => c.name),
+        },
+      });
     }
   }
 
@@ -516,80 +755,69 @@ function checkConflictingDailyRequirements(_ctx: FeasibilityContext): Feasibilit
 
 // =============================================================================
 // CHECK 8: Can crew's shift be fully filled with their eligible roles?
-// For each crew, verify they have at least one eligible role that can cover
-// every slot of their shift (considering coverage windows and role availability).
+// For each crew, verify every 30-min slot of their shift can be covered by at
+// least one eligible role. SOLVER/HOURLY_AND_SOLVER/DAILY roles cover any slot.
+// Windowed roles only cover slots within their coverage windows.
+// minShiftLengthForRoleAccess gates are applied per role.
 // =============================================================================
 function checkCrewShiftCanBeFilled(ctx: FeasibilityContext): FeasibilityViolation[] {
   const violations: FeasibilityViolation[] = [];
 
-  // Build a map of role -> coverage windows (to know when roles are "active")
-  const roleWindowsByRole = new Map<number, { startMin: number; endMin: number }[]>();
-  for (const window of ctx.input.coverageWindows) {
-    if (!roleWindowsByRole.has(window.roleId)) {
-      roleWindowsByRole.set(window.roleId, []);
-    }
-    roleWindowsByRole.get(window.roleId)!.push({
-      startMin: window.startMin,
-      endMin: window.endMin,
-    });
-  }
-
   for (const crew of ctx.input.crew) {
     const shiftStart = crew.shiftStartMin;
     const shiftEnd = crew.shiftEndMin;
-
-    // For each minute of their shift, check if ANY eligible role can cover it
-    // We'll check in 30-minute increments for efficiency
+    const shiftLength = shiftEnd - shiftStart;
     const uncoverableSlots: number[] = [];
-    
+
     for (let minute = shiftStart; minute < shiftEnd; minute += 30) {
       let canBeCovered = false;
-      
+
       for (const roleId of crew.roleIds) {
         const role = ctx.roleById.get(roleId);
         if (!role) continue;
 
-        const windows = roleWindowsByRole.get(roleId);
-        
-        // If role has no coverage windows, it can be assigned anytime (e.g., BRK)
-        if (!windows || windows.length === 0) {
+        // Skip roles the crew can't access due to shift length requirement
+        if (!crewCanAccessRole(crew, role)) continue;
+
+        // SOLVER/HOURLY_AND_SOLVER/DAILY roles can fill any slot without a window
+        if (UNRESTRICTED_ASSIGNMENT_MODELS.has(role.assignmentModel)) {
           canBeCovered = true;
           break;
         }
-        
-        // Check if this minute falls within any of the role's coverage windows
+
+        // Windowed roles: check if this minute falls within a coverage window
+        const windows = ctx.coverageWindowsByRole.get(roleId) ?? [];
         for (const window of windows) {
           if (minute >= window.startMin && minute < window.endMin) {
             canBeCovered = true;
             break;
           }
         }
-        
+
         if (canBeCovered) break;
       }
-      
+
       if (!canBeCovered) {
         uncoverableSlots.push(minute);
       }
     }
 
     if (uncoverableSlots.length > 0) {
-      // Group consecutive slots for cleaner reporting
       const firstUncoverable = uncoverableSlots[0];
       const lastUncoverable = uncoverableSlots[uncoverableSlots.length - 1];
-      
       const firstTime = formatMinutes(firstUncoverable);
       const lastTime = formatMinutes(lastUncoverable + 30);
-      
+
       violations.push({
         severity: 'error',
-        category: 'insufficient-constraints',
-        message: `${crew.name}'s shift has ${uncoverableSlots.length * 30} minutes (${firstTime}–${lastTime}) that cannot be filled. None of their qualified roles have coverage windows during this time.`,
+        category: 'other',
+        message: `${crew.name}'s shift has ${uncoverableSlots.length * 30} minutes (${firstTime}–${lastTime}) that cannot be filled. None of their qualified roles cover this time.`,
         details: {
           crewId: crew.id,
           crewName: crew.name,
           shiftStartMin: shiftStart,
           shiftEndMin: shiftEnd,
+          shiftLength,
           uncoverableSlots,
           crewRoleIds: crew.roleIds,
         },
@@ -636,12 +864,12 @@ function formatCategory(category: FeasibilityCategory): string {
     case 'daily-requirement': return 'Daily requirement issues';
     case 'hourly-requirement': return 'Hourly coverage issues';
     case 'window-requirement': return 'Window coverage issues';
-    case 'role-min-max': return 'Role min/max issues';
+    case 'role-family': return 'Role family min/max issues';
     case 'crew-availability': return 'Crew availability issues';
     case 'shift-length': return 'Shift length issues';
     case 'role-qualification': return 'Role qualification issues';
     case 'conflicting-constraints': return 'Conflicting constraint issues';
-    case 'insufficient-constraints': return 'Insufficient role constraint issues';
+    case 'other': return 'Other issues';
     case 'unknown': return 'Unknown issues';
     default: return category;
   }

@@ -613,11 +613,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Error message box - outside outer card */}
-      {errors.length > 0 && (
-        <div className="rounded-xl overflow-hidden">
-          <ErrorMessageBox errors={errors} />
-        </div>
-      )}
+      {errors.length > 0 && <ErrorMessageBox errors={errors} />}
 
       {/* All steps wrapped in outer glass pill card */}
       <div

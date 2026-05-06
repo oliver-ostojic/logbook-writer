@@ -14,6 +14,7 @@ export type ConstraintViolationCategory =
   | 'consistency'
   | 'gap'
   | 'assignment-model'
+  | 'role-family'
   | 'other';
 
 export interface ConstraintViolation {

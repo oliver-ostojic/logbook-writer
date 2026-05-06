@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { buildSolverInputV2 } from '../solver2/builder';
 import type { RoleDescriptor, SolverInputV2 } from '../solver2/types';
 import { analyzeSolverResult, type AssignmentRecord } from '../services/constraint-analyzer';
+import { analyzeFeasibility } from '../services/feasibility-analyzer';
 import type { ConstraintViolation } from '@logbook-writer/shared-types';
 import { SolverStatus } from '@logbook-writer/shared-types';
 import { saveLogbookWithMetadata, createRunRecord, type SolverOutputV2, type AssignmentV2 } from '../services/logbook-manager';
@@ -90,10 +91,7 @@ export interface PythonSolverResult {
   error?: string;
 }
 
-const formatViolationMessage = (violation: ConstraintViolation): string => {
-  const icon = violation.severity === 'error' ? '✗' : violation.severity === 'warning' ? '•' : 'ℹ️';
-  return `${icon} [${violation.category}] ${violation.message}`;
-};
+const formatViolationMessage = (violation: ConstraintViolation): string => violation.message;
 
 const resolveSolverStatus = (result: PythonSolverResult): SolverStatus => {
   const raw =
@@ -202,6 +200,22 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         );
       }
 
+      // Pre-solve feasibility check — catches root causes before the solver runs.
+      // These violations are prepended so they lead the error list instead of
+      // cascade symptoms (e.g. "insufficient crew") that appear when the solver
+      // goes infeasible due to an unresolvable family min constraint.
+      process.stderr.write(`[pre-solve] families=${JSON.stringify(solverInput.roleFamilies.map(f => ({ id: f.id, name: f.name, minMinutes: f.minMinutes, roleIds: f.roleIds })))}\n`);
+      process.stderr.write(`[pre-solve] crew=${JSON.stringify(solverInput.crew.map(c => ({ id: c.id, name: c.name, roleIds: c.roleIds, shift: `${c.shiftStartMin}-${c.shiftEndMin}` })))}\n`);
+      process.stderr.write(`[pre-solve] coverageWindows=${JSON.stringify(solverInput.coverageWindows.map(w => ({ roleId: w.roleId, startMin: w.startMin, endMin: w.endMin })))}\n`);
+      const preSolveAnalysis = analyzeFeasibility(solverInput);
+      process.stderr.write(`[pre-solve] feasible=${preSolveAnalysis.feasible} violations=${preSolveAnalysis.violations.length}: ${JSON.stringify(preSolveAnalysis.violations.map(v => v.message))}\n`);
+      const preSolveViolations: ConstraintViolation[] = preSolveAnalysis.violations.map((v) => ({
+        severity: v.severity as ConstraintViolation['severity'],
+        category: (v.category as string) as ConstraintViolation['category'],
+        message: v.message,
+        details: v.details,
+      }));
+
       const timeLimitSeconds = body.timeLimitSeconds ?? SOLVER_CONFIG.timeLimitSeconds;
       const numWorkers = body.numWorkers ?? SOLVER_CONFIG.numWorkers;
       const solutionHint = body.solutionHint;  // Optional warmstart hint
@@ -224,7 +238,10 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
         assignments: assignmentRecords,
       });
 
-      let violations = constraintAnalysis.violations;
+      // If pre-solve found root causes, show only those — post-solve errors are cascade symptoms
+      let violations: ConstraintViolation[] = preSolveViolations.length > 0
+        ? preSolveViolations
+        : constraintAnalysis.violations;
       if (!pythonResult.success && violations.length === 0) {
         violations = [
           {
@@ -233,11 +250,8 @@ export async function registerSolverV2Routes(app: FastifyInstance) {
             message: `Solver returned ${pythonResult.status}. Inspect guardrail counts and inputs for infeasibility.`,
           },
         ];
-        constraintAnalysis = {
-          ...constraintAnalysis,
-          violations,
-        };
       }
+      constraintAnalysis = { ...constraintAnalysis, violations };
 
       const formattedViolations = violations
         .slice(0, VIOLATION_METADATA_LIMIT)

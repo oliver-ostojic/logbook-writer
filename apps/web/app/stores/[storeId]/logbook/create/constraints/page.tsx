@@ -15,15 +15,14 @@ export default function Page() {
     const storeId = params?.storeId as string;
     const { user, logout: logoutStore } = useAuthStore();
     const [errors, setErrors] = useState<string[]>([]);
-    const errorRef = useRef<HTMLDivElement>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement | null>(null);
 
-    // Scroll to top when errors appear
+    // Scroll to top of page when errors appear
     useEffect(() => {
-        if (errors.length > 0 && errorRef.current) {
-            errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (errors.length > 0) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [errors]);
 
@@ -129,9 +128,7 @@ export default function Page() {
 
                                 {/* Content */}
                                 <ProgressBar currentStep={2} />
-                                <div ref={errorRef}>
-                                    <BentoGrid onError={handleError} errors={errors} />
-                                </div>
+                                <BentoGrid onError={handleError} errors={errors} />
                             </div>
                         </div>
                     </div>
