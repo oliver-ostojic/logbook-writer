@@ -411,6 +411,8 @@ export default function Home() {
   // Check if we're in PDF view mode (for panel width adjustment)
   const isPdfView = selectedItem?.mode === 'pdf' && selectedItem?.type === 'logbooks';
 
+  const hasLogbookPanel = !!selectedItem && (selectedItem.type === 'logbooks' || selectedItem.type === 'runs');
+
   // API data states
   const [apiStore, setApiStore] = useState<any>(null);
   const [apiCrew, setApiCrew] = useState<any[]>([]);
@@ -817,8 +819,8 @@ export default function Home() {
         <div data-tutorial-id="detail-header" style={{ margin: '-1.5rem -1.5rem 0 -1.5rem', width: 'calc(100% + 3rem)' }}>
           <GlassPillCard padding="1rem" borderRadius="1.5rem 1.5rem 0 0" contentStyle={{ width: '100%' }}>
             <div className="flex items-center" style={{ width: '100%', gap: '12px' }}>
-              {/* Edit button - only in view mode */}
-              {selectedItem.mode === 'view' && (
+              {/* Edit button - only in view mode, not for roleFamilies (uses inline editing) */}
+              {selectedItem.mode === 'view' && selectedItem.type !== 'roleFamilies' && (
                 <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), flexShrink: 0 }}>
                   <button
                     onClick={() => setSelectedItem({ ...selectedItem, mode: 'edit' })}
@@ -1320,40 +1322,41 @@ export default function Home() {
                     {type === 'logbooks' ? (() => {
                         const entry = item as any;
                         const divider = <div style={{ width: 1, height: 16, flexShrink: 0, background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.12) 30%, rgba(0,0,0,0.12) 70%, transparent 100%)' }} />;
-                        if (!entry.hasLogbook) {
-                          const latestRun = entry.runs[0];
-                          const runCount = entry.runs.length;
-                          const statusColor = latestRun?.status === 'OPTIMAL' ? '#10b981' :
-                            latestRun?.status === 'FEASIBLE' ? '#3b82f6' :
-                            latestRun?.status === 'TIME_LIMIT' ? '#f59e0b' :
-                            latestRun?.status === 'INFEASIBLE' ? '#ef4444' : '#9A999E';
-                          return (
-                            <div className="flex items-center w-full gap-3">
-                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
-                                {itemName}
-                              </span>
-                              {divider}
-                              <div className="flex items-center flex-1 gap-2">
-                                <div className="flex items-center justify-between flex-1">
-                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Runs</span>
-                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{runCount}</span>
-                                </div>
-                                {latestRun && <>{divider}
-                                <div className="flex items-center justify-between flex-1">
-                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Latest</span>
-                                  <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '11px', color: statusColor, fontWeight: 600 }}>{latestRun.status}</span>
-                                </div></>}
-                              </div>
-                            </div>
-                          );
-                        }
                         const getPrefColor = (pct: number) => {
                           if (pct < 60) return '#dc2626';
                           if (pct < 70) return '#d97706';
                           if (pct < 80) return '#16a34a';
                           return '#2563eb';
                         };
-                        return (
+
+                        const latestRun = !entry.hasLogbook ? entry.runs?.[0] : null;
+                        const runCount = !entry.hasLogbook ? (entry.runs?.length ?? 0) : 0;
+                        const statusColor = latestRun?.status === 'OPTIMAL' ? '#10b981' :
+                          latestRun?.status === 'FEASIBLE' ? '#3b82f6' :
+                          latestRun?.status === 'TIME_LIMIT' ? '#f59e0b' :
+                          latestRun?.status === 'INFEASIBLE' ? '#ef4444' : '#9A999E';
+
+                        const fullContent = !entry.hasLogbook ? (
+                          <div className="flex items-center w-full gap-3">
+                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
+                              {itemName}
+                            </span>
+                            {divider}
+                            <div className="flex items-center flex-1 gap-2">
+                              <div className="flex items-center justify-between flex-1">
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Runs</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#2C2C2C', fontWeight: 500 }}>{runCount}</span>
+                              </div>
+                              {divider}
+                              <div className="flex-1" />
+                              {divider}
+                              <div className="flex items-center justify-between flex-1">
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: '#9A999E', fontWeight: 400 }}>Status</span>
+                                <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '11px', color: statusColor, fontWeight: 600 }}>{latestRun?.status ?? '—'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
                           <div className="flex items-center w-full gap-3">
                             <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C', flexShrink: 0 }}>
                               {itemName}
@@ -1379,6 +1382,25 @@ export default function Home() {
                             </div>
                           </div>
                         );
+
+                        const condensedContent = (
+                          <div className="flex items-center justify-between w-full">
+                            <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C' }}>
+                              {itemName}
+                            </span>
+                            {entry.hasLogbook && entry.prefsMet != null ? (
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '12px', color: getPrefColor(entry.prefsMet), fontWeight: 500 }}>
+                                {Math.round(entry.prefsMet)}%
+                              </span>
+                            ) : !entry.hasLogbook && latestRun ? (
+                              <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '11px', color: statusColor, fontWeight: 600 }}>
+                                {latestRun.status}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+
+                        return hasLogbookPanel ? condensedContent : fullContent;
                       })() : (
                       <div className="flex flex-col gap-2 w-full">
                         <span style={{ fontFamily: 'var(--font-open-sans)', fontSize: '14px', fontWeight: 500, color: '#2C2C2C' }}>
