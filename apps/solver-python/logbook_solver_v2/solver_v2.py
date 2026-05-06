@@ -159,6 +159,7 @@ class SolverV2:
         #   we still default to portfolio (because you're optimizing for speed).
         if num_workers is None or num_workers <= 0:
             num_workers = os.cpu_count() or 1
+        print(f"[solver] num_workers={num_workers} os.cpu_count()={os.cpu_count()}", flush=True)
 
         # OR-Tools parameter naming varies by version.
         # In this repo's OR-Tools build, setting `num_workers` can yield MODEL_INVALID,
