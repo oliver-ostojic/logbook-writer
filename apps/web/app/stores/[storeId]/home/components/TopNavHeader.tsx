@@ -10,9 +10,10 @@ import { logout } from '@/lib/api/auth';
 interface TopNavHeaderProps {
   storeId: string;
   activeNav: 'home' | 'dashboard' | 'settings';
+  onNavChange?: (tab: 'home' | 'dashboard' | 'settings') => void;
 }
 
-export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
+export function TopNavHeader({ storeId, activeNav, onNavChange }: TopNavHeaderProps) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logoutStore = useAuthStore((s) => s.logout);
@@ -21,6 +22,13 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
   // Heavy detail views in the parent can starve App Router transitions; deferring
   // lets the click's state changes flush before the route push runs.
   const navigate = (path: string) => setTimeout(() => router.push(path), 0);
+  const handleNavClick = (tab: 'home' | 'dashboard' | 'settings', path: string) => {
+    if (onNavChange) {
+      onNavChange(tab);
+    } else {
+      navigate(path);
+    }
+  };
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -96,20 +104,20 @@ export function TopNavHeader({ storeId, activeNav }: TopNavHeaderProps) {
                 label="Home"
                 textOnly
                 isActive={activeNav === 'home'}
-                onClick={() => navigate(`/stores/${storeId}/home`)}
+                onClick={() => handleNavClick('home', `/stores/${storeId}/home`)}
                 isFirst
               />
               <NavStatsCard
                 label="System Health"
                 textOnly
                 isActive={activeNav === 'dashboard'}
-                onClick={() => navigate(`/stores/${storeId}/fairness-dashboard`)}
+                onClick={() => handleNavClick('dashboard', `/stores/${storeId}/fairness-dashboard`)}
               />
               <NavStatsCard
                 label="Settings"
                 textOnly
                 isActive={activeNav === 'settings'}
-                onClick={() => navigate(`/stores/${storeId}/settings`)}
+                onClick={() => handleNavClick('settings', `/stores/${storeId}/settings`)}
               />
               <div ref={userMenuRef} style={{ display: 'flex' }}>
                 <NavStatsCard

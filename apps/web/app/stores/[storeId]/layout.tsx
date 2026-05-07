@@ -4,6 +4,8 @@ import { ReactNode } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import type { UserRole } from '@/lib/authStore';
+import { useAvailableDates } from '@/lib/hooks/useAvailableDates';
+import { useDashboardData } from '@/lib/hooks/useDashboardData';
 
 const CREW_PAGE_ROLES: UserRole[] = ['CREW', 'MATE', 'CAPTAIN', 'ADMIN'];
 const STORE_PAGE_ROLES: UserRole[] = ['MATE', 'CAPTAIN', 'ADMIN'];
@@ -24,6 +26,12 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
   const params = useParams();
   const pathname = usePathname();
   const storeId = params.storeId ? parseInt(params.storeId as string, 10) : undefined;
+  const storeIdStr = params.storeId ? (params.storeId as string) : undefined;
+
+  // Prefetch dashboard data while the user is on any store page so that navigating
+  // to the fairness-dashboard tab finds the data already in the React Query cache.
+  const { data: prefetchDates = [] } = useAvailableDates(storeIdStr);
+  useDashboardData(storeIdStr, prefetchDates);
 
   // Extract crewId from pathname if on a crew page
   // Pattern: /stores/[storeId]/crew/[crewId]
