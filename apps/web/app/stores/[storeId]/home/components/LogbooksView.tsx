@@ -125,7 +125,7 @@ export function LogbooksView({
               totalPages={totalPages}
               setPage={setLogbooksPage}
               onAddClick={() => {
-                const dateParam = tutorialIsActive ? '?date=2025-12-15' : '';
+                const dateParam = tutorialIsActive ? '?date=2026-05-10' : '';
                 router.push(`/stores/${storeId}/logbook/create/shifts${dateParam}`);
               }}
               tutorialId="logbooks-header"

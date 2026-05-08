@@ -10,8 +10,8 @@ interface HomeStepCallbacks {
 
 export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
   const homeRoute = `/stores/${callbacks.storeId}/home`;
-  const shiftsRoute = `/stores/${callbacks.storeId}/logbook/create/shifts?date=2025-12-15`;
-  const constraintsRoute = `/stores/${callbacks.storeId}/logbook/create/constraints?date=2025-12-15`;
+  const shiftsRoute = `/stores/${callbacks.storeId}/logbook/create/shifts?date=2026-05-10`;
+  const constraintsRoute = `/stores/${callbacks.storeId}/logbook/create/constraints?date=2026-05-10`;
 
   return [
     {
