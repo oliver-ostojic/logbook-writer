@@ -58,6 +58,7 @@ export function DetailPanelContent({
       : [];
     return (
       <LogbookSupersededHistory
+        key={selectedItem.id}
         logbookId={selectedItem.id}
         runs={dateRuns}
         onViewPdf={(logbookId, date) => {
@@ -93,6 +94,7 @@ export function DetailPanelContent({
       : [];
     return (
       <LogbookSupersededHistory
+        key={dateKey}
         logbookId=""
         runs={dateRuns}
         runsOnly={true}
