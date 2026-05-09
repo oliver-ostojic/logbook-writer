@@ -44,6 +44,9 @@ export default function TutorialNavigation({
             cursor: isFirstSlide ? 'default' : 'pointer',
             transition: 'color 0.2s ease',
             opacity: isFirstSlide ? 0 : 1,
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            outline: 'none',
           }}
         >
           Back
@@ -64,6 +67,9 @@ export default function TutorialNavigation({
                 border: 'none',
                 padding: 0,
                 cursor: 'pointer',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                outline: 'none',
               }}
             />
           ))}
@@ -84,6 +90,9 @@ export default function TutorialNavigation({
             borderRadius: '9999px',
             cursor: 'pointer',
             transition: 'background-color 0.2s ease',
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            outline: 'none',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)')}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 60%)')}

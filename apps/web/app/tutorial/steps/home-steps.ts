@@ -64,6 +64,7 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       route: homeRoute,
       onEnter: () => callbacks.setViewHint('home'),
       advanceOnInteraction: true,
+      spotlightPadding: 20,
       bubble: {
         title: 'Crew Tab',
         body: '**Click Crew** to open the crew management interface — one of several CRUD views available from this navigation bar.',

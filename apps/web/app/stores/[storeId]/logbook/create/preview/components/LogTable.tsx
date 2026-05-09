@@ -206,6 +206,36 @@ export default function LogbookSchedule({
   
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
+  // Expand tutorial spotlight to cover the dropdown when it opens
+  React.useEffect(() => {
+    if (!editingCell) {
+      window.dispatchEvent(new CustomEvent('tutorial-spotlight-reset'));
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const dropdown = dropdownRef.current;
+      const row = document.querySelector<HTMLElement>('[data-tutorial-id="preview-first-row"]');
+      if (!dropdown || !row) return;
+
+      const dr = dropdown.getBoundingClientRect();
+      const rr = row.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
+
+      const top = Math.min(rr.top, dr.top) + scrollY;
+      const bottom = Math.max(rr.bottom, dr.bottom) + scrollY;
+      const left = Math.min(rr.left, dr.left) + scrollX;
+      const right = Math.max(rr.right, dr.right) + scrollX;
+
+      window.dispatchEvent(new CustomEvent('tutorial-spotlight-override', {
+        detail: { top, left, width: right - left, height: bottom - top, bottom, right },
+      }));
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [editingCell]);
+
   // Close dropdown when clicking outside
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

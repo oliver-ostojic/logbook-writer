@@ -24,6 +24,7 @@ export default function TutorialProvider() {
   const router = useRouter();
 
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+  const [overlayRectOverride, setOverlayRectOverride] = useState<TargetRect | null>(null);
   const [measuredStepIndex, setMeasuredStepIndex] = useState(-1);
   const prevTargetRef = useRef<HTMLElement | null>(null);
 
@@ -200,11 +201,32 @@ export default function TutorialProvider() {
     };
   }, [currentStep, measureTarget]);
 
+  // Listen for per-step spotlight overrides (e.g. dropdown expanding beyond target bounds)
+  useEffect(() => {
+    const handleOverride = (e: Event) => {
+      setOverlayRectOverride((e as CustomEvent).detail as TargetRect);
+    };
+    const handleReset = () => setOverlayRectOverride(null);
+
+    window.addEventListener('tutorial-spotlight-override', handleOverride);
+    window.addEventListener('tutorial-spotlight-reset', handleReset);
+
+    return () => {
+      window.removeEventListener('tutorial-spotlight-override', handleOverride);
+      window.removeEventListener('tutorial-spotlight-reset', handleReset);
+    };
+  }, []);
+
+  // Clear any override when the step changes
+  useEffect(() => {
+    setOverlayRectOverride(null);
+  }, [currentStepIndex]);
+
   if (!isActive || !currentStep) return null;
 
   return createPortal(
     <>
-      <TutorialOverlay targetRect={targetRect} blockClicks={!currentStep.advanceOnInteraction && !currentStep.interactive && !currentStep.advanceOnCustomEvent} noDim={currentStep.noDim} spotlightPadding={currentStep.spotlightPadding} />
+      <TutorialOverlay targetRect={overlayRectOverride ?? targetRect} blockClicks={!currentStep.advanceOnInteraction && !currentStep.interactive && !currentStep.advanceOnCustomEvent} noDim={currentStep.noDim} spotlightPadding={currentStep.spotlightPadding} />
 
       {(targetRect || currentStep.bubble.position === 'center') && bubbleReady && (
         <TutorialInfoBubble
