@@ -514,8 +514,9 @@ export default function TestGeneratorPage() {
         const violationCount = violations.length;
         updateDay(day.date, { status: 'publishing', violationCount });
 
-        const publishRes = await authFetch(`${API_URL}/schedule/logbook/${solveData.logbookId}/publish`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+        const publishRes = await authFetch(`${API_URL}/testgen/publish`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logbookId: solveData.logbookId }),
         });
         if (!publishRes.ok) {
           const publishData = await publishRes.json().catch(() => ({}));

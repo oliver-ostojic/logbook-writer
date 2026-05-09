@@ -11,6 +11,7 @@ import { WindowCoverageConfig } from '../testgen/configs/WindowCoverageConfig';
 import { generateDayPayload } from '../testgen/generator';
 import { persistDayPayload } from '../testgen/persist';
 import { CrewRecord } from '../testgen/types';
+import { generateLogbookPdf, deletePdf } from '../services/pdf-generator';
 
 const prisma = new PrismaClient();
 
@@ -119,5 +120,49 @@ export function registerTestGenRoutes(app: FastifyInstance) {
     }
 
     return { ok: true, days };
+  });
+
+  const PublishSchema = z.object({
+    logbookId: z.string().uuid(),
+  });
+
+  app.post('/testgen/publish', async (req, reply) => {
+    const parsed = PublishSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request', details: parsed.error.issues });
+    }
+
+    const { logbookId } = parsed.data;
+
+    const logbook = await prisma.logbook.findUnique({ where: { id: logbookId } });
+    if (!logbook) return reply.code(404).send({ error: 'Logbook not found' });
+
+    const existingPublished = await prisma.logbook.findFirst({
+      where: { storeId: logbook.storeId, date: logbook.date, status: 'PUBLISHED', id: { not: logbookId } },
+    });
+
+    if (logbook.storedFilePath) deletePdf(logbook.storedFilePath);
+
+    let pdfPath: string;
+    try {
+      pdfPath = await generateLogbookPdf(logbookId, logbook.storeId, logbook.date);
+    } catch (err: any) {
+      return reply.code(500).send({ error: 'PDF generation failed', details: err.message });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (existingPublished) {
+        await tx.logbook.update({
+          where: { id: existingPublished.id },
+          data: { status: 'SUPERSEDED', supersededById: logbookId },
+        });
+      }
+      return tx.logbook.update({
+        where: { id: logbookId },
+        data: { status: 'PUBLISHED', storedFilePath: pdfPath, publishedAt: new Date() },
+      });
+    });
+
+    return { success: true, logbookId: updated.id, pdfPath, status: updated.status };
   });
 }
