@@ -5,6 +5,7 @@ import { QueryProvider } from '@/components/providers/QueryProvider';
 import { GlassDevPanel } from '@/components/ui/ai-glass';
 import { ScrollRestorationDisabler } from '@/components/ScrollRestorationDisabler';
 import { TutorialProvider } from '@/components/tutorial-flyover';
+import { IframeRouteReporter } from '@/components/IframeRouteReporter';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://use.typekit.net/umd6txf.css" />
       </head>
       <body style={{ backgroundColor: 'transparent' }}>
+        <IframeRouteReporter />
         <ScrollRestorationDisabler />
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
