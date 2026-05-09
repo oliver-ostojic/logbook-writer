@@ -221,10 +221,9 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       target: 'constraints-crew-card',
       route: constraintsRoute,
       scroll: 'element',
-      interactive: true,
       bubble: {
         title: 'Crew Assignment Card',
-        body: '**Click a card** to select that crew member for the role. Once selected, use the + and − buttons to increase or decrease the number of hours assigned for the specific role listed.',
+        body: 'A card can be selected to assign time to a crew member. Once selected, the + and − buttons can be used to increase or decrease the number of hours assigned for the specific role listed.',
         position: 'right',
       },
     },
@@ -233,10 +232,9 @@ export function createHomeSteps(callbacks: HomeStepCallbacks): TutorialStep[] {
       target: 'constraints-step-3',
       route: constraintsRoute,
       scroll: 'element',
-      interactive: true,
       bubble: {
         title: 'Step 3 — Hourly Staffing',
-        body: '**Click on different hours** to see staffing data for each time slot. This view shows how many crew are available per hour for each role. If a role was configured as a coverage window in Step 1, it will show a "Configured in Step 1" note instead of hourly inputs.',
+        body: 'Staffed hours can be viewed to see data for each time slot. This view shows how many crew are available per hour for each role. If a role was configured as a coverage window in Step 1, it will show a "Configured in Step 1" note instead of hourly inputs.',
         position: 'right',
       },
     },
