@@ -70,6 +70,7 @@ export default function TutorialNavigation({
                 appearance: 'none',
                 WebkitAppearance: 'none',
                 outline: 'none',
+                clipPath: 'inset(0 round 9999px)',
               }}
             />
           ))}
@@ -92,7 +93,7 @@ export default function TutorialNavigation({
             appearance: 'none',
             WebkitAppearance: 'none',
             outline: 'none',
-            overflow: 'hidden',
+            clipPath: 'inset(0 round 9999px)',
           }}
         >
           {isLoading ? 'Loading...' : isLastSlide ? 'Continue' : 'Next'}
