@@ -79,23 +79,21 @@ export default function TutorialNavigation({
         <button
           onClick={isLastSlide ? onContinue : onNext}
           disabled={isLoading}
+          className="tutorial-nav-next-btn"
           style={{
             padding: '10px 20px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '13px',
             fontWeight: 600,
             color: 'white',
-            backgroundColor: 'hsl(0, 84%, 60%)',
             border: 'none',
             borderRadius: '9999px',
             cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
             appearance: 'none',
             WebkitAppearance: 'none',
             outline: 'none',
+            overflow: 'hidden',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 60%)')}
         >
           {isLoading ? 'Loading...' : isLastSlide ? 'Continue' : 'Next'}
         </button>

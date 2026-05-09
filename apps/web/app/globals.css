@@ -82,6 +82,16 @@ body { font-family: var(--font-sans); }
 /* Apply Roboto to all headings */
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
+/* Tutorial navigation next/continue button — hover handled in CSS to avoid
+   backdrop-filter compositing flash that JS onMouseEnter/onMouseLeave causes */
+.tutorial-nav-next-btn {
+  background-color: hsl(0, 84%, 60%);
+  transition: background-color 0.2s ease;
+}
+.tutorial-nav-next-btn:hover:not(:disabled) {
+  background-color: hsl(0, 84%, 55%);
+}
+
 /* AI Glass border effect */
 .ai-glass-border {
   position: relative;
