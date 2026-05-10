@@ -1,5 +1,7 @@
 'use client';
 
+import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+
 interface TutorialNavigationProps {
   currentSlide: number;
   totalSlides: number;
@@ -25,25 +27,34 @@ export default function TutorialNavigation({
   const isFirstSlide = currentSlide === 0;
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Navigation bar */}
-      <div className="flex items-center justify-between w-full">
+    <div
+      className="ai-glass-border"
+      style={{ ...aiGlassLightBorderStyle('9999px', '0, 0, 0', 0.1), width: '100%' }}
+    >
+      <div
+        className="flex items-center justify-between"
+        style={{
+          ...aiGlassLightContentStyle('9999px', 0.85),
+          padding: '10px 8px',
+          gap: 12,
+        }}
+      >
         {/* Back button */}
         <button
           onClick={onBack}
           disabled={isFirstSlide}
           style={{
-            padding: '10px 20px',
+            padding: '8px 20px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '13px',
             fontWeight: 600,
-            color: isFirstSlide ? '#9A999E' : '#6B6B6B',
+            color: '#6B6B6B',
             backgroundColor: 'transparent',
             border: 'none',
             borderRadius: '9999px',
             cursor: isFirstSlide ? 'default' : 'pointer',
-            transition: 'color 0.2s ease',
             opacity: isFirstSlide ? 0 : 1,
+            transition: 'opacity 0.2s ease',
             appearance: 'none',
             WebkitAppearance: 'none',
             outline: 'none',
@@ -55,49 +66,46 @@ export default function TutorialNavigation({
         {/* Dot indicators */}
         <div className="flex items-center gap-2">
           {Array.from({ length: totalSlides }).map((_, i) => (
-            <button
+            <div
               key={i}
               onClick={() => onGoToSlide(i)}
               style={{
-                width: i === currentSlide ? '24px' : '8px',
-                height: '8px',
-                borderRadius: '9999px',
+                width: i === currentSlide ? 24 : 8,
+                height: 8,
+                borderRadius: 9999,
                 backgroundColor: i === currentSlide ? '#2C2C2C' : '#D4D4D4',
                 transition: 'all 0.3s ease',
-                border: 'none',
-                padding: 0,
                 cursor: 'pointer',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                outline: 'none',
               }}
             />
           ))}
         </div>
 
-        {/* Next / Get Started button */}
+        {/* Next / Continue button */}
         <button
           onClick={isLastSlide ? onContinue : onNext}
           disabled={isLoading}
-          className="tutorial-nav-next-btn"
           style={{
-            padding: '10px 20px',
+            padding: '8px 20px',
             fontFamily: 'var(--font-open-sans)',
             fontSize: '13px',
             fontWeight: 600,
             color: 'white',
+            backgroundColor: 'hsl(0, 84%, 60%)',
             border: 'none',
             borderRadius: '9999px',
             cursor: 'pointer',
+            transition: 'background-color 0.2s ease',
             appearance: 'none',
             WebkitAppearance: 'none',
             outline: 'none',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 55%)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'hsl(0, 84%, 60%)'; }}
         >
           {isLoading ? 'Loading...' : isLastSlide ? 'Continue' : 'Next'}
         </button>
       </div>
-
     </div>
   );
 }
