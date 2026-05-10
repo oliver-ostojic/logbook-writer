@@ -82,14 +82,26 @@ body { font-family: var(--font-sans); }
 /* Apply Roboto to all headings */
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
-/* Tutorial navigation next/continue button — hover handled in CSS to avoid
-   backdrop-filter compositing flash that JS onMouseEnter/onMouseLeave causes */
+/* Tutorial navigation next/continue button.
+   Background-color must never change on hover — changing it inside a backdrop-filter
+   parent triggers a GPU compositing layer with a rectangular boundary, which shows as
+   a white rect when the backdrop is bright. The ::after overlay darkens the button
+   without touching the element's own background, so no compositing layer is created. */
 .tutorial-nav-next-btn {
+  position: relative;
   background-color: hsl(0, 84%, 60%);
-  transition: background-color 0.2s ease;
 }
-.tutorial-nav-next-btn:hover:not(:disabled) {
-  background-color: hsl(0, 84%, 55%);
+.tutorial-nav-next-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  pointer-events: none;
+}
+.tutorial-nav-next-btn:hover:not(:disabled)::after {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 /* AI Glass border effect */
