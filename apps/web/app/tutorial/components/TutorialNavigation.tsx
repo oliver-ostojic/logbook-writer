@@ -1,6 +1,6 @@
 'use client';
 
-import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
+import { aiGlassLightBorderStyle } from '@/components/ui/ai-glass';
 
 interface TutorialNavigationProps {
   currentSlide: number;
@@ -34,7 +34,10 @@ export default function TutorialNavigation({
       <div
         className="flex items-center justify-between"
         style={{
-          ...aiGlassLightContentStyle('9999px', 0.85),
+          width: '100%',
+          height: '100%',
+          background: 'rgba(255, 255, 255, 0.85)',
+          borderRadius: '9999px',
           padding: '10px 8px',
           gap: 12,
         }}
