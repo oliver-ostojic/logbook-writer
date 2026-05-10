@@ -72,8 +72,7 @@ export default function TutorialPage() {
       className="min-h-screen relative"
       style={{ backgroundColor: 'transparent' }}
     >
-      <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: '100vh', padding: '24px 0' }}>
-        {/* Main glass card */}
+      <div className="flex items-center justify-center" style={{ minHeight: '100vh', padding: '24px 0' }}>
         <div
           className="ai-glass-border rounded-[1.5rem]"
           style={{ ...aiGlassLightBorderStyle('1.5rem', '0, 0, 0', 0.08), width: '875px' }}
@@ -138,22 +137,20 @@ export default function TutorialPage() {
                   <CurrentSlide />
                 </div>
               </div>
+
+              {/* Navigation — wrapped in its own glass pill to isolate compositing */}
+              <TutorialNavigation
+                currentSlide={currentSlide}
+                totalSlides={SLIDES.length}
+                onNext={handleNext}
+                onBack={handleBack}
+                onSkip={handleSkip}
+                onContinue={handleDemoLogin}
+                onGoToSlide={setCurrentSlide}
+                isLoading={isLoggingIn}
+              />
             </div>
           </div>
-        </div>
-
-        {/* Navigation pill — outside the main card's backdrop-filter context */}
-        <div style={{ width: '875px' }}>
-          <TutorialNavigation
-            currentSlide={currentSlide}
-            totalSlides={SLIDES.length}
-            onNext={handleNext}
-            onBack={handleBack}
-            onSkip={handleSkip}
-            onContinue={handleDemoLogin}
-            onGoToSlide={setCurrentSlide}
-            isLoading={isLoggingIn}
-          />
         </div>
       </div>
     </main>
