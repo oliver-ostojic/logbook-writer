@@ -348,7 +348,8 @@ export default function LogbookView({ preview, loading, error }: LogbookViewProp
       console.log('Publish result:', result);
 
       // Step 3: Navigate to publish page
-      router.push(`/stores/${storeId}/logbook/create/publish?logbookId=${encodeURIComponent(logbookId)}`);
+      const date = preview?.date;
+      router.push(`/stores/${storeId}/logbook/create/publish?logbookId=${encodeURIComponent(logbookId)}${date ? `&date=${encodeURIComponent(date)}` : ''}`);
     } catch (err) {
       console.error('Failed to publish:', err);
       alert(`Failed to publish: ${err instanceof Error ? err.message : String(err)}`);

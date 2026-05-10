@@ -40,11 +40,15 @@ type HourlyAvailability = {
   inStock: boolean;
 };
 
+type ConstraintRule = 'MIN' | 'MAX' | 'EXACTLY';
+const DEFAULT_CONSTRAINT_RULE: ConstraintRule = 'EXACTLY';
+
 type WindowConstraintDraft = {
   roleId: number;
   startHour: number;   // Actually minutes from midnight (legacy name)
   endHour: number;     // Actually minutes from midnight (legacy name)
   requiredPerHour: number;
+  constraintRule: ConstraintRule;
 };
 
 type DailyConstraintDraft = {
@@ -57,6 +61,7 @@ type HourlyConstraintDraft = {
   roleId: number;
   hour: number;
   requiredPerHour: number;
+  constraintRule: ConstraintRule;
 };
 
 type StoreShift = {
@@ -65,9 +70,9 @@ type StoreShift = {
   end: string;
 };
 
-type WindowConstraintPrefill = Record<number, { time: string; duration: string; crewPerHour: number }>;
+type WindowConstraintPrefill = Record<number, { time: string; duration: string; crewPerHour: number; constraintRule: ConstraintRule }>;
 type DailyConstraintPrefill = Record<string, number>;
-type HourlyConstraintPrefill = Record<number, Record<number, number>>;
+type HourlyConstraintPrefill = Record<number, Record<number, { count: number; constraintRule: ConstraintRule }>>;
 
 type StoreHours = {
   id: number;
@@ -214,28 +219,31 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
           // For Step 1 (window roles): find windows that span multiple hours with same crewPerTaskLength
           // For Step 3 (hourly roles): find windows that are exactly 1 hour (60 min)
           const coverageWindows = constraintData?.coverageWindows ?? [];
-          
+
           // Group coverage windows by roleId to detect window vs hourly constraints
-          const windowsByRole: Record<number, Array<{ startMin: number; endMin: number; crewPerTaskLength: number }>> = {};
+          const windowsByRole: Record<number, Array<{ startMin: number; endMin: number; crewPerTaskLength: number; constraintRule: ConstraintRule }>> = {};
           coverageWindows.forEach((entry: any) => {
             if (typeof entry?.roleId !== 'number') return;
             if (!windowsByRole[entry.roleId]) windowsByRole[entry.roleId] = [];
+            const ruleRaw = typeof entry?.constraintRule === 'string' ? entry.constraintRule : DEFAULT_CONSTRAINT_RULE;
+            const rule: ConstraintRule = ruleRaw === 'MIN' || ruleRaw === 'MAX' || ruleRaw === 'EXACTLY' ? ruleRaw : DEFAULT_CONSTRAINT_RULE;
             windowsByRole[entry.roleId].push({
               startMin: entry.startMin,
               endMin: entry.endMin,
               // API returns crewPerMinute, fallback to crewPerTaskLength for backwards compat
               crewPerTaskLength: entry.crewPerMinute ?? entry.crewPerTaskLength ?? 0,
+              constraintRule: rule,
             });
           });
 
           // Process each role's windows
           Object.entries(windowsByRole).forEach(([roleIdStr, windows]) => {
             const roleId = Number(roleIdStr);
-            
+
             // Check if this looks like a single window constraint (one entry spanning multiple hours)
             // or hourly constraints (multiple 60-min entries)
             const isSingleWindow = windows.length === 1 && (windows[0].endMin - windows[0].startMin) > 60;
-            
+
             if (isSingleWindow) {
               // Step 1: Window constraint
               const w = windows[0];
@@ -248,6 +256,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
                 startHour: startMin,  // Now stores minutes
                 endHour: endMin,      // Now stores minutes
                 requiredPerHour: w.crewPerTaskLength,
+                constraintRule: w.constraintRule,
               };
               // Format time with proper hour:minute for the UI
               const startHourPart = Math.floor(startMin / 60);
@@ -256,6 +265,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
                 time: `${String(startHourPart).padStart(2, '0')}:${String(startMinPart).padStart(2, '0')}`,
                 duration: String(durationMinutes),
                 crewPerHour: w.crewPerTaskLength,
+                constraintRule: w.constraintRule,
               };
             } else {
               // Step 3: Hourly constraints (multiple 60-min windows or single 60-min window)
@@ -266,9 +276,10 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
                   roleId,
                   hour,
                   requiredPerHour: w.crewPerTaskLength,
+                  constraintRule: w.constraintRule,
                 };
                 if (!hourlyPrefill[roleId]) hourlyPrefill[roleId] = {};
-                hourlyPrefill[roleId][hour] = w.crewPerTaskLength;
+                hourlyPrefill[roleId][hour] = { count: w.crewPerTaskLength, constraintRule: w.constraintRule };
               });
             }
           });
@@ -362,7 +373,8 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         current &&
         current.startHour === constraint.startHour &&
         current.endHour === constraint.endHour &&
-        current.requiredPerHour === constraint.requiredPerHour;
+        current.requiredPerHour === constraint.requiredPerHour &&
+        current.constraintRule === constraint.constraintRule;
 
       if (isSame) {
         return prev;
@@ -386,7 +398,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
     });
   }, []);
 
-  const handleHourlyConstraintsChange = useCallback((entries: Array<{ roleId: number; hour: number; requiredPerHour: number }>) => {
+  const handleHourlyConstraintsChange = useCallback((entries: Array<{ roleId: number; hour: number; requiredPerHour: number; constraintRule: ConstraintRule }>) => {
     setHourlyConstraintDrafts(() => {
       const next: Record<string, HourlyConstraintDraft> = {};
       entries.forEach((entry) => {
@@ -453,6 +465,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         startMin: entry.startHour,   // Already in minutes from WindowRoleRadioGroup
         endMin: entry.endHour,       // Already in minutes from WindowRoleRadioGroup
         crewPerTaskLength: entry.requiredPerHour,
+        constraintRule: 'EXACTLY' as ConstraintRule,
       }));
 
       // Convert hourly constraints (Step 3) to coverageWindows format (each hour = 60 min window)
@@ -461,6 +474,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         startMin: entry.hour * 60,
         endMin: (entry.hour + 1) * 60,
         crewPerTaskLength: entry.requiredPerHour,
+        constraintRule: entry.constraintRule,
       }));
 
       // Combine all coverage windows
@@ -516,7 +530,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         if (!changeResult.needsRegeneration && changeResult.existingLogbookId) {
           console.log('No changes detected, skipping regeneration');
           setSaving(false);
-          router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${encodeURIComponent(changeResult.existingLogbookId)}`);
+          router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${encodeURIComponent(changeResult.existingLogbookId)}${date ? `&date=${encodeURIComponent(date)}` : ''}`);
           return;
         }
         
@@ -601,7 +615,7 @@ export default function BentoGrid({ onError, errors = [] }: BentoGridProps) {
         setSaving(false);
         return;
       }
-      router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${encodeURIComponent(logbookId)}`);
+      router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${encodeURIComponent(logbookId)}${date ? `&date=${encodeURIComponent(date)}` : ''}`);
     } catch (error) {
       console.error('Failed to finish logbook setup', error);
       setErrors([error instanceof Error ? error.message : 'Failed to finish logbook setup']);

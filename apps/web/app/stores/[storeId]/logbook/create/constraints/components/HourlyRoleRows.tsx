@@ -22,13 +22,18 @@ type StoreHours = {
   closeMinutesFromMidnight: number;
 };
 
+type ConstraintRule = 'MIN' | 'MAX' | 'EXACTLY';
+const DEFAULT_CONSTRAINT_RULE: ConstraintRule = 'EXACTLY';
+const CONSTRAINT_RULE_OPTIONS: ConstraintRule[] = ['MIN', 'MAX', 'EXACTLY'];
+const CONSTRAINT_RULE_LABELS: Record<ConstraintRule, string> = { MIN: 'Min', MAX: 'Max', EXACTLY: 'Exact' };
+
 type HourlyRoleRowsProps = {
   hourlyData: HourOption[];
   roles: RoleWithCrew[];
   lockedRoleIds: Set<number>;
   onRoleConfigured: (roleId: number, isConfigured: boolean) => void;
-  initialConstraints?: Record<number, Record<number, number>> | null;
-  onHourlyConstraintsChange?: (entries: Array<{ roleId: number; hour: number; requiredPerHour: number; type: 'MIN' | 'EXACTLY' }>) => void;
+  initialConstraints?: Record<number, Record<number, { count: number; constraintRule: ConstraintRule }>> | null;
+  onHourlyConstraintsChange?: (entries: Array<{ roleId: number; hour: number; requiredPerHour: number; constraintRule: ConstraintRule }>) => void;
   storeHours?: StoreHours | null;
 };
 
@@ -39,6 +44,7 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
   
   // Dynamic state: { [roleId]: { [hour]: string } }
   const [roleValues, setRoleValues] = useState<Record<number, Record<number, string>>>({});
+  const [roleRules, setRoleRules] = useState<Record<number, Record<number, ConstraintRule>>>({});
   const [confirmedRoles, setConfirmedRoles] = useState<Record<number, Set<number>>>({});
 
   // Filter to hourly-type roles
@@ -120,59 +126,88 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
   useEffect(() => {
     if (!initialConstraints) return;
     const nextValues: Record<number, Record<number, string>> = {};
+    const nextRules: Record<number, Record<number, ConstraintRule>> = {};
     const nextConfirmed: Record<number, Set<number>> = {};
-    
+
     hourlyRoles.forEach(role => {
       if (initialConstraints[role.roleId]) {
         nextValues[role.roleId] = {};
+        nextRules[role.roleId] = {};
         nextConfirmed[role.roleId] = new Set();
         Object.entries(initialConstraints[role.roleId]).forEach(([hour, value]) => {
-          nextValues[role.roleId][Number(hour)] = String(value);
-          nextConfirmed[role.roleId].add(Number(hour));
+          const hourNum = Number(hour);
+          nextValues[role.roleId][hourNum] = String(value.count);
+          nextRules[role.roleId][hourNum] = value.constraintRule;
+          nextConfirmed[role.roleId].add(hourNum);
         });
       }
     });
-    
+
     setRoleValues(nextValues);
+    setRoleRules(nextRules);
     setConfirmedRoles(nextConfirmed);
   }, [initialConstraints, hourlyRoles]);
 
   // Bubble up normalized entries
   useEffect(() => {
     if (!onHourlyConstraintsChange) return;
-    const entries: Array<{ roleId: number; hour: number; requiredPerHour: number; type: 'MIN' | 'EXACTLY' }> = [];
+    const entries: Array<{ roleId: number; hour: number; requiredPerHour: number; constraintRule: ConstraintRule }> = [];
 
     hourlyRoles.forEach(role => {
       const values = roleValues[role.roleId] || {};
+      const rules = roleRules[role.roleId] || {};
       Object.entries(values).forEach(([hourStr, value]) => {
         const parsed = Number(value);
         const parsedHour = Number(hourStr);
         if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsedHour)) return;
         if (!isRoleAllowedAtHour(role.roleId, parsedHour)) return;
-        entries.push({ roleId: role.roleId, hour: parsedHour, requiredPerHour: Math.round(parsed), type: 'MIN' });
+        entries.push({
+          roleId: role.roleId,
+          hour: parsedHour,
+          requiredPerHour: Math.round(parsed),
+          constraintRule: rules[parsedHour] ?? DEFAULT_CONSTRAINT_RULE,
+        });
       });
     });
 
     onHourlyConstraintsChange(entries);
-  }, [roleValues, hourlyRoles, onHourlyConstraintsChange, isRoleAllowedAtHour]);
+  }, [roleValues, roleRules, hourlyRoles, onHourlyConstraintsChange, isRoleAllowedAtHour]);
 
   const selectedOption = hourlyData.find(opt => opt.hour === selected);
   const allowedRolesForSelectedHour = allowedRoleIdsByHour.get(selected) ?? new Set<number>();
 
   const getRoleValue = (roleId: number, hour: number) => roleValues[roleId]?.[hour] ?? '';
+  const getRoleRule = (roleId: number, hour: number): ConstraintRule => roleRules[roleId]?.[hour] ?? DEFAULT_CONSTRAINT_RULE;
   const isRoleConfirmedAtHour = (roleId: number, hour: number) => confirmedRoles[roleId]?.has(hour) ?? false;
 
   const handleRoleChange = (roleId: number, value: string) => {
     const role = hourlyRoles.find(r => r.roleId === roleId);
     if (!role || isRoleLocked(role) || !allowedRolesForSelectedHour.has(roleId)) return;
-    
+
     setRoleValues(prev => ({
       ...prev,
       [roleId]: { ...(prev[roleId] || {}), [selected]: value }
     }));
+    setRoleRules(prev => {
+      const existing = prev[roleId]?.[selected];
+      if (existing) return prev;
+      return {
+        ...prev,
+        [roleId]: { ...(prev[roleId] || {}), [selected]: DEFAULT_CONSTRAINT_RULE },
+      };
+    });
     setConfirmedRoles(prev => ({
       ...prev,
       [roleId]: new Set(prev[roleId] || []).add(selected)
+    }));
+  };
+
+  const handleRoleRuleChange = (roleId: number, rule: ConstraintRule) => {
+    const role = hourlyRoles.find(r => r.roleId === roleId);
+    if (!role || isRoleLocked(role) || !allowedRolesForSelectedHour.has(roleId)) return;
+    setRoleRules(prev => ({
+      ...prev,
+      [roleId]: { ...(prev[roleId] || {}), [selected]: rule },
     }));
   };
 
@@ -227,17 +262,15 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                       const locked = isRoleLocked(role);
                       const confirmed = isRoleConfirmedAtHour(role.roleId, selected);
                       const value = getRoleValue(role.roleId, selected);
+                      const rule = getRoleRule(role.roleId, selected);
 
                       return (
                         <div key={role.roleId} className="relative">
                           <label htmlFor={`role-${role.roleId}`} className="block text-sm font-medium text-gray-700 mb-2 font-sans">
                             {role.roleName}
-                            {role.assignmentModel === 'HOURLY_AND_SOLVER' && (
-                              <span className="ml-1 text-xs text-gray-500">(Minimum)</span>
-                            )}
                           </label>
-                          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px'), overflow: 'hidden' }}>
-                            <div style={{ ...aiGlassLightContentStyle('9999px', 0.6) }}>
+                          <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('1.5rem'), overflow: 'hidden' }}>
+                            <div style={{ ...aiGlassLightContentStyle('1.5rem', 0.6) }}>
                               <input
                                 type="number"
                                 id={`role-${role.roleId}`}
@@ -247,16 +280,52 @@ export default function HourlyRoleRows({ hourlyData, roles, lockedRoleIds, onRol
                                 onChange={(e) => handleRoleChange(role.roleId, e.target.value)}
                                 onKeyDown={(e) => handleRoleKeyPress(e, role.roleId)}
                                 disabled={locked}
-                                className={`block w-full rounded-full px-4 py-2 text-sm border-0 focus:outline-none focus:ring-0 ${
+                                className={`block w-full px-4 py-2 text-sm border-0 focus:outline-none focus:ring-0 bg-gray-100 ${
                                   locked
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    ? 'text-gray-400 cursor-not-allowed'
                                     : !confirmed
-                                    ? 'bg-gray-50 text-gray-500'
-                                    : 'bg-white text-gray-900'
+                                    ? 'text-gray-400'
+                                    : 'text-gray-900'
                                 }`}
                                 placeholder="0"
                                 style={{ outline: 'none', boxShadow: 'none' }}
                               />
+                              <div style={{ padding: '6px 8px' }}>
+                                <div className="ai-glass-border" style={{ ...aiGlassLightBorderStyle('9999px') }}>
+                                  <div
+                                    role="radiogroup"
+                                    aria-label={`${role.roleName} constraint rule`}
+                                    className="flex"
+                                    style={{ ...aiGlassLightContentStyle('9999px', 0.6), padding: 2, backgroundColor: 'rgba(0,0,0,0.06)' }}
+                                  >
+                                    {CONSTRAINT_RULE_OPTIONS.map((option, idx) => {
+                                      const isActive = rule === option;
+                                      return (
+                                        <button
+                                          key={option}
+                                          type="button"
+                                          role="radio"
+                                          aria-checked={isActive}
+                                          disabled={locked}
+                                          onClick={() => handleRoleRuleChange(role.roleId, option)}
+                                          className={`flex-1 text-xs font-medium py-1 px-2 rounded-full font-sans transition-colors ${
+                                            isActive
+                                              ? 'bg-[hsl(var(--brand-h)_var(--brand-s)_var(--brand-l))] text-white'
+                                              : 'text-gray-700 hover:bg-gray-100'
+                                          } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                          style={{
+                                            border: 'none',
+                                            outline: 'none',
+                                            marginLeft: idx === 0 ? 0 : 2,
+                                          }}
+                                        >
+                                          {CONSTRAINT_RULE_LABELS[option]}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           {locked && (

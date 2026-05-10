@@ -100,7 +100,7 @@ export default function Calendar({ selectedDate, onChange, datesWithData = [] }:
             <time
               dateTime={day.date}
               className="mx-auto flex size-7 items-center justify-center rounded-full [[data-is-selected]_&]:bg-gray-900 [[data-is-selected]_&]:text-white"
-              style={day.hasData && !day.isSelected ? { background: '#dc2626', color: '#fff' } : undefined}
+              style={!day.hasData && day.isCurrentMonth && !day.isSelected && !day.isToday ? { color: '#6b7280' } : undefined}
             >
               {day.date.split('-').pop()?.replace(/^0/, '') || ''}
             </time>

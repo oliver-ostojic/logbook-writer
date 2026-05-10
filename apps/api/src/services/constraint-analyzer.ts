@@ -116,6 +116,32 @@ export function analyzeSolverResult({
   };
 }
 
+const DEFAULT_SLOT_MINUTES = 30;
+
+function gcd(a: number, b: number): number {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y) {
+    [x, y] = [y, x % y];
+  }
+  return x;
+}
+
+/**
+ * Mirror of compute_grid_resolution() in apps/solver-python/logbook_solver_v2/time_grid.py.
+ * GCD of role taskLengths, with a fallback so the analyzer iterates at the
+ * same granularity the CP-SAT solver enforces constraints.
+ */
+function computeSolverSlotMinutes(input: SolverInputV2): number {
+  const validLengths = input.roles
+    .map((role) => role.taskLength)
+    .filter((len) => Number.isFinite(len) && len > 0);
+  if (validLengths.length === 0) return DEFAULT_SLOT_MINUTES;
+  const resolution = validLengths.reduce((acc, len) => gcd(acc, len));
+  if (resolution < 15 || 60 % resolution !== 0) return DEFAULT_SLOT_MINUTES;
+  return resolution;
+}
+
 function checkAssignmentsAgainstStoreHours(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, assignments, roleById } = context;
   const store = solverInput.store;
@@ -203,11 +229,18 @@ function checkCrewShiftBounds(context: AnalyzerContext): ConstraintViolation[] {
 
 /**
  * Check coverage windows against each window's constraintRule (MIN/MAX/EXACTLY).
- * Scans task-length slots, merges contiguous violated slots into ranges,
- * and emits at most one "under" and one "over" violation per role.
+ * Iterates at the solver's slot resolution (GCD of role taskLengths), merges
+ * contiguous violated slots into ranges, and emits at most one "under" and one
+ * "over" violation per role.
+ *
+ * Why slot resolution rather than taskLength: the solver enforces coverage at
+ * its native slot granularity (e.g. 30-min). Iterating per-taskLength here was
+ * unique-counting crew across an hour and falsely flagging EXACTLY windows
+ * where two crew swap mid-hour via half-block assignments.
  */
 function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
   const { solverInput, roleAssignments, roleById } = context;
+  const slotMinutes = computeSolverSlotMinutes(solverInput);
 
   type Range = { start: number; end: number };
   const underByRole = new Map<number, Range[]>();
@@ -231,11 +264,10 @@ function checkCoverageWindows(context: AnalyzerContext): ConstraintViolation[] {
     const role = roleById.get(window.roleId);
     if (!role) continue;
 
-    const taskLength = role.taskLength;
-    if (taskLength <= 0) continue;
+    if (role.taskLength <= 0) continue;
 
-    for (let slotStart = window.startMin; slotStart < window.endMin; slotStart += taskLength) {
-      const slotEnd = Math.min(slotStart + taskLength, window.endMin);
+    for (let slotStart = window.startMin; slotStart < window.endMin; slotStart += slotMinutes) {
+      const slotEnd = Math.min(slotStart + slotMinutes, window.endMin);
 
       const crewInSlot = new Set<string>();
       for (const assignment of roleAssignments.get(window.roleId) ?? []) {

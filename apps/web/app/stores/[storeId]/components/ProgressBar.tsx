@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { aiGlassLightBorderStyle, aiGlassLightContentStyle } from '@/components/ui/ai-glass';
@@ -19,7 +19,18 @@ type ProgressBarProps = {
 
 export default function ProgressBar({ currentStep }: ProgressBarProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const storeId = params.storeId as string;
+  const date = searchParams?.get('date') ?? undefined;
+  const logbookId = searchParams?.get('logbookId') ?? undefined;
+
+  const buildHref = (path: string) => {
+    const qs = new URLSearchParams();
+    if (date) qs.set('date', date);
+    if (logbookId && (path === 'preview' || path === 'publish')) qs.set('logbookId', logbookId);
+    const queryString = qs.toString();
+    return `/stores/${storeId}/logbook/create/${path}${queryString ? `?${queryString}` : ''}`;
+  };
 
   // Calculate status for each step based on currentStep
   const steps = stepDefinitions.map((step, index) => {
@@ -34,9 +45,7 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
       status = 'upcoming';
     }
 
-    const href = `/stores/${storeId}/logbook/create/${step.path}`;
-
-    return { ...step, status, href };
+    return { ...step, status, href: buildHref(step.path) };
   });
 
   // Padding inside the progress bar

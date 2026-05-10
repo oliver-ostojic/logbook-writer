@@ -95,6 +95,12 @@ export default function BentoGrid() {
     localStorage.setItem(key, JSON.stringify(data));
   }, [selectedCrew, shiftTimes, hasLoadedFromBackend, storeId, selectedDate, loadedForDate]);
 
+  // Keep ?date in the URL in sync with the selected date so refresh and back-nav preserve it
+  useEffect(() => {
+    if (!storeId || !selectedDate) return;
+    router.replace(`/stores/${storeId}/logbook/create/shifts?date=${encodeURIComponent(selectedDate)}`);
+  }, [selectedDate, storeId, router]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {

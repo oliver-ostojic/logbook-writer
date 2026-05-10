@@ -596,7 +596,7 @@ export function LogbookSupersededHistory({ logbookId, runs = [], runsOnly = fals
             onViewPdf={() => onViewPdf(current.id, formatDate(current.date))}
             onViewRunInfo={current.runId && onViewRunInfo ? () => onViewRunInfo(current.runId!) : undefined}
             onDelete={() => handleDeleteVersion(current.id)}
-            onEdit={() => router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${current.id}`)}
+            onEdit={() => router.push(`/stores/${storeId}/logbook/create/preview?logbookId=${current.id}&date=${encodeURIComponent(current.date.slice(0, 10))}`)}
           />
         )}
 

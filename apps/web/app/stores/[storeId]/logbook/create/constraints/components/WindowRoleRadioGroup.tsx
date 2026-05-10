@@ -10,6 +10,8 @@ type RoleWithCrew = {
   assignmentModel: string;
 };
 
+type ConstraintRule = 'MIN' | 'MAX' | 'EXACTLY';
+
 type WindowConstraintValue = {
   time: string;
   duration: string;
@@ -21,7 +23,7 @@ type Props = {
   lockedRoleIds: Set<number>;
   onRoleConfigured: (roleId: number, isConfigured: boolean) => void;
   initialConstraints?: Record<number, WindowConstraintValue> | null;
-  onConstraintChange?: (roleId: number, value?: { roleId: number; startHour: number; endHour: number; requiredPerHour: number }) => void;
+  onConstraintChange?: (roleId: number, value?: { roleId: number; startHour: number; endHour: number; requiredPerHour: number; constraintRule: ConstraintRule }) => void;
 };
 
 export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, initialConstraints, onConstraintChange }: Props) {
@@ -54,10 +56,7 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
     if (!selected.has(roleId)) return false;
     const cfg = config[roleId];
     if (!cfg) return false;
-    const hasTime = !!cfg.time && cfg.time.trim() !== '';
-    const hasDuration = !!cfg.duration && cfg.duration.trim() !== '';
-    const hasCrewPerHour = cfg.crewPerHour !== undefined && cfg.crewPerHour > 0;
-    return hasTime && hasDuration && hasCrewPerHour;
+    return !!cfg.duration && cfg.duration.trim() !== '';
   }, [config, selected]);
 
   // Watch for config changes and notify parent when completion status changes
@@ -100,44 +99,61 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
         roleId: role.roleId,
         startHour: normalizedStart,  // Now in minutes, but keeping prop name for compatibility
         endHour: normalizedEnd,      // Now in minutes, but keeping prop name for compatibility
-        requiredPerHour: Math.max(0, cfg.crewPerHour ?? 0),
+        requiredPerHour: Math.max(1, cfg.crewPerHour ?? 1),
+        constraintRule: 'EXACTLY',
       });
     });
   }, [config, selected, roles, onConstraintChange, isRoleComplete]);
 
+  const applyDefaults = (roleId: number) => {
+    setConfig(prev => {
+      const existing = prev[roleId] ?? {};
+      return {
+        ...prev,
+        [roleId]: { ...existing, time: existing.time ?? '10:00', crewPerHour: existing.crewPerHour ?? 1 },
+      };
+    });
+  };
+
   const toggle = (roleId: number) => {
+    const isAdding = !selected.has(roleId);
     setSelected(prev => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(roleId)) {
         next.delete(roleId);
       } else {
-        next.add(roleId)
+        next.add(roleId);
       }
-      return next
-    })
-  }
+      return next;
+    });
+    if (isAdding) applyDefaults(roleId);
+  };
 
   const updateTime = (roleId: number, time: string) => {
     setConfig(prev => ({ ...prev, [roleId]: { ...prev[roleId], time } }));
-    // Auto-select tile when user interacts
     setSelected(prev => {
-      if (prev.has(roleId)) return prev
-      const next = new Set(prev)
-      next.add(roleId)
-      return next
-    })
-  }
+      if (prev.has(roleId)) return prev;
+      const next = new Set(prev);
+      next.add(roleId);
+      return next;
+    });
+  };
 
   const updateDuration = (roleId: number, duration: string) => {
-    setConfig(prev => ({ ...prev, [roleId]: { ...prev[roleId], duration } }));
-    // Auto-select tile when user interacts
+    setConfig(prev => {
+      const existing = prev[roleId] ?? {};
+      return {
+        ...prev,
+        [roleId]: { ...existing, time: existing.time ?? '10:00', crewPerHour: existing.crewPerHour ?? 1, duration },
+      };
+    });
     setSelected(prev => {
-      if (prev.has(roleId)) return prev
-      const next = new Set(prev)
-      next.add(roleId)
-      return next
-    })
-  }
+      if (prev.has(roleId)) return prev;
+      const next = new Set(prev);
+      next.add(roleId);
+      return next;
+    });
+  };
 
   const updateCrewPerHour = (roleId: number, value?: number) => {
     setConfig(prev => ({ ...prev, [roleId]: { ...prev[roleId], crewPerHour: value } }));
@@ -149,10 +165,9 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
         {roles.map((role, roleIndex) => {
           const isSelected = selected.has(role.roleId)
           const cfg = config[role.roleId] || { time: '', duration: '' }
-          const hasTime = !!cfg.time
           const hasDuration = !!cfg.duration
           const hasCrewPerHour = typeof cfg.crewPerHour === 'number' && !Number.isNaN(cfg.crewPerHour)
-          const isComplete = isSelected && hasTime && hasDuration && hasCrewPerHour
+          const isComplete = isSelected && hasDuration
           const isLocked = lockedRoleIds.has(role.roleId) && needsMutualExclusion(role);
 
           return (
@@ -180,26 +195,14 @@ export default function RadioGroup({ roles, lockedRoleIds, onRoleConfigured, ini
                 toggle(role.roleId)
               }
               if (e.key === 'Enter') {
-                console.log('Enter pressed on role', role.roleId, 'isLocked:', isLocked);
                 e.preventDefault()
-                // Set default as true (select without toggling off)
-                setSelected(prev => {
-                  if (prev.has(role.roleId)) return prev
-                  const next = new Set(prev)
-                  next.add(role.roleId)
-                  return next
-                })
-                // Optionally initialize default inputs so it's immediately valid-ish
-                // Set only a default time; require user to pick duration
-                if (!isLocked) {
-                  setConfig(prev => ({
-                    ...prev,
-                    [role.roleId]: {
-                      ...prev[role.roleId], // Preserve all existing fields (like crewPerHour)
-                      time: prev[role.roleId]?.time ?? '10:00',
-                      duration: prev[role.roleId]?.duration ?? '',
-                    }
-                  }))
+                if (!selected.has(role.roleId)) {
+                  setSelected(prev => {
+                    const next = new Set(prev);
+                    next.add(role.roleId);
+                    return next;
+                  });
+                  applyDefaults(role.roleId);
                 }
               }
             }}
